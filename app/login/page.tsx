@@ -1,0 +1,95 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { TextInput } from "@/components/forms";
+import { IconCheck } from "@/components/icons";
+import { Logo, Mascot } from "@/components/Mascot";
+import { Button, PageHeader } from "@/components/ui";
+import { setMode, useSession } from "@/lib/data/mode";
+import { supabase, supabaseConfigured } from "@/lib/supabase";
+
+/** 보호자 로그인: 이메일 로그인 링크 (Supabase Auth, 비밀번호 없음) */
+export default function LoginPage() {
+  const router = useRouter();
+  const session = useSession();
+  const [email, setEmail] = useState("");
+  const [sent, setSent] = useState(false);
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (session) {
+      setMode("live");
+      router.replace("/start");
+    }
+  }, [session, router]);
+
+  const send = async () => {
+    setBusy(true);
+    setError("");
+    const { error } = await supabase().auth.signInWithOtp({
+      email: email.trim(),
+      options: { emailRedirectTo: `${location.origin}/start` },
+    });
+    setBusy(false);
+    if (error) setError(error.message.includes("rate") ? "잠시 후 다시 시도해 주세요. (메일 발송 제한)" : "메일을 보내지 못했어요. 주소를 확인해 주세요.");
+    else setSent(true);
+  };
+
+  const demo = () => {
+    setMode("demo");
+    router.push("/start");
+  };
+
+  return (
+    <main className="flex flex-1 flex-col pb-8">
+      <PageHeader back="/" />
+      <div className="flex flex-1 flex-col px-6">
+        <Logo />
+        <h1 className="mt-6 text-[28px] leading-snug font-extrabold text-cocoa">
+          보호자로
+          <br />
+          시작할게요
+        </h1>
+        {!supabaseConfigured ? (
+          <p className="mt-4 text-[15px] text-muted">서버가 설정되지 않아 데모로만 둘러볼 수 있어요.</p>
+        ) : sent ? (
+          <div className="mt-8 flex flex-col items-center rounded-[1.75rem] bg-butter-soft px-6 py-8 text-center">
+            <span className="grid h-14 w-14 place-items-center rounded-full bg-sage text-sage-deep">
+              <IconCheck className="h-8 w-8" />
+            </span>
+            <p className="mt-4 text-[18px] font-bold text-cocoa">메일함을 확인해 주세요</p>
+            <p className="mt-1 text-[14px] leading-relaxed text-cocoa/70">
+              {email}로 로그인 링크를 보냈어요.
+              <br />이 브라우저에서 링크를 열어 주세요.
+            </p>
+            <button className="mt-4 text-[14px] font-semibold text-cocoa/70 underline" onClick={() => setSent(false)}>
+              다른 주소로 받기
+            </button>
+          </div>
+        ) : (
+          <div className="mt-8 flex flex-col gap-3">
+            <label className="text-[15px] font-bold text-cocoa" htmlFor="email">
+              이메일
+            </label>
+            <TextInput id="email" type="email" autoComplete="email" inputMode="email" placeholder="name@example.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+            {error ? <p className="text-[14px] font-semibold text-blush-deep">{error}</p> : null}
+            <p className="text-[13px] text-muted">비밀번호 없이, 메일로 받은 링크로 로그인해요.</p>
+          </div>
+        )}
+        <Mascot className="mx-auto mt-auto h-24 w-24 pt-6" mood="happy" />
+        <div className="mt-4 flex flex-col gap-2">
+          {supabaseConfigured && !sent ? (
+            <Button disabled={busy || !/^\S+@\S+\.\S+$/.test(email.trim())} onClick={send}>
+              {busy ? "보내는 중…" : "로그인 링크 받기"}
+            </Button>
+          ) : null}
+          <Button variant="ghost" onClick={demo}>
+            로그인 없이 데모로 둘러보기
+          </Button>
+        </div>
+      </div>
+    </main>
+  );
+}

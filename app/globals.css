@@ -1,0 +1,80 @@
+@import "tailwindcss";
+
+/* 밥뭇나 디자인 토큰 — 노란 콜라보 시안(A안) 기반: 크림 배경, 버터 옐로, 코코아 브라운 */
+@theme {
+  --color-cream: #f6efdf; /* 페이지 바탕 */
+  --color-paper: #fffcf3; /* 화면·카드 */
+  --color-butter: #f6cd48; /* 주 강조 */
+  --color-butter-soft: #fdf0c4;
+  --color-butter-deep: #e3b324;
+  --color-cocoa: #3b2a1e; /* 진한 버튼·제목 */
+  --color-ink: #2b2118; /* 본문 */
+  --color-muted: #8a7a66;
+  --color-line: #ece1ca;
+  --color-blush: #f4ded6; /* 도와줘요·경고 */
+  --color-blush-deep: #b9533d;
+  --color-sage: #e1eed9; /* 확인됨 */
+  --color-sage-deep: #4c7a43;
+  --color-sky: #dfeaf6; /* 부재 */
+  --color-sky-deep: #4a6f95;
+
+  --font-sans: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+    "Noto Sans KR", sans-serif;
+  --font-hand: var(--font-gaegu), "Pretendard Variable", sans-serif;
+
+  --radius-card: 1.75rem;
+  --shadow-soft: 0 1px 2px rgb(59 42 30 / 0.04), 0 8px 24px rgb(59 42 30 / 0.06);
+}
+
+html {
+  background: var(--color-cream);
+  color: var(--color-ink);
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  font-family: var(--font-sans);
+  letter-spacing: -0.01em;
+  word-break: keep-all;
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-butter-deep);
+  outline-offset: 2px;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.animate-rise {
+  animation: rise 0.35s ease-out both;
+}
+
+@keyframes bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+.animate-bob {
+  animation: bob 3.2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-rise,
+  .animate-bob {
+    animation: none;
+  }
+}

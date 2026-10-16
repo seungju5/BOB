@@ -1,0 +1,7 @@
+{
+  "imports": {
+    "@/_shared/": "./_shared/",
+    "@/lib/": "../../lib/",
+    "@/config/": "../../config/"
+  }
+}

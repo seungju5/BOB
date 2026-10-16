@@ -1,0 +1,64 @@
+# 밥뭇나 Firebase 통합판
+
+기존 Firebase 디자인을 보존하면서 루트 Next.js/Supabase 앱의 판단 함수를 함께 사용하는 별도 프런트엔드입니다. 루트 앱을 대체하지 않으며, 이 폴더를 추가하는 것만으로 운영 사이트나 데이터베이스가 바뀌지 않습니다.
+
+## 실행과 검증
+
+저장소 루트에서 Node 24와 잠긴 의존성을 사용합니다.
+
+```sh
+npm ci --ignore-scripts --no-audit --no-fund
+npm run sync:firebase
+npm run dev:firebase
+```
+
+포트를 직접 지정하려면 다음을 사용합니다.
+
+```sh
+npm --prefix integrations/bapmunna-firebase run dev -- --port=5293
+```
+
+개발 서버가 출력한 주소의 `/`, `/senior/`, `/carer/`에서 시작·어르신·보호자 화면을 확인합니다. 역할 전환은 화면만 바꾸며 인증 권한을 부여하지 않습니다.
+
+```sh
+npm test
+npm run test:firebase
+npx tsc --noEmit
+npm run build:firebase
+```
+
+`workshop/bapmunna.html`은 오프라인 체험용 단일 파일입니다. SDK 소스를 다시 빌드할 경우에만 이 폴더에서 별도로 `npm ci`와 `npm run build:cloud`를 실행합니다. 일반 화면·도메인 검증에는 중첩 의존성 설치나 Firebase 로그인이 필요하지 않습니다.
+
+## 계속 일치시킬 범위
+
+원본은 루트 `config/detection.ts`, `lib/judge/`, `lib/data/view.ts`입니다. `scripts/sync-firebase.mjs`가 검토된 파일만 `docs/shared/`에 컴파일합니다. 생성 파일은 직접 편집하지 않습니다.
+
+| 기능 | 통합 방식 |
+| --- | --- |
+| 취사·열림 판정 | 같은 `detectEvents` 함수와 상수 |
+| 끼니 상태 | 같은 `resolveMealSlots`; 기기 확인 > 외식 > 부재 > 미확인/대기 |
+| 외식 버튼 | 누른 시각에 가장 가까운 식사 시간대 자동 선택 |
+| 주의·재확인 | 같은 `evaluateAlerts`; 마지막 활동 기준 기본 48·72시간 |
+| 연결 장애 | 공통 2시간 기준, 오프라인 기간 제외 |
+| 패턴 리포트 | 같은 `patternReport`; 최근 7일과 이전 28일 |
+| 시각 디자인 | Firebase의 노랑·로고·토끼·단순한 조작 유지 |
+
+공통 파일 변경 후 `npm run sync:firebase`와 전체 테스트를 실행합니다. 검사는 생성본 누락, 판단 결과 차이, 기본 디자인 계약 위반을 검출합니다. [CI 설치안](ci/README.md)은 연결 계정의 `workflow` 권한 부족으로 아직 자동 실행되지 않습니다. 권한 있는 관리자의 별도 설치가 필요하며 계정 권한은 변경하지 않았습니다. 새로운 화면·API·DB 기능까지 자동으로 이식하는 시스템은 아닙니다. Supabase 기능 변경 PR마다 [제품 결정 기록](PRODUCT_DECISIONS.md)의 점검표를 확인해야 합니다. 필수 병합 조건 설정도 이번 변경에 포함하지 않습니다.
+
+## 데이터와 운영 경계
+
+- 시뮬레이터는 합성 데이터만 메모리에 두며 새로고침하면 초기화합니다. 전력 버퍼는 최대 90개이며 실제 기기 연결·원시 전력 영구 저장·자동 신고가 없습니다.
+- `docs/parity.mjs`는 기존 Firebase의 슬롯 요약을 공통 함수 입력으로 바꾸는 어댑터입니다. 공유 중지, 관찰 시작 전 상태, 선택하지 않은 끼니, 과거 외출 제외 기록은 기존 개인정보 보호 동작을 유지합니다.
+- 전력 시뮬레이터는 흐름을 바로 보여줍니다. Supabase 서버의 주기 실행·이벤트 마감 지연까지 재현하지 않습니다. 실제 밥솥 정확도 검증으로 해석하면 안 됩니다.
+- `확인됨`은 승인된 Supabase 규칙의 표현입니다. 실제 섭취량·영양·건강 상태를 증명하지 않습니다. 밥그릇 그림도 소식의 유무를 표현합니다.
+- 기존 Firebase 계정·본인 수동 기록과 루트 Supabase BOB 계정·가족 페어링은 별도입니다. 기존 선택형 Supabase 제공자도 BOB와 다른 프로젝트입니다. 자격 증명·DB·RLS·사용자 데이터를 합치지 않았습니다.
+- 실제 SmartThings, 가족 실시간 동기화, 푸시, BOB 인증 어댑터는 별도 승인·구현·통합 테스트가 필요합니다. 현재 가족 체험은 같은 탭에서만 동작합니다.
+
+운영 주소는 `https://impact-series.web.app/`입니다. 여기의 커밋·PR은 자동 배포되지 않습니다. `stage:firebase`, `firebase:inspect`, 배포 관련 스크립트에는 기존 프로젝트 설정이 있으므로 대상을 확인하고 별도 배포 요청 없이 실행하지 마세요. 기존 `documentation/`은 원본 개발 이력이며, 충돌하는 판단 규칙과 실행 경계는 이 README와 루트 ADR-006을 따릅니다.
+
+## 출처와 보존
+
+- 가져온 원본: `jooji13/Synagogue`의 커밋 `f66fe1f7d3177d08280b97048ceaa01f43f3fb65`.
+- 파일 목록: `.env.example`, `.gitattributes`, `.gitignore`, `LICENSE`, `cloud/`, `docs/`, `documentation/`, `firebase.emulators.json`, `firebase/`, `package*.json`, `scripts/`, `supabase/`, `tests/`, `workshop/`.
+- 원본 작업 폴더의 미커밋 변경과 로컬 비밀 파일은 가져오지 않았습니다. 라이선스·출처와 기존 로고·토끼 원본을 보존했습니다.
+- 새 토끼는 `docs/assets/bunny-natural.png`, 원본은 `docs/assets/bunny.png`입니다. [이미지 제작 기록](documentation/character-refinement.md)에 편집 의도와 프롬프트를 남겼습니다.

@@ -1,0 +1,5 @@
+@font-face{font-family:Pretendard;src:url('./assets/PretendardVariable.woff2') format('woff2');font-weight:100 900;font-style:normal;font-display:swap}
+@font-face{font-family:NanumPen;src:url('./assets/NanumPenScript-Regular.ttf') format('truetype');font-weight:400;font-style:normal;font-display:swap}
+:root{--paper:#fffdf7;--canvas:#f6f1e7;--yellow:#f8d14a;--action:#f2d16e;--ink:#3c3026;--muted:#726653;--line:#e3d8bf;--soft:#f7edd6;--brown:#533f2d;--green:#436953;--green-soft:#eaf0e9;--red:#8b4138;--red-soft:#f9eae5;--radius:24px;--shadow:0 20px 60px #5b43250b}
+.brand{display:inline-flex;align-items:center;gap:7px;color:var(--ink);text-decoration:none;white-space:nowrap;font-weight:750;font-size:25px;letter-spacing:-1px}.brand img{object-fit:contain;flex-shrink:0}
+.welcome-brand{height:70px;display:flex;align-items:center;gap:10px;padding-top:7px}.welcome-brand .brand{font-family:NanumPen,sans-serif;font-size:35px;font-weight:400;letter-spacing:-1.575px}.collab-x{color:#6c582a;font-size:16px}.partner{width:123px;height:auto;object-fit:contain}

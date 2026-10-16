@@ -1,0 +1,52 @@
+import assert from 'node:assert/strict';
+import {readFileSync,existsSync} from 'node:fs';
+import {runChecks} from '../docs/checks.mjs';
+import {createState,updateProfile} from '../docs/engine.mjs';
+const results=runChecks();
+for(const r of results) console.log(`${r.pass?'PASS':'FAIL'} ${r.name}${r.error?': '+r.error:''}`);
+assert.equal(results.filter(r=>r.pass).length,results.length);
+const html=readFileSync(new URL('../docs/index.html',import.meta.url),'utf8');
+for(const filename of ['style.css','brand.css','interface.css','app.mjs','engine.mjs','family.mjs','presentation.mjs','checks.mjs','assets/rice-logo.png','assets/partner.png','assets/bunny.png','assets/rice-full.png','assets/rice-half.webp','assets/rice-empty.webp','assets/PretendardVariable.woff2','assets/NanumPenScript-Regular.ttf','assets/OFL-Pretendard.txt','assets/OFL-NanumPenScript.txt']) assert.ok(existsSync(new URL(`../docs/${filename}`,import.meta.url)),filename);
+assert.ok(html.includes('lang="ko"'));
+assert.ok(html.includes('rel="icon"'));
+assert.equal((html.match(/\.\/assets\/rice-logo\.png/g)||[]).length,2,'Header and favicon use the Figma rice cooker logo');
+assert.ok(html.includes('href="./brand.css"'),'Brand styles are loaded');
+for(const filename of ['app.mjs','engine.mjs','family.mjs','presentation.mjs']){
+ const source=readFileSync(new URL(`../docs/${filename}`,import.meta.url),'utf8');
+ assert.ok(!/localStorage|sessionStorage|indexedDB|fetch\(/.test(source),'No application storage/network calls: '+filename);
+ for(const match of source.matchAll(/['"]\.\/(assets\/[^'"]+)['"]/g))assert.ok(existsSync(new URL(`../docs/${match[1]}`,import.meta.url)),match[1]);
+ assert.ok(!source.includes('figma.com/api/mcp/asset'),'No temporary Figma URLs in runtime source');
+}
+console.log(`PASS ${results.length} scenario checks, static references, Korean document, favicon, no demo storage/network calls`);
+const settingsState=createState(true),profileBefore=structuredClone(settingsState.profile),recordsBefore=structuredClone(settingsState.records);
+updateProfile(settingsState,settingsState.profile,{...settingsState.rules,consecutiveMissed:3});
+assert.deepEqual(settingsState.profile,profileBefore,'Separate alert editing preserves lifestyle fields');
+const rulesBefore=structuredClone(settingsState.rules);
+updateProfile(settingsState,{...settingsState.profile,household:'together'},settingsState.rules);
+assert.deepEqual(settingsState.rules,rulesBefore,'Separate lifestyle editing preserves alert thresholds');
+assert.deepEqual(settingsState.records,recordsBefore,'Settings editing does not remove direct meal records');
+const app=readFileSync(new URL('../docs/app.mjs',import.meta.url),'utf8');
+const css=readFileSync(new URL('../docs/refinement.css',import.meta.url),'utf8');
+assert.ok(html.includes('./refinement.css'));
+assert.ok(existsSync(new URL('../docs/refinement.css',import.meta.url)));
+assert.ok(app.includes('id="rules-form"'),'Alert settings have a separate scoped form');
+assert.ok(app.includes('name="settings-editor"'),'Settings use native progressive disclosure');
+assert.ok(app.includes("document.addEventListener('invalid'"),'Hidden advanced fields reveal validation errors');
+console.log('PASS progressive settings, isolated updates, retained records and stylesheet references');
+for(const name of ['index.html','app.mjs','manage/index.html','manage/dashboard.mjs']){
+ const source=readFileSync(new URL(`../docs/${name}`,import.meta.url),'utf8');
+ assert.ok(!/Warming Up|WARMING UP/.test(source),'Service name is consistently 밥뭇나: '+name);
+}
+const more=app.slice(app.indexOf('function moreView(){'),app.indexOf('function recent(){'));
+for(const route of ['account','settings','alerts','about','privacy','family','devices'])assert.ok(more.includes(`'${route}'`)||more.includes(`href="#${route}"`),'Role-appropriate More keeps route: '+route);
+assert.ok(more.includes('<details class="more-demo"><summary>'),'Demo options are in a keyboard-accessible closed disclosure');
+assert.ok(more.includes('실제 기록이나 연락 없이'),'Demo remains separate from real records');
+console.log('PASS service name and simplified More navigation contracts');
+assert.match(app,/welcomeSeen=false/,'Hero auto-plays once per page load');
+assert.match(app,/prefers-reduced-motion: reduce/,'Hero respects motion preference before playback');
+assert.match(app,/case 'welcome-replay':void greetWelcome\(\);return;/,'Replay does not re-render or reset demo state');
+assert.match(app,/await bunny.decode\(\)/,'Hero waits for the original character asset');
+assert.match(css,/bunny-welcome 2\.8s both/,'Welcome motion ends within three seconds');
+assert.match(css,/animation:none!important/,'Reduced motion has a static CSS fallback');
+console.log('PASS welcome animation accessibility contracts');
+await import('./worksheet.test.mjs');

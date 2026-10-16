@@ -1,0 +1,31 @@
+{
+  "name": "warming-up-bapmunna",
+  "version": "0.3.0",
+  "private": true,
+  "type": "module",
+  "description": "Warming Up's Bapmunna meal-care workshop prototype",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "node scripts/serve.mjs",
+    "test": "node tests/check.mjs",
+    "build": "node scripts/build-editions.mjs && node scripts/build-portable.mjs",
+    "build:cloud": "node scripts/build-cloud.mjs",
+    "stage:firebase": "node scripts/build-editions.mjs && npm run build:cloud && node scripts/stage-firebase.mjs",
+    "firebase:inspect": "node scripts/firebase-admin.mjs inspect",
+    "test:auth": "node scripts/run-cloud-tests.mjs",
+    "test:cloud": "node scripts/run-cloud-tests.mjs",
+    "test:manage": "node --test tests/manage.test.mjs",
+    "test:editions": "node --test tests/editions.test.mjs"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.118.0",
+    "firebase": "12.18.0"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "5.0.2",
+    "esbuild": "0.27.3",
+    "firebase-tools": "15.28.2"
+  }
+}

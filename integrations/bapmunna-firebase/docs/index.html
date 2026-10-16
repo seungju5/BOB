@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#f8d14a">
+  <meta name="bapmunna-cloud" content="enabled">
+  <meta name="description" content="따로 살아도, 안부는 가까이. 밥뭇나에서 식사 확인과 가족의 안부를 가상 데이터로 체험하세요.">
+  <title>밥뭇나 · 밥 한 끼로 전하는 안부</title>
+  <link rel="icon" type="image/png" href="./assets/rice-logo.png">
+  <link rel="stylesheet" href="./style.css">
+  <link rel="stylesheet" href="./brand.css">
+  <link rel="stylesheet" href="./interface.css">
+  <link rel="stylesheet" href="./refinement.css">
+  <link rel="stylesheet" href="./editions.css">
+  <link rel="stylesheet" href="./worksheet.css">
+  <link rel="stylesheet" href="./character.css">
+</head>
+<body data-view="welcome">
+  <a class="skip-link" href="#main">본문으로 바로가기</a>
+  <header id="app-header" class="top" hidden>
+    <a class="brand" href="#welcome" aria-label="밥뭇나 처음으로"><img src="./assets/rice-logo.png" width="35" height="35" alt=""><span>밥뭇나</span></a>
+    <button id="account-entry" class="top-account" data-view="account">내 기록</button>
+    <button class="text-size" data-action="text-size" aria-label="큰 글씨 켜기" aria-pressed="false">가+</button>
+    <nav id="edition-switcher" class="edition-switcher" aria-label="사용 화면 전환"></nav>
+  </header>
+  <main id="main" tabindex="-1"><section id="view"></section><noscript><p>밥뭇나 체험에는 JavaScript가 필요해요. 브라우저에서 JavaScript를 켜 주세요.</p></noscript></main>
+  <nav id="app-nav" class="app-nav" aria-label="주요 메뉴" hidden>
+    <button data-nav-home data-view="guardian"><span class="nav-icon"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10 12 3l9 7v10H15v-6H9v6H3Z"/></svg></span><span>홈</span></button>
+    <button data-view="report"><span class="nav-icon"><img src="./assets/history.svg" width="24" height="24" alt=""></span><span>기록</span></button>
+    <button data-view="more"><span class="nav-icon"><svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg><small id="nav-alert-count" hidden></small></span><span>더보기</span></button>
+  </nav>
+  <footer class="site-footer"><span>밥 한 끼로 전하는 안부 · 밥뭇나</span><span id="storage-hint">새로고침하면 가상 예시로 돌아갑니다.</span></footer>
+  <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true" hidden></div>
+  <script type="module" src="./app.mjs"></script>
+</body>
+</html>

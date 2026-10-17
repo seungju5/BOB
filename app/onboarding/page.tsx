@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import { Choice, Field, MealWindowsEditor, Stepper, TextInput, windowsValid } from "@/components/forms";
-import { IconCheck, IconChevronLeft, IconInfo, IconLock, IconPlug, IconWifi } from "@/components/icons";
+import { IconBell, IconCheck, IconChevronLeft, IconInfo, IconLock, IconPlug, IconUtensils, IconWifi } from "@/components/icons";
 import { Mascot } from "@/components/Mascot";
 import { PlugForm } from "@/components/PlugForm";
 import { Button, ProgressBar, Skeleton } from "@/components/ui";
@@ -26,6 +26,8 @@ export default function OnboardingPage() {
   const { view, actions, needsLogin, mode } = useApp();
   const router = useRouter();
   const [watts, setWatts] = useState<number | null>(null);
+  // 가구 정보를 막 저장했을 때만 환영 화면을 한 번 보여 준다 (이어하기로 들어오면 건너뜀)
+  const [welcome, setWelcome] = useState(false);
   useEffect(() => {
     if (needsLogin) router.replace("/login");
     else if (view && view.onboardingStep > TOTAL) router.replace("/home");
@@ -40,7 +42,79 @@ export default function OnboardingPage() {
       </main>
     );
   }
-  return <Onboarding key={view.onboardingStep} state={view} actions={actions} live={mode === "live"} watts={watts} setWatts={setWatts} />;
+  if (welcome && view.onboardingStep === 4) return <WelcomeLanding state={view} onContinue={() => setWelcome(false)} />;
+  return (
+    <Onboarding
+      key={view.onboardingStep}
+      state={view}
+      actions={actions}
+      live={mode === "live"}
+      watts={watts}
+      setWatts={setWatts}
+      onHouseholdSaved={() => setWelcome(true)}
+    />
+  );
+}
+
+/** 가구 정보 입력 직후 랜딩: 입력한 내용을 확인하고 남은 단계를 안내한다 */
+function WelcomeLanding({ state, onContinue }: { state: AppView; onContinue: () => void }) {
+  const { senior, household } = state;
+  const rows = [
+    { label: "부르는 이름", value: `${senior.name} ${senior.relation}` },
+    { label: "함께 사는 분", value: household.residentCount >= 3 ? "3명 이상" : `${household.residentCount}명` },
+    { label: "반려견", value: household.hasPet ? "있어요" : "없어요" },
+  ];
+  const steps = [
+    { icon: IconUtensils, text: "평소 식사 시간을 알려 주시면" },
+    { icon: IconPlug, text: "밥솥 소식으로 끼니를 살피고" },
+    { icon: IconBell, text: "소식이 뜸해지면 바로 알려 드려요" },
+  ];
+  return (
+    <main className="flex flex-1 flex-col bg-butter">
+      <div className="relative px-7 pt-12">
+        <p className="animate-rise text-[15px] font-bold text-cocoa/70">반가워요!</p>
+        <h1 className="animate-rise mt-2 pr-24 text-[34px] leading-[1.2] font-extrabold tracking-[-0.03em] whitespace-pre-line text-cocoa">
+          {`${senior.name} ${senior.relation} 댁\n안부를 함께\n챙겨 드릴게요`}
+        </h1>
+        <Mascot className="animate-bob absolute top-8 right-4 h-24 w-24" mood="happy" />
+      </div>
+
+      <div className="mt-8 flex flex-1 flex-col rounded-t-[2.25rem] bg-paper px-6 pt-7 pb-8">
+        <p className="text-[15px] font-bold text-cocoa">입력하신 정보</p>
+        <dl className="mt-3 divide-y divide-line rounded-2xl border-2 border-line px-4">
+          {rows.map((r) => (
+            <div key={r.label} className="flex items-center justify-between py-3 text-[15px]">
+              <dt className="text-muted">{r.label}</dt>
+              <dd className="font-bold text-cocoa">{r.value}</dd>
+            </div>
+          ))}
+        </dl>
+
+        <p className="mt-7 text-[15px] font-bold text-cocoa">이제 이렇게 지켜봐 드려요</p>
+        <ol className="mt-3 flex flex-col gap-3">
+          {steps.map(({ icon: Icon, text }, i) => (
+            <li key={text} className="flex items-center gap-3 rounded-2xl bg-butter-soft px-4 py-3 text-[15px] text-cocoa">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-paper">
+                <Icon className="h-5 w-5" />
+              </span>
+              <span>
+                <span className="mr-1 font-bold text-butter-deep">{i + 1}</span>
+                {text}
+              </span>
+            </li>
+          ))}
+        </ol>
+        <p className="mt-4 flex items-center gap-1.5 text-[13px] text-muted">
+          <IconLock className="h-4 w-4" /> 밥솥 사용 여부만 확인하고, 원래 기록은 판정 후 지워요.
+        </p>
+
+        <div className="mt-auto pt-8">
+          <Button onClick={onContinue}>식사 습관 알려 주기</Button>
+          <p className="mt-3 text-center text-[13px] text-muted">남은 단계는 {TOTAL - 3}개예요. 2분이면 끝나요.</p>
+        </div>
+      </div>
+    </main>
+  );
 }
 
 function Onboarding({
@@ -49,12 +123,14 @@ function Onboarding({
   live,
   watts,
   setWatts,
+  onHouseholdSaved,
 }: {
   state: AppView;
   actions: AppActions;
   live: boolean;
   watts: number | null;
   setWatts: (w: number | null) => void;
+  onHouseholdSaved: () => void;
 }) {
   const step = state.onboardingStep;
   const [busy, setBusy] = useState(false);
@@ -105,7 +181,15 @@ function Onboarding({
           />
         )}
         {step === 2 && <CheckStep watts={watts} next={next} />}
-        {step === 3 && <HouseholdStep state={state} next={next} />}
+        {step === 3 && (
+          <HouseholdStep
+            state={state}
+            next={(patch) => {
+              onHouseholdSaved();
+              next(patch);
+            }}
+          />
+        )}
         {step === 4 && <MealStep state={state} next={next} />}
         {step === 5 && <CookerStep state={state} next={next} />}
         {step === 6 && <AlertStep state={state} next={next} />}

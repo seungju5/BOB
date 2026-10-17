@@ -3,7 +3,7 @@ export const EDITIONS=Object.freeze({
   senior:{label:'어르신용',english:'Senior',home:'senior',account:'내 기록',title:'식사 한 번, 안부 한 번'},
   carer:{label:'보호자용',english:'Carer',home:'guardian',account:'내 계정',title:'떨어져 있어도, 가까운 안부'},
 });
-const common=['account','report','more','about','privacy'];
+const common=['account','report','more','about','privacy','journey'];
 export function editionFromLocation(location,declared='',remembered=null){
   const match=location.pathname.match(/\/(senior|carer)(?:\/index\.html|\.html|\/)?$/);
   if(match)return match[1];
@@ -17,6 +17,7 @@ export function editionFromLocation(location,declared='',remembered=null){
   return Object.hasOwn(EDITIONS,declared)?declared:null;
 }
 export function editionView(edition,requested){
+  if(requested==='journey')return 'journey';
   if(!edition)return 'welcome';
   const home=EDITIONS[edition].home;
   if(common.includes(requested)||requested===home)return requested;

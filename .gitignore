@@ -19,6 +19,7 @@
 
 # production
 /build
+/outputs/bapmunna-introduction-2026-10-17/
 
 # misc
 .DS_Store

@@ -95,7 +95,7 @@ test('empty and private histories have no rates; away slots leave the denominato
   assert.equal(patternComparison(createState(false)).ready,false);const s=createState();const total=patternComparison(s).recent.total;s.records['-1:lunch']={exempt:true};assert.equal(patternComparison(s).recent.total,total-1);setConsent(s,false);assert.equal(patternComparison(s).days,0);
 });
 test('worksheet controls are simulator-only and Senior has exactly three main choices',async()=>{
-  const app=await readFile(new URL('../docs/app.mjs',import.meta.url),'utf8');const senior=app.slice(app.indexOf('function senior(){'),app.indexOf('function alertEntries(){'));for(const label of ['외식했어요','놀러가요','도움 요청'])assert.ok(senior.includes(label));assert.equal((senior.match(/<button/g)||[]).length,4);assert.ok(!senior.includes('data-action="confirm"'));
+  const app=await readFile(new URL('../docs/app.mjs',import.meta.url),'utf8');const senior=app.slice(app.indexOf('function senior(){'),app.indexOf('function alertEntries(){'));for(const label of ['외식했어요','놀러가요','도움 요청'])assert.ok(senior.includes(label));const primary=senior.match(/<div class="senior-three"[\s\S]*?<\/div>/)?.[0]||'';assert.equal((primary.match(/<button/g)||[]).length,3);assert.ok(!senior.includes('data-action="confirm"'));assert.match(senior,/aria-label="확인 안내 닫기"/);
   const alerts=app.slice(app.indexOf('function alertEntries(){'),app.indexOf('function guardian(){'));assert.ok(!alerts.includes('state.alerts'));
   for(const name of ['power','worksheet','engine']){const code=await readFile(new URL('../docs/'+name+'.mjs',import.meta.url),'utf8');assert.doesNotMatch(code,/fetch\(|localStorage|sessionStorage|indexedDB/);}
 });

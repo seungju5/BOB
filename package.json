@@ -13,7 +13,7 @@
     "check:firebase-sync": "node scripts/sync-firebase.mjs --check",
     "dev:firebase": "npm --prefix integrations/bapmunna-firebase run dev",
     "build:firebase": "npm run sync:firebase && npm --prefix integrations/bapmunna-firebase run build",
-    "test:firebase": "npm run check:firebase-sync && npm --prefix integrations/bapmunna-firebase test && npm --prefix integrations/bapmunna-firebase run test:editions && npm --prefix integrations/bapmunna-firebase run test:manage && node --test integrations/bapmunna-firebase/tests/parity.test.mjs"
+    "test:firebase": "npm run check:firebase-sync && npm --prefix integrations/bapmunna-firebase test && npm --prefix integrations/bapmunna-firebase run test:editions && npm --prefix integrations/bapmunna-firebase run test:manage && node --test integrations/bapmunna-firebase/tests/parity.test.mjs integrations/bapmunna-firebase/tests/experience.test.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.118.0",

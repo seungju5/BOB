@@ -11,11 +11,11 @@ for(const name of readdirSync(file('../docs/assets/'))){
   embedded.set(`./assets/${name}`,`data:${type};base64,${readFileSync(file(`../docs/assets/${name}`)).toString('base64')}`);
 }
 const embed=source=>{for(const [path,data] of embedded)source=source.replaceAll(path,data);return source;};
-const sources=['shared/config/detection.mjs','shared/lib/judge/time.mjs','shared/lib/judge/detectEvents.mjs','shared/lib/judge/resolveMealSlots.mjs','shared/lib/judge/evaluateAlerts.mjs','shared/lib/data/view.mjs','parity.mjs','power.mjs','engine.mjs','worksheet.mjs','family.mjs','presentation.mjs','checks.mjs','editions.mjs','app.mjs'].map(name=>read(`../docs/${name}`).replace(/^import .*;\n/gm,'').replace(/^export /gm,''));
+const sources=['shared/config/detection.mjs','shared/lib/judge/time.mjs','shared/lib/judge/detectEvents.mjs','shared/lib/judge/resolveMealSlots.mjs','shared/lib/judge/evaluateAlerts.mjs','shared/lib/data/view.mjs','parity.mjs','power.mjs','engine.mjs','worksheet.mjs','family.mjs','presentation.mjs','checks.mjs','editions.mjs','experience.mjs','app.mjs'].map(name=>read(`../docs/${name}`).replace(/^import .*;\n/gm,'').replace(/^export /gm,''));
 const script=embed(sources.join('\n')).replace(/<\/script/gi,'<\\/script');
 let html=embed(read('../docs/index.html')).replace(/^\s*<meta name="bapmunna-cloud" content="enabled">\n/m,'');
 html=html.replace('href="./manage/"','href="https://impact-series.web.app/bapmunna/manage/"');
-for(const name of ['style.css','brand.css','interface.css','refinement.css','editions.css','worksheet.css','character.css'])html=html.replace(`<link rel="stylesheet" href="./${name}">`,`<style>${embed(read(`../docs/${name}`))}</style>`);
+for(const name of ['style.css','brand.css','interface.css','refinement.css','editions.css','worksheet.css','character.css','experience.css'])html=html.replace(`<link rel="stylesheet" href="./${name}">`,`<style>${embed(read(`../docs/${name}`))}</style>`);
 html=html.replace('<script type="module" src="./app.mjs"></script>',`<script type="module">${script}</script>`);
 const licenseText=['OFL-Pretendard.txt','OFL-NanumPenScript.txt'].map(name=>read(`../docs/assets/${name}`)).join('\n\n');
 const escapedLicense=licenseText.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');

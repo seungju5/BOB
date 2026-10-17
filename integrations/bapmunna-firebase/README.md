@@ -97,3 +97,4 @@ BAPMUNNA_CANVAS_MODULE=/absolute/path/to/@napi-rs/canvas \
 - 원본 작업 폴더의 미커밋 변경과 로컬 비밀 파일은 가져오지 않았습니다. 라이선스·출처와 기존 로고·토끼 원본을 보존했습니다.
 - 새 토끼는 `docs/assets/bunny-natural.png`, 원본은 `docs/assets/bunny.png`입니다. [이미지 제작 기록](documentation/character-refinement.md)에 편집 의도와 프롬프트를 남겼습니다.
 - 사용자 제공 밥솥 캐릭터는 `docs/assets/rice-cooker-companion.png`입니다. 투명 배경으로 편집해 시니어 소식·보호자 카드 제목·센서 체험에 적용했습니다. 기존 `rice-companion.svg`와 로고·토끼는 보존했습니다. 기록에 따라 변하는 밥그릇과 구분되는 장식이며, 기존 소개 영상은 이번 캐릭터 변경으로 재렌더링하지 않았습니다.
+- 이후 같은 날짜의 로고 교체 요청에 따라 이 캐릭터를 시작·역할별 홈·체험·계정·관리 화면의 브랜드 심볼과 favicon에도 적용했습니다. 글자 로고·토끼·협업 표시는 유지하고 `rice-logo.png`는 과거 원본으로만 보관합니다. 이미지 자체를 다시 생성하지 않고 기존 투명 PNG의 여백을 CSS로 프레이밍했습니다.

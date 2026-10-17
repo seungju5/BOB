@@ -41,7 +41,7 @@ test('withdrawal removes synthetic samples and domain data', () => {
 });
 test('original bunny and logo remain, with an additive refined bunny and companion', async () => {
   for(const name of ['bunny.png','bunny-natural.png','rice-logo.png','rice-companion.svg'])assert.ok((await readFile(new URL('../docs/assets/'+name,import.meta.url))).length>100);
-  const app=await readFile(new URL('../docs/app.mjs',import.meta.url),'utf8');assert.ok(app.includes("bunny:'./assets/bunny-natural.png'"));assert.ok(app.includes("logo:'./assets/rice-logo.png'"));
+  const app=await readFile(new URL('../docs/app.mjs',import.meta.url),'utf8');assert.ok(app.includes("bunny:'./assets/bunny-natural.png'"));assert.ok(app.includes("logo:'./assets/rice-cooker-companion.png'"));
   const css=await readFile(new URL('../docs/character.css',import.meta.url),'utf8');assert.match(css,/prefers-reduced-motion:reduce/);
   assert.match(app,/new URL\(path,document\.baseURI\)\.href/,'assets must resolve before history-based role switching');
 });

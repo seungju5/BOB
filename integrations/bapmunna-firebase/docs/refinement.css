@@ -16,7 +16,7 @@
 @media(max-width:360px){.more-account{padding:20px}.more-links>a{gap:10px}.more-icon{width:34px;height:36px;border-radius:12px}.more-link-copy strong{font-size:17px}.more-link-copy small{font-size:12px}.more-demo>summary{padding:17px}.more-demo-content{padding-left:17px;padding-right:17px}}
 :root{--muted:#756653;--paper:#fffcf5;--line:#e9dfcc;--ink:#372b20}
 body:not([data-view=welcome]):not([data-view=manage]){max-width:640px;box-shadow:0 0 80px #4f361008}
-.top{padding:22px 30px;min-height:84px}.top .brand{font-family:NanumPen,sans-serif;font-size:32px;font-weight:400;gap:6px}.top .brand img{width:30px;height:30px}
+.top{padding:22px 30px;min-height:84px}.top .brand{font-family:NanumPen,sans-serif;font-size:32px;font-weight:400;gap:6px}.top .brand>img{width:30px;height:30px}
 .top .demo-tag{font-size:11px;color:#715e2e;background:#fcf0c3;white-space:nowrap}.top-account{font-size:13px;color:var(--muted)}
 main{padding:0 30px 28px}.page-head{margin:16px 0 28px}.page-head h1{font-size:36px;line-height:1.35;letter-spacing:-1.5px;font-weight:740}.page-head>p:first-child{font-size:13px;letter-spacing:.01em}.page-head .sub{font-size:15px;line-height:1.65;margin-top:10px}
 .app-nav{max-width:640px;width:min(100%,640px);min-height:84px;background:#fffcf5f5;border-top-color:#e9dfcc}.app-nav button{font-size:13px;gap:5px}.nav-icon{height:36px;width:66px}.app-nav [aria-current] .nav-icon{background:#f7cf48}.toast{bottom:104px;max-width:calc(100% - 32px);line-height:1.6}

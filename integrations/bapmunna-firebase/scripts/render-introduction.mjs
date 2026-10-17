@@ -69,7 +69,7 @@ async function layer(scene){
   }else if(scene.id==='welcome'||scene.id==='together')ctx.drawImage(bunny,1160,250,630,630);
   return canvas;
 }
-function captionCard(value){const c=createCanvas(W,H),ctx=c.getContext('2d');box(ctx,120,975,1680,62,20,'#3d3024f5');font(ctx,28,500);const width=ctx.measureText(value).width;if(width>1580)throw Error('Caption too long: '+value);text(ctx,value,(W-width)/2,992,28,cream,500,1580);return c;}
+function captionCard(value){const c=createCanvas(W,H),ctx=c.getContext('2d');box(ctx,120,975,1680,62,20,'#3d3024f5');font(ctx,40,500);const width=ctx.measureText(value).width;if(width>1580)throw Error('Caption too long: '+value);text(ctx,value,(W-width)/2,984,40,cream,500,1580);return c;}
 const timestamp=seconds=>{const ms=Math.round(seconds*1000),s=Math.floor(ms/1000),m=Math.floor(s/60),h=Math.floor(m/60);return `${String(h).padStart(2,'0')}:${String(m%60).padStart(2,'0')}:${String(s%60).padStart(2,'0')},${String(ms%1000).padStart(3,'0')}`;};
 // Preflight typography and composition before the slower speech/video pass.
 await mkdir(path.join(out,'preview'),{recursive:true});

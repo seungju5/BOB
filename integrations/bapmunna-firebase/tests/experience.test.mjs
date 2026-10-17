@@ -105,3 +105,23 @@ test('both generated editions and portable bundle include the experience layer',
   for(const entry of ['senior/index.html','carer/index.html']){const html=await readFile(new URL('../docs/'+entry,import.meta.url),'utf8');assert.match(html,/experience.css/);}
   const html=await readFile(new URL('../workshop/bapmunna.html',import.meta.url),'utf8');assert.match(html,/function journeyScene/);assert.doesNotMatch(html,/<link[^>]+href="\.\/experience.css"/);
 });
+test('supplied cooker decorates signal areas without replacing the bunny, logo or evidence bowls',async()=>{
+  const app=await readFile(new URL('../docs/app.mjs',import.meta.url),'utf8');
+  const css=await readFile(new URL('../docs/character.css',import.meta.url),'utf8');
+  assert.match(app,/companion:'\.\/assets\/rice-cooker-companion\.png'/);
+  for(const asset of ['bunny.png','bunny-natural.png','rice-logo.png','rice-companion.svg','rice-cooker-companion.png']){
+    assert.ok((await readFile(new URL('../docs/assets/'+asset,import.meta.url))).length>0);
+  }
+  assert.match(app,/const cookerCompanion=.*aria-hidden="true".*art\('companion',1254,1254\)/);
+  assert.ok(app.includes("art(evidence.level,800,534,'','care-rice')"));
+  assert.ok(app.includes("art(riceState(state,selected).level,120,80,'','quiet-rice')"));
+  assert.ok(app.includes("art(evidence.level,800,534,'기록에 따라 달라지는 안부 밥그릇')"));
+  assert.match(css,/\.care-hero-top \.cooker-portrait>img/);
+  assert.match(css,/prefers-reduced-motion:reduce.*\.cooker-portrait\{animation:none/);
+});
+test('portable version embeds the transparent cooker asset without an external request',async()=>{
+  const png=await readFile(new URL('../docs/assets/rice-cooker-companion.png',import.meta.url));
+  assert.equal(png.toString('ascii',1,4),'PNG');assert.equal(png[25],6,'PNG uses RGBA');
+  const portable=await readFile(new URL('../workshop/bapmunna.html',import.meta.url),'utf8');
+  assert.ok(portable.includes(`data:image/png;base64,${png.toString('base64')}`));
+});

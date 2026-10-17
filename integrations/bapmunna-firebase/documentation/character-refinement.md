@@ -1,4 +1,21 @@
-# 토끼 캐릭터 수정 기록
+# 캐릭터 수정 기록
+
+## 2026-10-17 · 사용자 제공 밥솥 친구
+
+- 참조: 사용자가 직접 첨부한 `codex-clipboard-02e1385e-3d91-47fd-b82b-3af6d6466e86.png`.
+- 방식: 내장 image generation의 참조 이미지 편집. 노란 배경·검은 테두리·배경 별을 제거하는 투명 PNG 시안. 픽셀 단위로 완전히 동일한 자동 추출이라고 주장하지 않는다.
+- 보존: 크림색 밥솥, 열린 뚜껑, 웃는 밥, 볼터치, 갈색 윤곽, 노란 띠, 옆의 김.
+- 결과: `docs/assets/rice-cooker-companion.png`, 1254×1254 RGBA. 원본 및 이전 `rice-companion.svg`는 삭제하지 않는다.
+- 적용: 시니어 소식 행, 보호자의 안부 카드 제목, 센서 체험 전력값 옆. UI에서 투명 여백만 프레이밍하고 PNG는 재가공하지 않는다. 장식용 빈 alt와 aria-hidden을 사용하며 동작 줄이기 설정에서는 등장 효과가 없다.
+- 토끼·로고·데이터에 따라 달라지는 밥그릇은 유지. 소개 영상은 재제작하지 않음. 운영 사이트 배포는 별도 작업.
+
+### 편집 프롬프트 (내장 도구)
+
+```text
+Edit the supplied image for a Korean elder-care web app asset. Background extraction only: remove the yellow rectangular background, black outer border, and the isolated lower-right sparkle. Preserve the central adorable cream electric rice cooker mascot with its tilted open lid, smiling rice mound, dark cocoa hand-drawn outlines, tiny pink cheeks, yellow trim, small feet and side handles, and the small steam marks immediately beside its lid. Keep the exact character identity, pose, proportions, expression, warm illustration texture, and original colors; do not redesign or add anything. Output a genuinely transparent RGBA cutout, not a checkerboard drawn in the image. Center the full mascot and nearby steam in a snug square canvas with about 8% transparent padding so it reads clearly at small UI sizes. No text, no drop shadow, no extra elements.
+```
+
+## 2026-10-16 · 토끼
 
 2026-10-16. 기존 밥뭇나 토끼의 정체성을 유지하고 부드러운 손그림 질감, 자연스러운 비대칭 자세, 절제된 눈빛으로 다듬었습니다. 초록 카디건·클립보드·접힌 귀를 유지했습니다. 사람이 직접 그렸다고 주장하지 않습니다.
 

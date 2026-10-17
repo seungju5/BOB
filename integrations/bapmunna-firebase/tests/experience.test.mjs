@@ -98,6 +98,8 @@ test('new screens preserve labels, touch controls, focus restoration and reduced
   const app=await readFile(new URL('../docs/app.mjs',import.meta.url),'utf8'),css=await readFile(new URL('../docs/experience.css',import.meta.url),'utf8');
   for(const text of ['밥 한 끼로 전하는 안부','토끼처럼 부지런하면','무엇이든 해내겠지요','data-meal-detail','aria-pressed','setup-welcome-next','wasModal&&focusReturn'])assert.ok(app.includes(text));
   assert.match(css,/prefers-reduced-motion:reduce/);assert.match(css,/max-width:360px/);assert.match(css,/min-height:44px/);
+  assert.ok(app.includes("link?.classList.contains('skip-link')"));assert.ok(app.includes("main?.focus({preventScroll:true})"));
+  assert.ok(!app.includes("setAttribute('href',routeHref('main'))"),'skip target is a document anchor, not a portable role route');
 });
 test('both generated editions and portable bundle include the experience layer',async()=>{
   for(const entry of ['senior/index.html','carer/index.html']){const html=await readFile(new URL('../docs/'+entry,import.meta.url),'utf8');assert.match(html,/experience.css/);}

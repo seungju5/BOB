@@ -1490,7 +1490,7 @@ function render(focus=false){
   // The canonical Supabase model has no independent post-window grace interval.
   for(const field of root.querySelectorAll('input[name="grace"]')){field.value='0';field.type='hidden';field.closest('label')?.setAttribute('hidden','');}
   for(const link of root.querySelectorAll('a[href^="#"]'))link.setAttribute('href',routeHref(link.getAttribute('href').slice(1)));
-  document.querySelector('.skip-link').setAttribute('href',routeHref('main'));
+  document.querySelector('.skip-link').setAttribute('href',`${location.pathname}#main`);
   if(view==='welcome'&&!welcomeSeen){welcomeSeen=true;void greetWelcome();}
   if(view==='account'&&CLOUD_AVAILABLE)accountCleanup=mountAccount(document.querySelector('#account-surface'),{audience:edition,browseHref:routeHref(EDITIONS[edition].home),familyHref:routeHref('family')});
   if(modal){const dialog=root.querySelector('dialog');dialog.showModal();dialog.addEventListener('cancel',event=>{event.preventDefault();closeModal();});}
@@ -1583,6 +1583,8 @@ document.addEventListener('keydown',event=>{
 
 document.addEventListener('click',event=>{
   const link=event.target.closest('a');
+  // Skip navigation moves focus, not the route (including portable role hashes).
+  if(link?.classList.contains('skip-link')){event.preventDefault();const main=document.querySelector('#main');main?.focus({preventScroll:true});main?.scrollIntoView({block:'start',behavior:'instant'});return;}
   if(link?.dataset.edition&&event.button===0&&!event.metaKey&&!event.ctrlKey&&!event.shiftKey&&!event.altKey){event.preventDefault();switchEdition(link.dataset.edition==='choose'?null:link.dataset.edition);return;}
   if(event.composedPath().some(node=>node instanceof Element&&node.hasAttribute('data-cloud-surface')))return;
   const button=event.target.closest('button');if(!button||button.disabled)return;

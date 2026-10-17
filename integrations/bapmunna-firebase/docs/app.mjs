@@ -5,7 +5,7 @@ import {runChecks} from './checks.mjs';
 import {mountAccount} from './account-view.mjs';
 import {EDITIONS,editionFromLocation,editionView,initialEditionView,editionLink,rememberEdition,recalledEdition} from './editions.mjs';
 import {SETUP_STEPS,setupDraft,validateSetup,applySetup,readSetupForm,setupContent,dateInput,parseDateInput,patternComparison} from './worksheet.mjs';
-import {mealEvidence,careHeadline,JOURNEY_SCENARIOS,journeyScene,reportDayAfterKey} from './experience.mjs';
+import {mealEvidence,careHeadline,JOURNEY_SCENARIOS,journeyScene,reportDayAfterKey,awayPresetRange} from './experience.mjs';
 
 // Resolve once against the entry document; role switches change the URL without reloading.
 const ASSETS=Object.fromEntries(Object.entries({logo:'./assets/rice-logo.png',partner:'./assets/partner.png',bunny:'./assets/bunny-natural.png',companion:'./assets/rice-companion.svg',full:'./assets/rice-full.png',half:'./assets/rice-half.webp',empty:'./assets/rice-empty.webp',eatout:'./assets/eatout.svg',away:'./assets/away.svg',help:'./assets/help.svg',family:'./assets/family.svg',info:'./assets/info.svg',phone:'./assets/phone.svg',heart:'./assets/heart.svg',history:'./assets/history.svg'}).map(([name,path])=>[name,new URL(path,document.baseURI).href]));
@@ -263,8 +263,10 @@ function modalMarkup(){
       title='밖에서 식사하셨어요?';
       body='<p>현재 시각에 가장 가까운 끼니에 외식 소식을 남겨요.</p><p class="caption">같은 탭의 가상 체험에만 반영돼요. 실제 가족에게 전송하지 않아요.</p>';
       buttons='<button class="primary" data-action="eatout-save">네, 외식했어요</button>';break;
-    case 'away':
-      title='언제 다녀오시나요?';body=`<p>외출과 겹치는 끼니는 확인 알림에서 제외해요.</p><form id="away-form"><label class="field">출발 날짜·시간<input type="datetime-local" name="start" value="${dateInput(state.away&&state.away.start>=state.now?state.away.start:state.now)}" min="${dateInput(state.now)}" max="${dateInput(state.now+30*DAY)}" required></label><label class="field">귀가 날짜·시간<input type="datetime-local" name="end" value="${dateInput(state.away&&state.away.end>state.now?state.away.end:state.now+180)}" min="${dateInput(state.now+1)}" required></label><p class="caption">가상 시계 기준 · 한 일정은 최대 7일이에요.<br>오늘 ${dateLabel(dayOf(state.now))} ${hhmm(state.now)}</p><p class="error" role="alert"></p><button type="submit" class="primary full">외출 일정 남기기</button></form>`;break;
+    case 'away':{
+      const selected=modal.awayDays??null,range=selected?awayPresetRange(state.now,selected):{start:state.away&&state.away.start>=state.now?state.away.start:state.now,end:state.away&&state.away.end>state.now?state.away.end:state.now+180};
+      title='며칠 다녀오세요?';body=`<p>외출과 겹치는 끼니의 확인 알림은 쉬어요.</p><form id="away-form"><div class="away-presets" role="group" aria-label="외출 기간 선택">${[1,2,3,7].map(days=>`<button type="button" data-away-days="${days}" aria-pressed="${selected===days}">${days===1?'오늘만':days===7?'일주일':days+'일'}</button>`).join('')}</div><p class="away-range" id="away-range" role="status">${selected?`지금부터 ${dateLabel(dayOf(range.end-1))}까지`:'선택한 날짜·시간으로 적용해요.'}</p><details class="quiet-details away-custom" ${selected?'':'open'}><summary>날짜·시간 직접 선택</summary><label class="field">출발 날짜·시간<input type="datetime-local" name="start" value="${dateInput(range.start)}" min="${dateInput(state.now)}" max="${dateInput(state.now+30*DAY)}" required></label><label class="field">귀가 날짜·시간<input type="datetime-local" name="end" value="${dateInput(range.end)}" min="${dateInput(state.now+1)}" required></label></details><p class="caption">가상 일정 · 실제 가족에게 전송하지 않아요.<br>오늘 ${dateLabel(dayOf(state.now))} ${hhmm(state.now)}</p><p class="error" role="alert"></p><button type="submit" class="primary full">이 일정으로 남기기</button></form>`;break;
+    }
     case 'help':
       title=state.help?.status==='pending'?'도움 요청을 남겼어요.':'도움 요청을 남길까요?';
       body='<p>같은 탭의 보호자 화면에 요청을 표시하는 체험이에요. 실제 전화·문자·긴급 신고는 연결되지 않아요.</p><p class="notice">실제로 급한 도움이 필요하면 이 화면을 기다리지 말고 가족이나 긴급전화로 직접 연락해 주세요.</p>';
@@ -301,7 +303,7 @@ function closeModal(){
 }
 function render(focus=false){
   const active=document.activeElement;
-  const preserve=active&&root.contains(active)?['data-action','data-period','data-record-day','data-scenario'].find(name=>active.hasAttribute(name)):null;
+  const preserve=active&&root.contains(active)?['data-action','data-period','data-record-day','data-scenario','data-away-days'].find(name=>active.hasAttribute(name)):null;
   const restore=preserve?`[${preserve}="${active.getAttribute(preserve)}"]`:null;
   const wasModal=!!root.querySelector('dialog[open]');
   const scrollPositions=[...root.querySelectorAll('.plot-wrap,.table-scroll')].map(el=>({label:el.getAttribute('aria-label'),left:el.scrollLeft}));
@@ -382,8 +384,8 @@ function action(name,explicitMeal){
     case 'eatout-save':
 
       confirmMeal(state,meal(),true);modal=null;receipt={title:'외식 소식을 남겼어요',detail:'같은 탭의 보호자 화면에도 보여요. 실제 전송은 아니에요.'};toast('외식 소식을 가상 기록에 반영했어요.');break;
-    case 'away-dialog':if(inAway(state)){cancelAway(state);toast('귀가를 반영했어요.');}else openModal('away');break;
-    case 'return':cancelAway(state);toast('귀가를 반영했어요.');break;
+    case 'away-dialog':if(inAway(state)){cancelAway(state);receipt={title:'집에 돌아왔어요',detail:'다시 평소의 밥솥 소식을 기다려요. 잘 다녀오셨어요.'};toast('귀가를 반영했어요.');}else openModal('away',{awayDays:state.away?null:1});break;
+    case 'return':cancelAway(state);receipt={title:'외출 일정을 마쳤어요',detail:'다시 평소의 밥솥 소식을 기다려요.'};toast('귀가를 반영했어요.');break;
     case 'help-dialog':openModal('help');break;
     case 'help-save':requestHelp(state);modal=null;receipt={title:'가상 도움 요청을 남겼어요',detail:'실제 전화·신고는 연결되지 않아요. 급하면 직접 연락해 주세요.'};toast('가상 도움 요청을 표시했어요. 실제 전화·신고는 연결되지 않아요.');break;
     case 'help-cancel':resolveHelp(state,'cancelled');modal=null;receipt=null;toast('가상 도움 요청을 취소했어요.');break;
@@ -434,6 +436,10 @@ document.addEventListener('click',event=>{
   try{
     if(button.dataset.view){go(button.dataset.view);return;}
     if(button.dataset.mealDetail){openModal('meal',{meal:button.dataset.mealDetail,day:Number(button.dataset.day)});render();return;}
+    if(button.dataset.awayDays&&modal?.type==='away'){
+      awayPresetRange(state.now,Number(button.dataset.awayDays));modal.awayDays=Number(button.dataset.awayDays);render();
+      root.querySelector(`[data-away-days="${modal.awayDays}"]`)?.focus({preventScroll:true});return;
+    }
     if(button.dataset.scenario){if(JOURNEY_SCENARIOS.some(item=>item.id===button.dataset.scenario))journey.scenario=button.dataset.scenario;render();return;}
     if(button.hasAttribute('data-record-day')){reportDay=Number(button.dataset.recordDay);render();return;}
     if(button.dataset.action){action(button.dataset.action);return;}
@@ -471,6 +477,11 @@ document.addEventListener('click',event=>{
   }catch(error){toast(error.message);}
 });
 document.addEventListener('change',event=>{
+  if(event.target.closest('#away-form')&&['start','end'].includes(event.target.name)&&modal?.type==='away'){
+    modal.awayDays=null;
+    for(const button of root.querySelectorAll('[data-away-days]'))button.setAttribute('aria-pressed','false');
+    root.querySelector('#away-range').textContent='선택한 날짜·시간으로 적용해요.';
+  }
   if(event.target.name==='meals'&&event.target.closest('#setup-form')){
     const selected=root.querySelectorAll('#setup-form input[name="meals"]:checked').length;
     root.querySelector('#setup-form .meal-choices legend').textContent=`평소 챙기는 끼니 · 하루 ${selected}끼`;

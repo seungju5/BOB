@@ -1,15 +1,30 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
-import {createState,ingestDevice,confirmMeal,setConsent,setAway,setDeviceOnline,requestHelp,resolveHelp,status,evaluate,advance} from '../docs/engine.mjs';
+import {createState,ingestDevice,confirmMeal,setConsent,setAway,cancelAway,setDeviceOnline,requestHelp,resolveHelp,status,evaluate,advance} from '../docs/engine.mjs';
 import {riceState} from '../docs/presentation.mjs';
-import {mealEvidence,careHeadline,journeyScene,JOURNEY_SCENARIOS,reportDayAfterKey} from '../docs/experience.mjs';
+import {mealEvidence,careHeadline,journeyScene,JOURNEY_SCENARIOS,reportDayAfterKey,awayPresetRange} from '../docs/experience.mjs';
 import {editionView,editionFromLocation,initialEditionView} from '../docs/editions.mjs';
 
 test('a new journey begins without lunch evidence; sending the signal fills its bowl',()=>{
   const before=journeyScene(0),after=journeyScene(1);
   assert.equal(status(before,0,'lunch'),'waiting');assert.equal(riceState(before,'lunch').level,'empty');
   assert.equal(status(after,0,'lunch'),'confirmed');assert.equal(riceState(after,'lunch').level,'full');assert.equal(after.devices.cooker.lastActivity,702);
+});
+test('today-only absence ends at midnight and starts now, never retroactively',()=>{
+  assert.deepEqual(awayPresetRange(750,1),{start:750,end:1440});assert.deepEqual(awayPresetRange(1439,1),{start:1439,end:1440});
+});
+test('calendar-day shortcuts include today and remain within seven days',()=>{
+  for(const days of [1,2,3,7]){const r=awayPresetRange(3*1440+750,days);assert.equal(r.end,(3+days)*1440);assert.ok(r.end-r.start<=7*1440);}
+});
+test('invalid absence presets cannot enter form state',()=>{
+  for(const days of [0,4,8,1.5,'2',NaN])assert.throws(()=>awayPresetRange(750,days));
+  for(const now of [-1,1.5,Infinity,NaN,Number.MAX_SAFE_INTEGER])assert.throws(()=>awayPresetRange(now,1));
+});
+test('absence preset uses the existing engine and early return keeps previous evidence',()=>{
+  const s=journeyScene(1),range=awayPresetRange(s.now,2);setAway(s,range.start,range.end);
+  assert.equal(status(s,0,'lunch'),'confirmed');assert.equal(status(s,0,'dinner'),'away');
+  cancelAway(s);assert.equal(status(s,0,'lunch'),'confirmed');assert.equal(status(s,0,'dinner'),'upcoming');
 });
 test('report keyboard navigation moves chronologically and stays within the period',()=>{
   const days=[-3,-2,-1,0];assert.equal(reportDayAfterKey(days,-2,'ArrowRight'),-1);assert.equal(reportDayAfterKey(days,-2,'ArrowLeft'),-3);

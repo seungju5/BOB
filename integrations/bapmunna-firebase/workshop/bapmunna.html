@@ -160,6 +160,9 @@ body.large-text .senior-three button{font-size:29px}body.large-text .senior-quie
 .day-insight{border-top:1px solid var(--line);margin-top:22px;padding-top:18px}.day-insight-title{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:13px;font-size:14px}.day-insight-title>span{color:var(--muted);font-size:12px}.day-meals{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.day-meals button{min-width:0;min-height:75px;font-size:12px;background:#f4efe3;border:1px solid transparent;border-radius:15px;padding:12px 4px}.day-meals button span,.day-meals button strong{display:block}.day-meals button span{font-weight:400;color:#6e604d;margin-bottom:5px}.day-meals button strong{font-size:13px}.day-meals .confirmed{background:var(--sage);color:#45603d}.day-meals .eat_out{background:var(--sun-soft)}.day-meals .missing{background:var(--clay);color:#8a4b37}.day-meals button:hover{border-color:#b8a57b}
 .interactive-chart .usage-column{min-width:44px}
 /* A short product story, isolated from all existing demo and account data. */
+.away-presets{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:22px 0 15px}.away-presets button{min-height:64px;border:1px solid #dfd3b9;border-radius:19px;background:#f8f1df;font-size:24px}.away-presets button[aria-pressed=true]{background:var(--sun);border-color:#b89129;color:var(--cocoa)}.away-range{text-align:center;font-size:17px;font-weight:600;line-height:1.7;color:var(--cocoa);margin:12px 0 18px}.away-custom{margin:0 0 13px}.away-custom summary{font-size:15px;min-height:44px}.away-custom label:first-of-type{margin-top:12px}body.large-text .away-presets button{font-size:28px;min-height:72px}body.large-text .away-range{font-size:20px}
+#away-form>button[type=submit]{min-height:60px;font-size:22px}dialog:has(#away-form)>.buttons>button{min-height:52px;font-size:20px}
+.away-presets button{padding:12px 6px;white-space:nowrap;min-width:0}
 body[data-view=journey]{padding-bottom:12px}.journey-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:20px 0 14px}.journey-toolbar .brand{font-family:NanumPen,sans-serif;font-size:28px;gap:4px}.journey-toolbar .text-button{font-size:13px;color:#705e45;min-height:44px;padding:8px 0}.journey-toolbar .text-button span{margin-left:6px;font-size:19px}
 .journey-progress{display:flex;gap:7px;margin:4px 0 29px}.journey-progress span{height:4px;flex:1;background:#eee6d3;border-radius:4px}.journey-progress .done{background:#b69746}body[data-view=journey] .page-head{margin-bottom:24px}body[data-view=journey] .page-head .sub{font-size:16px;min-height:53px;line-height:1.75;max-width:470px}
 .journey-scene{background:#fbf0d0;border:1px solid #eedfb7;padding:19px 23px 22px;border-radius:29px;overflow:hidden;text-align:center}.scene-label{display:flex;align-items:center;justify-content:space-between;font-size:12px;color:#74613f;gap:10px}.journey-bowl{position:relative;height:207px;display:flex;align-items:center;justify-content:center;margin:8px auto 20px}.journey-bowl::before{content:'';position:absolute;width:200px;height:200px;border-radius:50%;background:radial-gradient(#fffdf5,#fff9e400);opacity:.8}.journey-bowl>img{width:260px;height:174px;object-fit:contain;position:relative}.scene-signal{position:absolute;right:14%;top:20px;width:42px;height:42px;display:grid;place-items:center;border-radius:50%;background:#fffaf0;border:1px solid #e9d5a2;color:#83612e}.scene-received{position:absolute;bottom:0;left:50%;transform:translateX(-50%);white-space:nowrap;background:#fffcf4;padding:6px 15px;border-radius:24px;border:1px solid #e2d3b0;font-size:14px}
@@ -174,6 +177,9 @@ body.large-text .care-hero h2{font-size:30px}body.large-text .care-hero>p,body.l
 @keyframes care-arrival{from{opacity:.5;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
 @keyframes receipt-arrival{from{opacity:0}to{opacity:1}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.care-rice,.scene-received,.action-receipt{animation:none!important}button,a{transition:none!important}}
+/* Keep both role choices discoverable on a typical phone, without shrinking them. */
+@media(max-width:760px){.welcome-art{min-height:420px}.welcome-copy{padding-top:17px}}
+@media(max-width:360px){.welcome-art{min-height:390px}.welcome-copy h1{font-size:34px;line-height:1.25}}
 </style>
 </head>
 <body data-view="welcome">
@@ -1090,6 +1096,15 @@ function recalledEdition(base){
 
 // Presentation read models only. All decisions still come from the shared engine.
 
+// Calendar-day shortcuts match the choices in the Supabase senior screen.
+// Start at the current demo minute, preserving the existing no-retroactive UI behavior.
+function awayPresetRange(now,days){
+  if(!Number.isSafeInteger(now)||now<0||![1,2,3,7].includes(days))throw Error('외출 기간을 다시 선택해 주세요.');
+  const end=(dayOf(now)+days)*DAY;
+  if(!Number.isSafeInteger(end))throw Error('외출 기간을 다시 선택해 주세요.');
+  return {start:now,end};
+}
+
 function reportDayAfterKey(days,current,key){
   if(!days.length||!['ArrowLeft','ArrowRight','Home','End'].includes(key))return null;
   const index=days.includes(current)?days.indexOf(current):days.length-1;
@@ -1403,8 +1418,10 @@ function modalMarkup(){
       title='밖에서 식사하셨어요?';
       body='<p>현재 시각에 가장 가까운 끼니에 외식 소식을 남겨요.</p><p class="caption">같은 탭의 가상 체험에만 반영돼요. 실제 가족에게 전송하지 않아요.</p>';
       buttons='<button class="primary" data-action="eatout-save">네, 외식했어요</button>';break;
-    case 'away':
-      title='언제 다녀오시나요?';body=`<p>외출과 겹치는 끼니는 확인 알림에서 제외해요.</p><form id="away-form"><label class="field">출발 날짜·시간<input type="datetime-local" name="start" value="${dateInput(state.away&&state.away.start>=state.now?state.away.start:state.now)}" min="${dateInput(state.now)}" max="${dateInput(state.now+30*DAY)}" required></label><label class="field">귀가 날짜·시간<input type="datetime-local" name="end" value="${dateInput(state.away&&state.away.end>state.now?state.away.end:state.now+180)}" min="${dateInput(state.now+1)}" required></label><p class="caption">가상 시계 기준 · 한 일정은 최대 7일이에요.<br>오늘 ${dateLabel(dayOf(state.now))} ${hhmm(state.now)}</p><p class="error" role="alert"></p><button type="submit" class="primary full">외출 일정 남기기</button></form>`;break;
+    case 'away':{
+      const selected=modal.awayDays??null,range=selected?awayPresetRange(state.now,selected):{start:state.away&&state.away.start>=state.now?state.away.start:state.now,end:state.away&&state.away.end>state.now?state.away.end:state.now+180};
+      title='며칠 다녀오세요?';body=`<p>외출과 겹치는 끼니의 확인 알림은 쉬어요.</p><form id="away-form"><div class="away-presets" role="group" aria-label="외출 기간 선택">${[1,2,3,7].map(days=>`<button type="button" data-away-days="${days}" aria-pressed="${selected===days}">${days===1?'오늘만':days===7?'일주일':days+'일'}</button>`).join('')}</div><p class="away-range" id="away-range" role="status">${selected?`지금부터 ${dateLabel(dayOf(range.end-1))}까지`:'선택한 날짜·시간으로 적용해요.'}</p><details class="quiet-details away-custom" ${selected?'':'open'}><summary>날짜·시간 직접 선택</summary><label class="field">출발 날짜·시간<input type="datetime-local" name="start" value="${dateInput(range.start)}" min="${dateInput(state.now)}" max="${dateInput(state.now+30*DAY)}" required></label><label class="field">귀가 날짜·시간<input type="datetime-local" name="end" value="${dateInput(range.end)}" min="${dateInput(state.now+1)}" required></label></details><p class="caption">가상 일정 · 실제 가족에게 전송하지 않아요.<br>오늘 ${dateLabel(dayOf(state.now))} ${hhmm(state.now)}</p><p class="error" role="alert"></p><button type="submit" class="primary full">이 일정으로 남기기</button></form>`;break;
+    }
     case 'help':
       title=state.help?.status==='pending'?'도움 요청을 남겼어요.':'도움 요청을 남길까요?';
       body='<p>같은 탭의 보호자 화면에 요청을 표시하는 체험이에요. 실제 전화·문자·긴급 신고는 연결되지 않아요.</p><p class="notice">실제로 급한 도움이 필요하면 이 화면을 기다리지 말고 가족이나 긴급전화로 직접 연락해 주세요.</p>';
@@ -1441,7 +1458,7 @@ function closeModal(){
 }
 function render(focus=false){
   const active=document.activeElement;
-  const preserve=active&&root.contains(active)?['data-action','data-period','data-record-day','data-scenario'].find(name=>active.hasAttribute(name)):null;
+  const preserve=active&&root.contains(active)?['data-action','data-period','data-record-day','data-scenario','data-away-days'].find(name=>active.hasAttribute(name)):null;
   const restore=preserve?`[${preserve}="${active.getAttribute(preserve)}"]`:null;
   const wasModal=!!root.querySelector('dialog[open]');
   const scrollPositions=[...root.querySelectorAll('.plot-wrap,.table-scroll')].map(el=>({label:el.getAttribute('aria-label'),left:el.scrollLeft}));
@@ -1522,8 +1539,8 @@ function action(name,explicitMeal){
     case 'eatout-save':
 
       confirmMeal(state,meal(),true);modal=null;receipt={title:'외식 소식을 남겼어요',detail:'같은 탭의 보호자 화면에도 보여요. 실제 전송은 아니에요.'};toast('외식 소식을 가상 기록에 반영했어요.');break;
-    case 'away-dialog':if(inAway(state)){cancelAway(state);toast('귀가를 반영했어요.');}else openModal('away');break;
-    case 'return':cancelAway(state);toast('귀가를 반영했어요.');break;
+    case 'away-dialog':if(inAway(state)){cancelAway(state);receipt={title:'집에 돌아왔어요',detail:'다시 평소의 밥솥 소식을 기다려요. 잘 다녀오셨어요.'};toast('귀가를 반영했어요.');}else openModal('away',{awayDays:state.away?null:1});break;
+    case 'return':cancelAway(state);receipt={title:'외출 일정을 마쳤어요',detail:'다시 평소의 밥솥 소식을 기다려요.'};toast('귀가를 반영했어요.');break;
     case 'help-dialog':openModal('help');break;
     case 'help-save':requestHelp(state);modal=null;receipt={title:'가상 도움 요청을 남겼어요',detail:'실제 전화·신고는 연결되지 않아요. 급하면 직접 연락해 주세요.'};toast('가상 도움 요청을 표시했어요. 실제 전화·신고는 연결되지 않아요.');break;
     case 'help-cancel':resolveHelp(state,'cancelled');modal=null;receipt=null;toast('가상 도움 요청을 취소했어요.');break;
@@ -1574,6 +1591,10 @@ document.addEventListener('click',event=>{
   try{
     if(button.dataset.view){go(button.dataset.view);return;}
     if(button.dataset.mealDetail){openModal('meal',{meal:button.dataset.mealDetail,day:Number(button.dataset.day)});render();return;}
+    if(button.dataset.awayDays&&modal?.type==='away'){
+      awayPresetRange(state.now,Number(button.dataset.awayDays));modal.awayDays=Number(button.dataset.awayDays);render();
+      root.querySelector(`[data-away-days="${modal.awayDays}"]`)?.focus({preventScroll:true});return;
+    }
     if(button.dataset.scenario){if(JOURNEY_SCENARIOS.some(item=>item.id===button.dataset.scenario))journey.scenario=button.dataset.scenario;render();return;}
     if(button.hasAttribute('data-record-day')){reportDay=Number(button.dataset.recordDay);render();return;}
     if(button.dataset.action){action(button.dataset.action);return;}
@@ -1611,6 +1632,11 @@ document.addEventListener('click',event=>{
   }catch(error){toast(error.message);}
 });
 document.addEventListener('change',event=>{
+  if(event.target.closest('#away-form')&&['start','end'].includes(event.target.name)&&modal?.type==='away'){
+    modal.awayDays=null;
+    for(const button of root.querySelectorAll('[data-away-days]'))button.setAttribute('aria-pressed','false');
+    root.querySelector('#away-range').textContent='선택한 날짜·시간으로 적용해요.';
+  }
   if(event.target.name==='meals'&&event.target.closest('#setup-form')){
     const selected=root.querySelectorAll('#setup-form input[name="meals"]:checked').length;
     root.querySelector('#setup-form .meal-choices legend').textContent=`평소 챙기는 끼니 · 하루 ${selected}끼`;

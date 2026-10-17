@@ -1,5 +1,14 @@
 // Presentation read models only. All decisions still come from the shared engine.
-import {MEALS,LABELS,createState,evaluate,record,status,dayOf,hhmm,inAway,deviceOnline,ingestDevice,confirmMeal,setAway,setDeviceOnline,advance,requestHelp} from './engine.mjs';
+import {MEALS,LABELS,DAY,createState,evaluate,record,status,dayOf,hhmm,inAway,deviceOnline,ingestDevice,confirmMeal,setAway,setDeviceOnline,advance,requestHelp} from './engine.mjs';
+
+// Calendar-day shortcuts match the choices in the Supabase senior screen.
+// Start at the current demo minute, preserving the existing no-retroactive UI behavior.
+export function awayPresetRange(now,days){
+  if(!Number.isSafeInteger(now)||now<0||![1,2,3,7].includes(days))throw Error('외출 기간을 다시 선택해 주세요.');
+  const end=(dayOf(now)+days)*DAY;
+  if(!Number.isSafeInteger(end))throw Error('외출 기간을 다시 선택해 주세요.');
+  return {start:now,end};
+}
 
 export function reportDayAfterKey(days,current,key){
   if(!days.length||!['ArrowLeft','ArrowRight','Home','End'].includes(key))return null;

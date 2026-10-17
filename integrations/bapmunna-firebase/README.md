@@ -88,7 +88,7 @@ BAPMUNNA_CANVAS_MODULE=/absolute/path/to/@napi-rs/canvas \
 - 기존 Firebase 계정·본인 수동 기록과 루트 Supabase BOB 계정·가족 페어링은 별도입니다. 기존 선택형 Supabase 제공자도 BOB와 다른 프로젝트입니다. 자격 증명·DB·RLS·사용자 데이터를 합치지 않았습니다.
 - 실제 SmartThings, 가족 실시간 동기화, 푸시, BOB 인증 어댑터는 별도 승인·구현·통합 테스트가 필요합니다. 현재 가족 체험은 같은 탭에서만 동작합니다.
 
-운영 주소는 `https://impact-series.web.app/`입니다. 여기의 커밋·PR은 자동 배포되지 않습니다. `stage:firebase`, `firebase:inspect`, 배포 관련 스크립트에는 기존 프로젝트 설정이 있으므로 대상을 확인하고 별도 배포 요청 없이 실행하지 마세요. 기존 `documentation/`은 원본 개발 이력이며, 충돌하는 판단 규칙과 실행 경계는 이 README와 루트 ADR-006을 따릅니다.
+운영 주소는 `https://impact-series.web.app/`입니다. 여기의 커밋·PR은 해당 Firebase 운영 사이트로 자동 배포되지 않습니다. 저장소에 이미 연결된 루트 앱의 Vercel 미리보기는 별개이며, 2026-10-17에는 커밋 작성자의 GitHub 계정 확인 문제로 차단됐습니다. 이 작업은 작성자 설정·계정 권한·배포 연결을 바꾸지 않았습니다. `stage:firebase`, `firebase:inspect`, 배포 관련 스크립트에는 기존 프로젝트 설정이 있으므로 대상을 확인하고 별도 배포 요청 없이 실행하지 마세요. 기존 `documentation/`은 원본 개발 이력이며, 충돌하는 판단 규칙과 실행 경계는 이 README와 루트 ADR-006을 따릅니다.
 
 ## 출처와 보존
 

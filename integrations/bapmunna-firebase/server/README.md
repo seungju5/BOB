@@ -6,6 +6,26 @@
 
 **2026-11-03 사용자 결정:** 유료 전환 없이 등록·구현 상태를 유지한다. Firebase Spark와 현재 운영 서비스를 유지하고, 공개 API 배포·실제 OAuth 연결 시연은 보류한다. 아래 배포 절차는 재개 요청 전 실행하지 않으며 결제 승인을 반복 요청하지 않는다.
 
+## 11월 3일 마감 전 재확인
+
+공식 CLI로 기존 앱과 OAuth 설정을 다시 읽어 manifest와 대조했다. **Redirect URI·웹훅 URL·읽기 권한은 모두 등록 완료**이며 누락된 등록 항목은 없다.
+
+| 확인 항목 | 실제 결과 |
+| --- | --- |
+| Redirect URI | `https://impact-series.web.app/api/smartthings/callback` 일치 |
+| 웹훅 URL | `https://impact-series.web.app/api/smartthings/events` 일치 |
+| 권한 | `r:devices:*` 읽기 권한만 등록 |
+| 공개 callback / webhook POST / config | 모두 HTTP 404, 서버 미배포 |
+| 삼성 Target 확인 | `PENDING`, 가동 확인 미완료 |
+| Google Cloud 결제·서버 | 결제 미연결, Cloud Run·Functions 미활성 |
+| 서버 코드·설정 | 단위 테스트 14개 통과, 실제 발급된 키의 구성 일치 확인 |
+
+확인 시각과 비밀값 없는 응답 요약은 [등록·가동 확인 결과](registration-status.json)에 있다. 코드 테스트는 실제 사용자 OAuth·자동 수신 성공을 대신하지 않는다. 현 Impact Series 주소에서 가동하려면 Blaze 전환 결정 후 공개 서버 배포·웹훅 확인·사용자 동의·실기기 수신 검증을 완료해야 한다. 이번 재확인으로 결제·운영 설정을 변경하지 않았다.
+
+## 나중에 유료 전환할 때
+
+무료 상태를 유지하면서 재개 설정을 준비했다. 저장소 루트에서 `npm run check:smartthings`로 등록 증거·배포 설정·로컬 비밀 파일 준비·공개 URL 응답을 확인할 수 있다. 이 명령은 과금이나 배포를 실행하지 않는다. 오프라인 확인은 `npm run check:smartthings -- --offline`이다. [유료 전환 재개 안내](upgrade-readiness.md)와 [고정 배포 설정](deployment-config.json)을 따른다.
+
 ## 이번 주에 팀이 할 일
 
 | 순서 | 할 일 | 완료 기준 |

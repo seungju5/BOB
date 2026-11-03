@@ -110,3 +110,13 @@
 - Impact Series `5739bba68b9cbdf9` 배포 및 144개 공개 파일 해시 확인. 기존 경로 2,306개 유지. KU GPA `bb499628efe31290`는 디자인만 교체하고 20개 공개 파일 확인, 기존 경로 151개 유지. Hosting 설정·인증·DB·요금제는 변경하지 않았다. 전후 복구 스냅샷을 보존했다.
 - 검증: 루트 42개, Firebase 시나리오/워크시트/역할/관리/표현 검사 통과. SmartThings 서버 단위 14개 통과(실제 Firestore 통합 1개는 이 실행에서 제외). TypeScript와 Firebase 빌드, Next.js Webpack 프로덕션 빌드 통과. 이 환경의 Turbopack 빌드는 임시 포트 권한 문제로 실행되지 않았다.
 - 실제 사용자 로그인·실기기 OAuth·자동 수신은 이 디자인 작업에서 시험하지 않았다. 공개 SmartThings 서버는 계속 미배포이며 정적 사이트의 HTML 응답도 준비 중으로 안전하게 표시한다. Vercel 별도 미리보기의 기존 실패는 Firebase 게시 성공과 구분한다.
+
+## 2026-11-03 (OAuth 등록 3개 항목 재확인)
+
+- 사용자 요청에 따라 공식 CLI로 기존 앱·OAuth 설정을 다시 조회했다. Redirect URI·웹훅 URL·읽기 권한이 `app-registration.json`과 모두 일치했다. 등록은 완료이고 Target은 `PENDING`이다.
+- 공개 config와 callback GET, webhook POST는 HTTP 404였다. Firebase 결제 미연결과 Cloud Run·Functions 미활성도 API로 재확인했다. 공개 서버와 실제 사용자 OAuth/자동 수신은 완료되지 않았다.
+- 서버 단위 테스트 14개 통과. Firestore 에뮬레이터 테스트는 로컬 Java의 `libjli.dylib` 누락으로 시작하지 못했다. 발급된 앱·클라이언트 자격 증명·32바이트 암호화 키의 서버 구성은 비밀값 출력 없이 확인했다.
+- `server/registration-status.json`과 서버 README에 최신 증거를 저장했다. 앞선 무료 유지 결정을 변경하려면 별도 사용자 결정이 필요하며, 이번 재확인으로 결제·운영 설정을 변경하지 않았다.
+
+- 후속 사용자 결정: 무료 유지(1번), 향후 유료 전환을 위한 준비 요청. `deployment-config.json`에 기존 URI·읽기 권한·서울 서버 제한·예산 알림 제안을 고정하고, 과금·배포를 실행하지 않는 `npm run check:smartthings`와 재개 안내를 추가했다. 자동 과금·서버 활성화는 없다.
+- 준비 후 검증: 온라인/오프라인 사전 점검, 루트 42개와 Firebase 기존 검사 전체, TypeScript·Firebase 빌드 통과. 서버 실행 코드·원래 3D 토끼 화면은 변경하지 않았다.

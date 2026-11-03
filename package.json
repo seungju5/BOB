@@ -16,7 +16,8 @@
     "test:firebase": "npm run check:firebase-sync && npm --prefix integrations/bapmunna-firebase test && npm --prefix integrations/bapmunna-firebase run test:editions && npm --prefix integrations/bapmunna-firebase run test:manage && node --test integrations/bapmunna-firebase/tests/parity.test.mjs integrations/bapmunna-firebase/tests/experience.test.mjs",
     "test:smartthings": "npm --prefix integrations/bapmunna-firebase/server test",
     "sync:design": "node scripts/sync-design.mjs",
-    "check:design": "node scripts/sync-design.mjs --check"
+    "check:design": "node scripts/sync-design.mjs --check",
+    "check:smartthings": "node integrations/bapmunna-firebase/scripts/check-smartthings-readiness.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.118.0",

@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { TextInput } from "@/components/forms";
 import { IconCheck } from "@/components/icons";
-import { Logo, Mascot } from "@/components/Mascot";
+import { Mascot } from "@/components/Mascot";
 import { Button, PageHeader } from "@/components/ui";
 import { setMode, useSession } from "@/lib/data/mode";
 import { supabase, supabaseConfigured } from "@/lib/supabase";
@@ -45,13 +45,10 @@ export default function LoginPage() {
   return (
     <main className="flex flex-1 flex-col pb-8">
       <PageHeader back="/" />
-      <div className="flex flex-1 flex-col px-6">
-        <Logo />
-        <h1 className="mt-6 text-[28px] leading-snug font-extrabold text-cocoa">
-          보호자로
-          <br />
-          시작할게요
-        </h1>
+      <div className="mx-6 flex flex-1 flex-col rounded-[1.75rem] border border-line bg-paper px-5 py-7 shadow-[var(--shadow-soft)]">
+        <Mascot className="mx-auto h-24 w-24" />
+        <h1 className="mt-4 text-center text-[28px] leading-snug font-extrabold text-cocoa">보호자님, 반가워요.</h1>
+        <p className="mt-2 text-center text-[15px] text-muted">멀리 있어도, 안부는 가까이.</p>
         {!supabaseConfigured ? (
           <p className="mt-4 text-[15px] text-muted">서버가 설정되지 않아 데모로만 둘러볼 수 있어요.</p>
         ) : sent ? (
@@ -78,8 +75,7 @@ export default function LoginPage() {
             <p className="text-[13px] text-muted">비밀번호 없이, 메일로 받은 링크로 로그인해요.</p>
           </div>
         )}
-        <Mascot className="mx-auto mt-auto h-24 w-24 pt-6" mood="happy" />
-        <div className="mt-4 flex flex-col gap-2">
+        <div className="mt-8 flex flex-col gap-2">
           {supabaseConfigured && !sent ? (
             <Button disabled={busy || !/^\S+@\S+\.\S+$/.test(email.trim())} onClick={send}>
               {busy ? "보내는 중…" : "로그인 링크 받기"}

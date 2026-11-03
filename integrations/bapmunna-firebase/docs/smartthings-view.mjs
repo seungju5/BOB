@@ -49,7 +49,9 @@ export function mountSmartThings(element,{accountHref='#account',connect=connect
     const current=++revision;model.loading=true;model.error='';render();
     try{
       const result=await fetcher('/api/smartthings/config',{cache:'no-store',signal:controller.signal});
-      const settings=result.ok?await result.json():{enabled:false};
+      // Static hosting can return the site's HTML fallback until the API is deployed.
+      const json=result.headers?.get('content-type')?.includes('application/json');
+      const settings=result.ok&&json?await result.json():{enabled:false};
       if(!alive||current!==revision)return;
       model.enabled=settings.enabled===true&&!!provider?.getIdToken;model.consentVersion=settings.consentVersion;
       if(model.enabled&&model.user?.verified){const connection=await api('status');if(!alive||current!==revision)return;model.connection=connection;}

@@ -126,24 +126,15 @@ function SeniorHome({ status, now, act }: { status: SeniorStatus; now: Date; act
         </Link>
       </header>
 
-      <h1 className="mt-7 text-[30px] leading-tight font-extrabold text-cocoa">
+      <h1 className="mt-4 text-[30px] leading-tight font-extrabold text-cocoa">
         {status.seniorName ? `${status.seniorName}님,` : "안녕하세요,"}
         <br />
         오늘도 반가워요.
       </h1>
 
-      <div className="relative mt-5 rounded-[2rem] bg-butter-soft px-6 py-5">
-        <p className="font-hand text-[34px] leading-[1.15] whitespace-pre-line text-cocoa">{cheer}</p>
-        <span className="absolute -bottom-3 right-16 h-6 w-6 rotate-45 bg-butter-soft" aria-hidden />
-      </div>
-
-      <div className="mt-2 flex items-end justify-between">
-        <div className="pb-4">
-          <IconHeart className="h-6 w-6 fill-blush-deep/70 text-blush-deep/70" />
-          <p className="mt-3 text-[20px] font-bold text-cocoa">오늘의 작은 응원</p>
-          <p className="text-[17px] text-muted">당신의 하루를 응원해요.</p>
-        </div>
-        <Mascot className="animate-bob h-32 w-32" mood="happy" />
+      <div className="mt-4 flex items-center justify-between gap-3 rounded-[1.75rem] bg-butter-soft px-5 py-3">
+        <p className="font-hand text-[28px] leading-[1.15] whitespace-pre-line text-cocoa">{cheer}</p>
+        <Mascot className="h-24 w-24 shrink-0" />
       </div>
 
       {away ? (
@@ -167,8 +158,8 @@ function SeniorHome({ status, now, act }: { status: SeniorStatus; now: Date; act
         </div>
       )}
 
-      <p className="mt-6 mb-3 text-[18px] text-muted">필요한 소식만 가볍게 남겨요.</p>
-      <div className="grid grid-cols-3 gap-2.5">
+      <p className="mt-4 mb-3 text-[18px] text-muted">필요한 소식만 가볍게 남겨요.</p>
+      <div className="grid gap-2.5">
         <BigButton label="외식했어요" icon={<IconUtensils className="h-9 w-9" />} onClick={() => setSheet("eat_out")} />
         <BigButton label="놀러가요" icon={<IconSuitcase className="h-9 w-9" />} onClick={() => setSheet("away")} />
         <BigButton label="도와줘요" icon={<IconHeart className="h-9 w-9" />} onClick={() => setSheet("help")} tone="help" />
@@ -234,7 +225,7 @@ function BigButton({ label, icon, onClick, tone }: { label: string; icon: ReactN
   return (
     <button
       onClick={onClick}
-      className={`flex h-40 flex-col items-center justify-center gap-3 rounded-[1.75rem] px-1 text-cocoa transition-transform active:scale-95 ${
+      className={`flex min-h-18 items-center justify-center gap-4 rounded-[1.75rem] px-4 text-cocoa transition-transform active:scale-95 ${
         tone === "help" ? "bg-blush" : "bg-butter-soft"
       }`}
     >

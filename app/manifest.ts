@@ -7,9 +7,9 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "밥 한 끼로 전하는 안부",
     start_url: "/",
     display: "standalone",
-    background_color: "#fffcf3",
-    theme_color: "#f6cd48",
+    background_color: "#fffdf7",
+    theme_color: "#f8d14a",
     lang: "ko",
-    icons: [{ src: "/icon.svg", sizes: "any", type: "image/svg+xml" }],
+    icons: [{ src: "/brand/rice-logo.png", sizes: "1254x1254", type: "image/png", purpose: "any" }],
   };
 }

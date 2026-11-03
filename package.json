@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "npm run check:design && next build",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
@@ -14,7 +14,9 @@
     "dev:firebase": "npm --prefix integrations/bapmunna-firebase run dev",
     "build:firebase": "npm run sync:firebase && npm --prefix integrations/bapmunna-firebase run build",
     "test:firebase": "npm run check:firebase-sync && npm --prefix integrations/bapmunna-firebase test && npm --prefix integrations/bapmunna-firebase run test:editions && npm --prefix integrations/bapmunna-firebase run test:manage && node --test integrations/bapmunna-firebase/tests/parity.test.mjs integrations/bapmunna-firebase/tests/experience.test.mjs",
-    "test:smartthings": "npm --prefix integrations/bapmunna-firebase/server test"
+    "test:smartthings": "npm --prefix integrations/bapmunna-firebase/server test",
+    "sync:design": "node scripts/sync-design.mjs",
+    "check:design": "node scripts/sync-design.mjs --check"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.118.0",

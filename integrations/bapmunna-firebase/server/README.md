@@ -4,6 +4,8 @@
 
 등록 증거는 비밀값을 제외한 [registration-status.json](registration-status.json)에 있다. App ID는 `f1b8149d-45c5-4f4b-8136-2ad518faf4ec`, 앱 유형은 `API_ONLY`, 현재 webhook Target 상태는 `PENDING`이다. Client ID·Secret은 발급되었고 접근 제한된 비공개 파일에 보관했다. URL이 저장되었다는 사실과 공개 서버가 가동된다는 사실을 구분한다. [배포·비용·실제 시연 계획](deployment-plan.md)을 따른다.
 
+**2026-11-03 사용자 결정:** 유료 전환 없이 등록·구현 상태를 유지한다. Firebase Spark와 현재 운영 서비스를 유지하고, 공개 API 배포·실제 OAuth 연결 시연은 보류한다. 아래 배포 절차는 재개 요청 전 실행하지 않으며 결제 승인을 반복 요청하지 않는다.
+
 ## 이번 주에 팀이 할 일
 
 | 순서 | 할 일 | 완료 기준 |

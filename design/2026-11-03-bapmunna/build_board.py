@@ -3,7 +3,7 @@ import base64,html
 root=Path(__file__).resolve().parents[2]
 out=root/'design/2026-11-03-bapmunna';out.mkdir(parents=True,exist_ok=True)
 asset=root/'integrations/bapmunna-firebase/docs/assets'
-images={k:'data:image/png;base64,'+base64.b64encode((asset/f).read_bytes()).decode() for k,f in {'bunny':'bunny-natural.png','logo':'rice-logo.png'}.items()}
+images={k:'data:image/png;base64,'+base64.b64encode((asset/f).read_bytes()).decode() for k,f in {'bunny':'bunny.png','logo':'rice-logo.png'}.items()}
 pieces=['<defs>'+''.join(f'<image id="art-{k}" width="100" height="100" href="{v}" preserveAspectRatio="xMidYMid meet"/>' for k,v in images.items())+'</defs>']
 def rect(x,y,w,h,fill='#FFFEFA',r=16,stroke=None):
  pieces.append(f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="{r}" fill="{fill}"'+(f' stroke="{stroke}"' if stroke else '')+'/>')
@@ -25,7 +25,7 @@ txt(60,70,'작은 신호를, 다정한 안부로.',38,weight=750)
 txt(60,112,'밥뭇나  ·  캐릭터 / 로그인 / SmartThings 연결',22,color='#76674E')
 txt(60,147,'2026.11.03  |  화면 설계 시안 · 아래 기기 이름과 연결 시각은 예시입니다.',16,color='#76674E')
 rect(60,185,1250,250,'#FFFCF5',24)
-mascot(85,210,170,'bunny','boardBunny');txt(280,242,'안부 친구',14,color='#927440',weight=650);txt(280,278,'초록 가디건 토끼',25,weight=700);txt(280,315,'처음 인사부터 로그인과 연결까지,\n늘 곁에서 다정하게 안내해요.',17)
+mascot(85,210,170,'bunny','boardBunny');txt(280,242,'안부 친구',14,color='#927440',weight=650);txt(280,278,'초록 가디건 3D 토끼',25,weight=700);txt(280,315,'처음 인사부터 로그인과 연결까지,\n늘 곁에서 다정하게 안내해요.',17)
 mascot(690,238,105,'logo','boardLogo');txt(830,242,'밥뭇나의 이름표',14,color='#927440',weight=650);txt(830,278,'노란 밥솥 로고',25,weight=700);txt(830,315,'밥 한 끼로 전하는 안부.\n작은 로고도 잘리지 않게 보여요.',17)
 txt(85,405,'원칙  |  캐릭터의 표정은 식사 여부나 건강 상태를 뜻하지 않아요.',15,color='#76674E')
 phone(1,60,505,'Login','로그인')

@@ -9,7 +9,7 @@ import {SETUP_STEPS,setupDraft,validateSetup,applySetup,readSetupForm,setupConte
 import {mealEvidence,careHeadline,JOURNEY_SCENARIOS,journeyScene,reportDayAfterKey,awayPresetRange} from './experience.mjs';
 
 // Resolve once against the entry document; role switches change the URL without reloading.
-const ASSETS=Object.fromEntries(Object.entries({logo:'./assets/rice-logo.png',partner:'./assets/partner.png',bunny:'./assets/bunny-natural.png',companion:'./assets/bunny-natural.png',full:'./assets/rice-full.png',half:'./assets/rice-half.webp',empty:'./assets/rice-empty.webp',eatout:'./assets/eatout.svg',away:'./assets/away.svg',help:'./assets/help.svg',family:'./assets/family.svg',info:'./assets/info.svg',phone:'./assets/phone.svg',heart:'./assets/heart.svg',history:'./assets/history.svg'}).map(([name,path])=>[name,new URL(path,document.baseURI).href]));
+const ASSETS=Object.fromEntries(Object.entries({logo:'./assets/rice-logo.png',partner:'./assets/partner.png',bunny:'./assets/bunny.png',companion:'./assets/bunny.png',full:'./assets/rice-full.png',half:'./assets/rice-half.webp',empty:'./assets/rice-empty.webp',eatout:'./assets/eatout.svg',away:'./assets/away.svg',help:'./assets/help.svg',family:'./assets/family.svg',info:'./assets/info.svg',phone:'./assets/phone.svg',heart:'./assets/heart.svg',history:'./assets/history.svg'}).map(([name,path])=>[name,new URL(path,document.baseURI).href]));
 const root=document.querySelector('#view');
 const viewNames=['welcome','senior','guardian','report','family','settings','devices','about','account','more','alerts','privacy','setup','journey','connect'];
 const CLOUD_AVAILABLE=document.querySelector('meta[name="bapmunna-cloud"]')?.content==='enabled';
@@ -27,7 +27,7 @@ const esc=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&
 const art=(name,width,height,alt='',className='')=>`<img src="${ASSETS[name]}" width="${width}" height="${height}" alt="${esc(alt)}" class="${className}" decoding="async">`;
 const icon=(name,size)=>art(name,size,size);
 // A decorative guide, separate from the data-driven full/half/empty rice bowls.
-const bunnyCompanion=(className='')=>`<span class="bunny-portrait ${className}" aria-hidden="true">${art('companion',1254,1254)}</span>`;
+const bunnyCompanion=(className='')=>`<span class="bunny-portrait ${className}" aria-hidden="true">${art('companion',480,480)}</span>`;
 const brandSymbol=()=>`<span class="brand-symbol" aria-hidden="true">${art('logo',1254,1254)}</span>`;
 const options=(values,current)=>Object.entries(values).map(([id,label])=>`<option value="${esc(id)}" ${String(id)===String(current)?'selected':''}>${esc(label)}</option>`).join('');
 const uiIcon=name=>`<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${({clock:'<circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3 2"/>',rhythm:'<path d="M3 12h4l3-7 4 14 3-7h4"/>',bell:'<path d="M6 9a6 6 0 0 1 12 0c0 7 3 7 3 8H3c0-1 3-1 3-8Z M10 21h4"/>',away:'<path d="M13 5h6v6 M19 5 9 15 M7 5H4v15h15v-6"/>',share:'<path d="M12 21S3 16 3 9a5 5 0 0 1 9-3 5 5 0 0 1 9 3c0 7-9 12-9 12Z"/>',arrow:'<path d="m9 5 7 7-7 7"/>',check:'<path d="m5 12 4 4L19 6"/>'})[name]||''}</svg>`;

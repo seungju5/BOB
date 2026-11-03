@@ -2,7 +2,7 @@
 
 기존 Firebase 디자인을 보존하면서 루트 Next.js/Supabase 앱의 판단 함수를 함께 사용하는 별도 프런트엔드입니다. 루트 앱을 대체하지 않으며, 이 폴더를 추가하는 것만으로 운영 사이트나 데이터베이스가 바뀌지 않습니다.
 
-2026-11-03에는 기존 초록 가디건 토끼를 시작·로그인·기기 연결 화면에 다시 일관되게 적용하고, 노란 `rice-logo.png`를 브랜드 심볼로 사용했습니다. 본인 계정의 SmartThings OAuth·기기 선택·신호 수신 서버 코드는 [server/README.md](server/README.md)에 있습니다. **삼성 OAuth 앱 등록과 Redirect URI·웹훅 URL·읽기 권한 재조회에 성공했습니다.** [등록 증거](server/registration-status.json)의 Target 상태는 `PENDING`입니다. 전력 기기 1대의 실제 API 조회도 성공했지만, 공개 서버 배포·사용자 OAuth·자동 신호 수신 검증은 아직 남아 있습니다.
+2026-11-03에는 처음 만든 초록 가디건 3D 토끼 원본을 시작·로그인·기기 연결 화면에 다시 일관되게 적용하고, 노란 `rice-logo.png`를 브랜드 심볼로 사용했습니다. 본인 계정의 SmartThings OAuth·기기 선택·신호 수신 서버 코드는 [server/README.md](server/README.md)에 있습니다. **삼성 OAuth 앱 등록과 Redirect URI·웹훅 URL·읽기 권한 재조회에 성공했습니다.** [등록 증거](server/registration-status.json)의 Target 상태는 `PENDING`입니다. 전력 기기 1대의 실제 API 조회도 성공했지만, 공개 서버 배포·사용자 OAuth·자동 신호 수신 검증은 아직 남아 있습니다.
 
 ## 실행과 검증
 
@@ -99,5 +99,5 @@ BAPMUNNA_CANVAS_MODULE=/absolute/path/to/@napi-rs/canvas \
 - 가져온 원본: `jooji13/Synagogue`의 커밋 `f66fe1f7d3177d08280b97048ceaa01f43f3fb65`.
 - 파일 목록: `.env.example`, `.gitattributes`, `.gitignore`, `LICENSE`, `cloud/`, `docs/`, `documentation/`, `firebase.emulators.json`, `firebase/`, `package*.json`, `scripts/`, `supabase/`, `tests/`, `workshop/`.
 - 원본 작업 폴더의 미커밋 변경과 로컬 비밀 파일은 가져오지 않았습니다. 라이선스·출처와 기존 로고·토끼 원본을 보존했습니다.
-- 새 토끼는 `docs/assets/bunny-natural.png`, 원본은 `docs/assets/bunny.png`입니다. [이미지 제작 기록](documentation/character-refinement.md)에 편집 의도와 프롬프트를 남겼습니다.
+- 현재 캐릭터는 처음 만든 3D 토끼 원본 `docs/assets/bunny.png`입니다. 2026-11-03 사용자 요청에 따라 앱·Figma·설명 PDF에 통일했습니다. 손그림 변형 `bunny-natural.png`은 이력으로 보존하며, [이미지 제작 기록](documentation/character-refinement.md)에 선택 근거를 남겼습니다.
 - 이전 밥솥 캐릭터 파일 `docs/assets/rice-cooker-companion.png`와 `rice-companion.svg`는 제작 이력으로 보존했습니다. 11월 3일 최신 선택에서는 토끼가 동반 캐릭터이고 `rice-logo.png`가 로고·favicon입니다. 기존 소개 영상은 이번 변경으로 재렌더링하지 않았습니다.

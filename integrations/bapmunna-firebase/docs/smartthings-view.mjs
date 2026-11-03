@@ -1,7 +1,7 @@
 import {connectCloud} from './cloud-api.mjs';
 
 const escape=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
-const asset=new URL('./assets/bunny-natural.png',import.meta.url).href;
+const asset=new URL('./assets/bunny.png',import.meta.url).href;
 const messages={login_required:'다시 로그인해 주세요.',verified_email_required:'먼저 이메일을 확인해 주세요.',setup_required:'연결 기능을 준비하고 있어요. 준비가 끝나면 이곳에서 시작할 수 있어요.',consent_required:'정보 이용 안내를 확인해 주세요.',reconnect_required:'삼성 계정 연결이 만료됐어요. 다시 연결해 주세요.',permission_required:'SmartThings에서 이 기기를 읽을 권한을 허용해 주세요.',plan_required:'삼성 API 이용 계획을 확인해야 해요. 운영팀에 알려 주세요.',rate_limited:'요청이 많아요. 잠시 후 다시 눌러 주세요.',check_later:'방금 확인했어요. 30초 뒤 다시 확인할 수 있어요.',busy:'앞선 작업을 마치는 중이에요. 잠시 후 다시 눌러 주세요.',subscription_conflict:'기존 기기 연결 정보를 확인해야 해요. 연결을 해제한 뒤 다시 연결해 주세요.',device_missing:'이 기기를 찾을 수 없어요. SmartThings 앱에서 먼저 확인해 주세요.',power_not_supported:'전력을 읽을 수 있는 플러그를 선택해 주세요.',disconnect_first:'다른 기기를 연결하려면 현재 연결을 먼저 해제해 주세요.',already_connected:'이미 연결되어 있어요. 연결 상태를 다시 확인해 주세요.',revoke_in_smartthings:'SmartThings 앱에서 밥뭇나 권한을 해제한 뒤 아래 연결을 지워 주세요.'};
 export const smartThingsMessage=code=>messages[code]||'연결을 확인하지 못했어요. 잠시 후 다시 시도해 주세요.';
 export function signalLabel(connection,now=Date.now()){

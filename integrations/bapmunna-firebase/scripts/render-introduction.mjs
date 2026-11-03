@@ -16,7 +16,7 @@ if(!GlobalFonts.registerFromPath(path.join(assets,'NanumPenScript-Regular.ttf'),
 await mkdir(work,{recursive:true});
 const W=1920,H=1080,FPS=24,ink='#3d3024',muted='#77654e',cream='#fffcf5',sun='#f8d14a';
 const logo=await loadImage(path.join(assets,'rice-logo.png'));
-const bunny=await loadImage(path.join(assets,'bunny-natural.png'));
+const bunny=await loadImage(path.join(assets,'bunny.png'));
 function run(binary,args){return new Promise((resolve,reject)=>{
   const child=spawn(binary,args,{stdio:['ignore','pipe','pipe']});let stdout='',stderr='';
   child.stdout.on('data',data=>stdout+=data);child.stderr.on('data',data=>stderr=(stderr+data).slice(-16000));

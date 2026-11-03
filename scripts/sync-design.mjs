@@ -12,7 +12,7 @@ async function output(name,data){
   else {await mkdir(path.dirname(target),{recursive:true});await writeFile(target,data);}
 }
 const assets={};
-for(const name of ['bunny.png','rice-logo.png','PretendardVariable.woff2','NanumPenScript-Regular.ttf','OFL-Pretendard.txt','OFL-NanumPenScript.txt']){
+for(const name of ['bunny.png','bunny-greeting.webp','rice-logo.png','PretendardVariable.woff2','NanumPenScript-Regular.ttf','OFL-Pretendard.txt','OFL-NanumPenScript.txt']){
   const data=await readFile(path.join(source,'assets',name));
   assets[name]=sha(data);await output('public/brand/'+name,data);
 }

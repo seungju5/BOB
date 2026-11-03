@@ -120,3 +120,11 @@
 
 - 후속 사용자 결정: 무료 유지(1번), 향후 유료 전환을 위한 준비 요청. `deployment-config.json`에 기존 URI·읽기 권한·서울 서버 제한·예산 알림 제안을 고정하고, 과금·배포를 실행하지 않는 `npm run check:smartthings`와 재개 안내를 추가했다. 자동 과금·서버 활성화는 없다.
 - 준비 후 검증: 온라인/오프라인 사전 점검, 루트 42개와 Firebase 기존 검사 전체, TypeScript·Firebase 빌드 통과. 서버 실행 코드·원래 3D 토끼 화면은 변경하지 않았다.
+
+### 2026-11-03 · 토끼의 실제 자세 인사
+
+사용자 요청에 따라 한 장짜리 사진의 점프를 16자세 애니메이션으로 확장했다. 기존 두 번의 깡총 점프 뒤 손·귀·표정·다리가 바뀌며 인사한다. Firebase와 Next.js는 3.6초 제어기를 공유한다. 재생·모션 줄이기·탭 일시 정지·정리·로딩 실패 테스트 7개를 추가했다. 자산과 정확한 최종 프롬프트는 integrations/bapmunna-firebase/documentation/bunny-greeting.md. 공개 배포 결과는 배포 영수증으로 별도 확인한다.
+
+Impact Series·KU GPA의 Firebase/Supabase 정적 경로에 배포하고 각각 150/16개 파일의 공개 바이트 일치를 확인했다. 2402/157개 기존 경로·설정은 보존했다. 로컬 Turbopack의 포트 생성 제한 때문에 Webpack 대체 빌드를 확인하는 과정에서 Tailwind 처리 누락을 발견해 기존 로더를 Next CSS 파이프라인에 연결했다. 새 의존성 없이 스타일이 포함된 프로덕션 빌드를 검수했다. 배포 영수증: integrations/bapmunna-firebase/documentation/bunny-greeting-release.json.
+
+KU GPA는 로컬 소스보다 이전 모듈 구성을 운영하고 있었다. 최초 동기화의 worksheet 의존성 오류를 공개 화면 검수로 발견해, 배포 전 복구본의 app.mjs에 인사 변경만 덧붙여 복구했다. 현재 버전은 sites/ku-gpa/versions/d0fef512fe106010이며 시작·인사·어르신 진입을 재검증했다. 향후 배포도 전체 앱 교체 전 상대 모듈 의존 파일의 존재를 검사한다. 이번 게시 도구에 해당 사전 검사를 추가했다.

@@ -1,0 +1,46 @@
+{
+  "change": "Two hops, articulated wave, blink and bow; 16 poses; 3600ms",
+  "releases": {
+    "impact": {
+      "site": "impact-series",
+      "version": "sites/impact-series/versions/f52387e47cbcdf50",
+      "release": "sites/impact-series/releases/1793708327273000",
+      "previous": "sites/impact-series/versions/5739bba68b9cbdf9",
+      "changed": 17,
+      "preserved": 2402,
+      "uploads": 11,
+      "hostingConfig": "unchanged",
+      "authDatabase": "unchanged",
+      "publicSmartThingsApi": "not deployed",
+      "verifiedAt": "2026-11-03T12:19:52.912Z",
+      "verifiedFiles": 150
+    },
+    "legacy": {
+      "site": "ku-gpa",
+      "version": "sites/ku-gpa/versions/d0fef512fe106010",
+      "release": "sites/ku-gpa/releases/1793708962586000",
+      "previous": "sites/ku-gpa/versions/d1f50898709cf7cd",
+      "changed": 2,
+      "preserved": 171,
+      "uploads": 1,
+      "hostingConfig": "unchanged",
+      "authDatabase": "unchanged",
+      "publicSmartThingsApi": "not deployed",
+      "verifiedAt": "2026-11-03T12:31:12.073Z",
+      "verifiedFiles": 16,
+      "compatibility": "Greeting-only patch of archived deployed app; existing module set preserved"
+    }
+  },
+  "qa": {
+    "unitTests": 49,
+    "existingFirebaseTests": "passed",
+    "mobileWidths": [
+      320,
+      390
+    ],
+    "publicPlayback": "hop, wave, blink, bow and idle observed",
+    "preview": "output/bapmunna-greeting-20261103/live-bunny-greeting.gif",
+    "nextBuild": "Webpack production build with existing Tailwind loader; 390px render, no horizontal overflow",
+    "legacyBrowser": "Welcome animation rendered; Senior entry works"
+  }
+}

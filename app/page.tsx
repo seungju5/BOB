@@ -1,4 +1,5 @@
-import { Logo, Mascot } from "@/components/Mascot";
+import { Logo } from "@/components/Mascot";
+import { BunnyGreeting } from "@/components/BunnyGreeting";
 import { ButtonLink } from "@/components/ui";
 
 export default function StartPage() {
@@ -21,7 +22,7 @@ export default function StartPage() {
           <br />
           대신 전하는 안부
         </p>
-        <Mascot className="animate-bob absolute right-4 bottom-4 h-44 w-44" mood="wink" />
+        <BunnyGreeting className="absolute right-6 bottom-8 h-48 w-48" />
       </div>
 
       <div className="rounded-t-[2.25rem] bg-paper px-6 pt-8 pb-8">

@@ -1,3 +1,4 @@
+import {createBunnyGreeting} from './bunny-greeting.mjs';
 import {MEALS,LABELS,DAY,DEVICES,dayOf,hhmm,dateLabel,key,createState,record,status,evaluate,activeMeal,inAway,advance,confirmMeal,ingestSensor,ingestDevice,setDeviceOnline,deviceOnline,setAway,cancelAway,setConsent,configure,updateProfile,baseline,report,requestHelp,resolveHelp,setSocial} from './engine.mjs';
 import {FAMILY_ROLES,createInvite,acceptInvite,revokeMember,familySummary} from './family.mjs';
 import {STATUS_COPY,riceState} from './presentation.mjs';
@@ -9,7 +10,7 @@ import {SETUP_STEPS,setupDraft,validateSetup,applySetup,readSetupForm,setupConte
 import {mealEvidence,careHeadline,JOURNEY_SCENARIOS,journeyScene,reportDayAfterKey,awayPresetRange} from './experience.mjs';
 
 // Resolve once against the entry document; role switches change the URL without reloading.
-const ASSETS=Object.fromEntries(Object.entries({logo:'./assets/rice-logo.png',partner:'./assets/partner.png',bunny:'./assets/bunny.png',companion:'./assets/bunny.png',full:'./assets/rice-full.png',half:'./assets/rice-half.webp',empty:'./assets/rice-empty.webp',eatout:'./assets/eatout.svg',away:'./assets/away.svg',help:'./assets/help.svg',family:'./assets/family.svg',info:'./assets/info.svg',phone:'./assets/phone.svg',heart:'./assets/heart.svg',history:'./assets/history.svg'}).map(([name,path])=>[name,new URL(path,document.baseURI).href]));
+const ASSETS=Object.fromEntries(Object.entries({logo:'./assets/rice-logo.png',partner:'./assets/partner.png',bunny:'./assets/bunny.png',greeting:'./assets/bunny-greeting.webp',companion:'./assets/bunny.png',full:'./assets/rice-full.png',half:'./assets/rice-half.webp',empty:'./assets/rice-empty.webp',eatout:'./assets/eatout.svg',away:'./assets/away.svg',help:'./assets/help.svg',family:'./assets/family.svg',info:'./assets/info.svg',phone:'./assets/phone.svg',heart:'./assets/heart.svg',history:'./assets/history.svg'}).map(([name,path])=>[name,new URL(path,document.baseURI).href]));
 const root=document.querySelector('#view');
 const viewNames=['welcome','senior','guardian','report','family','settings','devices','about','account','more','alerts','privacy','setup','journey','connect'];
 const CLOUD_AVAILABLE=document.querySelector('meta[name="bapmunna-cloud"]')?.content==='enabled';
@@ -20,7 +21,7 @@ const editionHref=(id,route='')=>CLOUD_AVAILABLE?editionLink(appBase,id,route):`
 const routeHref=route=>`${location.pathname}#${!CLOUD_AVAILABLE&&edition?`${edition}/`:''}${route}`;
 let state=demoState(),view=initialView(),accountCleanup=null;
 let period=7,chosenMeal=null,modal=null,checkResults=null,toastTimer,focusReturn=null;
-let welcomeSeen=false;
+let welcomeSeen=false,welcomeGreeting=null;
 let setup=null;
 let journey={step:0,scenario:'ordinary',returnView:'welcome'},setupWelcome=false,receipt=null,reportDay=null;
 const esc=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
@@ -92,26 +93,13 @@ function welcome(){
     <div class="welcome-brand" aria-label="밥뭇나와 신이어마켙 인터페이스 시안"><span class="brand">${brandSymbol()}<span>밥뭇나</span></span><span class="collab-x">×</span>${art('partner',123,37,'신이어마켙','partner')}</div>
     <div class="welcome-copy"><h1 tabindex="-1"><span>안부가</span><span>폴짝,</span><span>찾아왔어요.</span></h1></div>
     <span class="welcome-heart" aria-hidden="true">♥</span><p class="welcome-caption">나의 작은<br>안부 친구</p>
-    <div class="bunny-slot"><span class="bunny-shadow" aria-hidden="true"></span>${art('bunny',480,480,'초록 가디건을 입고 안부를 전하는 토끼')}</div>
+    <div class="bunny-slot bunny-stage"><span class="bunny-shadow" aria-hidden="true"></span>${art('bunny',480,480,'초록 가디건을 입고 안부를 전하는 토끼')}</div>
     <button class="welcome-replay" data-action="welcome-replay" aria-label="토끼의 환영 인사 다시 보기"><span aria-hidden="true">↻</span> 다시 인사하기</button>
     </div><div class="welcome-dock"><span class="eyebrow">A LITTLE MESSAGE, A WARM REPLY</span><h2>밥 한 끼로 전하는 안부</h2><p>밥솥을 쓰는 평소의 하루가,<br>멀리 있는 가족에게 작은 안부로.</p>
     <div class="role-buttons edition-choices"><a class="edition-choice senior-choice" href="${editionHref('senior')}" data-edition="senior"><span class="edition-choice-icon">${brandSymbol()}</span><span><small>Senior</small><strong>어르신용</strong><span>필요한 소식만, 한 번에 전해요.</span></span>${uiIcon('arrow')}</a><a class="edition-choice carer-choice" href="${editionHref('carer')}" data-edition="carer"><span class="edition-choice-icon">${uiIcon('share')}</span><span><small>Carer</small><strong>보호자용</strong><span>안부와 하루의 변화를 살펴봐요.</span></span>${uiIcon('arrow')}</a></div><p class="welcome-note">서로의 하루에, 작은 온기를.</p>
     ${journeyEntry()}<p class="welcome-simple-note">두 화면은 로그인 없이 둘러볼 수 있어요.<br>${CLOUD_AVAILABLE?'본인 식사 저장은 로그인 후, 가족 연동은 아직 체험이에요.':'인터넷 없이 열리는 체험판이에요. 실제 저장·가족 전송은 하지 않아요.'}</p></div></section>`;
 }
-async function greetWelcome(){
-  const scene=root.querySelector('.welcome'),bunny=scene?.querySelector('.bunny-slot img');
-  if(!scene||!bunny||window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
-  try{await bunny.decode();}catch{return;}
-  if(!scene.isConnected)return;
-  if(document.hidden){
-    const whenVisible=()=>{if(document.hidden)return;document.removeEventListener('visibilitychange',whenVisible);if(scene.isConnected)void greetWelcome();};
-    document.addEventListener('visibilitychange',whenVisible);return;
-  }
-  scene.classList.remove('is-greeting');
-  // Restart only this decorative scene; never block the entry buttons or move focus.
-  void scene.offsetWidth;
-  scene.classList.add('is-greeting');
-}
+function greetWelcome(){return welcomeGreeting?.play();}
 function senior(){
   const selected=meal(),allowed=state.consent,last=state.devices.cooker.lastActivity;
   return heading('오늘도, 평소처럼.<br>필요할 때 한 번만.',`${dateLabel(dayOf(state.now))} · 가상 시계 ${hhmm(state.now)}`)+`
@@ -316,6 +304,7 @@ function render(focus=false){
   const wasModal=!!root.querySelector('dialog[open]');
   const scrollPositions=[...root.querySelectorAll('.plot-wrap,.table-scroll')].map(el=>({label:el.getAttribute('aria-label'),left:el.scrollLeft}));
   accountCleanup?.();accountCleanup=null;
+  welcomeGreeting?.dispose();welcomeGreeting=null;
   evaluate(state);
   document.body.dataset.view=view;
   document.body.dataset.edition=edition||'choose';
@@ -341,7 +330,10 @@ function render(focus=false){
   for(const field of root.querySelectorAll('input[name="grace"]')){field.value='0';field.type='hidden';field.closest('label')?.setAttribute('hidden','');}
   for(const link of root.querySelectorAll('a[href^="#"]'))link.setAttribute('href',routeHref(link.getAttribute('href').slice(1)));
   document.querySelector('.skip-link').setAttribute('href',`${location.pathname}#main`);
-  if(view==='welcome'&&!welcomeSeen){welcomeSeen=true;void greetWelcome();}
+  if(view==='welcome'){
+    welcomeGreeting=createBunnyGreeting(root.querySelector('.welcome'),{spriteUrl:ASSETS.greeting});
+    if(!welcomeSeen){welcomeSeen=true;void greetWelcome();}
+  }
   if(view==='account'&&CLOUD_AVAILABLE)accountCleanup=mountAccount(document.querySelector('#account-surface'),{audience:edition,browseHref:routeHref(EDITIONS[edition].home),familyHref:routeHref('family'),connectHref:routeHref('connect')});
   if(view==='connect'&&CLOUD_AVAILABLE)accountCleanup=mountSmartThings(document.querySelector('#smartthings-surface'),{accountHref:routeHref('account')});
   if(modal){const dialog=root.querySelector('dialog');dialog.showModal();dialog.addEventListener('cancel',event=>{event.preventDefault();closeModal();});}

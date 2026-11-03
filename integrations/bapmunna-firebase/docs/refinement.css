@@ -1,12 +1,8 @@
 /* Quiet hierarchy. Existing brand assets and all state rules are preserved. */
-/* Welcome: two soft hops, then stillness. One automatic greeting per page load. */
-.bunny-slot img{transform-origin:50% 94%}.bunny-shadow{position:absolute;left:27%;bottom:10%;width:47%;height:4%;border-radius:50%;background:#85662b26;filter:blur(5px);transform-origin:center}
+/* Welcome: pose-based hopping and waving live in bunny-greeting.css/mjs. */
 .welcome-replay{position:absolute;right:20px;bottom:8px;display:flex;align-items:center;gap:6px;min-height:44px;padding:8px 12px;border:0;background:transparent;border-radius:22px;font-size:12px;font-weight:500;color:#65502d}.welcome-replay span{font-size:19px}.welcome-replay:hover{background:#fff6d14d}
-.welcome.is-greeting .bunny-slot img{animation:bunny-welcome 2.8s both}.welcome.is-greeting .bunny-shadow{animation:bunny-ground 2.8s both}.welcome.is-greeting .welcome-heart{animation:hello-heart 2.8s both}
-@keyframes bunny-welcome{0%,10%,100%{transform:translateY(0) rotate(0) scale(1)}18%{transform:translateY(4px) rotate(-3deg) scale(1.025,.965)}34%{transform:translateY(-45px) rotate(4deg) scale(.985,1.025);animation-timing-function:ease-in}47%{transform:translateY(0) rotate(-2deg) scale(1.035,.96)}53%{transform:translateY(0) rotate(0) scale(1)}63%{transform:translateY(-24px) rotate(-3deg) scale(.99,1.015);animation-timing-function:ease-in}75%{transform:translateY(0) rotate(2deg) scale(1.02,.98)}88%{transform:translateY(-3px) rotate(-1deg) scale(1)}}
-@keyframes bunny-ground{0%,10%,53%,100%{transform:scaleX(1);opacity:1}18%,47%,75%{transform:scaleX(1.08);opacity:1}34%{transform:scaleX(.7);opacity:.42}63%{transform:scaleX(.83);opacity:.6}}
 @keyframes hello-heart{0%,20%{opacity:0;transform:translateY(10px) rotate(-10deg) scale(.65)}42%{opacity:1;transform:translateY(-8px) rotate(6deg) scale(1.14)}68%{opacity:.9;transform:translateY(-13px) rotate(-5deg) scale(.94)}100%{opacity:1;transform:translateY(0) rotate(-10deg) scale(1)}}
-@media(prefers-reduced-motion:reduce){.welcome.is-greeting .bunny-slot img,.welcome.is-greeting .bunny-shadow,.welcome.is-greeting .welcome-heart{animation:none!important}.welcome-replay{display:none}}
+@media(prefers-reduced-motion:reduce){.welcome.is-greeting .welcome-heart{animation:none!important}}
 /* More: one personal-record entry, three essentials, optional demo tools. */
 .more-account{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:22px 24px;background:linear-gradient(120deg,#fff1bd,#f9e5a3);border-radius:24px;text-decoration:none;color:var(--ink)}
 .more-account-copy{display:grid;gap:4px;min-width:0}.more-account-copy small{font-size:12px;color:#685634}.more-account-copy strong{font-size:28px;letter-spacing:-1px;line-height:1.4}.more-account-copy>span{font-size:14px;color:#685634}.more-account-arrow{width:44px;height:44px;display:grid;place-items:center;flex-shrink:0;border-radius:50%;background:#fffaf0;color:#665135}

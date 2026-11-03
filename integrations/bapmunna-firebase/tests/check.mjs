@@ -43,10 +43,14 @@ assert.ok(more.includes('<details class="more-demo"><summary>'),'Demo options ar
 assert.ok(more.includes('실제 기록이나 연락 없이'),'Demo remains separate from real records');
 console.log('PASS service name and simplified More navigation contracts');
 assert.match(app,/welcomeSeen=false/,'Hero auto-plays once per page load');
-assert.match(app,/prefers-reduced-motion: reduce/,'Hero respects motion preference before playback');
+const greeting=readFileSync(new URL('../docs/bunny-greeting.mjs',import.meta.url),'utf8');
+assert.match(greeting,/prefers-reduced-motion: reduce/,'Hero respects motion preference before playback');
 assert.match(app,/case 'welcome-replay':void greetWelcome\(\);return;/,'Replay does not re-render or reset demo state');
-assert.match(app,/await bunny.decode\(\)/,'Hero waits for the original character asset');
-assert.match(css,/bunny-welcome 2\.8s both/,'Welcome motion ends within three seconds');
+assert.match(greeting,/image.decode\(\)/,'Hero waits for its pose atlas before hiding the original');
+const {BUNNY_DURATION}=await import('../docs/bunny-greeting.mjs');
+assert.ok(BUNNY_DURATION<=5000,'Welcome motion ends within five seconds');
+assert.ok(html.includes('./bunny-greeting.css'),'Pose animation styles are loaded');
+assert.ok(existsSync(new URL('../docs/assets/bunny-greeting.webp',import.meta.url)),'Pose atlas is included');
 assert.match(css,/animation:none!important/,'Reduced motion has a static CSS fallback');
 console.log('PASS welcome animation accessibility contracts');
 await import('./worksheet.test.mjs');

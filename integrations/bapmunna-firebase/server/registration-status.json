@@ -1,0 +1,18 @@
+{
+  "checkedAt": "2026-11-03T07:55:39.081074+00:00",
+  "appId": "f1b8149d-45c5-4f4b-8136-2ad518faf4ec",
+  "appName": "bapmunna-warming-up-20261103",
+  "displayName": "밥뭇나 · Warming Up",
+  "appType": "API_ONLY",
+  "targetUrl": "https://impact-series.web.app/api/smartthings/events",
+  "targetStatus": "PENDING",
+  "scope": [
+    "r:devices:*"
+  ],
+  "redirectUris": [
+    "https://impact-series.web.app/api/smartthings/callback"
+  ],
+  "registrationVerified": true,
+  "publicApiDeployed": false,
+  "endUserOAuthVerified": false
+}

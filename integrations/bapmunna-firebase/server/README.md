@@ -1,13 +1,15 @@
 # 밥뭇나 SmartThings 연결 서버
 
-2026-11-03 구현: **본인 로그인 → 삼성 동의 → 플러그 선택 → 신호 도착 확인 → 연결 해제**. 현재 PR에는 코드와 검증이 들어 있으며 운영 서버나 삼성 앱 등록을 완료한 상태는 아니다. 프런트는 서버가 없거나 설정되지 않았으면 ‘준비 중’을 표시한다.
+2026-11-03 구현: **본인 로그인 → 삼성 동의 → 플러그 선택 → 신호 도착 확인 → 연결 해제**. **삼성 OAuth 앱 등록과 설정 재조회는 완료했다.** 공개 서버 배포와 실제 사용자 OAuth·구독·자동 수신 검증은 남아 있다. 프런트는 서버가 없거나 설정되지 않았으면 ‘준비 중’을 표시한다.
+
+등록 증거는 비밀값을 제외한 [registration-status.json](registration-status.json)에 있다. App ID는 `f1b8149d-45c5-4f4b-8136-2ad518faf4ec`, 앱 유형은 `API_ONLY`, 현재 webhook Target 상태는 `PENDING`이다. Client ID·Secret은 발급되었고 접근 제한된 비공개 파일에 보관했다. URL이 저장되었다는 사실과 공개 서버가 가동된다는 사실을 구분한다. [배포·비용·실제 시연 계획](deployment-plan.md)을 따른다.
 
 ## 이번 주에 팀이 할 일
 
 | 순서 | 할 일 | 완료 기준 |
 | --- | --- | --- |
 | 1 | Figma에서 캐릭터·로그인·연결 화면 확인 | 기존 초록 가디건 토끼를 전 화면에 사용, 노란 밥솥은 브랜드 로고 |
-| 2 | 삼성 개발자 계정의 앱 등록 가능 여부·팀 서비스 이용 조건 확인 | App ID, Client ID, Client Secret 발급. 결제·Business 계약은 팀이 비용 확인 후 결정 |
+| 2 | 삼성 개발자 계정의 앱 등록·팀 서비스 이용 조건 확인 | App ID, Client ID, Client Secret 발급 완료. 결제·Business 계약은 별도 결정 |
 | 3 | 테스트용 서버와 비밀 키 설정 | 아래 설정을 별도 테스트 환경에서 완료하고 `config.enabled=true` 확인 |
 | 4 | 1가구의 실제 플러그로 연결·사용·해제 | 전력 측정 capability, 삼성 허용 화면, 수신 시각, 재연결, 철회 확인 |
 | 5 | 2–3가구 각각 본인 계정으로 반복 | 다른 가구 정보가 보이지 않고 각 기기에서 신호 수신 |
@@ -21,7 +23,7 @@
 
 삼성 공식 [앱 설정](https://developer.smartthings.com/docs/service-integrations/app-setup)은 조사일 현재 새 API Access App 등록을 coming soon으로 표시한다. 계정에 실제로 활성화된 등록 경로를 확인해야 하며, 준비 코드를 실제 연결 완료로 보지 않는다. 기존 OAuth 앱은 [Quick Start](https://developer.smartthings.com/docs/getting-started/quickstart)의 경로가 다르므로 발급한 앱과 API 버전을 맞춘다.
 
-`app-registration.json`은 공식 CLI의 OAuth-In/API_ONLY 생성 입력이다. 11월 3일 공식 CLI 2.1.3의 `--dry-run`으로 파일을 읽고 전송 예정 내용을 확인했다. 이는 서버가 등록을 수락했다는 뜻은 아니다. Client Secret이나 테스트 토큰은 들어 있지 않으며, 실제 등록 성공은 App ID 발급과 API 재조회로 별도 확인한다.
+`app-registration.json`은 공식 CLI의 OAuth-In/API_ONLY 생성 입력이다. 11월 3일 공식 CLI 2.1.3에서 삼성 계정 인증과 CLI 권한 승인을 마친 뒤 `apps:create`에 성공했다. 이어 `apps`와 `apps:oauth`로 Redirect URI·Target URL·읽기 권한이 이 파일과 일치하는지 확인했다. manifest와 공개 등록 증거에는 Client Secret이나 테스트 토큰이 없다. 기존 앱을 다시 만들거나 Client Secret을 불필요하게 재발급하지 않는다.
 
 ### 인증을 재개할 때
 
@@ -52,7 +54,7 @@ npm start
 
 ## Firebase / Cloud Run 연결 준비
 
-`Dockerfile`과 `hosting-rewrite.example.json`은 검토용 예시이며 자동 배포하지 않는다. 기존 Hosting 설정 전체를 예시 파일로 덮어쓰면 안 된다. `/api/smartthings/**` rewrite를 기존 SPA fallback보다 앞에 추가하고 나머지 사이트 설정을 보존한다. 예시는 `us-central1`; 실제 리전과 비용을 확인해 선택한다.
+`Dockerfile`과 `hosting-rewrite.example.json`은 검토용 예시이며 자동 배포하지 않는다. 기존 Hosting 설정 전체를 예시 파일로 덮어쓰면 안 된다. `/api/smartthings/**` rewrite를 기존 SPA fallback보다 앞에 추가하고 나머지 사이트 설정을 보존한다. 11월 3일 실제 기본 Firestore 위치가 `asia-northeast3`임을 확인해 서버도 같은 서울 리전으로 준비했다. Hosting이 지원하는 리전이며 실제 지역별 요금과 사용량은 배포 전에 확인한다.
 
 - [Firebase Hosting + Cloud Run](https://firebase.google.com/docs/hosting/cloud-run)에는 결제 계정 연결이 필요하며 Spark 프로젝트는 Blaze로 바뀔 수 있다. 2026-11-03 실제 조회에서 `ku-gpa`의 billingEnabled=false와 Cloud Run/Functions API 미활성을 확인했다. 결제 연결 및 비용 확인 전에는 webhook URL을 등록하더라도 서버 검증 완료라고 표시할 수 없다. 이 PR은 결제나 유료 플랜을 활성화하지 않는다.
 - 공개 endpoint는 사용자 API의 Firebase ID token 검증과 삼성 webhook 서명 검증으로 보호한다. 서버의 IAM은 필요한 Firebase Auth 사용자 조회·Firestore 접근과 해당 Secret 조회 범위로 제한한다. Firebase ID token은 폐기 여부까지 확인한다.
@@ -85,7 +87,7 @@ npm start
 - 서버 단위: OAuth state/nonce, 암호화/AAD, 다른 사용자/기기, 토큰 만료·동시 갱신, RSA 서명, 재전송, 해제, 402/429.
 - Firestore emulator: 실제 트랜잭션의 소유자 매핑, lease, state 일회 사용, 이벤트 중복·역순, 연결 삭제. 프로덕션 데이터 미접근.
 - 화면: 모바일 역할 전환, 로그인, 준비 중 메뉴 검증. 연결 후 화면은 테스트용 응답과 Figma 설계로 확인하며 실제 삼성 계정의 성공 증거가 아니다.
-- 삼성 앱 등록, Target URL 확인, 실제 인증·기기 구독·계속 수신·24시간 이후 갱신·계정 철회는 실제 장비 검증 항목으로 남는다. CONFIRMATION도 서명을 요구한다. 등록 시 실제 header 형식이 다르면 검증 근거를 확인해 수정하고, 서명 검증을 임의로 끄지 않는다.
+- 삼성 앱 등록과 설정 재조회는 완료했다. Target URL 확인, 실제 사용자 인증·기기 구독·계속 수신·24시간 이후 갱신·계정 철회는 실제 장비 검증 항목으로 남는다. CONFIRMATION도 서명을 요구한다. 실제 header 형식이 다르면 검증 근거를 확인해 수정하고, 서명 검증을 임의로 끄지 않는다.
 - 2026-11-03 `npm audit`는 공식 Admin SDK의 하위 의존성에서 moderate 6건을 보고했다. 호환 범위의 `npm audit fix`로 해결되지 않았으며, 배포 전 공급자 업데이트를 재확인한다. 강제 major override는 적용하지 않았다.
 
 공식 근거: [OAuth](https://developer.smartthings.com/docs/service-integrations/oauth), [토큰 갱신](https://developer.smartthings.com/docs/service-integrations/token-management), [기기 목록](https://developer.smartthings.com/docs/service-integrations/query-and-list-devices), [webhook 검증](https://developer.smartthings.com/docs/service-integrations/webhook-events), [Firebase ID token 검증](https://firebase.google.com/docs/auth/admin/verify-id-tokens).

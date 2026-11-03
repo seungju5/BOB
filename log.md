@@ -80,3 +80,11 @@
 - 배포 상태: ku-gpa 결제 미연결, Cloud Run/Functions 미활성. 등록 manifest와 서버는 준비됐지만 공개 callback/webhook 서비스 가동·Target URL 확인·실제 OAuth 연결 완료는 후속 증거가 필요하다. 유료 전환 없음.
 
 - 재개 준비: 공식 CLI 등록 파일의 dry-run 확인, 390×844 화면에서 토끼 로그인·역할 전환·SmartThings 준비 중 화면 검수. 구독 이름 충돌 시 실제 기기를 재확인해 연결 완료 오표시를 방지했다.
+
+## 2026-11-03 (삼성 OAuth 앱 실제 등록)
+
+- 삼성 문자 인증과 사용자가 승인한 공식 CLI 권한 부여를 완료했다. 이전 403은 단기 PAT의 앱 등록 권한 문제였으며 공식 CLI 인증으로 앱 생성에 성공했다.
+- App ID `f1b8149d-45c5-4f4b-8136-2ad518faf4ec`, 이름 `밥뭇나 · Warming Up`, API_ONLY. Client ID·Secret 발급 후 앱·OAuth 설정을 각각 재조회해 callback·webhook·`r:devices:*` 일치를 확인했다. 비밀값은 Git 제외 파일에 0600 권한으로 보관한다.
+- `server/registration-status.json`에 비밀값 없는 재조회 증거를 기록했다. Target은 `PENDING`; 공개 API·사용자 OAuth·기기 구독·자동 수신 검증은 미완료다.
+- 기본 Firestore 위치는 서울(`asia-northeast3`)로 확인했다. 같은 리전으로 배포안을 정리했다. Firebase는 Spark/결제 미연결 상태이며 유료 전환을 실행하지 않았다.
+- 사용자가 요청한 팀 시연의 완료 기준과 비용 검토를 `server/deployment-plan.md`에 기록했다. 등록과 화면 구현을 실제 신호 자동 수신 성공으로 혼동하지 않도록 구분한다.

@@ -96,7 +96,7 @@ test('experience is network-free and cannot persist or notify',async()=>{
 });
 test('new screens preserve labels, touch controls, focus restoration and reduced motion',async()=>{
   const app=await readFile(new URL('../docs/app.mjs',import.meta.url),'utf8'),css=await readFile(new URL('../docs/experience.css',import.meta.url),'utf8');
-  for(const text of ['밥 한 끼로 전하는 안부','토끼처럼 부지런하면','무엇이든 해내겠지요','data-meal-detail','aria-pressed','setup-welcome-next','wasModal&&focusReturn'])assert.ok(app.includes(text));
+  for(const text of ['밥 한 끼로 전하는 안부','안부가','폴짝,','나의 작은','data-meal-detail','aria-pressed','setup-welcome-next','wasModal&&focusReturn'])assert.ok(app.includes(text));
   assert.match(css,/prefers-reduced-motion:reduce/);assert.match(css,/max-width:360px/);assert.match(css,/min-height:44px/);
   assert.ok(app.includes("link?.classList.contains('skip-link')"));assert.ok(app.includes("main?.focus({preventScroll:true})"));
   assert.ok(!app.includes("setAttribute('href',routeHref('main'))"),'skip target is a document anchor, not a portable role route');
@@ -105,36 +105,36 @@ test('both generated editions and portable bundle include the experience layer',
   for(const entry of ['senior/index.html','carer/index.html']){const html=await readFile(new URL('../docs/'+entry,import.meta.url),'utf8');assert.match(html,/experience.css/);}
   const html=await readFile(new URL('../workshop/bapmunna.html',import.meta.url),'utf8');assert.match(html,/function journeyScene/);assert.doesNotMatch(html,/<link[^>]+href="\.\/experience.css"/);
 });
-test('supplied cooker decorates signal areas while preserving original artwork and evidence bowls',async()=>{
+test('existing bunny decorates signal areas while preserving original artwork and evidence bowls',async()=>{
   const app=await readFile(new URL('../docs/app.mjs',import.meta.url),'utf8');
   const css=await readFile(new URL('../docs/character.css',import.meta.url),'utf8');
-  assert.match(app,/companion:'\.\/assets\/rice-cooker-companion\.png'/);
+  assert.match(app,/companion:'\.\/assets\/bunny-natural\.png'/);
   for(const asset of ['bunny.png','bunny-natural.png','rice-logo.png','rice-companion.svg','rice-cooker-companion.png']){
     assert.ok((await readFile(new URL('../docs/assets/'+asset,import.meta.url))).length>0);
   }
-  assert.match(app,/const cookerCompanion=.*aria-hidden="true".*art\('companion',1254,1254\)/);
+  assert.match(app,/const bunnyCompanion=.*aria-hidden="true".*art\('companion',1254,1254\)/);
   assert.ok(app.includes("art(evidence.level,800,534,'','care-rice')"));
   assert.ok(app.includes("art(riceState(state,selected).level,120,80,'','quiet-rice')"));
   assert.ok(app.includes("art(evidence.level,800,534,'기록에 따라 달라지는 안부 밥그릇')"));
-  assert.match(css,/\.care-hero-top \.cooker-portrait>img/);
-  assert.match(css,/prefers-reduced-motion:reduce.*\.cooker-portrait\{animation:none/);
+  assert.match(css,/\.care-hero-top \.bunny-portrait>img/);
+  assert.match(css,/prefers-reduced-motion:reduce.*\.bunny-portrait\{animation:none/);
 });
-test('portable version embeds the transparent cooker asset without an external request',async()=>{
-  const png=await readFile(new URL('../docs/assets/rice-cooker-companion.png',import.meta.url));
-  assert.equal(png.toString('ascii',1,4),'PNG');assert.equal(png[25],6,'PNG uses RGBA');
+test('portable version embeds the bunny asset without an external request',async()=>{
+  const png=await readFile(new URL('../docs/assets/bunny-natural.png',import.meta.url));
+  assert.equal(png.toString('ascii',1,4),'PNG');
   const portable=await readFile(new URL('../workshop/bapmunna.html',import.meta.url),'utf8');
   assert.ok(portable.includes(`data:image/png;base64,${png.toString('base64')}`));
 });
-test('selected cooker logo is consistent across entry pages, auth and the guided journey',async()=>{
-  for(const path of ['index.html','senior/index.html','carer/index.html','manage/index.html','account-view.mjs']){
+test('cooker brand and bunny companion remain distinct across entry pages and auth',async()=>{
+  for(const path of ['index.html','senior/index.html','carer/index.html','manage/index.html']){
     const source=await readFile(new URL('../docs/'+path,import.meta.url),'utf8');
-    assert.match(source,/rice-cooker-companion\.png/);assert.match(source,/brand-symbol/);assert.doesNotMatch(source,/rice-logo\.png/);
+    assert.match(source,/rice-logo\.png/);assert.match(source,/brand-symbol/);
   }
   const app=await readFile(new URL('../docs/app.mjs',import.meta.url),'utf8');
-  assert.match(app,/logo:'\.\/assets\/rice-cooker-companion\.png'/);
+  assert.match(app,/logo:'\.\/assets\/rice-logo\.png'/);
   assert.equal((app.match(/\$\{brandSymbol\(\)\}/g)||[]).length,4);
   assert.match(app,/const brandSymbol=.*aria-hidden="true"/);
   const css=await readFile(new URL('../docs/brand.css',import.meta.url),'utf8');
-  assert.match(css,/\.brand-symbol>img\{[^}]*width:180%/);
+  assert.match(css,/\.brand-symbol>img\{[^}]*width:100%/);
   assert.doesNotMatch(css,/\.brand-symbol[^}]*animation:/,'the logo stays still');
 });

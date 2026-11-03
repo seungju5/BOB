@@ -99,3 +99,11 @@
 - 전력 데이터 수신 간격 (1분 기본값, SmartThings rate limit 확인 후)
 - 상업용 API 요금과 BM
 - 정식 서비스의 SmartThings 인증 (PAT → OAuth SmartApp)
+
+## ADR-008: Firebase 본인 계정의 SmartThings OAuth와 신호 도착 확인
+
+- **상태:** 구현, 운영 연결 대기 (2026-11-03)
+- **결정:** Firebase 통합판에 같은 출처의 별도 Node 서버를 추가한다. 검증된 Firebase 계정에만 OAuth state를 발급하고 브라우저 nonce, 단일 사용, 10분 만료로 연결한다. 서버에서 읽기 전용 권한으로 플러그 하나를 구독한다.
+- **보호:** refresh token을 AES-256-GCM으로 암호화하고 계정·installation에 묶는다. Firestore 트랜잭션 lease로 갱신을 직렬화하고 webhook 서명·digest·freshness·중복을 검증한다. 브라우저의 SmartThings 내부 collection 접근은 금지한다.
+- **표현:** 기존 토끼와 밥솥 로고를 사용하고 이메일/Google 로그인과 연결 단계를 명확히 한다. 서버 미설정은 준비 중, 기기 신호 없음은 대기로 표현한다. 식사 미확인·건강 위험으로 해석하지 않는다.
+- **범위:** 루트 Supabase 앱·판단 규칙·가족 공유는 유지한다. 운영 결제·새 서비스 배포·실기기 검증 완료는 코드 구현과 별도로 확인한다.

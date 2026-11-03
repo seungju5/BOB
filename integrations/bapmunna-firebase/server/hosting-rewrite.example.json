@@ -1,0 +1,11 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/smartthings/**",
+      "run": {
+        "serviceId": "bapmunna-smartthings",
+        "region": "us-central1"
+      }
+    }
+  ]
+}

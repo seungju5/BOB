@@ -9,7 +9,7 @@ const html=readFileSync(new URL('../docs/index.html',import.meta.url),'utf8');
 for(const filename of ['style.css','brand.css','interface.css','app.mjs','engine.mjs','family.mjs','presentation.mjs','checks.mjs','assets/rice-logo.png','assets/partner.png','assets/bunny.png','assets/rice-full.png','assets/rice-half.webp','assets/rice-empty.webp','assets/PretendardVariable.woff2','assets/NanumPenScript-Regular.ttf','assets/OFL-Pretendard.txt','assets/OFL-NanumPenScript.txt']) assert.ok(existsSync(new URL(`../docs/${filename}`,import.meta.url)),filename);
 assert.ok(html.includes('lang="ko"'));
 assert.ok(html.includes('rel="icon"'));
-assert.equal((html.match(/\.\/assets\/rice-cooker-companion\.png/g)||[]).length,2,'Header and favicon use the user-selected cooker character');
+assert.equal((html.match(/\.\/assets\/rice-logo\.png/g)||[]).length,2,'Header and favicon use the original cooker brand');
 assert.ok(html.includes('href="./brand.css"'),'Brand styles are loaded');
 for(const filename of ['app.mjs','engine.mjs','family.mjs','presentation.mjs']){
  const source=readFileSync(new URL(`../docs/${filename}`,import.meta.url),'utf8');

@@ -2,6 +2,8 @@
 
 기존 Firebase 디자인을 보존하면서 루트 Next.js/Supabase 앱의 판단 함수를 함께 사용하는 별도 프런트엔드입니다. 루트 앱을 대체하지 않으며, 이 폴더를 추가하는 것만으로 운영 사이트나 데이터베이스가 바뀌지 않습니다.
 
+2026-11-03에는 기존 초록 가디건 토끼를 시작·로그인·기기 연결 화면에 다시 일관되게 적용하고, 노란 `rice-logo.png`를 브랜드 심볼로 사용했습니다. 본인 계정의 SmartThings OAuth·기기 선택·신호 수신 서버 코드는 [server/README.md](server/README.md)에 있습니다. **삼성 앱 등록과 운영 배포는 아직 완료하지 않았습니다.** 테스트 토큰으로 전력 측정 기기 1대의 조회만 실제 확인했으며, OAuth 성공이나 자동 수신 완료를 뜻하지 않습니다.
+
 ## 실행과 검증
 
 저장소 루트에서 Node 24와 잠긴 의존성을 사용합니다.
@@ -86,7 +88,7 @@ BAPMUNNA_CANVAS_MODULE=/absolute/path/to/@napi-rs/canvas \
 - 전력 시뮬레이터는 흐름을 바로 보여줍니다. Supabase 서버의 주기 실행·이벤트 마감 지연까지 재현하지 않습니다. 실제 밥솥 정확도 검증으로 해석하면 안 됩니다.
 - `확인됨`은 승인된 Supabase 규칙의 표현입니다. 실제 섭취량·영양·건강 상태를 증명하지 않습니다. 밥그릇 그림도 소식의 유무를 표현합니다.
 - 기존 Firebase 계정·본인 수동 기록과 루트 Supabase BOB 계정·가족 페어링은 별도입니다. 기존 선택형 Supabase 제공자도 BOB와 다른 프로젝트입니다. 자격 증명·DB·RLS·사용자 데이터를 합치지 않았습니다.
-- 실제 SmartThings, 가족 실시간 동기화, 푸시, BOB 인증 어댑터는 별도 승인·구현·통합 테스트가 필요합니다. 현재 가족 체험은 같은 탭에서만 동작합니다.
+- SmartThings는 본인 기기 1개의 연결 서버를 구현한 단계이며 실제 OAuth 등록·공개 서버 배포·기기 통합 검증이 남아 있습니다. 가족 실시간 동기화, 푸시, BOB 인증 어댑터는 별도 구현·통합 테스트가 필요합니다. 현재 가족 체험은 같은 탭에서만 동작합니다.
 
 운영 주소는 `https://impact-series.web.app/`입니다. 여기의 커밋·PR은 해당 Firebase 운영 사이트로 자동 배포되지 않습니다. 저장소에 이미 연결된 루트 앱의 Vercel 미리보기는 별개이며, 2026-10-17에는 커밋 작성자의 GitHub 계정 확인 문제로 차단됐습니다. 이 작업은 작성자 설정·계정 권한·배포 연결을 바꾸지 않았습니다. `stage:firebase`, `firebase:inspect`, 배포 관련 스크립트에는 기존 프로젝트 설정이 있으므로 대상을 확인하고 별도 배포 요청 없이 실행하지 마세요. 기존 `documentation/`은 원본 개발 이력이며, 충돌하는 판단 규칙과 실행 경계는 이 README와 루트 ADR-006을 따릅니다.
 
@@ -96,5 +98,4 @@ BAPMUNNA_CANVAS_MODULE=/absolute/path/to/@napi-rs/canvas \
 - 파일 목록: `.env.example`, `.gitattributes`, `.gitignore`, `LICENSE`, `cloud/`, `docs/`, `documentation/`, `firebase.emulators.json`, `firebase/`, `package*.json`, `scripts/`, `supabase/`, `tests/`, `workshop/`.
 - 원본 작업 폴더의 미커밋 변경과 로컬 비밀 파일은 가져오지 않았습니다. 라이선스·출처와 기존 로고·토끼 원본을 보존했습니다.
 - 새 토끼는 `docs/assets/bunny-natural.png`, 원본은 `docs/assets/bunny.png`입니다. [이미지 제작 기록](documentation/character-refinement.md)에 편집 의도와 프롬프트를 남겼습니다.
-- 사용자 제공 밥솥 캐릭터는 `docs/assets/rice-cooker-companion.png`입니다. 투명 배경으로 편집해 시니어 소식·보호자 카드 제목·센서 체험에 적용했습니다. 기존 `rice-companion.svg`와 로고·토끼는 보존했습니다. 기록에 따라 변하는 밥그릇과 구분되는 장식이며, 기존 소개 영상은 이번 캐릭터 변경으로 재렌더링하지 않았습니다.
-- 이후 같은 날짜의 로고 교체 요청에 따라 이 캐릭터를 시작·역할별 홈·체험·계정·관리 화면의 브랜드 심볼과 favicon에도 적용했습니다. 글자 로고·토끼·협업 표시는 유지하고 `rice-logo.png`는 과거 원본으로만 보관합니다. 이미지 자체를 다시 생성하지 않고 기존 투명 PNG의 여백을 CSS로 프레이밍했습니다.
+- 이전 밥솥 캐릭터 파일 `docs/assets/rice-cooker-companion.png`와 `rice-companion.svg`는 제작 이력으로 보존했습니다. 11월 3일 최신 선택에서는 토끼가 동반 캐릭터이고 `rice-logo.png`가 로고·favicon입니다. 기존 소개 영상은 이번 변경으로 재렌더링하지 않았습니다.

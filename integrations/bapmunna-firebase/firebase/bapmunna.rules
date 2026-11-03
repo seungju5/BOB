@@ -80,4 +80,11 @@
       allow get: if b3Owner(uid);
       allow list,write: if false;
     }
+    // Server-only SmartThings collections. Neither owners nor CRM staff can
+    // read tokens, OAuth state, or device metadata directly from a browser.
+    match /bapmunnaSmartThingsConnections/{id} { allow read,write: if false; }
+    match /bapmunnaSmartThingsInstallations/{id} { allow read,write: if false; }
+    match /bapmunnaSmartThingsStates/{id} { allow read,write: if false; }
+    match /bapmunnaSmartThingsLocks/{id} { allow read,write: if false; }
+    match /bapmunnaSmartThingsReceipts/{id} { allow read,write: if false; }
     // END BAPMUNNA ACCOUNT V3

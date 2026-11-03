@@ -23,6 +23,10 @@ const contentTypes = {
 };
 
 const server = createServer(async (request, response) => {
+  if (request.url === '/api/smartthings/config' && request.method === 'GET') {
+    response.writeHead(200, {'Content-Type':'application/json','Cache-Control':'no-store'}).end(JSON.stringify({enabled:false}));
+    return;
+  }
   if (!['GET', 'HEAD'].includes(request.method)) {
     response.writeHead(405, { Allow: 'GET, HEAD' }).end();
     return;

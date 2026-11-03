@@ -12,9 +12,10 @@ export function createProvider(config){
   const profileRef=uid=>doc(db,'bapmunnaAccounts',uid);
   const contactRef=uid=>doc(db,'bapmunnaCRMContacts',uid);
   const remember=value=>setPersistence(auth,value?browserLocalPersistence:browserSessionPersistence);
-  const actionSettings={url:'https://ku-gpa.web.app/bapmunna/#account',handleCodeInApp:false};
+  const actionSettings={url:'https://impact-series.web.app/bapmunna/#account',handleCodeInApp:false};
   return {
     name:'Firebase',supportsGoogle:true,
+    getIdToken:()=>requireUser().getIdToken(),
     onUser(callback){return onAuthStateChanged(auth,user=>callback(mapUser(user)));},
     async signIn(email,password,keep){await remember(keep);await signInWithEmailAndPassword(auth,email.trim(),password);},
     async signUp(email,password,name,keep){

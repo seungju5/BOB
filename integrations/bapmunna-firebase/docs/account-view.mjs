@@ -6,9 +6,9 @@ const accountAssetRoot=new URL('./assets/',import.meta.url).href;
 const safe=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const selectOptions=(values,current)=>Object.entries(values).map(([id,label])=>`<option value="${id}" ${id===current?'selected':''}>${label}</option>`).join('');
 
-export function mountAccount(element,{admin=false,management,audience='senior',browseHref='#guardian',familyHref='#family'}={}){
+export function mountAccount(element,{admin=false,management,audience='senior',browseHref='#guardian',familyHref='#family',connectHref='#connect'}={}){
   const carer=!admin&&audience==='carer';
-  const primaryAccountHref=`https://ku-gpa.web.app/bapmunna/${carer?'carer':'senior'}/#account`;
+  const primaryAccountHref=`https://impact-series.web.app/bapmunna/${carer?'carer':'senior'}/#account`;
   let alive=true,provider,unwatchAuth,unwatchMeals,disposeManagement,generation=0;
   const model={loading:true,busy:false,user:null,profile:null,staff:false,meals:[],tab:'login',notice:'',problem:'',email:'',pendingVerificationEmail:'',recovery:false};
   function feedback(){return `${model.problem?`<p class="notice error" role="alert">${safe(model.problem)}</p>`:''}${model.notice?`<p class="account-success" role="status">${safe(model.notice)}</p>`:''}`;}
@@ -16,7 +16,7 @@ export function mountAccount(element,{admin=false,management,audience='senior',b
   function authForm(){
     const signup=model.tab==='signup',reset=model.tab==='reset';
     const title=reset?'비밀번호 찾기':signup?'처음 오셨나요?':admin?'관리센터 로그인':carer?'보호자님, 반가워요.':'오늘도 반가워요.';
-    return `<div class="auth-shell"><section class="card account-card"><span class="brand-symbol auth-mark" aria-hidden="true"><img src="${accountAssetRoot}rice-cooker-companion.png" width="1254" height="1254" alt=""></span><h2>${title}</h2><p class="auth-subtitle">${reset?'재설정 링크를 이메일로 보내드릴게요.':signup?'이름과 이메일로 시작해요.':admin?'등록된 운영자 계정으로 시작하세요.':carer?'내 계정으로 보호자 화면을 준비하세요.':'로그인하고 내 기록을 이어가세요.'}</p>
+    return `<div class="auth-shell"><section class="card account-card"><span class="bunny-portrait auth-mark" aria-hidden="true"><img src="${accountAssetRoot}bunny-natural.png" width="1254" height="1254" alt=""></span><h2>${title}</h2><p class="auth-subtitle">${reset?'재설정 링크를 이메일로 보내드릴게요.':signup?'이름과 이메일로 시작해요.':admin?'등록된 운영자 계정으로 시작하세요.':carer?'멀리 있어도, 안부는 가까이.':'오늘의 작은 소식을 이어가요.'}</p>
     ${feedback()}${provider?.signupNotice?`<p class="notice auth-service-note">가입 메일을 준비 중이에요. <a href="${primaryAccountHref}">기본 앱에서 시작하기 →</a></p>`:''}
     <form id="cloud-auth-form">${signup?'<label class="field">이름<input name="name" minlength="2" maxlength="30" autocomplete="nickname" placeholder="어떻게 불러드릴까요?" required></label>':''}<label class="field">이메일<input name="email" type="email" autocomplete="username" maxlength="254" value="${safe(model.email)}" placeholder="name@example.com" required></label>
     ${!reset?`<label class="field">비밀번호<input name="password" type="password" autocomplete="${signup?'new-password':'current-password'}" ${signup?'minlength="8"':''} maxlength="128" placeholder="${signup?'8자 이상으로 입력해 주세요.':'비밀번호를 입력해 주세요.'}" required></label><label class="check-row remember-row"><input type="checkbox" name="remember">로그인 상태 유지</label>`:''}
@@ -38,6 +38,7 @@ export function mountAccount(element,{admin=false,management,audience='senior',b
     const day=koreanDay(),today=model.meals.filter(meal=>meal.day===day),image=today.length?'rice-full.png':'rice-empty.webp';
     const hour=Number(new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Seoul',hour:'numeric',hourCycle:'h23'}).format(new Date())),slot=hour<11?'breakfast':hour<17?'lunch':'dinner';
     return `<div class="account-welcome"><h2>${safe(model.profile?.displayName||model.user.displayName||'사용자')}님, 안녕하세요.</h2><p class="label">${day} · 나의 식사 기록</p></div>${feedback()}
+    <p class="st-account-entry"><a href="${safe(connectHref)}">내 SmartThings 플러그 연결하기 →</a></p>
     ${!model.profile?`<section class="card account-narrow">${profileForm()}<button class="text-button full" data-cloud-action="logout">로그아웃</button></section>`:`<div class="account-record-layout"><div class="stack"><section class="rice-card account-rice"><img class="rice-image" src="${accountAssetRoot}${image}" width="220" height="147" alt=""><h2>오늘 남긴 소식 ${today.length}/3</h2><p class="caption">직접 확인한 기록이에요. 실제 섭취량을 뜻하지 않아요.</p></section>
     <form id="cloud-meal-form" class="card"><h2>오늘 식사를 남겨요.</h2><div class="field-row"><label class="field">끼니<select name="meal">${selectOptions(MEAL_NAMES,slot)}</select></label><label class="field">식사 종류<select name="kind">${selectOptions({home:'집에서',outside:'외식·배달'},'home')}</select></label></div><button class="primary full meal-save" type="submit" ${model.busy?'disabled':''}>식사했어요 · 저장</button><p class="caption">실제로 식사한 뒤 눌러 주세요.<br>같은 끼니를 다시 남기면 종류를 바꿔 저장해요.</p></form></div>
     <section class="card"><h2>최근 기록</h2>${model.meals.length?`<ul class="saved-meals">${mealRows(model.meals.slice(0,5))}</ul><details class="quiet-details account-history"><summary>전체 기록·삭제</summary><p class="caption">최근 90개까지 볼 수 있어요.</p><ul class="saved-meals">${mealRows(model.meals,true)}</ul></details>`:'<p class="muted empty-message">아직 남긴 기록이 없어요.<br>오늘의 첫 소식을 남겨보세요.</p>'}</section></div>
@@ -48,7 +49,7 @@ export function mountAccount(element,{admin=false,management,audience='senior',b
     return '<section class="card account-narrow"><p>관리센터를 준비하고 있어요.</p></section>';
   }
   function carerView(){
-    return `<div class="account-welcome"><h2>${safe(model.profile?.displayName||model.user.displayName||'보호자')}님, 안녕하세요.</h2><p class="label">보호자 본인의 계정</p></div>${feedback()}<section class="card carer-connection"><span class="pill">가족 연동 준비 중</span><h2>어르신과의 연결은<br>동의부터 시작해요.</h2><p>실제 가족 초대와 다른 계정의 식사 요약은 아직 연결되지 않았어요. 현재 보호자 홈·알림·리포트는 가상 데이터로 둘러볼 수 있어요.</p><a class="quiet-link" href="${safe(familyHref)}">가족 초대 흐름 체험하기 →</a><p class="caption">어르신의 로그인 정보를 공유받지 마세요. 본인 기록과 가족 공유는 별도로 관리해요.</p></section><section class="card account-narrow carer-profile">${profileForm()}<button class="text-button full" data-cloud-action="logout">로그아웃</button>${model.staff?'<a class="quiet-link" href="./manage/">운영자 공간 →</a>':''}</section>`;
+    return `<div class="account-welcome"><h2>${safe(model.profile?.displayName||model.user.displayName||'보호자')}님, 안녕하세요.</h2><p class="label">보호자 본인의 계정</p></div>${feedback()}<section class="card st-account-entry"><h2>우리 집 플러그 연결</h2><p>삼성 계정으로 허용하고, 내가 쓸 기기를 골라요.</p><a href="${safe(connectHref)}">SmartThings 연결하기 →</a></section><section class="card carer-connection"><span class="pill">가족 연동 준비 중</span><h2>어르신과의 연결은<br>동의부터 시작해요.</h2><p>실제 가족 초대와 다른 계정의 식사 요약은 아직 연결되지 않았어요. 현재 보호자 홈·알림·리포트는 가상 데이터로 둘러볼 수 있어요.</p><a class="quiet-link" href="${safe(familyHref)}">가족 초대 흐름 체험하기 →</a><p class="caption">어르신의 로그인 정보를 공유받지 마세요. 본인 기록과 가족 공유는 별도로 관리해요.</p></section><section class="card account-narrow carer-profile">${profileForm()}<button class="text-button full" data-cloud-action="logout">로그아웃</button>${model.staff?'<a class="quiet-link" href="./manage/">운영자 공간 →</a>':''}</section>`;
   }
 
   function render(){
@@ -78,7 +79,7 @@ export function mountAccount(element,{admin=false,management,audience='senior',b
   }
   async function run(operation,notice=''){
     if(model.busy)return;
-    model.busy=true;model.problem='';model.notice='';
+    model.busy=true;model.problem='';model.notice='';render();
     try{await operation();if(notice)model.notice=notice;}
     catch(error){model.problem=authMessage(error);}
     finally{model.busy=false;render();}

@@ -88,3 +88,16 @@ test('real Firebase adapter pages tied timestamps, batches notes and returns a s
     const refreshed=await provider.listCustomers({cursor:first.nextCursor});assert.equal(refreshed.customers.find(row=>row.id==='page-test-000').note,'가상 안내 완료');
   }finally{await deleteApp(app);}
 });
+
+
+test('SmartThings secrets and metadata are denied to all browser roles',async()=>{
+  const collections=['Connections','Installations','States','Locks','Receipts'].map(kind=>'bapmunnaSmartThings'+kind);
+  for(const name of collections){
+    await environment.withSecurityRulesDisabled(async admin=>setDoc(doc(admin.firestore(),name,'alice'),{tokens:'synthetic-secret'}));
+    for(const db of [environment.unauthenticatedContext().firestore(),context('alice'),context('operator')]){
+      await assertFails(getDoc(doc(db,name,'alice')));
+      await assertFails(setDoc(doc(db,name,'alice'),{tokens:'forged'}));
+      await assertFails(getDocs(collection(db,name)));
+    }
+  }
+});

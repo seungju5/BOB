@@ -3,14 +3,15 @@ import {FAMILY_ROLES,createInvite,acceptInvite,revokeMember,familySummary} from 
 import {STATUS_COPY,riceState} from './presentation.mjs';
 import {runChecks} from './checks.mjs';
 import {mountAccount} from './account-view.mjs';
+import {mountSmartThings} from './smartthings-view.mjs';
 import {EDITIONS,editionFromLocation,editionView,initialEditionView,editionLink,rememberEdition,recalledEdition} from './editions.mjs';
 import {SETUP_STEPS,setupDraft,validateSetup,applySetup,readSetupForm,setupContent,dateInput,parseDateInput,patternComparison} from './worksheet.mjs';
 import {mealEvidence,careHeadline,JOURNEY_SCENARIOS,journeyScene,reportDayAfterKey,awayPresetRange} from './experience.mjs';
 
 // Resolve once against the entry document; role switches change the URL without reloading.
-const ASSETS=Object.fromEntries(Object.entries({logo:'./assets/rice-cooker-companion.png',partner:'./assets/partner.png',bunny:'./assets/bunny-natural.png',companion:'./assets/rice-cooker-companion.png',full:'./assets/rice-full.png',half:'./assets/rice-half.webp',empty:'./assets/rice-empty.webp',eatout:'./assets/eatout.svg',away:'./assets/away.svg',help:'./assets/help.svg',family:'./assets/family.svg',info:'./assets/info.svg',phone:'./assets/phone.svg',heart:'./assets/heart.svg',history:'./assets/history.svg'}).map(([name,path])=>[name,new URL(path,document.baseURI).href]));
+const ASSETS=Object.fromEntries(Object.entries({logo:'./assets/rice-logo.png',partner:'./assets/partner.png',bunny:'./assets/bunny-natural.png',companion:'./assets/bunny-natural.png',full:'./assets/rice-full.png',half:'./assets/rice-half.webp',empty:'./assets/rice-empty.webp',eatout:'./assets/eatout.svg',away:'./assets/away.svg',help:'./assets/help.svg',family:'./assets/family.svg',info:'./assets/info.svg',phone:'./assets/phone.svg',heart:'./assets/heart.svg',history:'./assets/history.svg'}).map(([name,path])=>[name,new URL(path,document.baseURI).href]));
 const root=document.querySelector('#view');
-const viewNames=['welcome','senior','guardian','report','family','settings','devices','about','account','more','alerts','privacy','setup','journey'];
+const viewNames=['welcome','senior','guardian','report','family','settings','devices','about','account','more','alerts','privacy','setup','journey','connect'];
 const CLOUD_AVAILABLE=document.querySelector('meta[name="bapmunna-cloud"]')?.content==='enabled';
 const appBase=new URL('./',import.meta.url);
 let edition=editionFromLocation(location,document.querySelector('meta[name="bapmunna-edition"]')?.content,CLOUD_AVAILABLE?recalledEdition(appBase):null);
@@ -26,7 +27,7 @@ const esc=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&
 const art=(name,width,height,alt='',className='')=>`<img src="${ASSETS[name]}" width="${width}" height="${height}" alt="${esc(alt)}" class="${className}" decoding="async">`;
 const icon=(name,size)=>art(name,size,size);
 // A decorative guide, separate from the data-driven full/half/empty rice bowls.
-const cookerCompanion=(className='')=>`<span class="cooker-portrait ${className}" aria-hidden="true">${art('companion',1254,1254)}</span>`;
+const bunnyCompanion=(className='')=>`<span class="bunny-portrait ${className}" aria-hidden="true">${art('companion',1254,1254)}</span>`;
 const brandSymbol=()=>`<span class="brand-symbol" aria-hidden="true">${art('logo',1254,1254)}</span>`;
 const options=(values,current)=>Object.entries(values).map(([id,label])=>`<option value="${esc(id)}" ${String(id)===String(current)?'selected':''}>${esc(label)}</option>`).join('');
 const uiIcon=name=>`<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${({clock:'<circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3 2"/>',rhythm:'<path d="M3 12h4l3-7 4 14 3-7h4"/>',bell:'<path d="M6 9a6 6 0 0 1 12 0c0 7 3 7 3 8H3c0-1 3-1 3-8Z M10 21h4"/>',away:'<path d="M13 5h6v6 M19 5 9 15 M7 5H4v15h15v-6"/>',share:'<path d="M12 21S3 16 3 9a5 5 0 0 1 9-3 5 5 0 0 1 9 3c0 7-9 12-9 12Z"/>',arrow:'<path d="m9 5 7 7-7 7"/>',check:'<path d="m5 12 4 4L19 6"/>'})[name]||''}</svg>`;
@@ -90,8 +91,8 @@ function welcome(){
   return `<section class="welcome"><div class="welcome-art">
     <div class="welcome-brand" aria-label="밥뭇나와 신이어마켙 인터페이스 시안"><span class="brand">${brandSymbol()}<span>밥뭇나</span></span><span class="collab-x">×</span>${art('partner',123,37,'신이어마켙','partner')}</div>
     <div class="welcome-copy"><h1 tabindex="-1"><span>안부가</span><span>폴짝,</span><span>찾아왔어요.</span></h1></div>
-    <span class="welcome-heart" aria-hidden="true">♥</span><p class="welcome-caption">토끼처럼 부지런하면<br>무엇이든 해내겠지요</p>
-    <div class="bunny-slot"><span class="bunny-shadow" aria-hidden="true"></span>${art('bunny',480,480,'초록 카디건을 입고 안부를 전하는 토끼')}</div>
+    <span class="welcome-heart" aria-hidden="true">♥</span><p class="welcome-caption">나의 작은<br>안부 친구</p>
+    <div class="bunny-slot"><span class="bunny-shadow" aria-hidden="true"></span>${art('bunny',480,480,'초록 가디건을 입고 안부를 전하는 토끼')}</div>
     <button class="welcome-replay" data-action="welcome-replay" aria-label="토끼의 환영 인사 다시 보기"><span aria-hidden="true">↻</span> 다시 인사하기</button>
     </div><div class="welcome-dock"><span class="eyebrow">A LITTLE MESSAGE, A WARM REPLY</span><h2>밥 한 끼로 전하는 안부</h2><p>밥솥을 쓰는 평소의 하루가,<br>멀리 있는 가족에게 작은 안부로.</p>
     <div class="role-buttons edition-choices"><a class="edition-choice senior-choice" href="${editionHref('senior')}" data-edition="senior"><span class="edition-choice-icon">${brandSymbol()}</span><span><small>Senior</small><strong>어르신용</strong><span>필요한 소식만, 한 번에 전해요.</span></span>${uiIcon('arrow')}</a><a class="edition-choice carer-choice" href="${editionHref('carer')}" data-edition="carer"><span class="edition-choice-icon">${uiIcon('share')}</span><span><small>Carer</small><strong>보호자용</strong><span>안부와 하루의 변화를 살펴봐요.</span></span>${uiIcon('arrow')}</a></div><p class="welcome-note">서로의 하루에, 작은 온기를.</p>
@@ -116,7 +117,7 @@ function senior(){
   return heading('오늘도, 평소처럼.<br>필요할 때 한 번만.',`${dateLabel(dayOf(state.now))} · 가상 시계 ${hhmm(state.now)}`)+`
     ${!state.consent?'<p class="notice">공유를 쉬고 있어요. <a href="#privacy">공유 설정에서 다시 시작할 수 있어요.</a></p>':''}
     ${receipt?`<section class="action-receipt" role="status"><span class="receipt-check" aria-hidden="true">${uiIcon('check')}</span><div><strong>${esc(receipt.title)}</strong><p>${esc(receipt.detail)}</p></div><button data-action="receipt-close" aria-label="확인 안내 닫기">×</button></section>`:''}
-    <section class="senior-quiet-signal">${cookerCompanion()}<div><span>밥솥이 전한 소식</span><strong>${!state.consent?'공유를 쉬어요':inAway(state)?'외출 중이에요':!deviceOnline(state,'cooker')?'연결 확인이 필요해요':last===null?'소식을 기다려요':`${hhmm(last)} · 신호가 왔어요`}</strong></div>${art(riceState(state,selected).level,120,80,'','quiet-rice')}</section>
+    <section class="senior-quiet-signal">${bunnyCompanion()}<div><span>밥솥이 전한 소식</span><strong>${!state.consent?'공유를 쉬어요':inAway(state)?'외출 중이에요':!deviceOnline(state,'cooker')?'연결 확인이 필요해요':last===null?'소식을 기다려요':`${hhmm(last)} · 신호가 왔어요`}</strong></div>${art(riceState(state,selected).level,120,80,'','quiet-rice')}</section>
     <div class="senior-three" aria-label="필요할 때 남기는 세 가지 소식"><button class="primary" data-action="eatout-dialog" ${!allowed?'disabled':''}>${icon('eatout',32)}<span>외식했어요</span>${uiIcon('arrow')}</button><button data-action="away-dialog" ${!state.consent?'disabled':''}>${icon('away',32)}<span>${inAway(state)?'집에 왔어요':'놀러가요'}</span>${uiIcon('arrow')}</button><button class="dark" data-action="help-dialog">${icon('help',32)}<span>${state.help?.status==='pending'?'도움 요청 남겼어요':'도움 요청'}</span>${uiIcon('arrow')}</button></div>
     ${state.away?`<p class="caption away-receipt">${inAway(state)?'외출 중':'예약한 외출'} · ${timeLabel(state.away.start)} — ${timeLabel(state.away.end)}<button class="text-button" data-action="return">${inAway(state)?'지금 귀가':'일정 취소'}</button></p>`:'<p class="senior-reassurance">평소에는 아무것도 누르지 않아도 돼요.</p>'}
     <p class="caption">가구의 가상 신호예요. 실제 식사 여부는 알 수 없어요.</p>
@@ -134,7 +135,7 @@ function guardian(){
   return heading('오늘의 안부',`${dateLabel(dayOf(state.now))} · 마음은 가까이`)+`
     <div class="home-stack">
     ${pending.length?`<section class="attention-card ${helpPending?'help-priority':''}" aria-label="확인이 필요한 안부"><div class="attention-title"><span class="attention-icon">${uiIcon('bell')}</span><h2>${helpPending?'도움 요청이 도착했어요':'확인할 안부가 있어요'}</h2><span class="alert-total">${pending.length}</span></div><p>${helpPending?'가족의 연락을 기다려요. 직접 안부를 확인해 주세요.':'놓친 소식이 있는지, 가볍게 살펴보세요.'}</p>${helpPending?`<button class="dark care-call" data-action="call-dialog">${icon('phone',23)}전화로 안부 묻기</button><small>가상 요청이에요. 실제 전화는 연결되지 않아요.</small>`:''}<div class="attention-actions">${helpPending?'<button class="text-button" data-ack="help">요청을 읽었어요</button>':''}<button class="text-button" data-view="alerts">알림 ${pending.length}개 보기 <span aria-hidden="true">→</span></button></div></section>`:''}
-    <section class="care-hero ${headline.tone}" aria-labelledby="care-title"><div class="care-hero-top"><span>${cookerCompanion()}오늘의 안부 한 그릇</span><button data-action="bowl-info" aria-label="밥그릇 표현 안내">${icon('info',21)}</button></div><div class="care-illustration"><span class="window-light" aria-hidden="true"></span>${art(evidence.level,800,534,'','care-rice')}<span class="care-time">${showSignal?`${hhmm(last)} · 밥솥 소식`:!state.consent?'공유 쉬는 중':inAway(state)?'외출 일정 중':!connected?'연결 확인 필요':'새 소식 기다리는 중'}</span></div><h2 id="care-title">${helpPending?'오늘의 밥솥 소식':headline.title}</h2><p>${helpPending?'기록만으로 지금의 상태를 알 수는 없어요.':headline.detail}</p>${!helpPending?`<button class="dark care-call" data-action="call-dialog">${icon('phone',23)}전화로 안부 묻기</button><small class="call-scope">실제 전화는 연결되지 않는 체험이에요.</small>`:''}<div class="care-hero-foot"><span class="connection-dot ${connected?'online':''}" aria-hidden="true"></span><span>${connected?'가상 기기 연결됨':'기기 관찰 중지'}</span><a href="#devices">기기 보기 ${uiIcon('arrow')}</a></div></section>
+    <section class="care-hero ${headline.tone}" aria-labelledby="care-title"><div class="care-hero-top"><span>${bunnyCompanion()}오늘의 안부 한 그릇</span><button data-action="bowl-info" aria-label="밥그릇 표현 안내">${icon('info',21)}</button></div><div class="care-illustration"><span class="window-light" aria-hidden="true"></span>${art(evidence.level,800,534,'','care-rice')}<span class="care-time">${showSignal?`${hhmm(last)} · 밥솥 소식`:!state.consent?'공유 쉬는 중':inAway(state)?'외출 일정 중':!connected?'연결 확인 필요':'새 소식 기다리는 중'}</span></div><h2 id="care-title">${helpPending?'오늘의 밥솥 소식':headline.title}</h2><p>${helpPending?'기록만으로 지금의 상태를 알 수는 없어요.':headline.detail}</p>${!helpPending?`<button class="dark care-call" data-action="call-dialog">${icon('phone',23)}전화로 안부 묻기</button><small class="call-scope">실제 전화는 연결되지 않는 체험이에요.</small>`:''}<div class="care-hero-foot"><span class="connection-dot ${connected?'online':''}" aria-hidden="true"></span><span>${connected?'가상 기기 연결됨':'기기 관찰 중지'}</span><a href="#devices">기기 보기 ${uiIcon('arrow')}</a></div></section>
     <section class="card daily-card"><div class="section-line"><h2>오늘의 끼니</h2><a href="#report" aria-label="식사 기록 자세히 보기">기록 보기 ${uiIcon('arrow')}</a></div>${mealStrip()}<p class="caption meal-hint">끼니를 누르면 어떤 소식인지 볼 수 있어요.</p></section>
     <section class="home-contact"><p class="message">${!state.consent?'공유를 쉬는 중이에요.':direct.length?direct.join(' · ')+' 식사 소식을 남기셨어요.':'짧은 통화가 다정한 안부가 돼요.'}</p><details class="quiet-details"><summary>마음 전하기 · 식사 체크 체험</summary><button class="text-button" data-action="warmth">${icon('heart',19)} 마음 보내기</button><button class="text-button" data-view="senior">식사 체크 체험 →</button>${state.social&&!state.social.handled?'<button class="text-button" data-action="social-ack">전해온 마음 확인</button>':''}</details></section>
     ${!state.setup.complete?'<button class="setup-invitation compact-invitation" data-action="setup-start"><span><small>우리 집의 속도로</small><strong>안부 준비하기</strong><span>가상 연결 · 생활 패턴 · 알림 기준</span></span>'+uiIcon('arrow')+'</button>':''}
@@ -148,6 +149,7 @@ function moreView(){
   const pending=alertEntries().length;
   const isSenior=edition==='senior';
   const items=isSenior?[['privacy','내가 정하는 공유','공유 범위를 확인하고 쉴 수 있어요.',uiIcon('share')],['about','이용 안내','천천히 사용 방법 알아보기',icon('info',24)]]:[['alerts','받은 알림','확인이 필요한 가상 소식',uiIcon('bell')],['settings','생활·알림 설정','식사 시간 · 외출 일정 · 알림 기준',uiIcon('clock')],['family','가족 초대·공유','함께 돌보는 역할 나누기 · 체험',uiIcon('share')],['about','이용 안내','사용 방법과 서비스 범위',icon('info',24)]];
+  if(CLOUD_AVAILABLE)items.unshift(['connect','SmartThings 연결','내 플러그 연결·수신 상태 확인',uiIcon('rhythm')]);
   const demos=isSenior?[]:[['devices','기기 신호','밥솥 신호와 연결 살펴보기']];
   return heading('더보기',EDITIONS[edition].label,isSenior?'필요한 것만, 편하게 찾아보세요.':'우리 가족의 돌봄을 준비해요.')+`
     <a class="more-account" href="#account"><span class="more-account-copy"><small>${CLOUD_AVAILABLE?'로그인 후 이용':'온라인 서비스 안내'}</small><strong>${isSenior?'내 기록':'보호자 계정'}</strong><span>${CLOUD_AVAILABLE?(isSenior?'나의 식사 소식을 보관해요.':'내 회원 정보를 관리해요.'):'실제 저장은 온라인에서 이용해요.'}</span></span><span class="more-account-arrow" aria-hidden="true">${uiIcon('arrow')}</span></a>
@@ -205,7 +207,7 @@ function devices(){
   const mode={waiting:'신호 대기',checking:'연속 전력 관찰 중',cooking:'취사 후보', 'keep-warm':'보온 · 집계 제외',idle:'대기 전력',unknown:'분류되지 않은 변화'}[state.power.mode];
   return heading('작은 신호를,<br>정확한 소식으로.','센서 시뮬레이터','실제 스마트플러그에 연결되지 않은 가상 실험실이에요.')+`
     <section class="virtual-clock" aria-label="가상 시계"><div><span class="label">${dateLabel(dayOf(state.now))}</span><br><strong>${hhmm(state.now)}</strong></div><div class="buttons"><button data-advance="30">+30분</button><button data-advance="720">+12시간</button><button data-advance="1440">+하루</button></div></section>
-    <section class="card power-lab"><div class="row"><h2>밥솥 전력</h2><span class="pill ${deviceOnline(state,'cooker')?'confirmed':'offline'}">${deviceOnline(state,'cooker')?'가상 연결됨':'연결 중단'}</span></div><div class="cooker-lab-reading"><div class="power-reading"><strong>${state.devices.cooker.watts}<small> W</small></strong><span>${mode}</span></div>${cookerCompanion('cooker-portrait-large')}</div>
+    <section class="card power-lab"><div class="row"><h2>밥솥 전력</h2><span class="pill ${deviceOnline(state,'cooker')?'confirmed':'offline'}">${deviceOnline(state,'cooker')?'가상 연결됨':'연결 중단'}</span></div><div class="cooker-lab-reading"><div class="power-reading"><strong>${state.devices.cooker.watts}<small> W</small></strong><span>${mode}</span></div>${bunnyCompanion('bunny-portrait-large')}</div>
     <p class="caption">취사: 800W 이상 5분 연속 · 보온: 30–60W 10분 연속<br>1분 간격 예시 측정. 5분 취사·3분 허용 간격은 검증 전 가정이에요.</p>
     <div class="power-presets"><button data-power-preset="cook"><strong>취사해 보기</strong><small>900W · 5분</small></button><button data-power-preset="warm"><strong>보온해 보기</strong><small>45W · 10분</small></button><button data-power-preset="spike"><strong>순간 상승</strong><small>900W · 1분 뒤 종료</small></button><button data-power-preset="rebound"><strong>보온 뒤 변화</strong><small>공통 규칙으로 열림 판단</small></button></div>
     <div class="lab-feedback" role="status">${state.power.possibleOpeningAt!==null?'보온 뒤 변화가 Supabase 열림 규칙을 만족했어요. 실측 검증이 필요한 추정이에요.':'각 예시가 밥솥 기록에 어떻게 반영되는지 비교해 보세요.'}</div>
@@ -246,6 +248,9 @@ function about(){
     <details class="card quiet-details"><summary>워크숍 동작 점검</summary><h2>동작 점검</h2><p>현재 체험 기록을 바꾸지 않고 독립된 가상 상태로 경계 조건을 검사해요.</p><button data-action="checks">전체 동작 검사</button>${checkResults?`<p class="count" role="status">${checkResults.filter(result=>result.pass).length} / ${checkResults.length} 통과</p><ul class="checklist check-results">${checkResults.map(result=>`<li class="${result.pass?'':'failed'}">${result.pass?'통과':'실패'} · ${esc(result.name)}</li>`).join('')}</ul>`:''}</details><p class="operator-entry"><a href="./manage/">운영자 공간 →</a></p></div>`;
 }
 
+function connectView(){
+  return heading('우리 집 기기 연결','SmartThings','내 계정으로, 처음 한 번만 연결해요.')+(CLOUD_AVAILABLE?'<section id="smartthings-surface"></section>':'<section class="card"><p>기기 연결은 온라인 앱에서 이용해 주세요.</p></section>');
+}
 function accountView(){
   const isCarer=edition==='carer';
   return heading(isCarer?'보호자 계정':'내 식사 기록',EDITIONS[edition].label,isCarer?'내 회원 정보를 안전하게 관리해요.':'식사한 뒤 작은 소식 하나를 남겨보세요.')+(CLOUD_AVAILABLE?'<section id="account-surface" data-cloud-surface></section>':`<section class="card"><h2>실제 저장은 온라인에서 이용해 주세요.</h2><p>내려받는 파일은 가상 체험용이에요.</p><a href="https://impact-series.web.app/bapmunna/${edition}/#account">온라인 ${isCarer?'보호자 계정':'내 기록'} 열기 →</a></section>`);
@@ -324,20 +329,21 @@ function render(focus=false){
   document.querySelector('#app-header .brand').setAttribute('href',edition?routeHref(EDITIONS[edition].home):routeHref('welcome'));
   document.querySelector('#app-header .brand').setAttribute('aria-label',edition?`밥뭇나 ${EDITIONS[edition].label} 홈`:'밥뭇나 처음으로');
   document.querySelector('[data-nav-home]').dataset.view=edition?EDITIONS[edition].home:'guardian';
-  document.querySelector('#storage-hint').textContent=view==='account'&&CLOUD_AVAILABLE?'기록은 로그인한 계정에 보관돼요.':'새로고침하면 가상 예시로 돌아갑니다.';
+  document.querySelector('#storage-hint').textContent=['account','connect'].includes(view)&&CLOUD_AVAILABLE?'로그인한 본인의 정보만 다뤄요.':'새로고침하면 가상 예시로 돌아갑니다.';
   const navCount=document.querySelector('#nav-alert-count');navCount.textContent=String(alertEntries().length);navCount.hidden=edition!=='carer'||!alertEntries().length;
   for(const button of document.querySelectorAll('#app-nav button')){
     if(button.dataset.view===(['senior','guardian','report'].includes(view)?view:'more'))button.setAttribute('aria-current','page');else button.removeAttribute('aria-current');
   }
-  const liveAccount=view==='account'&&CLOUD_AVAILABLE;
-  const mode=['welcome','journey'].includes(view)?'':`<div class="edition-mode ${liveAccount?'is-live':''}" role="note"><span class="mode-dot" aria-hidden="true"></span><span>${liveAccount?(edition==='carer'?'실제 계정 관리':'실제 내 기록 저장'):'둘러보기 · 가상 데이터'}</span>${liveAccount?'<small>로그인한 본인 계정</small>':'<small>실제 가족에게 전송되지 않아요</small>'}</div>`;
-  root.innerHTML=mode+({welcome,senior,guardian,report:edition==='senior'?seniorRecords:recent,family:familyView,settings,setup:setupView,devices,about,account:accountView,more:moreView,alerts:alertsView,privacy:privacyView,journey:journeyView}[view]||welcome)()+modalMarkup();
+  const liveAccount=['account','connect'].includes(view)&&CLOUD_AVAILABLE;
+  const mode=['welcome','journey'].includes(view)?'':`<div class="edition-mode ${liveAccount?'is-live':''}" role="note"><span class="mode-dot" aria-hidden="true"></span><span>${liveAccount?(view==='connect'?'내 기기 연결 확인':edition==='carer'?'실제 계정 관리':'실제 내 기록 저장'):'둘러보기 · 가상 데이터'}</span>${liveAccount?'<small>로그인한 본인 계정</small>':'<small>실제 가족에게 전송되지 않아요</small>'}</div>`;
+  root.innerHTML=mode+({welcome,senior,guardian,report:edition==='senior'?seniorRecords:recent,family:familyView,settings,setup:setupView,devices,about,account:accountView,connect:connectView,more:moreView,alerts:alertsView,privacy:privacyView,journey:journeyView}[view]||welcome)()+modalMarkup();
   // The canonical Supabase model has no independent post-window grace interval.
   for(const field of root.querySelectorAll('input[name="grace"]')){field.value='0';field.type='hidden';field.closest('label')?.setAttribute('hidden','');}
   for(const link of root.querySelectorAll('a[href^="#"]'))link.setAttribute('href',routeHref(link.getAttribute('href').slice(1)));
   document.querySelector('.skip-link').setAttribute('href',`${location.pathname}#main`);
   if(view==='welcome'&&!welcomeSeen){welcomeSeen=true;void greetWelcome();}
-  if(view==='account'&&CLOUD_AVAILABLE)accountCleanup=mountAccount(document.querySelector('#account-surface'),{audience:edition,browseHref:routeHref(EDITIONS[edition].home),familyHref:routeHref('family')});
+  if(view==='account'&&CLOUD_AVAILABLE)accountCleanup=mountAccount(document.querySelector('#account-surface'),{audience:edition,browseHref:routeHref(EDITIONS[edition].home),familyHref:routeHref('family'),connectHref:routeHref('connect')});
+  if(view==='connect'&&CLOUD_AVAILABLE)accountCleanup=mountSmartThings(document.querySelector('#smartthings-surface'),{accountHref:routeHref('account')});
   if(modal){const dialog=root.querySelector('dialog');dialog.showModal();dialog.addEventListener('cancel',event=>{event.preventDefault();closeModal();});}
   else if(focus)root.querySelector('h1')?.focus({preventScroll:true});
   else if(wasModal&&focusReturn)root.querySelector(focusReturn)?.focus({preventScroll:true});

@@ -11,7 +11,7 @@ export function BunnyGreeting({ className = "" }: { className?: string }) {
   const greeting = useRef<ReturnType<typeof createBunnyGreeting> | null>(null);
   useEffect(() => {
     if (!scene.current) return;
-    const controller = createBunnyGreeting(scene.current, {spriteUrl: "/brand/bunny-greeting.webp"});
+    const controller = createBunnyGreeting(scene.current, {imageUrl: "/brand/bunny.png"});
     greeting.current = controller;
     void controller.play();
     return () => { controller.dispose(); greeting.current = null; };

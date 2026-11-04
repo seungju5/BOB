@@ -1,46 +1,58 @@
 {
-  "change": "Two hops, articulated wave, blink and bow; 16 poses; 3600ms",
+  "date": "2026-11-04",
+  "implementation": "Original bunny.png texture with finite 2.5D joint deformation; no replacement illustration",
+  "originalSha256": "87d86ce95e85f69168a6720419fd0cc3a22f32a67f13db2dea37e96e626f19f6",
+  "durationMs": 3600,
+  "hops": 2,
   "releases": {
     "impact": {
       "site": "impact-series",
-      "version": "sites/impact-series/versions/f52387e47cbcdf50",
-      "release": "sites/impact-series/releases/1793708327273000",
-      "previous": "sites/impact-series/versions/5739bba68b9cbdf9",
-      "changed": 17,
-      "preserved": 2402,
-      "uploads": 11,
+      "version": "sites/impact-series/versions/df72a4cce4229206",
+      "release": "sites/impact-series/releases/1793750560615000",
+      "previous": "sites/impact-series/versions/f52387e47cbcdf50",
+      "changed": 6,
+      "preserved": 2413,
+      "uploads": 3,
       "hostingConfig": "unchanged",
       "authDatabase": "unchanged",
-      "publicSmartThingsApi": "not deployed",
-      "verifiedAt": "2026-11-03T12:19:52.912Z",
-      "verifiedFiles": 150
+      "publicSmartThingsApi": "not deployed"
     },
     "legacy": {
       "site": "ku-gpa",
-      "version": "sites/ku-gpa/versions/d0fef512fe106010",
-      "release": "sites/ku-gpa/releases/1793708962586000",
-      "previous": "sites/ku-gpa/versions/d1f50898709cf7cd",
-      "changed": 2,
-      "preserved": 171,
-      "uploads": 1,
+      "version": "sites/ku-gpa/versions/3c8e557fb39d18c1",
+      "release": "sites/ku-gpa/releases/1793750636767000",
+      "previous": "sites/ku-gpa/versions/d0fef512fe106010",
+      "changed": 4,
+      "preserved": 169,
+      "uploads": 2,
       "hostingConfig": "unchanged",
       "authDatabase": "unchanged",
-      "publicSmartThingsApi": "not deployed",
-      "verifiedAt": "2026-11-03T12:31:12.073Z",
-      "verifiedFiles": 16,
-      "compatibility": "Greeting-only patch of archived deployed app; existing module set preserved"
+      "publicSmartThingsApi": "not deployed"
     }
   },
-  "qa": {
-    "unitTests": 49,
-    "existingFirebaseTests": "passed",
+  "validation": {
+    "unitTests": 54,
+    "firebaseChecks": [
+      58,
+      31,
+      9,
+      8,
+      41
+    ],
+    "typescript": "passed",
+    "nextProductionBuild": "webpack passed",
     "mobileWidths": [
       320,
       390
     ],
-    "publicPlayback": "hop, wave, blink, bow and idle observed",
-    "preview": "output/bapmunna-greeting-20261103/live-bunny-greeting.gif",
-    "nextBuild": "Webpack production build with existing Tailwind loader; 390px render, no horizontal overflow",
-    "legacyBrowser": "Welcome animation rendered; Senior entry works"
-  }
+    "desktopWidth": 1280,
+    "livePlayback": "69 browser captures, ends idle, no console errors",
+    "legacy": "original texture, playback and Senior entry verified",
+    "originalImageBytes": "all four public provider variants verified"
+  },
+  "limitations": [
+    "2.5D texture deformation, not a new volumetric 3D model",
+    "Older KU GPA app.mjs is preserved for compatibility",
+    "GPU unavailable: unchanged static original fallback"
+  ]
 }

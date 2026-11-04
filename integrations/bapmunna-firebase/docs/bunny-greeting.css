@@ -1,8 +1,9 @@
-/* A single, finite greeting. No whole-photo bobbing or infinite autoplay. */
+/* The original artwork with a finite joint animation and soft contact shadow. */
 .bunny-stage{isolation:isolate;pointer-events:none}
-.bunny-stage .bunny-motion{position:absolute;left:-12.5%;bottom:-6%;width:125%;height:auto;max-width:none;aspect-ratio:1;pointer-events:none;filter:drop-shadow(0 7px 5px #64492409);transform:translateY(var(--bunny-lift,0px))}
+.bunny-stage .bunny-motion{position:absolute;left:-12.5%;top:-12.5%;width:125%;height:125%;max-width:none;pointer-events:none;filter:drop-shadow(2px 5px 3px #64492412);transform:translateY(var(--bunny-lift,0px))}
 .bunny-stage.has-bunny-motion>img{visibility:hidden}
-.bunny-stage .bunny-shadow{position:absolute;left:31%;bottom:7%;width:38%;height:3%;background:#85662b26;border-radius:50%;filter:blur(5px);transition:transform .12s ease,opacity .12s ease}
+.bunny-stage .bunny-shadow{position:absolute;left:31%;bottom:4%;width:38%;height:3%;background:radial-gradient(ellipse,#70552b54, #8c6a3029 48%,transparent 72%);border-radius:50%;filter:blur(3px)}
+.welcome .bunny-stage .bunny-shadow{bottom:12.5%}
 .welcome.is-greeting .bunny-stage>img,.welcome.is-greeting .bunny-stage .bunny-shadow{animation:none}
 .welcome.is-greeting .welcome-heart{animation:hello-heart 3.6s both}
 .welcome-replay{z-index:2}

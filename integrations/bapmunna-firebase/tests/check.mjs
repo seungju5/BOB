@@ -51,6 +51,7 @@ const {BUNNY_DURATION}=await import('../docs/bunny-greeting.mjs');
 assert.ok(BUNNY_DURATION<=5000,'Welcome motion ends within five seconds');
 assert.ok(html.includes('./bunny-greeting.css'),'Pose animation styles are loaded');
 assert.ok(existsSync(new URL('../docs/assets/bunny.png',import.meta.url)),'Original bunny texture is included');
+assert.ok(existsSync(new URL('../docs/assets/bunny-underlay.webp',import.meta.url)),'Hand repair layer is included');
 assert.match(css,/animation:none!important/,'Reduced motion has a static CSS fallback');
 console.log('PASS welcome animation accessibility contracts');
 await import('./worksheet.test.mjs');

@@ -1,11 +1,11 @@
-// Original-texture animation: the approved character itself bends at its joints.
+// Original artwork layers: hand and pencil rotate together without changing their shape.
 // The same controller is shared by the static app and the Next.js welcome page.
 export const BUNNY_BEATS = [
   [0, 300, 'ready'],
   [1, 110, 'crouch'], [2, 90, 'spring'], [3, 150, 'hop'], [4, 90, 'descend'], [5, 110, 'land'], [6, 140, 'settle'],
   [1, 100, 'crouch'], [2, 80, 'spring'], [3, 120, 'hop'], [4, 80, 'descend'], [5, 100, 'land'], [6, 160, 'settle'],
   [7, 120, 'raise'], [8, 140, 'wave'], [9, 120, 'wave'], [10, 140, 'wave'],
-  [9, 120, 'wave'], [11, 150, 'blink'], [12, 150, 'wave'], [9, 120, 'wave'], [12, 150, 'wave'],
+  [9, 120, 'wave'], [11, 150, 'wave'], [12, 150, 'wave'], [9, 120, 'wave'], [12, 150, 'wave'],
   [8, 140, 'wave'], [7, 120, 'lower'], [13, 220, 'bow'], [14, 140, 'lower'], [15, 140, 'rest'],
 ];
 export const BUNNY_DURATION = BUNNY_BEATS.reduce((total, beat) => total + beat[1], 0);
@@ -25,121 +25,97 @@ export function bunnyPoseAt(elapsed) {
   return {frame: 0, phase: 'rest', progress: 1};
 }
 
-// Animate the approved 480px original texture; never redraw the character.
-// The small 2.5D rig keeps its face, knitted cardigan, pencil and clipboard.
+// Separate rigid artwork parts: a hand gesture must never pull the face or stretch the paw.
 const smooth = (a, b, value) => { const t = Math.max(0, Math.min(1, (value - a) / (b - a))); return t * t * (3 - 2 * t); };
 const pulse = (time, start, peak, end) => smooth(start, peak, time) * (1 - smooth(peak, end, time));
-const ellipse = (x, y, cx, cy, rx, ry) => 1 - smooth(.35, 1, Math.hypot((x - cx) / rx, (y - cy) / ry));
 
 export function bunnyRigAt(time) {
-  const lift = bunnyLiftAt(time), airborne = lift / 42;
   const greet = smooth(1510, 1760, time) * (1 - smooth(2870, 3110, time));
   const crouch = pulse(time, 300, 410, 520) + .65 * pulse(time, 980, 1090, 1190);
   const land = pulse(time, 700, 780, 980) + .65 * pulse(time, 1330, 1410, 1570);
-  const bow = pulse(time, 3040, 3200, 3460);
-  const wave = Math.sin((time - 1760) / 190 * Math.PI);
+  const bow = pulse(time, 3070, 3230, 3510);
   return {
-    lift, squash: .065 * (crouch + land) - .025 * airborne,
-    arm: greet * (-.32 + .13 * wave),
-    head: .025 * greet * Math.sin((time - 1510) / 650 * Math.PI) + .055 * bow,
-    bow, tuck: airborne,
-    ear: .11 * airborne + .055 * land + .035 * greet * Math.sin((time - 1510) / 210),
-    blink: pulse(time, 2220, 2300, 2390),
-    turn: .018 * greet * Math.sin((time - 1510) / 440),
+    lift: bunnyLiftAt(time),
+    arm: greet * (-.43 + .17 * Math.sin((time - 1760) / 245 * Math.PI)),
+    lean: -.04 * bow + .012 * land,
+    bodyY: 4 * (crouch + land),
   };
 }
 
-// Joint weights use original artwork coordinates. One continuous mesh avoids
-// cutout seams; accessories follow the paw, eyes and mouth keep their texture.
-export function bunnyVertexAt(x, y, rig) {
-  let px = x, py = y;
-  const rotate = (cx, cy, angle, weight) => {
-    const dx = px - cx, dy = py - cy, a = angle * weight;
-    px = cx + dx * Math.cos(a) - dy * Math.sin(a);
-    py = cy + dx * Math.sin(a) + dy * Math.cos(a);
+export const BUNNY_WRIST = [170, 333];
+// Both contours are sampled from the approved original, not from the generated repair plate.
+export const BUNNY_HAND_PATH = [
+  'M185 285 C198 278 214 282 220 294 C225 310 214 326 201 338 C190 349 175 346 164 334 C155 325 156 313 164 304 C169 297 176 291 185 285 Z',
+  'M176 255 C180 251 186 253 189 258 L233 323 L229 327 L177 265 C173 261 173 258 176 255 Z',
+].join(' ');
+
+/** Independent rigid matrices; the hand matrix cannot affect the body or facial features. */
+export function bunnyTransformAt(rig, part = 'body') {
+  const around = (angle, x, y) => {
+    const c = Math.cos(angle), s = Math.sin(angle);
+    return [c, s, -s, c, x - c * x + s * y, y - s * x - c * y];
   };
-  // Integrate a smooth joint field in small steps so the original texture never folds over itself.
-  for (let step = 0; step < 8; step++) {
-    const armWeight = ellipse(px, py, 180, 299, 76, 91) * (1 - smooth(218, 248, px));
-    rotate(152, 336, rig.arm / 8, armWeight);
-  }
-  // A brief blink compresses the existing glossy eye pixels, without painting a new face.
-  for (const [cx, cy] of [[183, 198], [268, 221]]) {
-    const eye = ellipse(x, y, cx, cy, 22, 27);
-    py += (cy - y) * .92 * rig.blink * eye;
-  }
-  rotate(185, 135, -rig.ear, (1 - smooth(100, 143, y)) * (1 - smooth(230, 260, x)));
-  rotate(278, 141, rig.ear * 1.2, smooth(260, 305, x) * (1 - smooth(175, 195, y)));
-  const head = 1 - smooth(257, 302, y);
-  rotate(223, 274, rig.head, head);
-  py += rig.bow * 9 * head;
-  const feet = smooth(385, 446, y);
-  px += (230 - x) * .075 * rig.tuck * feet;
-  py -= 12 * rig.tuck * feet;
-  // Slight foreshortening, independent limb movement and contact shadow give depth.
-  px = 230 + (px - 230) * (1 + rig.squash * .45) + (y - 300) * rig.turn;
-  py = 456 + (py - 456) * (1 - rig.squash);
-  return [px, py];
+  const body = around(rig.lean, 230, 456); body[5] += rig.bodyY;
+  if (part !== 'hand') return body;
+  const hand = around(rig.arm, BUNNY_WRIST[0], BUNNY_WRIST[1]);
+  const [a,b,c,d,e,f] = body, [g,h,i,j,k,l] = hand;
+  return [a*g+c*h,b*g+d*h,a*i+c*j,b*i+d*j,a*k+c*l+e,b*k+d*l+f];
+}
+export function bunnyPointAt(x, y, rig, part = 'body') {
+  const [a,b,c,d,e,f] = bunnyTransformAt(rig, part);
+  return [a*x+c*y+e,b*x+d*y+f];
 }
 
-/** GPU texture mesh: original pixels, smooth joints, no triangle clip seams. */
+/** Reconstruct only the hidden patch and its baked shadow; keep the moving hand's original pixels. */
+export function createBunnyLayers(image, underlay) {
+  const make = () => { const canvas = document.createElement('canvas'); canvas.width = canvas.height = 480; return canvas; };
+  const hand = make(), repair = make(), mask = make(), path = new Path2D(BUNNY_HAND_PATH);
+  const handContext = hand.getContext('2d'), repairContext = repair.getContext('2d'), maskContext = mask.getContext('2d');
+  if (!handContext || !repairContext || !maskContext) throw Error('Greeting layers unavailable');
+  handContext.clip(path); handContext.drawImage(image, 0, 0, 480, 480);
+  // A small feather removes the old hand/pencil shadow without leaving a hard cutout seam.
+  maskContext.fillStyle = maskContext.strokeStyle = '#fff'; maskContext.lineWidth = 10; maskContext.lineJoin = 'round'; maskContext.filter = 'blur(1.5px)';
+  maskContext.fill(path); maskContext.stroke(path);
+  repairContext.drawImage(underlay, 0, 0, 480, 480);
+  repairContext.globalCompositeOperation = 'destination-in'; repairContext.drawImage(mask, 0, 0);
+  return {hand, repair};
+}
+
+/** Draw intact original pixels. The generated plate only repairs the area hidden by the hand. */
+export function drawBunnyFrame(context, image, layers, rig, size = 640) {
+  context.clearRect(0, 0, size, size);
+  context.save();
+  // Uniform scaling only. No mesh, shear, facial compression or weighted skin deformation.
+  context.scale(size / 600, size / 600);
+  context.translate(60, 60);
+  context.save(); context.transform(...bunnyTransformAt(rig));
+  context.drawImage(image, 0, 0, 480, 480);
+  if (Math.abs(rig.arm) > .0001) {
+    context.drawImage(layers.repair, 0, 0, 480, 480);
+  }
+  context.restore();
+  if (Math.abs(rig.arm) > .0001) {
+    context.save(); context.transform(...bunnyTransformAt(rig, 'hand'));
+    context.shadowColor = '#49352322'; context.shadowBlur = 2; context.shadowOffsetY = 1;
+    context.drawImage(layers.hand, 0, 0, 480, 480); context.restore();
+  }
+  context.restore();
+}
+
 function createBunnyRenderer(canvas) {
-  const gl = canvas.getContext('webgl', {alpha: true, premultipliedAlpha: true, antialias: true, preserveDrawingBuffer: false});
-  if (!gl) return null;
-  const resources = [];
-  const shader = (type, source) => {
-    const value = gl.createShader(type); resources.push(['deleteShader', value]);
-    gl.shaderSource(value, source); gl.compileShader(value);
-    if (!gl.getShaderParameter(value, gl.COMPILE_STATUS)) throw Error('Greeting shader unavailable');
-    return value;
+  const context = canvas.getContext('2d');
+  if (!context || typeof Path2D !== 'function') return null;
+  context.imageSmoothingEnabled = true; context.imageSmoothingQuality = 'high';
+  let original, layers;
+  return {
+    load(image, underlay) { original = image; layers = createBunnyLayers(image, underlay); },
+    draw(rig) { drawBunnyFrame(context, original, layers, rig, canvas.width); },
+    dispose() { original = layers = null; context.clearRect(0, 0, canvas.width, canvas.height); },
   };
-  let disposed = false;
-  const dispose = () => { if (disposed) return; disposed = true; for (const [method, value] of resources) gl[method](value); gl.getExtension?.('WEBGL_lose_context')?.loseContext(); };
-  try {
-    const vertex = shader(gl.VERTEX_SHADER, 'attribute vec2 point; attribute vec2 uv; varying vec2 tex; void main(){tex=uv;gl_Position=vec4((point.x+60.0)/300.0-1.0,1.0-(point.y+60.0)/300.0,0.0,1.0);}');
-    const fragment = shader(gl.FRAGMENT_SHADER, 'precision mediump float; varying vec2 tex; uniform sampler2D artwork; void main(){gl_FragColor=texture2D(artwork,tex);}');
-    const program = gl.createProgram(); resources.push(['deleteProgram', program]);
-    gl.attachShader(program, vertex); gl.attachShader(program, fragment); gl.linkProgram(program);
-    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) throw Error('Greeting shader unavailable');
-    gl.useProgram(program);
-    const points = [], uv = [], indices = [], segments = 40;
-    for (let row = 0; row <= segments; row++) for (let col = 0; col <= segments; col++) {
-      points.push(col * 12, row * 12); uv.push(col / segments, row / segments);
-      if (row < segments && col < segments) {
-        const a = row * (segments + 1) + col, b = a + segments + 1;
-        indices.push(a, b, a + 1, a + 1, b, b + 1);
-      }
-    }
-    const source = new Float32Array(points), deformed = new Float32Array(points);
-    const buffer = (target, data, usage) => {
-      const value = gl.createBuffer(); resources.push(['deleteBuffer', value]); gl.bindBuffer(target, value); gl.bufferData(target, data, usage); return value;
-    };
-    const position = buffer(gl.ARRAY_BUFFER, deformed, gl.DYNAMIC_DRAW);
-    const pointLocation = gl.getAttribLocation(program, 'point'); gl.enableVertexAttribArray(pointLocation); gl.vertexAttribPointer(pointLocation, 2, gl.FLOAT, false, 0, 0);
-    buffer(gl.ARRAY_BUFFER, new Float32Array(uv), gl.STATIC_DRAW);
-    const uvLocation = gl.getAttribLocation(program, 'uv'); gl.enableVertexAttribArray(uvLocation); gl.vertexAttribPointer(uvLocation, 2, gl.FLOAT, false, 0, 0);
-    buffer(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
-    const texture = gl.createTexture(); resources.push(['deleteTexture', texture]); gl.bindTexture(gl.TEXTURE_2D, texture);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
-    gl.clearColor(0, 0, 0, 0); gl.viewport(0, 0, canvas.width, canvas.height);
-    return {
-      load(image) { gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image); },
-      draw(rig) {
-        for (let i = 0; i < source.length; i += 2) {
-          const point = bunnyVertexAt(source[i], source[i + 1], rig); deformed[i] = point[0]; deformed[i + 1] = point[1];
-        }
-        gl.bindBuffer(gl.ARRAY_BUFFER, position); gl.bufferSubData(gl.ARRAY_BUFFER, 0, deformed);
-        gl.clear(gl.COLOR_BUFFER_BIT); gl.drawElements(gl.TRIANGLES, indices.length, gl.UNSIGNED_SHORT, 0);
-      },
-      dispose,
-    };
-  } catch { dispose(); return null; }
 }
 
-/** @param {HTMLElement} scene @param {{imageUrl?: string, spriteUrl?: string}} options */
-export function createBunnyGreeting(scene, {imageUrl, spriteUrl} = {}) {
+/** @param {HTMLElement} scene @param {{imageUrl?: string, underlayUrl?: string, spriteUrl?: string}} options */
+export function createBunnyGreeting(scene, {imageUrl, underlayUrl, spriteUrl} = {}) {
   const slot = scene.querySelector('.bunny-slot');
   const button = scene.querySelector('[data-action="welcome-replay"]');
   const shadow = scene.querySelector('.bunny-shadow');
@@ -151,7 +127,7 @@ export function createBunnyGreeting(scene, {imageUrl, spriteUrl} = {}) {
   // Accept old callers while always preferring their approved original image.
   const sourceUrl = imageUrl || original?.currentSrc || original?.src || spriteUrl;
   const preference = window.matchMedia('(prefers-reduced-motion: reduce)');
-  let image, loading, disposed = false, ready = false, failed = false, playing = false, queued = false;
+  let image, underlay, loading, disposed = false, ready = false, failed = false, playing = false, queued = false;
   let raf = 0, elapsed = 0, previousTime = null, generation = 0;
   slot?.append(canvas);
 
@@ -210,10 +186,13 @@ export function createBunnyGreeting(scene, {imageUrl, spriteUrl} = {}) {
     if (!renderer) return false;
     if (!loading) {
       image = new Image(); image.decoding = 'async'; image.src = sourceUrl;
-      loading = image.decode().then(() => {
+      underlay = new Image(); underlay.decoding = 'async';
+      underlay.src = underlayUrl || new URL('bunny-underlay.webp', new URL(sourceUrl, document.baseURI)).href;
+      loading = Promise.all([image.decode(), underlay.decode()]).then(() => {
         if (disposed || !scene.isConnected) return false;
         if (image.naturalWidth !== 480 || image.naturalHeight !== 480) throw Error('Invalid original bunny texture');
-        renderer.load(image); ready = true; draw(0);
+        if (underlay.naturalWidth !== 480 || underlay.naturalHeight !== 480) throw Error('Invalid hand repair plate');
+        renderer.load(image, underlay); ready = true; draw(0);
         return true;
       }).catch(() => {
         if (!disposed) { setStatus('unavailable'); if (button) button.hidden = true; }
@@ -245,7 +224,7 @@ export function createBunnyGreeting(scene, {imageUrl, spriteUrl} = {}) {
     event.preventDefault(); stop(); failed = true; setStatus('unavailable'); if (button) button.hidden = true;
   }
   window.addEventListener('resize', layout);
-  canvas.addEventListener('webglcontextlost', contextLost);
+  canvas.addEventListener('contextlost', contextLost);
   document.addEventListener('visibilitychange', visibilityChanged);
   preference.addEventListener('change', preferenceChanged);
   preferenceChanged(); layout();
@@ -256,7 +235,7 @@ export function createBunnyGreeting(scene, {imageUrl, spriteUrl} = {}) {
       document.removeEventListener('visibilitychange', visibilityChanged);
       preference.removeEventListener('change', preferenceChanged);
       window.removeEventListener('resize', layout);
-      canvas.removeEventListener('webglcontextlost', contextLost); renderer?.dispose();
+      canvas.removeEventListener('contextlost', contextLost); renderer?.dispose();
       slot?.classList.remove('has-bunny-motion'); canvas.remove();
     },
   };

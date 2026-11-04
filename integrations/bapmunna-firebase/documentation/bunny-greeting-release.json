@@ -1,17 +1,18 @@
 {
   "date": "2026-11-04",
-  "implementation": "Original bunny.png texture with finite 2.5D joint deformation; no replacement illustration",
-  "originalSha256": "87d86ce95e85f69168a6720419fd0cc3a22f32a67f13db2dea37e96e626f19f6",
+  "implementation": "Canvas 2D original body/face and rigid hand/pencil layers; generated repair plate used only behind hand",
   "durationMs": 3600,
   "hops": 2,
+  "originalSha256": "87d86ce95e85f69168a6720419fd0cc3a22f32a67f13db2dea37e96e626f19f6",
+  "repairSha256": "910701b6351d1e600e776ed240c1406388b9d73b9c7c8af4284a543454a7d82a",
   "releases": {
     "impact": {
       "site": "impact-series",
-      "version": "sites/impact-series/versions/df72a4cce4229206",
-      "release": "sites/impact-series/releases/1793750560615000",
-      "previous": "sites/impact-series/versions/f52387e47cbcdf50",
+      "version": "sites/impact-series/versions/9c48044d28de2e5b",
+      "release": "sites/impact-series/releases/1793751878914000",
+      "previous": "sites/impact-series/versions/df72a4cce4229206",
       "changed": 6,
-      "preserved": 2413,
+      "preserved": 2415,
       "uploads": 3,
       "hostingConfig": "unchanged",
       "authDatabase": "unchanged",
@@ -19,11 +20,11 @@
     },
     "legacy": {
       "site": "ku-gpa",
-      "version": "sites/ku-gpa/versions/3c8e557fb39d18c1",
-      "release": "sites/ku-gpa/releases/1793750636767000",
-      "previous": "sites/ku-gpa/versions/d0fef512fe106010",
+      "version": "sites/ku-gpa/versions/12364f8a5f516eb6",
+      "release": "sites/ku-gpa/releases/1793751989864000",
+      "previous": "sites/ku-gpa/versions/3c8e557fb39d18c1",
       "changed": 4,
-      "preserved": 169,
+      "preserved": 171,
       "uploads": 2,
       "hostingConfig": "unchanged",
       "authDatabase": "unchanged",
@@ -31,7 +32,22 @@
     }
   },
   "validation": {
-    "unitTests": 54,
+    "unitTests": 56,
+    "greetingTests": 14,
+    "facePixels": {
+      "maximumRGBADifference": 0,
+      "originalCoordinates": {
+        "x": 120,
+        "y": 145,
+        "width": 210,
+        "height": 94
+      },
+      "posesMs": [
+        0,
+        2128,
+        1882
+      ]
+    },
     "firebaseChecks": [
       58,
       31,
@@ -39,20 +55,25 @@
       8,
       41
     ],
+    "legacyChecks": [
+      58,
+      31,
+      9
+    ],
     "typescript": "passed",
-    "nextProductionBuild": "webpack passed",
+    "builds": [
+      "Firebase",
+      "Synagogue portable",
+      "Next.js webpack"
+    ],
     "mobileWidths": [
       320,
       390
     ],
-    "desktopWidth": 1280,
-    "livePlayback": "69 browser captures, ends idle, no console errors",
-    "legacy": "original texture, playback and Senior entry verified",
-    "originalImageBytes": "all four public provider variants verified"
+    "livePlaybackFrames": 56,
+    "liveEndState": "idle",
+    "browserConsoleErrors": 0,
+    "legacyCompatibility": "original app.mjs retained; inferred repair image path verified"
   },
-  "limitations": [
-    "2.5D texture deformation, not a new volumetric 3D model",
-    "Older KU GPA app.mjs is preserved for compatibility",
-    "GPU unavailable: unchanged static original fallback"
-  ]
+  "scope": "Static UI only; authentication, database, rules, billing and SmartThings deployment unchanged"
 }

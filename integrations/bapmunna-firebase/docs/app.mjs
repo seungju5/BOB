@@ -10,7 +10,7 @@ import {SETUP_STEPS,setupDraft,validateSetup,applySetup,readSetupForm,setupConte
 import {mealEvidence,careHeadline,JOURNEY_SCENARIOS,journeyScene,reportDayAfterKey,awayPresetRange} from './experience.mjs';
 
 // Resolve once against the entry document; role switches change the URL without reloading.
-const ASSETS=Object.fromEntries(Object.entries({logo:'./assets/rice-logo.png',partner:'./assets/partner.png',bunny:'./assets/bunny.png',companion:'./assets/bunny.png',full:'./assets/rice-full.png',half:'./assets/rice-half.webp',empty:'./assets/rice-empty.webp',eatout:'./assets/eatout.svg',away:'./assets/away.svg',help:'./assets/help.svg',family:'./assets/family.svg',info:'./assets/info.svg',phone:'./assets/phone.svg',heart:'./assets/heart.svg',history:'./assets/history.svg'}).map(([name,path])=>[name,new URL(path,document.baseURI).href]));
+const ASSETS=Object.fromEntries(Object.entries({logo:'./assets/rice-logo.png',partner:'./assets/partner.png',bunny:'./assets/bunny.png',underlay:'./assets/bunny-underlay.webp',companion:'./assets/bunny.png',full:'./assets/rice-full.png',half:'./assets/rice-half.webp',empty:'./assets/rice-empty.webp',eatout:'./assets/eatout.svg',away:'./assets/away.svg',help:'./assets/help.svg',family:'./assets/family.svg',info:'./assets/info.svg',phone:'./assets/phone.svg',heart:'./assets/heart.svg',history:'./assets/history.svg'}).map(([name,path])=>[name,new URL(path,document.baseURI).href]));
 const root=document.querySelector('#view');
 const viewNames=['welcome','senior','guardian','report','family','settings','devices','about','account','more','alerts','privacy','setup','journey','connect'];
 const CLOUD_AVAILABLE=document.querySelector('meta[name="bapmunna-cloud"]')?.content==='enabled';
@@ -331,7 +331,7 @@ function render(focus=false){
   for(const link of root.querySelectorAll('a[href^="#"]'))link.setAttribute('href',routeHref(link.getAttribute('href').slice(1)));
   document.querySelector('.skip-link').setAttribute('href',`${location.pathname}#main`);
   if(view==='welcome'){
-    welcomeGreeting=createBunnyGreeting(root.querySelector('.welcome'),{imageUrl:ASSETS.bunny});
+    welcomeGreeting=createBunnyGreeting(root.querySelector('.welcome'),{imageUrl:ASSETS.bunny,underlayUrl:ASSETS.underlay});
     if(!welcomeSeen){welcomeSeen=true;void greetWelcome();}
   }
   if(view==='account'&&CLOUD_AVAILABLE)accountCleanup=mountAccount(document.querySelector('#account-surface'),{audience:edition,browseHref:routeHref(EDITIONS[edition].home),familyHref:routeHref('family'),connectHref:routeHref('connect')});

@@ -70,7 +70,7 @@ export default function TutorialPage() {
   const last = index === SLIDES.length - 1;
 
   return (
-    <main className="flex flex-1 flex-col bg-butter">
+    <main className="font-halmae flex flex-1 flex-col bg-butter">
       <div className="px-6 pt-7">
         <div className="flex h-9 items-center justify-between">
           <div className="flex items-center gap-2" role="progressbar" aria-valuenow={index + 1} aria-valuemin={1} aria-valuemax={SLIDES.length} aria-label="튜토리얼 진행">
@@ -83,7 +83,7 @@ export default function TutorialPage() {
           </Link>
         </div>
         <div key={index} className="animate-rise pb-8">
-          <h1 className="font-hand mt-6 text-[40px] leading-[1.15] whitespace-pre-line text-cocoa">{slide.title}</h1>
+          <h1 className="mt-6 text-[40px] leading-[1.15] whitespace-pre-line text-cocoa">{slide.title}</h1>
           <p className="mt-4 text-[18px] leading-relaxed whitespace-pre-line text-cocoa/80">{slide.body}</p>
         </div>
       </div>

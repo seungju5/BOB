@@ -22,6 +22,7 @@
   --font-sans: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
     "Noto Sans KR", sans-serif;
   --font-hand: var(--font-gaegu), "Pretendard Variable", sans-serif;
+  --font-halmae: "ChilgokHalmaeKwonAnJa", "Pretendard Variable", sans-serif; /* 튜토리얼 전용, app/tutorial/layout.tsx에서 불러옴 */
 
   --radius-card: 1.75rem;
   --shadow-soft: 0 1px 2px rgb(59 42 30 / 0.04), 0 8px 24px rgb(59 42 30 / 0.06);

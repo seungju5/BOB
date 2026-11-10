@@ -30,7 +30,7 @@ export default function StartPage() {
           <ButtonLink href="/s" className="text-[19px]">
             어르신으로 시작
           </ButtonLink>
-          <ButtonLink href="/login" variant="outline" className="text-[19px]">
+          <ButtonLink href="/tutorial" variant="outline" className="text-[19px]">
             보호자로 시작
           </ButtonLink>
         </div>

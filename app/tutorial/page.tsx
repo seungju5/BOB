@@ -70,29 +70,41 @@ export default function TutorialPage() {
   const last = index === SLIDES.length - 1;
 
   return (
-    <main className="flex flex-1 flex-col bg-butter px-6 pt-7 pb-8">
-      <div className="flex h-9 items-center justify-between">
-        <div className="flex items-center gap-2" role="progressbar" aria-valuenow={index + 1} aria-valuemin={1} aria-valuemax={SLIDES.length} aria-label="튜토리얼 진행">
-          {SLIDES.map((_, i) => (
-            <span key={i} className={`h-2.5 rounded-full transition-all ${i === index ? "w-7 bg-cocoa" : "w-2.5 bg-cocoa/20"}`} />
-          ))}
+    <main className="flex flex-1 flex-col bg-butter">
+      <div className="px-6 pt-7">
+        <div className="flex h-9 items-center justify-between">
+          <div className="flex items-center gap-2" role="progressbar" aria-valuenow={index + 1} aria-valuemin={1} aria-valuemax={SLIDES.length} aria-label="튜토리얼 진행">
+            {SLIDES.map((_, i) => (
+              <span key={i} className={`h-2.5 rounded-full transition-all ${i === index ? "w-7 bg-cocoa" : "w-2.5 bg-cocoa/20"}`} />
+            ))}
+          </div>
+          <Link href={NEXT} className={`-mr-2 rounded-full px-3 py-1.5 text-[15px] font-semibold text-cocoa/70 hover:text-cocoa ${last ? "invisible" : ""}`}>
+            건너뛰기
+          </Link>
         </div>
-        <Link href={NEXT} className={`-mr-2 rounded-full px-3 py-1.5 text-[15px] font-semibold text-cocoa/70 hover:text-cocoa ${last ? "invisible" : ""}`}>
-          건너뛰기
-        </Link>
+        <div key={index} className="animate-rise pb-8">
+          <h1 className="font-hand mt-6 text-[40px] leading-[1.15] whitespace-pre-line text-cocoa">{slide.title}</h1>
+          <p className="mt-4 text-[18px] leading-relaxed whitespace-pre-line text-cocoa/80">{slide.body}</p>
+        </div>
       </div>
 
-      <div key={index} className="animate-rise flex flex-1 flex-col">
-        <h1 className="font-hand mt-6 text-[40px] leading-[1.15] whitespace-pre-line text-cocoa">{slide.title}</h1>
-        <p className="mt-4 text-[18px] leading-relaxed whitespace-pre-line text-cocoa/80">{slide.body}</p>
-        <div className="flex flex-1 items-center justify-center py-8">{slide.content}</div>
+      {/* 시작 화면처럼 아래쪽은 흰 시트 */}
+      <div className="flex flex-1 flex-col rounded-t-[2.25rem] bg-paper px-6 pt-8 pb-8">
+        <div key={index} className="animate-rise flex flex-1 items-center justify-center pb-8">
+          {slide.content}
+        </div>
+        <Button variant="dark" className="min-h-16 text-[19px]" onClick={() => (last ? router.push(NEXT) : setIndex(index + 1))}>
+          {last ? "시작하기" : "다음"}
+        </Button>
+        {/* 약관 페이지가 생기면 링크로 바꾼다 */}
+        {index === 0 ? (
+          <p className="mt-4 text-center text-[14px] text-cocoa/70 underline underline-offset-4">개인정보 처리방침 · 이용약관</p>
+        ) : (
+          <Button variant="ghost" className="mt-1 text-cocoa/70" onClick={() => setIndex(index - 1)}>
+            이전
+          </Button>
+        )}
       </div>
-
-      <Button variant="dark" className="min-h-16 text-[19px]" onClick={() => (last ? router.push(NEXT) : setIndex(index + 1))}>
-        {last ? "시작하기" : "다음"}
-      </Button>
-      {/* 약관 페이지가 생기면 링크로 바꾼다 */}
-      {index === 0 ? <p className="mt-4 text-center text-[14px] text-cocoa/70 underline underline-offset-4">개인정보 처리방침 · 이용약관</p> : null}
     </main>
   );
 }
@@ -101,7 +113,7 @@ type Icon = ComponentType<SVGProps<SVGSVGElement>>;
 
 function InfoCard({ icon: Icon, text }: { icon: Icon; text: string }) {
   return (
-    <div className="flex items-start gap-3 rounded-[1.25rem] bg-paper px-4 py-3.5">
+    <div className="flex items-start gap-3 rounded-[1.25rem] bg-butter-soft px-4 py-3.5">
       <Icon className="mt-0.5 h-6 w-6 shrink-0 text-cocoa" />
       <p className="text-[17px] leading-snug font-semibold whitespace-pre-line text-cocoa">{text}</p>
     </div>
@@ -155,7 +167,7 @@ function WeekLegend() {
           </div>
         ))}
       </div>
-      <ul className="grid grid-cols-2 gap-x-4 gap-y-2.5 rounded-[1.25rem] bg-paper px-5 py-4">
+      <ul className="grid grid-cols-2 gap-x-4 gap-y-2.5 rounded-[1.25rem] bg-butter-soft px-5 py-4">
         {(Object.keys(TONES) as Tone[]).map((tone) => (
           <li key={tone} className="flex items-center gap-2 text-[16px] font-semibold text-cocoa">
             <span className={`h-4 w-4 shrink-0 rounded-full ${TONES[tone].className}`} />
@@ -174,7 +186,7 @@ function SeniorButtons() {
     { icon: IconHeart, label: "도와줘요", className: "bg-blush text-blush-deep" },
   ];
   return (
-    <div className="w-full rounded-[var(--radius-card)] bg-paper px-3 py-3.5">
+    <div className="w-full rounded-[var(--radius-card)] border-2 border-line bg-paper px-3 py-3.5">
       <p className="px-1 text-[14px] text-muted">필요한 소식만 가볍게 남겨요.</p>
       <div className="mt-2.5 grid grid-cols-3 gap-2" aria-hidden>
         {buttons.map(({ icon: Icon, label, className }) => (

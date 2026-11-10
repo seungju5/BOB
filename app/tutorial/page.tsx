@@ -53,15 +53,42 @@ const SLIDES: Slide[] = [
   {
     title: "시작하기 전에\n준비해 주세요",
     body: "찾기 어려운 건\n다음 단계에서 영상으로\n알려 드려요.",
-    content: (
-      <div className="flex w-full flex-col gap-3">
-        <InfoCard icon={IconCheckSquare} text="SmartThings 계정" />
-        <InfoCard icon={IconCheckSquare} text={"밥솥에 꽂을\n스마트 플러그"} />
-        <InfoCard icon={IconPlay} text={"연결 코드와\n플러그 번호"} />
-      </div>
-    ),
+    content: <ReadyChecklist />,
   },
 ];
+
+const READY: { icon: Icon; title: string; hint: string }[] = [
+  { icon: IconSmartphone, title: "SmartThings 계정", hint: "삼성 계정으로 가입해 두세요" },
+  { icon: IconPlug, title: "밥솥에 꽂을 스마트 플러그", hint: "전력을 재는 삼성 스마트플러그예요" },
+  { icon: IconPlay, title: "연결 코드와 플러그 번호", hint: "SmartThings에서 확인해요" },
+];
+
+/** T-05 준비물: 번호가 이어지는 체크리스트 카드 */
+function ReadyChecklist() {
+  return (
+    <ol className="relative flex w-full flex-col gap-3">
+      {/* 카드를 잇는 점선 */}
+      <span aria-hidden className="absolute top-8 bottom-8 left-[2.375rem] border-l-2 border-dashed border-butter-deep/50" />
+      {READY.map(({ icon: Icon, title, hint }, i) => (
+        <li
+          key={title}
+          className="animate-rise relative flex items-center gap-4 rounded-[1.25rem] bg-butter-soft py-3.5 pr-4 pl-4"
+          style={{ animationDelay: `${120 + i * 90}ms` }}
+        >
+          <span className="relative grid h-11 w-11 shrink-0 place-items-center rounded-full bg-butter text-cocoa shadow-[0_0_0_4px_var(--color-butter-soft)]">
+            <Icon className="h-6 w-6" />
+            <span className="absolute -top-1 -right-1 grid h-5 w-5 place-items-center rounded-full bg-cocoa text-[11px] leading-none text-paper">{i + 1}</span>
+          </span>
+          <span className="flex min-w-0 flex-1 flex-col">
+            <span className="text-[19px] leading-snug text-cocoa">{title}</span>
+            <span className="mt-0.5 text-[15px] leading-snug text-cocoa/75">{hint}</span>
+          </span>
+          <IconCheckSquare className="h-6 w-6 shrink-0 text-butter-deep" />
+        </li>
+      ))}
+    </ol>
+  );
+}
 
 export default function TutorialPage() {
   const router = useRouter();

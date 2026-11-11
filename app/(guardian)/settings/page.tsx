@@ -8,7 +8,7 @@ import { PlugForm } from "@/components/PlugForm";
 import { Button, PageHeader, Skeleton } from "@/components/ui";
 import { addDays, kstDate, MINUTE_MS } from "@/lib/judge/time";
 import { clearLive } from "@/lib/data/live";
-import { setMode } from "@/lib/data/mode";
+import { setMode, useSession } from "@/lib/data/mode";
 import { useApp, type App } from "@/lib/data/useApp";
 import type { AppView } from "@/lib/data/view";
 import { resetDemo, updateDemo } from "@/lib/demo/store";
@@ -42,6 +42,14 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 function Settings({ app, view, now }: { app: App; view: AppView; now: Date }) {
   const router = useRouter();
   const { actions, mode } = app;
+  const session = useSession();
+  // 계정 전환은 로그아웃 후 로그인 화면으로 (로그인 화면이 최근 계정을 보여 준다)
+  const signOut = async (to: string) => {
+    await supabase().auth.signOut();
+    clearLive();
+    setMode(null);
+    router.push(to);
+  };
   const relation = view.senior.relation;
   const today = kstDate(now);
   const [windows, setWindows] = useState(view.mealProfile.windows);
@@ -200,16 +208,16 @@ function Settings({ app, view, now }: { app: App; view: AppView; now: Date }) {
         </Section>
       ) : (
         <Section title="계정">
-          <Button
-            variant="outline"
-            className="min-h-12 text-[15px]"
-            onClick={async () => {
-              await supabase().auth.signOut();
-              clearLive();
-              setMode(null);
-              router.push("/");
-            }}
-          >
+          {session?.user.email ? (
+            <p className="flex items-center justify-between rounded-2xl bg-butter-soft px-4 py-3 text-[15px]">
+              <span className="text-cocoa/70">로그인한 계정</span>
+              <span className="truncate pl-3 font-bold text-cocoa">{session.user.email}</span>
+            </p>
+          ) : null}
+          <Button variant="soft" className="min-h-12 text-[15px]" onClick={() => void signOut("/login")}>
+            다른 계정으로 전환
+          </Button>
+          <Button variant="outline" className="min-h-12 text-[15px]" onClick={() => void signOut("/")}>
             로그아웃
           </Button>
         </Section>

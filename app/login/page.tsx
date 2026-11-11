@@ -6,6 +6,7 @@ import { TextInput } from "@/components/forms";
 import { IconCheck } from "@/components/icons";
 import { Logo, Mascot } from "@/components/Mascot";
 import { Button, PageHeader } from "@/components/ui";
+import { forgetAccount, rememberAccount, useRecentAccounts } from "@/lib/data/accounts";
 import { setMode, useSession } from "@/lib/data/mode";
 import { supabase, supabaseConfigured } from "@/lib/supabase";
 
@@ -18,8 +19,11 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
+  const recent = useRecentAccounts();
+
   useEffect(() => {
     if (session) {
+      if (session.user.email) rememberAccount(session.user.email);
       setMode("live");
       router.replace("/start");
     }
@@ -70,6 +74,33 @@ export default function LoginPage() {
           </div>
         ) : (
           <div className="mt-8 flex flex-col gap-3">
+            {recent.length ? (
+              <div className="mb-3">
+                <p className="text-[15px] font-bold text-cocoa">최근 사용한 계정</p>
+                <ul className="mt-2 flex flex-col gap-2">
+                  {recent.map((a) => (
+                    <li key={a} className="flex items-center gap-1">
+                      <button
+                        onClick={() => setEmail(a)}
+                        className={`flex min-h-12 min-w-0 flex-1 items-center rounded-2xl border-2 px-4 text-left text-[15px] font-semibold text-cocoa ${email === a ? "border-butter-deep bg-butter-soft" : "border-line bg-paper"}`}
+                      >
+                        <span className="truncate">{a}</span>
+                      </button>
+                      <button
+                        aria-label={`${a} 목록에서 지우기`}
+                        onClick={() => {
+                          forgetAccount(a);
+                          if (email === a) setEmail("");
+                        }}
+                        className="grid h-12 w-10 shrink-0 place-items-center text-[18px] text-muted hover:text-cocoa"
+                      >
+                        ×
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
             <label className="text-[15px] font-bold text-cocoa" htmlFor="email">
               이메일
             </label>

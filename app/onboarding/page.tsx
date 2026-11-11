@@ -9,7 +9,8 @@ import { PlugForm } from "@/components/PlugForm";
 import { Button, ProgressBar, Skeleton } from "@/components/ui";
 import { refreshLive } from "@/lib/data/live";
 import { useApp } from "@/lib/data/useApp";
-import type { AppActions, AppView, OnboardingPatch } from "@/lib/data/view";
+import { DEFAULT_WINDOWS, type AppActions, type AppView, type OnboardingPatch } from "@/lib/data/view";
+import type { MealSlotName, MealWindow } from "@/lib/judge/types";
 
 const TOTAL = 7;
 const TITLES = [
@@ -276,9 +277,22 @@ function HouseholdStep({ state, next }: StepProps) {
   );
 }
 
+// 끼니 수에 맞춰 보여 줄 시간대. 시간대 종류(DB meal_slots.slot)는 아침·점심·저녁 세 개뿐이라 4끼도 세 개로 본다.
+const SLOTS_FOR_MEALS: Record<number, MealSlotName[]> = {
+  1: ["lunch"],
+  2: ["breakfast", "dinner"],
+  3: ["breakfast", "lunch", "dinner"],
+  4: ["breakfast", "lunch", "dinner"],
+};
+
 function MealStep({ state, next }: StepProps) {
   const [meals, setMeals] = useState(state.mealProfile.windows.length);
-  const [windows, setWindows] = useState(state.mealProfile.windows);
+  // 끼니 수를 바꿨다 되돌려도 고친 시간이 남도록 시간대별로 기억한다
+  const [times, setTimes] = useState(() =>
+    Object.fromEntries(DEFAULT_WINDOWS.map((d) => [d.slot, state.mealProfile.windows.find((w) => w.slot === d.slot) ?? d])) as Record<MealSlotName, MealWindow>,
+  );
+  const windows = SLOTS_FOR_MEALS[meals].map((s) => times[s]);
+  const setWindows = (ws: MealWindow[]) => setTimes({ ...times, ...Object.fromEntries(ws.map((w) => [w.slot, w])) });
   const [eatOut, setEatOut] = useState(state.mealProfile.eatOutPerWeek);
   return (
     <>
@@ -288,13 +302,7 @@ function MealStep({ state, next }: StepProps) {
         </Field>
         <Field
           label="주로 드시는 시간대"
-          hint={
-            meals <= 2
-              ? "적게 드셔도 시간대는 세 개로 두고, 결식 기준을 넉넉히 잡아 둘게요."
-              : meals === 4
-                ? "네 끼를 드셔도 아침·점심·저녁 세 시간대로 살펴요."
-                : "이 시간 안에 밥솥 소식이 있으면 '확인됨'이 돼요."
-          }
+          hint={meals === 4 ? "네 번째 끼니는 아직 따로 둘 수 없어, 아침·점심·저녁 세 시간대로 살펴요." : "이 시간 안에 밥솥 소식이 있으면 '확인됨'이 돼요."}
         >
           <MealWindowsEditor windows={windows} onChange={setWindows} />
         </Field>

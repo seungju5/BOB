@@ -116,7 +116,7 @@ export default function HomePage() {
 
       <section className="mt-4 rounded-[1.75rem] border border-line p-5">
         <h2 className="text-[15px] font-bold text-cocoa">오늘의 끼니</h2>
-        <ul className="mt-3 grid grid-cols-3 gap-2">
+        <ul className="mt-3 grid gap-2" style={{ gridTemplateColumns: `repeat(${Math.max(slots.length, 1)}, minmax(0, 1fr))` }}>
           {slots.map((s) => (
             <li key={s.slot} className={`flex flex-col items-center gap-1.5 rounded-2xl py-3 ${STATUS_META[s.status].className}`}>
               <span className="text-[13px] font-semibold opacity-80">{SLOT_LABEL[s.slot]}</span>

@@ -6,6 +6,7 @@ import { TextInput } from "@/components/forms";
 import { IconCheck } from "@/components/icons";
 import { Logo, Mascot } from "@/components/Mascot";
 import { Button, PageHeader } from "@/components/ui";
+import { SocialLogin } from "@/components/SocialLogin";
 import { forgetAccount, rememberAccount, useRecentAccounts } from "@/lib/data/accounts";
 import { setMode, useSession } from "@/lib/data/mode";
 import { supabase, supabaseConfigured } from "@/lib/supabase";
@@ -56,6 +57,18 @@ export default function LoginPage() {
           <br />
           시작할게요
         </h1>
+        {!sent ? (
+          <div className="mt-8">
+            <SocialLogin />
+            {supabaseConfigured ? (
+              <div className="mt-6 flex items-center gap-3 text-[13px] text-muted" aria-hidden>
+                <span className="h-px flex-1 bg-line" />
+                또는 이메일로
+                <span className="h-px flex-1 bg-line" />
+              </div>
+            ) : null}
+          </div>
+        ) : null}
         {!supabaseConfigured ? (
           <p className="mt-4 text-[15px] text-muted">서버가 설정되지 않아 데모로만 둘러볼 수 있어요.</p>
         ) : sent ? (
@@ -73,7 +86,7 @@ export default function LoginPage() {
             </button>
           </div>
         ) : (
-          <div className="mt-8 flex flex-col gap-3">
+          <div className="mt-6 flex flex-col gap-3">
             {recent.length ? (
               <div className="mb-3">
                 <p className="text-[15px] font-bold text-cocoa">최근 사용한 계정</p>

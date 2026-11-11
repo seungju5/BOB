@@ -18,6 +18,8 @@
   --color-sky: #dfeaf6; /* 부재 */
   --color-sky-deep: #4a6f95;
   --color-tangerine: #e98a2b; /* 튜토리얼 범례: 두 끼 */
+  --color-kakao: #fee500; /* 카카오 로그인 버튼 (카카오 가이드 색) */
+  --color-kakao-label: #191919;
 
   --font-sans: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
     "Noto Sans KR", sans-serif;

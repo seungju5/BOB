@@ -56,4 +56,11 @@ export function fmtDateLong(date: string) {
   const wd = WEEKDAY[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
   return `${m}월 ${d}일 ${wd}요일`;
 }
-export const fmtMonthDay = (date: string) => `${Number(date.slice(5, 7))}/${Number(date.slice(8, 10))}`;
+/** 받침에 따라 '와/과'를 붙인다. 호칭을 직접 입력할 수 있어서 ("이모와", "삼촌과") */
+export function withWa(word: string) {
+  const code = word.charCodeAt(word.length - 1) - 0xac00;
+  const batchim = code >= 0 && code <= 11171 && code % 28 !== 0;
+  return `${word}${batchim ? "과" : "와"}`;
+}
+
+export const fmtMonthDay =(date: string) => `${Number(date.slice(5, 7))}/${Number(date.slice(8, 10))}`;

@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
-import { Choice, Field, MealWindowsEditor, Stepper, TextInput, windowsValid } from "@/components/forms";
+import { Choice, Field, MealWindowsEditor, RelationPicker, Slider, Stepper, TextInput, windowsValid } from "@/components/forms";
 import { IconBell, IconCheck, IconChevronLeft, IconInfo, IconLock, IconPlug, IconUtensils, IconWifi } from "@/components/icons";
 import { Mascot } from "@/components/Mascot";
 import { PlugForm } from "@/components/PlugForm";
@@ -253,10 +253,10 @@ function HouseholdStep({ state, next }: StepProps) {
   return (
     <>
       <div className="flex flex-col gap-5">
-        <Field label="어떻게 부르세요?">
-          <Choice value={senior.relation} options={["어머니", "아버지", "부모님"].map((v) => ({ value: v, label: v }))} onChange={(relation) => setSenior({ ...senior, relation })} />
+        <Field label="어떻게 부르세요?" hint="여러 개 고를 수 있어요.">
+          <RelationPicker value={senior.relation} onChange={(relation) => setSenior({ ...senior, relation })} />
         </Field>
-        <Field label="어르신 성함 (화면 인사말에 쓰여요)">
+        <Field label="어르신 성함">
           <TextInput value={senior.name} onChange={(e) => setSenior({ ...senior, name: e.target.value })} placeholder="예: 정숙" />
         </Field>
         <Field label="어르신 연락처">
@@ -270,7 +270,7 @@ function HouseholdStep({ state, next }: StepProps) {
         </Field>
       </div>
       <Footer>
-        <Button disabled={!senior.name.trim()} onClick={() => next({ senior: { ...senior, name: senior.name.trim() }, household })}>다음</Button>
+        <Button disabled={!senior.name.trim() || !senior.relation} onClick={() => next({ senior: { ...senior, name: senior.name.trim() }, household })}>다음</Button>
       </Footer>
     </>
   );
@@ -284,9 +284,18 @@ function MealStep({ state, next }: StepProps) {
     <>
       <div className="flex flex-col gap-5">
         <Field label="하루 평균 끼니 수">
-          <Choice cols={2} value={meals} options={[{ value: 2, label: "두 끼" }, { value: 3, label: "세 끼" }]} onChange={setMeals} />
+          <Slider value={meals} min={1} max={4} unit="끼" label="하루 평균 끼니 수" onChange={setMeals} />
         </Field>
-        <Field label="주로 드시는 시간대" hint={meals === 2 ? "두 끼만 드셔도 시간대는 세 개로 두고, 결식 기준을 넉넉히 잡아 주세요." : "이 시간 안에 밥솥 소식이 있으면 '확인됨'이 돼요."}>
+        <Field
+          label="주로 드시는 시간대"
+          hint={
+            meals <= 2
+              ? "적게 드셔도 시간대는 세 개로 두고, 결식 기준을 넉넉히 잡아 둘게요."
+              : meals === 4
+                ? "네 끼를 드셔도 아침·점심·저녁 세 시간대로 살펴요."
+                : "이 시간 안에 밥솥 소식이 있으면 '확인됨'이 돼요."
+          }
+        >
           <MealWindowsEditor windows={windows} onChange={setWindows} />
         </Field>
         {!windowsValid(windows) ? <p className="text-[13px] font-semibold text-blush-deep">시간대가 겹치거나 순서가 맞지 않아요.</p> : null}
@@ -300,7 +309,7 @@ function MealStep({ state, next }: StepProps) {
           onClick={() =>
             next({
               mealProfile: { ...state.mealProfile, windows, eatOutPerWeek: eatOut },
-              alertSettings: { ...state.alertSettings, missedMealsThreshold: meals === 2 ? 3 : state.alertSettings.missedMealsThreshold },
+              alertSettings: { ...state.alertSettings, missedMealsThreshold: meals <= 2 ? 3 : state.alertSettings.missedMealsThreshold },
             })
           }
         >

@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
-import { Choice, Field, MealWindowsEditor, Stepper, TextInput, Toggle, windowsValid } from "@/components/forms";
+import { Field, MealWindowsEditor, RelationPicker, Stepper, TextInput, Toggle, windowsValid } from "@/components/forms";
 import { IconLock, IconPlug, IconSuitcase } from "@/components/icons";
 import { PlugForm } from "@/components/PlugForm";
 import { Button, PageHeader, Skeleton } from "@/components/ui";
@@ -51,6 +51,8 @@ function Settings({ app, view, now }: { app: App; view: AppView; now: Date }) {
     router.push(to);
   };
   const relation = view.senior.relation;
+  // 기타 입력 중 글자마다 저장하지 않도록, 고친 뒤 '호칭 저장'으로 저장한다
+  const [relationDraft, setRelationDraft] = useState(relation);
   const today = kstDate(now);
   const [windows, setWindows] = useState(view.mealProfile.windows);
   const [awayStart, setAwayStart] = useState(today);
@@ -119,8 +121,13 @@ function Settings({ app, view, now }: { app: App; view: AppView; now: Date }) {
       </Section>
 
       <Section title={`${relation} 정보`}>
-        <Field label="부르는 이름">
-          <Choice value={relation} options={["어머니", "아버지", "부모님"].map((v) => ({ value: v, label: v }))} onChange={(v) => void actions.saveSenior({ relation: v })} />
+        <Field label="부르는 이름" hint="여러 개 고를 수 있어요.">
+          <RelationPicker value={relation} onChange={setRelationDraft} />
+          {relationDraft !== relation ? (
+            <Button className="min-h-12 text-[15px]" disabled={!relationDraft} onClick={() => void actions.saveSenior({ relation: relationDraft })}>
+              {relationDraft ? "호칭 저장" : "하나 이상 골라 주세요"}
+            </Button>
+          ) : null}
         </Field>
         <Field label="연락처" hint="홈 화면의 전화하기 버튼에 쓰여요.">
           <TextInput type="tel" inputMode="tel" placeholder="010-0000-0000" defaultValue={view.senior.phone} onBlur={(e) => void actions.saveSenior({ phone: e.target.value.trim() })} />

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ALERT_PRIORITY, ALERT_TONE, alertCopy, fmtDateLong, STATUS_META, StatusIcon } from "@/components/guardian";
+import { ALERT_PRIORITY, ALERT_TONE, alertCopy, fmtDateLong, STATUS_META, StatusIcon, withWa } from "@/components/guardian";
 import { IconArrowRight, IconChart, IconClock, IconPhone, IconSuitcase, IconWifi } from "@/components/icons";
 import { Logo, Mascot } from "@/components/Mascot";
 import { buttonClass, Skeleton } from "@/components/ui";
@@ -48,7 +48,7 @@ export default function HomePage() {
       </header>
 
       <h1 className="animate-rise mt-7 text-[30px] leading-tight font-extrabold text-cocoa">
-        {relation}와 나누는
+        {withWa(relation)} 나누는
         <br />
         오늘의 안부
       </h1>

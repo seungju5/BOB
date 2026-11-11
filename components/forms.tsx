@@ -172,16 +172,68 @@ export function Stepper({ value, min, max, step = 1, unit, onChange }: { value: 
   );
 }
 
+const toMin = (t: string) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5));
+const toTime = (m: number) => {
+  const c = Math.min(Math.max(m, 0), 23 * 60 + 59);
+  return `${String(Math.floor(c / 60)).padStart(2, "0")}:${String(c % 60).padStart(2, "0")}`;
+};
+
+/**
+ * 끼니 시간대가 서로 겹치지 않게 맞춘다.
+ * - 시작은 앞 끼니가 끝난 뒤로만 (앞보다 이르면 앞 끼니 끝으로 당긴다)
+ * - 앞 끼니를 늦추면 뒤 끼니들을 그만큼 밀어 준다 (길이는 유지, 하루 끝 23:59까지)
+ */
+export function fitWindows(windows: MealWindow[], changed: number): MealWindow[] {
+  const out = windows.map((w) => ({ ...w }));
+  const prevEnd = changed > 0 ? out[changed - 1].end : null;
+  if (prevEnd && out[changed].start < prevEnd) out[changed].start = prevEnd;
+  for (let j = changed + 1; j < out.length; j++) {
+    const before = out[j - 1].end;
+    if (out[j].start >= before) break;
+    const length = Math.max(toMin(windows[j].end) - toMin(windows[j].start), 30);
+    out[j].start = before;
+    out[j].end = toTime(toMin(before) + length);
+  }
+  return out;
+}
+
+/** 시간대마다 문제가 있는지: 끝이 시작보다 빠르거나, 앞 끼니와 겹치면 true */
+function windowProblems(windows: MealWindow[]) {
+  return windows.map((w, i) => w.start >= w.end || (i > 0 && w.start < windows[i - 1].end));
+}
+
 export function MealWindowsEditor({ windows, onChange }: { windows: MealWindow[]; onChange: (w: MealWindow[]) => void }) {
-  const set = (i: number, key: "start" | "end", v: string) => onChange(windows.map((w, j) => (j === i ? { ...w, [key]: v } : w)));
+  const set = (i: number, key: "start" | "end", v: string) => {
+    if (!v) return; // 입력을 지우는 중에는 그대로 둔다
+    onChange(fitWindows(windows.map((w, j) => (j === i ? { ...w, [key]: v } : w)), i));
+  };
+  const bad = windowProblems(windows);
   return (
     <div className="flex flex-col gap-2">
       {windows.map((w, i) => (
-        <div key={w.slot} className="flex items-center gap-2 rounded-2xl border-2 border-line px-4 py-2">
-          <span className="w-10 text-[15px] font-bold text-cocoa">{SLOT_LABEL[w.slot]}</span>
-          <input type="time" value={w.start} onChange={(e) => set(i, "start", e.target.value)} aria-label={`${SLOT_LABEL[w.slot]} 시작`} className="min-w-0 flex-1 bg-transparent text-[16px] text-cocoa outline-none" />
+        <div
+          key={w.slot}
+          aria-invalid={bad[i] || undefined}
+          className={`flex items-center gap-2 rounded-2xl border-2 px-4 py-2 transition-colors ${bad[i] ? "border-blush-deep bg-blush" : "border-line"}`}
+        >
+          <span className={`w-10 text-[15px] font-bold ${bad[i] ? "text-blush-deep" : "text-cocoa"}`}>{SLOT_LABEL[w.slot]}</span>
+          <input
+            type="time"
+            value={w.start}
+            min={i > 0 ? windows[i - 1].end : undefined}
+            onChange={(e) => set(i, "start", e.target.value)}
+            aria-label={`${SLOT_LABEL[w.slot]} 시작`}
+            className={`min-w-0 flex-1 bg-transparent text-[16px] outline-none ${bad[i] ? "text-blush-deep" : "text-cocoa"}`}
+          />
           <span className="text-muted">~</span>
-          <input type="time" value={w.end} onChange={(e) => set(i, "end", e.target.value)} aria-label={`${SLOT_LABEL[w.slot]} 끝`} className="min-w-0 flex-1 bg-transparent text-[16px] text-cocoa outline-none" />
+          <input
+            type="time"
+            value={w.end}
+            min={w.start}
+            onChange={(e) => set(i, "end", e.target.value)}
+            aria-label={`${SLOT_LABEL[w.slot]} 끝`}
+            className={`min-w-0 flex-1 bg-transparent text-[16px] outline-none ${bad[i] ? "text-blush-deep" : "text-cocoa"}`}
+          />
         </div>
       ))}
     </div>

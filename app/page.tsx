@@ -1,4 +1,5 @@
-import { Logo, Mascot } from "@/components/Mascot";
+import Image from "next/image";
+import { Logo } from "@/components/Mascot";
 import { ButtonLink } from "@/components/ui";
 
 export default function StartPage() {
@@ -10,18 +11,26 @@ export default function StartPage() {
 
       <div className="relative flex flex-1 flex-col px-7 pt-10">
         <h1 className="animate-rise text-[44px] leading-[1.15] font-extrabold tracking-[-0.03em] text-cocoa">
-          안부가
+          오늘도
           <br />
-          폴짝,
+          밥은
           <br />
-          찾아왔어요.
+          드셨을까요?
         </h1>
         <p className="mt-auto mb-10 text-[19px] leading-relaxed text-cocoa/80">
           매일 쓰는 밥솥이
           <br />
           대신 전하는 안부
         </p>
-        <Mascot className="animate-bob absolute right-4 bottom-4 h-44 w-44" mood="wink" />
+        {/* 밥뭇나 토끼 (Peter 브랜치의 public/brand/bunny.png 원본) */}
+        <Image
+          src="/brand/bunny.png"
+          width={480}
+          height={480}
+          priority
+          alt="초록 가디건을 입은 밥뭇나 토끼"
+          className="animate-bob absolute right-0 bottom-0 h-60 w-60 object-contain"
+        />
       </div>
 
       <div className="rounded-t-[2.25rem] bg-paper px-6 pt-8 pb-8">

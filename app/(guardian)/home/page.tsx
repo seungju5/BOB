@@ -2,13 +2,13 @@
 
 import Link from "next/link";
 import { ALERT_PRIORITY, ALERT_TONE, alertCopy, fmtDateLong, STATUS_META, StatusIcon } from "@/components/guardian";
-import { IconArrowRight, IconClock, IconPhone, IconSuitcase, IconWifi } from "@/components/icons";
+import { IconArrowRight, IconChart, IconClock, IconPhone, IconSuitcase, IconWifi } from "@/components/icons";
 import { Logo, Mascot } from "@/components/Mascot";
 import { buttonClass, Skeleton } from "@/components/ui";
 import { countMissedMeals } from "@/lib/judge/evaluateAlerts";
 import { kstDate, kstTime } from "@/lib/judge/time";
 import { useApp } from "@/lib/data/useApp";
-import { recentSlots, SLOT_LABEL, slotsForDate, unackedAlerts } from "@/lib/data/view";
+import { recentSlots, reportSummary, SLOT_LABEL, slotsForDate, unackedAlerts } from "@/lib/data/view";
 
 export default function HomePage() {
   const { view, now, actions, mode } = useApp();
@@ -26,7 +26,7 @@ export default function HomePage() {
   const today = kstDate(now);
   const relation = view.senior.relation;
   const slots = slotsForDate(view, today, now);
-  const lastCook = view.lastCookerAt ? new Date(view.lastCookerAt) : null;
+  const report = reportSummary(view, now);
   const reading = view.plug.lastReadingAt ? new Date(view.plug.lastReadingAt) : null;
   const away = view.absences.find((a) => a.startDate <= today && today <= a.endDate);
   const alerts = unackedAlerts(view).sort((a, b) => ALERT_PRIORITY.indexOf(a.type) - ALERT_PRIORITY.indexOf(b.type));
@@ -71,9 +71,15 @@ export default function HomePage() {
         </section>
       ) : null}
 
-      <Link href="/records" className="mt-5 block rounded-[1.75rem] bg-butter-soft p-6 transition-colors hover:bg-butter/60">
+      <Link
+        href="/report"
+        className={`mt-5 block rounded-[1.75rem] p-6 transition-colors ${report?.trend === "down" ? "bg-blush hover:bg-blush/70" : "bg-butter-soft hover:bg-butter/60"}`}
+      >
         <div className="flex items-center justify-between text-[15px] text-cocoa/70">
-          밥솥이 전한 소식
+          <span className="flex items-center gap-1.5">
+            <IconChart className="h-4 w-4" />
+            이번 주 리포트
+          </span>
           <IconArrowRight className="h-5 w-5 text-cocoa" />
         </div>
         {away ? (
@@ -81,15 +87,22 @@ export default function HomePage() {
             <IconSuitcase className="h-6 w-6 text-sky-deep" />
             {Number(away.endDate.slice(5, 7))}월 {Number(away.endDate.slice(8))}일까지 외출 중이에요
           </p>
-        ) : lastCook ? (
+        ) : report ? (
           <>
-            <p className="mt-3 text-[34px] leading-none font-extrabold tracking-tight text-cocoa">
-              {kstDate(lastCook) === today ? kstTime(lastCook) : `${Number(kstDate(lastCook).slice(8))}일 ${kstTime(lastCook)}`}
+            <p className="mt-3 flex items-baseline gap-2 text-cocoa">
+              <span className="text-[40px] leading-none font-extrabold tracking-tight">{report.r}%</span>
+              <span className="text-[14px] text-cocoa/70">최근 7일 끼니 확인율</span>
             </p>
-            <p className="mt-1 text-[22px] font-extrabold text-cocoa">움직임이 전해졌어요.</p>
+            <p className="mt-2 text-[18px] leading-snug font-extrabold text-cocoa">{report.message}</p>
+            <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-paper/80" aria-hidden>
+              <div className="h-full rounded-full bg-butter-deep" style={{ width: `${report.r}%` }} />
+            </div>
           </>
         ) : (
-          <p className="mt-3 text-[22px] font-extrabold text-cocoa">아직 전해진 소식이 없어요.</p>
+          <>
+            <p className="mt-3 text-[20px] font-extrabold text-cocoa">리포트를 준비하고 있어요.</p>
+            <p className="mt-1 text-[14px] text-cocoa/70">일주일 넘게 기록이 쌓이면 평소와 비교해 드릴게요.</p>
+          </>
         )}
         <p className="mt-3 flex items-center gap-1.5 text-[13px] text-cocoa/60">
           <IconWifi className="h-4 w-4" />

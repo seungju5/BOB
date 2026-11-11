@@ -3,7 +3,7 @@
 import { Mascot } from "@/components/Mascot";
 import { PageHeader, Skeleton } from "@/components/ui";
 import { useApp } from "@/lib/data/useApp";
-import { patternReport, type AppView } from "@/lib/data/view";
+import { reportSummary, type AppView } from "@/lib/data/view";
 
 /** 패턴 변화 리포트 (MVP 간소화: 최근 7일 vs 이전 28일). 영양 상태를 판정하지 않는다. */
 export default function ReportPage() {
@@ -17,10 +17,10 @@ export default function ReportPage() {
 }
 
 function Report({ view, now }: { view: AppView; now: Date }) {
-  const { recent, before } = patternReport(view, now);
+  const summary = reportSummary(view, now);
   const relation = view.senior.relation;
 
-  if (recent.rate === null || before.total < 14) {
+  if (!summary) {
     return (
       <div className="mt-10 flex flex-col items-center text-center">
         <Mascot className="h-28 w-28" mood="sleepy" />
@@ -30,23 +30,15 @@ function Report({ view, now }: { view: AppView; now: Date }) {
     );
   }
 
-  const r = Math.round(recent.rate * 100);
-  const b = Math.round((before.rate ?? 0) * 100);
-  const diff = r - b;
+  const { recent, before, r, b, trend, message } = summary;
 
   return (
     <div className="mt-2">
-      <section className={`rounded-[1.75rem] p-6 ${diff <= -10 ? "bg-blush" : "bg-butter-soft"}`}>
+      <section className={`rounded-[1.75rem] p-6 ${trend === "down" ? "bg-blush" : "bg-butter-soft"}`}>
         <p className="text-[15px] text-cocoa/70">최근 7일 끼니 확인율</p>
         <p className="mt-1 text-[44px] leading-none font-extrabold text-cocoa">{r}%</p>
-        <p className="mt-3 text-[17px] font-bold text-cocoa">
-          {diff <= -10
-            ? `평소(${b}%)보다 식사 소식이 줄었어요.`
-            : diff >= 10
-              ? `평소(${b}%)보다 소식이 많아졌어요.`
-              : `평소(${b}%)와 비슷하게 지내고 계세요.`}
-        </p>
-        {diff <= -10 ? <p className="mt-1 text-[15px] text-cocoa/75">{relation}께 요즘 입맛은 어떠신지 여쭤보면 어떨까요?</p> : null}
+        <p className="mt-3 text-[17px] font-bold text-cocoa">{message}</p>
+        {trend === "down" ? <p className="mt-1 text-[15px] text-cocoa/75">{relation}께 요즘 입맛은 어떠신지 여쭤보면 어떨까요?</p> : null}
       </section>
 
       <section className="mt-4 rounded-[1.75rem] border border-line p-5">

@@ -100,3 +100,16 @@ export function patternReport(v: AppView, now: Date) {
   };
   return { recent: rate(1, 7), before: rate(8, 35) };
 }
+
+/** 리포트 요약: 홈 카드와 리포트 화면이 같은 문구를 쓰도록. 데이터가 모자라면 null. */
+export function reportSummary(v: AppView, now: Date) {
+  const { recent, before } = patternReport(v, now);
+  if (recent.rate === null || before.total < 14) return null;
+  const r = Math.round(recent.rate * 100);
+  const b = Math.round((before.rate ?? 0) * 100);
+  const diff = r - b;
+  const trend = diff <= -10 ? "down" : diff >= 10 ? "up" : "same";
+  const message =
+    trend === "down" ? `평소(${b}%)보다 식사 소식이 줄었어요.` : trend === "up" ? `평소(${b}%)보다 소식이 많아졌어요.` : `평소(${b}%)와 비슷하게 지내고 계세요.`;
+  return { recent, before, r, b, trend, message } as const;
+}

@@ -43,7 +43,8 @@ export default function StartPage() {
             보호자로 시작
           </ButtonLink>
         </div>
-        <p className="mt-5 text-center text-sm text-muted">서로의 하루에, 작은 온기를.</p>
+        {/* 약관 페이지가 생기면 링크로 바꾼다 (튜토리얼 첫 장과 같은 문구) */}
+        <p className="mt-5 text-center text-sm text-muted underline underline-offset-4">개인정보 처리방침 · 이용약관</p>
       </div>
     </main>
   );

@@ -12,6 +12,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 For app development, read `CLAUDE.md` and the relevant instructions in `harness/README.md`.
 Reusable specialists are in `.codex/agents/`; tasks are in `harness/tasks/`.
+Users may address the symbolic bunny characters by name: 캡틴/Captain → wm_lead, 케어/Care → wm_experience, 로직/Logic → wm_domain, 쉴드/실드/Shield → wm_data, 브릿지/브리지/Bridge → wm_iot, 프루프/Proof → wm_verifier, 키퍼/Keeper → wm_release. Read the selected role and `harness/characters/README.md`; use its short name/symbol in replies and act on the request within existing authorization. Character names do not require spawning every role.
 Use the team when the user's request benefits from independent specialist work. Keep simple edits with the lead.
 Assign exact non-overlapping file ownership before parallel edits; at most three specialists work beside the lead.
 If this client does not expose custom-agent names, read the relevant TOML and include its role instructions in the delegated task.

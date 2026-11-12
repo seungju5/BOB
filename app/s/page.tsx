@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
 import { IconArrowRight, IconCheck, IconHeart, IconInfo, IconSuitcase, IconUtensils } from "@/components/icons";
-import { Logo, Mascot } from "@/components/Mascot";
+import { Logo, CookerMascot } from "@/components/Mascot";
 import { Button, Sheet, Skeleton } from "@/components/ui";
 import { addDays, kstDate, kstTime } from "@/lib/judge/time";
 import type { Absence } from "@/lib/judge/types";
@@ -134,7 +134,7 @@ function SeniorHome({ status, now, act }: { status: SeniorStatus; now: Date; act
 
       <div className="mt-4 flex items-center justify-between gap-3 rounded-[1.75rem] bg-butter-soft px-5 py-3">
         <p className="font-hand text-[28px] leading-[1.15] whitespace-pre-line text-cocoa">{cheer}</p>
-        <Mascot className="h-24 w-24 shrink-0" />
+        <CookerMascot className="h-24 w-24 shrink-0" />
       </div>
 
       {away ? (
@@ -147,7 +147,7 @@ function SeniorHome({ status, now, act }: { status: SeniorStatus; now: Date; act
         </div>
       ) : (
         <div className="flex items-center gap-3 rounded-3xl bg-butter px-5 py-4">
-          <Mascot className="h-11 w-11 shrink-0" mood="wink" />
+          <CookerMascot className="h-11 w-11 shrink-0" mood="wink" />
           <div className="flex-1">
             <p className="text-[20px] font-bold text-cocoa">밥솥 소식 도착했어요</p>
             <p className="text-[16px] text-cocoa/70">

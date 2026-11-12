@@ -7,6 +7,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { addDays, kstDate } from "@/lib/judge/time.ts";
 import { cors, db, json, must, recomputeDay, refreshActivity, sha256 } from "@/_shared/core.ts";
+import { pushAlerts, type SentAlert } from "@/_shared/push.ts";
 
 type Device = { id: string; household_id: string };
 
@@ -65,14 +66,20 @@ Deno.serve(async (req) => {
       case "eat_out":
       case "help": {
         must(await db.from("senior_actions").insert({ household_id: h, type: body.op, at: now.toISOString() }));
-        if (body.op === "help") must(await db.from("alerts").insert({ household_id: h, type: "help_request" }));
+        // 가족에게 소식: 도움 요청은 긴급, 외식은 안부 전화 권유 (0003 마이그레이션 필요)
+        const type = body.op === "help" ? "help_request" : "eat_out";
+        const rows = must(await db.from("alerts").insert({ household_id: h, type }).select("id, type, payload")) as SentAlert[];
+        await pushAlerts(h, rows);
         break;
       }
       case "away": {
         const days = Math.min(Math.max(Math.floor(Number(body.days) || 1), 1), 30);
+        const endDate = addDays(today, days - 1);
         must(await db.from("absences").delete().eq("household_id", h).lte("start_date", today).gte("end_date", today));
-        must(await db.from("absences").insert({ household_id: h, start_date: today, end_date: addDays(today, days - 1), created_by: "senior" }));
+        must(await db.from("absences").insert({ household_id: h, start_date: today, end_date: endDate, created_by: "senior" }));
         must(await db.from("senior_actions").insert({ household_id: h, type: "away", at: now.toISOString() }));
+        const rows = must(await db.from("alerts").insert({ household_id: h, type: "away", payload: { endDate } }).select("id, type, payload")) as SentAlert[];
+        await pushAlerts(h, rows);
         break;
       }
       case "back": {

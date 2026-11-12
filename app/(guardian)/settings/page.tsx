@@ -1,14 +1,14 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, type ReactNode } from "react";
-import { Choice, Field, MealWindowsEditor, Stepper, TextInput, Toggle, windowsValid } from "@/components/forms";
-import { IconLock, IconPlug, IconSuitcase } from "@/components/icons";
-import { PlugForm } from "@/components/PlugForm";
+import { useEffect, useState, type ReactNode } from "react";
+import { AlertThresholdFields, Choice, Field, MealWindowsEditor, RelationPicker, Slider, TextInput, Toggle, windowsValid } from "@/components/forms";
+import { IconLock, IconSuitcase } from "@/components/icons";
+import { DeviceSetup } from "@/components/DeviceSetup";
 import { Button, PageHeader, Skeleton } from "@/components/ui";
 import { addDays, kstDate, MINUTE_MS } from "@/lib/judge/time";
 import { clearLive } from "@/lib/data/live";
-import { setMode } from "@/lib/data/mode";
+import { setMode, useSession } from "@/lib/data/mode";
 import { useApp, type App } from "@/lib/data/useApp";
 import type { AppView } from "@/lib/data/view";
 import { resetDemo, updateDemo } from "@/lib/demo/store";
@@ -30,9 +30,9 @@ export default function SettingsPage() {
   );
 }
 
-function Section({ title, children }: { title: string; children: ReactNode }) {
+function Section({ title, id, children }: { title: string; id?: string; children: ReactNode }) {
   return (
-    <section className="border-b border-line px-6 py-6">
+    <section id={id} className="scroll-mt-3 border-b border-line px-6 py-6" aria-label={id ? title : undefined}>
       <h2 className="mb-4 text-[17px] font-extrabold text-cocoa">{title}</h2>
       <div className="flex flex-col gap-5">{children}</div>
     </section>
@@ -42,39 +42,87 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 function Settings({ app, view, now }: { app: App; view: AppView; now: Date }) {
   const router = useRouter();
   const { actions, mode } = app;
+  const session = useSession();
+  // 계정 전환은 로그아웃 후 로그인 화면으로 (로그인 화면이 최근 계정을 보여 준다)
+  const signOut = async (to: string) => {
+    await supabase().auth.signOut();
+    clearLive();
+    setMode(null);
+    router.push(to);
+  };
   const relation = view.senior.relation;
+  // 기타 입력 중 글자마다 저장하지 않도록, 고친 뒤 '호칭 저장'으로 저장한다
+  const [relationDraft, setRelationDraft] = useState(relation);
   const today = kstDate(now);
-  const [windows, setWindows] = useState(view.mealProfile.windows);
+  const [meal, setMeal] = useState(view.mealProfile);
+  const windows = meal.windows;
+  const [mealBusy, setMealBusy] = useState(false);
+  const [mealFeedback, setMealFeedback] = useState("");
   const [awayStart, setAwayStart] = useState(today);
   const [awayEnd, setAwayEnd] = useState(addDays(today, 2));
   const upcoming = view.absences.filter((a) => a.endDate >= today);
-  const s = view.alertSettings;
+  const [alertDraft, setAlertDraft] = useState(view.alertSettings);
+  useEffect(() => {
+    const id = location.hash.slice(1) || (new URLSearchParams(location.search).get("section") === "devices" ? "device" : "");
+    if (["alert-rules", "life-rules", "device"].includes(id)) document.getElementById(id)?.scrollIntoView();
+  }, []);
+  async function saveLifeRules() {
+    setMealBusy(true);
+    setMealFeedback("");
+    try {
+      await actions.saveMealProfile(meal);
+      setMealFeedback("생활 기준을 저장했어요.");
+    } catch {
+      setMealFeedback("저장하지 못했어요. 잠시 후 다시 시도해 주세요.");
+    } finally {
+      setMealBusy(false);
+    }
+  }
 
   return (
     <div>
-      <Section title="알림 기준">
-        <Field label="결식 알림" hint="연속으로 이만큼 끼니 소식이 없으면 알려 드려요.">
-          <Stepper value={s.missedMealsThreshold} min={1} max={6} unit="끼" onChange={(v) => void actions.saveAlertSettings({ ...s, missedMealsThreshold: v })} />
-        </Field>
-        <Field label="공복시간 주의 알림" hint="마지막 밥솥 사용 후 이 시간이 지나면 알려 드려요.">
-          <Stepper value={s.fastingHours} min={12} max={s.emergencyHours - 12} step={6} unit="시간" onChange={(v) => void actions.saveAlertSettings({ ...s, fastingHours: v })} />
-        </Field>
-        <Field label="건강 위험 신고" hint="이 시간이 지나면 지정한 연락처에도 알려요. (신고 기관 연동은 준비 중)">
-          <Stepper value={s.emergencyHours} min={s.fastingHours + 12} max={120} step={6} unit="시간" onChange={(v) => void actions.saveAlertSettings({ ...s, emergencyHours: v })} />
-        </Field>
+      <nav aria-label="설정 바로가기" className="mx-6 grid grid-cols-3 gap-1 rounded-2xl bg-butter-soft p-1 text-center text-[14px] font-bold">
+        {[["alert-rules", "알림 기준"], ["life-rules", "생활 기준"], ["device", "기기"]].map(([id, name]) => (
+          <a key={id} href={`#${id}`} className="grid min-h-11 place-items-center rounded-xl px-1 hover:bg-paper">{name}</a>
+        ))}
+      </nav>
+      <Section id="alert-rules" title="알림 기준">
+        {/* 끄는 동안은 화면에만 반영하고, 손을 뗄 때 한 번 저장한다 */}
+        <AlertThresholdFields
+          value={alertDraft}
+          onChange={setAlertDraft}
+          onCommit={(next) => void actions.saveAlertSettings(next)}
+          hints={{
+            missed: "연속으로 이만큼 끼니 소식이 없으면 알려 드려요.",
+            fasting: "마지막 밥솥 사용 후 이 시간이 지나면 알려 드려요.",
+            emergency: "이 시간이 지나면 지정한 연락처에도 알려요. (신고 기관 연동은 준비 중)",
+          }}
+        />
       </Section>
 
-      <Section title="식사 시간대">
-        <MealWindowsEditor windows={windows} onChange={setWindows} />
+      <Section id="life-rules" title="생활 기준">
+        <Field label="평소 식사 시간">
+          <MealWindowsEditor windows={windows} onChange={(windows) => setMeal({ ...meal, windows })} />
+        </Field>
+        <Field label="보온 기능">
+          <Choice cols={2} value={meal.usesKeepWarm} options={[{ value: true, label: "켜 둬요" }, { value: false, label: "안 써요" }]} onChange={(usesKeepWarm) => setMeal({ ...meal, usesKeepWarm })} />
+        </Field>
+        <Field label="일주일에 밥 짓는 횟수">
+          <Slider value={meal.cooksPerWeek} min={1} max={21} unit="번" label="일주일에 밥 짓는 횟수" marks={[1, 7, 14, 21]} onChange={(cooksPerWeek) => setMeal({ ...meal, cooksPerWeek })} />
+        </Field>
+        <Field label="일주일에 외식하는 횟수">
+          <Slider value={meal.eatOutPerWeek} min={0} max={7} unit="번" label="일주일에 외식하는 횟수" marks={[0, 2, 4, 7]} onChange={(eatOutPerWeek) => setMeal({ ...meal, eatOutPerWeek })} />
+        </Field>
         {!windowsValid(windows) ? <p className="text-[13px] font-semibold text-blush-deep">시간대가 겹치거나 순서가 맞지 않아요.</p> : null}
         <Button
           variant="soft"
           className="min-h-12 text-[15px]"
-          disabled={!windowsValid(windows) || JSON.stringify(windows) === JSON.stringify(view.mealProfile.windows)}
-          onClick={() => void actions.saveWindows(windows)}
+          disabled={mealBusy || !windowsValid(windows) || JSON.stringify(meal) === JSON.stringify(view.mealProfile)}
+          onClick={() => void saveLifeRules()}
         >
-          시간대 저장
+          {mealBusy ? "저장하는 중…" : "생활 기준 저장"}
         </Button>
+        {mealFeedback && <p role="status" className="text-[15px]">{mealFeedback}</p>}
       </Section>
 
       <Section title="부재 일정">
@@ -111,29 +159,21 @@ function Settings({ app, view, now }: { app: App; view: AppView; now: Date }) {
       </Section>
 
       <Section title={`${relation} 정보`}>
-        <Field label="부르는 이름">
-          <Choice value={relation} options={["어머니", "아버지", "부모님"].map((v) => ({ value: v, label: v }))} onChange={(v) => void actions.saveSenior({ relation: v })} />
+        <Field label="부르는 이름" hint="여러 개 고를 수 있어요.">
+          <RelationPicker value={relation} onChange={setRelationDraft} />
+          {relationDraft !== relation ? (
+            <Button className="min-h-12 text-[15px]" disabled={!relationDraft} onClick={() => void actions.saveSenior({ relation: relationDraft })}>
+              {relationDraft ? "호칭 저장" : "하나 이상 골라 주세요"}
+            </Button>
+          ) : null}
         </Field>
         <Field label="연락처" hint="홈 화면의 전화하기 버튼에 쓰여요.">
           <TextInput type="tel" inputMode="tel" placeholder="010-0000-0000" defaultValue={view.senior.phone} onBlur={(e) => void actions.saveSenior({ phone: e.target.value.trim() })} />
         </Field>
       </Section>
 
-      <Section title="기기">
-        {view.plug.deviceId ? (
-          <div className="flex items-center gap-3 rounded-2xl border border-line px-4 py-4">
-            <IconPlug className="h-6 w-6 text-cocoa" />
-            <div className="min-w-0 flex-1">
-              <p className="text-[15px] font-bold text-cocoa">스마트플러그</p>
-              <p className="truncate text-[13px] text-muted">{view.plug.deviceId}</p>
-            </div>
-            <span className={`rounded-full px-3 py-1 text-[12px] font-bold ${view.plug.online ? "bg-sage text-sage-deep" : "bg-blush text-blush-deep"}`}>
-              {view.plug.online ? "수신 중" : "끊김"}
-            </span>
-          </div>
-        ) : (
-          <PlugForm onSubmit={actions.registerPlug} />
-        )}
+      <Section id="device" title="기기">
+        <DeviceSetup view={view} actions={actions} />
         <div className="rounded-2xl bg-butter-soft px-5 py-4">
           <p className="text-[13px] text-cocoa/70">{relation} 휴대폰 연결 숫자</p>
           {view.pairingCode ? (
@@ -200,16 +240,16 @@ function Settings({ app, view, now }: { app: App; view: AppView; now: Date }) {
         </Section>
       ) : (
         <Section title="계정">
-          <Button
-            variant="outline"
-            className="min-h-12 text-[15px]"
-            onClick={async () => {
-              await supabase().auth.signOut();
-              clearLive();
-              setMode(null);
-              router.push("/");
-            }}
-          >
+          {session?.user.email ? (
+            <p className="flex items-center justify-between rounded-2xl bg-butter-soft px-4 py-3 text-[15px]">
+              <span className="text-cocoa/70">로그인한 계정</span>
+              <span className="truncate pl-3 font-bold text-cocoa">{session.user.email}</span>
+            </p>
+          ) : null}
+          <Button variant="soft" className="min-h-12 text-[15px]" onClick={() => void signOut("/login")}>
+            다른 계정으로 전환
+          </Button>
+          <Button variant="outline" className="min-h-12 text-[15px]" onClick={() => void signOut("/")}>
             로그아웃
           </Button>
         </Section>

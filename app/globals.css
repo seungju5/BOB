@@ -6,6 +6,10 @@
   --color-butter-deep: #e3b324;
   --color-sky: #dfeaf6; /* 부재 */
   --color-sky-deep: #4a6f95;
+  --color-tangerine: #e98a2b; /* 튜토리얼 범례: 두 끼 */
+  --color-kakao: #fee500; /* 카카오 로그인 버튼 (카카오 가이드 색) */
+  --color-kakao-label: #191919;
+  --font-halmae: "ChilgokHalmaeKwonAnJa", "Pretendard Variable", sans-serif;
 
   --radius-card: 1.75rem;
   --shadow-soft: 0 1px 2px rgb(59 42 30 / 0.04), 0 8px 24px rgb(59 42 30 / 0.06);
@@ -57,9 +61,19 @@ body {
   animation: bob 3.2s ease-in-out infinite;
 }
 
+@keyframes rice-fill-ears {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.rice-fill-ears {
+  animation: rice-fill-ears 420ms ease-out 460ms both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-rise,
-  .animate-bob {
+  .animate-bob,
+  .rice-fill-ears {
     animation: none;
   }
 }

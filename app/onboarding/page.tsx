@@ -2,14 +2,15 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
-import { Choice, Field, MealWindowsEditor, Stepper, TextInput, windowsValid } from "@/components/forms";
-import { IconBell, IconCheck, IconChevronLeft, IconInfo, IconLock, IconPlug, IconUtensils, IconWifi } from "@/components/icons";
-import { Mascot } from "@/components/Mascot";
+import { AlertThresholdFields, Choice, Field, MealWindowsEditor, RelationPicker, Slider, TextInput, windowsValid } from "@/components/forms";
+import { IconBell, IconCheck, IconInfo, IconLock, IconPlug, IconUtensils, IconWifi } from "@/components/icons";
+import { CookerMascot } from "@/components/Mascot";
 import { PlugForm } from "@/components/PlugForm";
 import { Button, ProgressBar, Skeleton } from "@/components/ui";
 import { refreshLive } from "@/lib/data/live";
 import { useApp } from "@/lib/data/useApp";
-import type { AppActions, AppView, OnboardingPatch } from "@/lib/data/view";
+import { DEFAULT_WINDOWS, type AppActions, type AppView, type OnboardingPatch } from "@/lib/data/view";
+import type { MealSlotName, MealWindow } from "@/lib/judge/types";
 
 const TOTAL = 7;
 const TITLES = [
@@ -76,7 +77,7 @@ function WelcomeLanding({ state, onContinue }: { state: AppView; onContinue: () 
         <h1 className="animate-rise mt-2 pr-24 text-[34px] leading-[1.2] font-extrabold tracking-[-0.03em] whitespace-pre-line text-cocoa">
           {`${senior.name} ${senior.relation} 댁\n안부를 함께\n챙겨 드릴게요`}
         </h1>
-        <Mascot className="animate-bob absolute top-8 right-4 h-24 w-24" mood="happy" />
+        <CookerMascot className="animate-bob absolute top-8 right-4 h-24 w-24" mood="happy" />
       </div>
 
       <div className="mt-8 flex flex-1 flex-col rounded-t-[2.25rem] bg-paper px-6 pt-7 pb-8">
@@ -149,11 +150,6 @@ function Onboarding({
   return (
     <main className={`flex flex-1 flex-col px-6 pt-4 pb-8 ${busy ? "pointer-events-none opacity-70" : ""}`}>
       <div className="flex h-12 items-center gap-3">
-        {step > 1 ? (
-          <button onClick={back} aria-label="이전 단계" className="-ml-2 grid h-10 w-10 place-items-center rounded-full text-cocoa hover:bg-butter-soft">
-            <IconChevronLeft className="h-6 w-6" />
-          </button>
-        ) : null}
         <div className="flex-1">
           <ProgressBar value={step} max={TOTAL} />
         </div>
@@ -195,6 +191,12 @@ function Onboarding({
         {step === 6 && <AlertStep state={state} next={next} />}
         {step === 7 && <PairStep state={state} actions={actions} live={live} next={next} />}
       </div>
+      {/* 이전 단계: 각 단계의 다음 버튼 바로 아래 (튜토리얼과 같은 자리) */}
+      {step > 1 ? (
+        <Button variant="ghost" className="mt-1 text-cocoa/70" onClick={back}>
+          이전
+        </Button>
+      ) : null}
     </main>
   );
 }
@@ -253,10 +255,10 @@ function HouseholdStep({ state, next }: StepProps) {
   return (
     <>
       <div className="flex flex-col gap-5">
-        <Field label="어떻게 부르세요?">
-          <Choice value={senior.relation} options={["어머니", "아버지", "부모님"].map((v) => ({ value: v, label: v }))} onChange={(relation) => setSenior({ ...senior, relation })} />
+        <Field label="어떻게 부르세요?" hint="여러 개 고를 수 있어요.">
+          <RelationPicker value={senior.relation} onChange={(relation) => setSenior({ ...senior, relation })} />
         </Field>
-        <Field label="어르신 성함 (화면 인사말에 쓰여요)">
+        <Field label="어르신 성함">
           <TextInput value={senior.name} onChange={(e) => setSenior({ ...senior, name: e.target.value })} placeholder="예: 정숙" />
         </Field>
         <Field label="어르신 연락처">
@@ -270,28 +272,53 @@ function HouseholdStep({ state, next }: StepProps) {
         </Field>
       </div>
       <Footer>
-        <Button disabled={!senior.name.trim()} onClick={() => next({ senior: { ...senior, name: senior.name.trim() }, household })}>다음</Button>
+        <Button disabled={!senior.name.trim() || !senior.relation} onClick={() => next({ senior: { ...senior, name: senior.name.trim() }, household })}>다음</Button>
       </Footer>
     </>
   );
 }
 
+// 끼니 수에 맞춰 보여 줄 시간대. 시간대 종류(DB meal_slots.slot)는 아침·점심·저녁 세 개뿐이라 4끼도 세 개로 본다.
+const SLOTS_FOR_MEALS: Record<number, MealSlotName[]> = {
+  1: ["lunch"],
+  2: ["breakfast", "dinner"],
+  3: ["breakfast", "lunch", "dinner"],
+  4: ["breakfast", "lunch", "dinner"],
+};
+
 function MealStep({ state, next }: StepProps) {
   const [meals, setMeals] = useState(state.mealProfile.windows.length);
-  const [windows, setWindows] = useState(state.mealProfile.windows);
+  // 끼니 수를 바꿨다 되돌려도 고친 시간이 남도록 시간대별로 기억한다
+  const [times, setTimes] = useState(() =>
+    Object.fromEntries(DEFAULT_WINDOWS.map((d) => [d.slot, state.mealProfile.windows.find((w) => w.slot === d.slot) ?? d])) as Record<MealSlotName, MealWindow>,
+  );
+  const windows = SLOTS_FOR_MEALS[meals].map((s) => times[s]);
+  const setWindows = (ws: MealWindow[]) => setTimes({ ...times, ...Object.fromEntries(ws.map((w) => [w.slot, w])) });
   const [eatOut, setEatOut] = useState(state.mealProfile.eatOutPerWeek);
   return (
     <>
       <div className="flex flex-col gap-5">
         <Field label="하루 평균 끼니 수">
-          <Choice cols={2} value={meals} options={[{ value: 2, label: "두 끼" }, { value: 3, label: "세 끼" }]} onChange={setMeals} />
+          <Slider value={meals} min={1} max={4} unit="끼" label="하루 평균 끼니 수" onChange={setMeals} />
         </Field>
-        <Field label="주로 드시는 시간대" hint={meals === 2 ? "두 끼만 드셔도 시간대는 세 개로 두고, 결식 기준을 넉넉히 잡아 주세요." : "이 시간 안에 밥솥 소식이 있으면 '확인됨'이 돼요."}>
+        <Field
+          label="주로 드시는 시간대"
+          hint={meals === 4 ? "네 번째 끼니는 아직 따로 둘 수 없어, 아침·점심·저녁 세 시간대로 살펴요." : "이 시간 안에 밥솥 소식이 있으면 '확인됨'이 돼요."}
+        >
           <MealWindowsEditor windows={windows} onChange={setWindows} />
         </Field>
         {!windowsValid(windows) ? <p className="text-[13px] font-semibold text-blush-deep">시간대가 겹치거나 순서가 맞지 않아요.</p> : null}
         <Field label="일주일에 외식은 몇 번쯤?">
-          <Choice value={eatOut} options={[{ value: 0, label: "거의 안 함" }, { value: 1, label: "1~2번" }, { value: 3, label: "3번 이상" }]} onChange={setEatOut} />
+          <Slider
+            value={eatOut}
+            min={0}
+            max={7}
+            unit="번"
+            label="일주일에 외식 횟수"
+            marks={[0, 2, 4, 7]}
+            format={(v) => (v === 0 ? "거의 안 함" : v === 7 ? "7번 이상" : null)}
+            onChange={setEatOut}
+          />
         </Field>
       </div>
       <Footer>
@@ -300,7 +327,7 @@ function MealStep({ state, next }: StepProps) {
           onClick={() =>
             next({
               mealProfile: { ...state.mealProfile, windows, eatOutPerWeek: eatOut },
-              alertSettings: { ...state.alertSettings, missedMealsThreshold: meals === 2 ? 3 : state.alertSettings.missedMealsThreshold },
+              alertSettings: { ...state.alertSettings, missedMealsThreshold: meals <= 2 ? 3 : state.alertSettings.missedMealsThreshold },
             })
           }
         >
@@ -327,7 +354,7 @@ function CookerStep({ state, next }: StepProps) {
           </p>
         ) : null}
         <Field label="일주일에 밥은 몇 번 지으세요?">
-          <Stepper value={cooks} min={1} max={21} unit="번" onChange={setCooks} />
+          <Slider value={cooks} min={1} max={21} unit="번" label="일주일에 밥 짓는 횟수" marks={[1, 7, 14, 21]} onChange={setCooks} />
         </Field>
       </div>
       <Footer>
@@ -343,15 +370,15 @@ function AlertStep({ state, next }: StepProps) {
   return (
     <>
       <div className="flex flex-col gap-5">
-        <Field label="결식 알림" hint="연속으로 이만큼 끼니 소식이 없으면 알려 드려요.">
-          <Stepper value={settings.missedMealsThreshold} min={1} max={6} unit="끼" onChange={(v) => setSettings({ ...settings, missedMealsThreshold: v })} />
-        </Field>
-        <Field label="공복시간 주의" hint="마지막 밥솥 사용 후">
-          <Stepper value={settings.fastingHours} min={12} max={settings.emergencyHours - 12} step={6} unit="시간" onChange={(v) => setSettings({ ...settings, fastingHours: v })} />
-        </Field>
-        <Field label="건강 위험 신고" hint="지정한 연락처에도 알려요. 신고 기관 연동은 준비 중이에요.">
-          <Stepper value={settings.emergencyHours} min={settings.fastingHours + 12} max={120} step={6} unit="시간" onChange={(v) => setSettings({ ...settings, emergencyHours: v })} />
-        </Field>
+        <AlertThresholdFields
+          value={settings}
+          onChange={setSettings}
+          hints={{
+            missed: "연속으로 이만큼 끼니 소식이 없으면 알려 드려요.",
+            fasting: "마지막 밥솥 사용 후",
+            emergency: "지정한 연락처에도 알려요. 신고 기관 연동은 준비 중이에요.",
+          }}
+        />
         <label className="flex items-start gap-3 rounded-2xl border-2 border-line px-4 py-4">
           <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} className="mt-1 h-5 w-5 accent-[var(--color-sage-deep)]" />
           <span className="text-[14px] leading-relaxed text-cocoa">
@@ -381,7 +408,7 @@ function PairStep({ state, actions, live, next }: StepProps & { actions: AppActi
   return (
     <>
       <div className="flex flex-col items-center text-center">
-        <Mascot className="h-24 w-24" mood="wink" />
+        <CookerMascot className="h-24 w-24" mood="wink" />
         <p className="mt-4 text-[15px] text-muted">{state.senior.relation} 휴대폰에서 밥뭇나를 열고</p>
         <p className="text-[15px] text-muted">&lsquo;어르신으로 시작&rsquo;을 누른 뒤 이 숫자를 넣어 주세요.</p>
         <p className="mt-6 min-w-56 rounded-3xl bg-butter-soft px-8 py-5 text-[40px] font-extrabold tracking-[0.3em] text-cocoa">

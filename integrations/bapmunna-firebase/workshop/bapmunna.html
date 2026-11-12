@@ -212,6 +212,10 @@ body[data-view="account"] .auth-mark{width:96px;height:96px;margin-bottom:12px}
 @media(prefers-reduced-motion:reduce){.welcome .bunny-slot{animation:none!important;transform:none!important}}
 
 .st-helper{float:right;width:82px;height:82px;margin:0 0 10px 12px}.st-card:after{content:"";display:block;clear:both}
+
+.st-privacy{margin:10px 0 14px;padding:0;border:0}
+.st-privacy summary{min-height:32px;cursor:pointer;color:#625746;font-size:14px;text-decoration:underline;text-underline-offset:3px}
+.st-privacy p{margin:6px 0}
 </style>
   <style>/* The original artwork with a finite joint animation and soft contact shadow. */
 .bunny-stage{isolation:isolate;pointer-events:none}
@@ -579,6 +583,18 @@ function patternReport(v, now) {
         return { ok, total, rate: total ? ok / total : null };
     };
     return { recent: rate(1, 7), before: rate(8, 35) };
+}
+/** 리포트 요약: 홈 카드와 리포트 화면이 같은 문구를 쓰도록. 데이터가 모자라면 null. */
+function reportSummary(v, now) {
+    const { recent, before } = patternReport(v, now);
+    if (recent.rate === null || before.total < 14)
+        return null;
+    const r = Math.round(recent.rate * 100);
+    const b = Math.round((before.rate ?? 0) * 100);
+    const diff = r - b;
+    const trend = diff <= -10 ? "down" : diff >= 10 ? "up" : "same";
+    const message = trend === "down" ? `평소(${b}%)보다 식사 소식이 줄었어요.` : trend === "up" ? `평소(${b}%)보다 소식이 많아졌어요.` : `평소(${b}%)와 비슷하게 지내고 계세요.`;
+    return { recent, before, r, b, trend, message };
 }
 
 // Adapter for synthetic, in-memory workshop data. Never sends records to either DB.
@@ -1777,7 +1793,7 @@ function render(focus=false){
     if(!welcomeSeen){welcomeSeen=true;void greetWelcome();}
   }
   if(view==='account'&&CLOUD_AVAILABLE)accountCleanup=mountAccount(document.querySelector('#account-surface'),{audience:edition,browseHref:routeHref(EDITIONS[edition].home),familyHref:routeHref('family'),connectHref:routeHref('connect')});
-  if(view==='connect'&&CLOUD_AVAILABLE)accountCleanup=mountSmartThings(document.querySelector('#smartthings-surface'),{accountHref:routeHref('account')});
+  if(view==='connect'&&CLOUD_AVAILABLE)accountCleanup=mountSmartThings(document.querySelector('#smartthings-surface'),{accountHref:routeHref('account'),homeHref:routeHref('guardian')});
   if(modal){const dialog=root.querySelector('dialog');dialog.showModal();dialog.addEventListener('cancel',event=>{event.preventDefault();closeModal();});}
   else if(focus)root.querySelector('h1')?.focus({preventScroll:true});
   else if(wasModal&&focusReturn)root.querySelector(focusReturn)?.focus({preventScroll:true});

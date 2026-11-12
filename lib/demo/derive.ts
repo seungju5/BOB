@@ -4,7 +4,7 @@ import { evaluateAlerts } from "@/lib/judge/evaluateAlerts";
 import { resolveMealSlots } from "@/lib/judge/resolveMealSlots";
 import { addDays, kstDate } from "@/lib/judge/time";
 import type { CookerEvent, MealSlot } from "@/lib/judge/types";
-import type { AppView } from "@/lib/data/view";
+import { reportSummary, type AppView } from "@/lib/data/view";
 import type { DemoState, StoredAlert } from "./state";
 
 const toEvents = (s: DemoState): CookerEvent[] =>
@@ -85,9 +85,22 @@ export function syncAlerts(s: DemoState, now: Date): DemoState {
     lastReadingAt: lastReadingAt(s, now),
     openAlerts: open.map((a) => a.type),
   });
-  if (create.length === 0 && resolve.length === 0) return s;
+  const weekly = weeklyReportDue(s, now);
+  if (create.length === 0 && resolve.length === 0 && !weekly) return s;
   const iso = now.toISOString();
   const alerts: StoredAlert[] = s.alerts.map((a) => (!a.resolvedAt && resolve.includes(a.type) ? { ...a, resolvedAt: iso } : a));
   for (const type of create) alerts.push({ id: `${type}-${now.getTime()}`, type, triggeredAt: iso, acknowledgedAt: null, resolvedAt: null });
+  if (weekly) alerts.push({ id: `weekly_report-${now.getTime()}`, type: "weekly_report", triggeredAt: iso, acknowledgedAt: null, resolvedAt: null, payload: weekly });
   return { ...s, alerts };
+}
+
+/**
+ * 주간 리포트 소식 (jobs?job=weekly 대역): 지난 7일 이상 발행하지 않았고 비교할 기록이 있으면 한 번.
+ * 실서비스는 매주 월요일 09:00 KST에 발행한다.
+ */
+function weeklyReportDue(s: DemoState, now: Date) {
+  const last = s.alerts.filter((a) => a.type === "weekly_report").map((a) => new Date(a.triggeredAt).getTime());
+  if (last.length && now.getTime() - Math.max(...last) < 7 * 24 * 60 * 60 * 1000) return null;
+  const summary = reportSummary(toView(s, now), now);
+  return summary ? { rate: summary.r } : null;
 }

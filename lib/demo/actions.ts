@@ -17,7 +17,7 @@ export const demoActions: AppActions = {
   ackAlert: async (id) => updateDemo((s) => ({ ...s, alerts: s.alerts.map((a) => (a.id === id ? { ...a, acknowledgedAt: nowIso() } : a)) })),
   ackAll: async () => updateDemo((s) => ({ ...s, alerts: s.alerts.map((a) => (a.acknowledgedAt ? a : { ...a, acknowledgedAt: nowIso() })) })),
   saveAlertSettings: async (alertSettings) => updateDemo((s) => ({ ...s, alertSettings })),
-  saveWindows: async (windows) => updateDemo((s) => ({ ...s, mealProfile: { ...s.mealProfile, windows } })),
+  saveMealProfile: async (mealProfile) => updateDemo((s) => ({ ...s, mealProfile })),
   saveSenior: async (senior) => updateDemo((s) => ({ ...s, senior: { ...s.senior, ...senior } })),
   addAbsence: async (a) => updateDemo((s) => ({ ...s, absences: [...s.absences, a] })),
   removeAbsence: async (a) =>

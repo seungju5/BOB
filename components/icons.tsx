@@ -63,3 +63,18 @@ export const IconAlert = (p: P) => (
 export const IconLock = (p: P) => (
   <svg {...base(p)}><rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></svg>
 );
+export const IconCooker = (p: P) => (
+  <svg {...base(p)}><path d="M12 7c4.4 0 8 2.2 8 5M12 7c-4.4 0-8 2.2-8 5M12 7V4M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-6M20 12H4" /></svg>
+);
+export const IconFile = (p: P) => (
+  <svg {...base(p)}><path d="M14 3v4a1 1 0 0 0 1 1h4M19 8l-5-5H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2zM9 9h1M9 13h6M9 17h6" /></svg>
+);
+export const IconPlay = (p: P) => (
+  <svg {...base(p)}><path d="M7 4v16l13-8z" /></svg>
+);
+export const IconCheckSquare = (p: P) => (
+  <svg {...base(p)}><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M9 12l2 2 4-4" /></svg>
+);
+export const IconSmartphone = (p: P) => (
+  <svg {...base(p)}><rect x="6" y="3" width="12" height="18" rx="2" /><path d="M11 17h2" /></svg>
+);

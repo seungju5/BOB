@@ -3,7 +3,7 @@
 
 import { resolveMealSlots } from "@/lib/judge/resolveMealSlots";
 import { addDays, kstDate } from "@/lib/judge/time";
-import type { Absence, AlertType, MealSlot, MealWindow } from "@/lib/judge/types";
+import type { Absence, AlertPayload, AlertType, MealSlot, MealWindow } from "@/lib/judge/types";
 
 export type ViewAlert = {
   id: string;
@@ -11,6 +11,7 @@ export type ViewAlert = {
   triggeredAt: string;
   acknowledgedAt: string | null;
   resolvedAt: string | null;
+  payload?: AlertPayload;
 };
 
 export type AppView = {
@@ -26,8 +27,11 @@ export type AppView = {
   seniorPaired: boolean;
   /** 최근 35일 끼니 상태 (있는 날만) */
   slots: MealSlot[];
-  /** 날짜별 취사·열림 횟수 */
-  stats: Record<string, { cook: number; lid: number }>;
+  /**
+   * 날짜별 취사·열림 횟수.
+   * energyWh: 하루 전력량 합계(Wh). 아직 서버가 저장하지 않아 비어 있다 (리포트 전기요금용, 원시값 아님).
+   */
+  stats: Record<string, { cook: number; lid: number; energyWh?: number }>;
   lastCookerAt: string | null;
   lastActivityAt: string | null;
   absences: Absence[];
@@ -45,7 +49,7 @@ export type AppActions = {
   ackAlert(id: string): Promise<void>;
   ackAll(): Promise<void>;
   saveAlertSettings(s: AppView["alertSettings"]): Promise<void>;
-  saveWindows(w: MealWindow[]): Promise<void>;
+  saveMealProfile(profile: AppView["mealProfile"]): Promise<void>;
   saveSenior(s: Partial<AppView["senior"]>): Promise<void>;
   addAbsence(a: Absence): Promise<void>;
   removeAbsence(a: Absence): Promise<void>;
@@ -99,4 +103,17 @@ export function patternReport(v: AppView, now: Date) {
     return { ok, total, rate: total ? ok / total : null };
   };
   return { recent: rate(1, 7), before: rate(8, 35) };
+}
+
+/** 리포트 요약: 홈 카드와 리포트 화면이 같은 문구를 쓰도록. 데이터가 모자라면 null. */
+export function reportSummary(v: AppView, now: Date) {
+  const { recent, before } = patternReport(v, now);
+  if (recent.rate === null || before.total < 14) return null;
+  const r = Math.round(recent.rate * 100);
+  const b = Math.round((before.rate ?? 0) * 100);
+  const diff = r - b;
+  const trend = diff <= -10 ? "down" : diff >= 10 ? "up" : "same";
+  const message =
+    trend === "down" ? `평소(${b}%)보다 식사 소식이 줄었어요.` : trend === "up" ? `평소(${b}%)보다 소식이 많아졌어요.` : `평소(${b}%)와 비슷하게 지내고 계세요.`;
+  return { recent, before, r, b, trend, message } as const;
 }

@@ -14,6 +14,7 @@ export type App = {
   actions: AppActions;
   now: Date | null;
   mode: "demo" | "live" | null;
+  ownerId: string | null;
   /** 실서비스 모드인데 로그인이 안 됨 */
   needsLogin: boolean;
   error: string | null;
@@ -24,8 +25,8 @@ export function useApp(): App {
   const mode = useMode();
   const session = useSession();
   const now = useNow();
-  const live = mode === "live" && !!session;
-  const liveState = useLive(live);
+  const ownerId = mode === "live" ? session?.user.id ?? null : null;
+  const liveState = useLive(ownerId);
   const demo = useDemo();
   useAlertSync(mode === "demo" ? now : null);
 
@@ -33,16 +34,17 @@ export function useApp(): App {
   const minute = now ? Math.floor(now.getTime() / 60_000) : 0;
   const demoView = useMemo(() => (demo && now ? toView(demo, now) : null), [demo, minute]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (mode === "demo") return { view: demoView, actions: demoActions, now, mode, needsLogin: false, error: null };
+  if (mode === "demo") return { view: demoView, actions: demoActions, now, mode, ownerId: null, needsLogin: false, error: null };
   if (mode === "live") {
     return {
       view: session ? liveState.view : null,
       actions: liveActions,
       now,
       mode,
+      ownerId,
       needsLogin: session === null,
       error: liveState.error,
     };
   }
-  return { view: null, actions: demoActions, now, mode: null, needsLogin: mode === null, error: null };
+  return { view: null, actions: demoActions, now, mode: null, ownerId: null, needsLogin: mode === null, error: null };
 }

@@ -335,7 +335,7 @@ function render(focus=false){
     if(!welcomeSeen){welcomeSeen=true;void greetWelcome();}
   }
   if(view==='account'&&CLOUD_AVAILABLE)accountCleanup=mountAccount(document.querySelector('#account-surface'),{audience:edition,browseHref:routeHref(EDITIONS[edition].home),familyHref:routeHref('family'),connectHref:routeHref('connect')});
-  if(view==='connect'&&CLOUD_AVAILABLE)accountCleanup=mountSmartThings(document.querySelector('#smartthings-surface'),{accountHref:routeHref('account')});
+  if(view==='connect'&&CLOUD_AVAILABLE)accountCleanup=mountSmartThings(document.querySelector('#smartthings-surface'),{accountHref:routeHref('account'),homeHref:routeHref('guardian')});
   if(modal){const dialog=root.querySelector('dialog');dialog.showModal();dialog.addEventListener('cancel',event=>{event.preventDefault();closeModal();});}
   else if(focus)root.querySelector('h1')?.focus({preventScroll:true});
   else if(wasModal&&focusReturn)root.querySelector(focusReturn)?.focus({preventScroll:true});

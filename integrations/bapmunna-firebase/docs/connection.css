@@ -21,3 +21,7 @@ body[data-view="account"] .auth-mark{width:96px;height:96px;margin-bottom:12px}
 @media(prefers-reduced-motion:reduce){.welcome .bunny-slot{animation:none!important;transform:none!important}}
 
 .st-helper{float:right;width:82px;height:82px;margin:0 0 10px 12px}.st-card:after{content:"";display:block;clear:both}
+
+.st-privacy{margin:10px 0 14px;padding:0;border:0}
+.st-privacy summary{min-height:32px;cursor:pointer;color:#625746;font-size:14px;text-decoration:underline;text-underline-offset:3px}
+.st-privacy p{margin:6px 0}

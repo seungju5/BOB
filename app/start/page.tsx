@@ -2,25 +2,28 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { Button, Skeleton } from "@/components/ui";
-import { setMode } from "@/lib/data/mode";
+import { Button, ButtonLink, Skeleton } from "@/components/ui";
+import { setMode, useSession } from "@/lib/data/mode";
 import { useApp } from "@/lib/data/useApp";
 import { supabaseConfigured } from "@/lib/supabase";
 
-/** 보호자 진입점: 로그인 링크도 이리로 돌아온다. 온보딩이 끝났으면 홈, 아니면 온보딩. */
+/** The allowlisted callback is shared by email and both social providers. */
 export default function GuardianStart() {
   const { view, mode, needsLogin, error } = useApp();
+  const session = useSession();
   const router = useRouter();
 
   useEffect(() => {
-    // 로그인 링크(?code=)로 돌아왔으면 실서비스 모드
-    if (mode === null && supabaseConfigured && new URLSearchParams(location.search).has("code")) setMode("live");
-  }, [mode]);
-
-  useEffect(() => {
-    if (needsLogin && !new URLSearchParams(location.search).has("code")) router.replace("/login");
-    else if (view) router.replace(view.onboardingStep > 7 ? "/home" : "/onboarding");
-  }, [view, needsLogin, router]);
+    const query = new URLSearchParams(location.search);
+    if (supabaseConfigured && session === undefined) return;
+    if (session && !query.has("demo")) {
+      if (mode !== "live") setMode("live");
+      else if (view?.mode === "live") router.replace(view.onboardingStep > 7 ? "/home" : "/guardian-setup");
+      return;
+    }
+    if (view?.mode === "demo") router.replace(view.onboardingStep > 7 ? "/home" : "/onboarding");
+    else if (needsLogin || !session) router.replace("/guardian-setup");
+  }, [view, mode, session, needsLogin, router]);
 
   return (
     <main className="flex flex-1 flex-col gap-4 p-6">
@@ -31,6 +34,7 @@ export default function GuardianStart() {
           <Button variant="outline" onClick={() => location.reload()}>
             다시 시도
           </Button>
+          <ButtonLink href="/guardian-setup" variant="ghost">통합 시작 화면으로</ButtonLink>
         </>
       ) : (
         <>

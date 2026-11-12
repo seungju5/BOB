@@ -5,13 +5,14 @@
 import { useEffect, useSyncExternalStore } from "react";
 import { FunctionsHttpError } from "@supabase/supabase-js";
 import { addDays, kstDate } from "@/lib/judge/time";
-import type { AlertType, MealSlot, MealWindow } from "@/lib/judge/types";
+import type { AlertPayload, AlertType, MealSlot, MealWindow } from "@/lib/judge/types";
 import { supabase } from "@/lib/supabase";
 import type { AppActions, AppView } from "./view";
 
-type LiveState = { view: AppView | null; householdId: string | null; error: string | null };
+type LiveState = { ownerId: string | null; view: AppView | null; householdId: string | null; error: string | null };
 
-let state: LiveState = { view: null, householdId: null, error: null };
+const EMPTY: LiveState = { ownerId: null, view: null, householdId: null, error: null };
+let state = EMPTY;
 const listeners = new Set<() => void>();
 const emit = () => listeners.forEach((l) => l());
 const set = (patch: Partial<LiveState>) => {
@@ -24,19 +25,28 @@ function must<T>(res: { data: T; error: { message: string } | null }): T {
   return res.data;
 }
 
-let inflight: Promise<void> | null = null;
+let epoch = 0;
+let inflight: { epoch: number; promise: Promise<void> } | null = null;
 
 export function refreshLive(): Promise<void> {
-  inflight ??= load()
-    .catch((e) => set({ error: e instanceof Error ? e.message : String(e) }))
+  const ownerId = state.ownerId;
+  if (!ownerId) return Promise.resolve();
+  const current = epoch;
+  if (inflight?.epoch === current) return inflight.promise;
+  const promise = load(ownerId)
+    .then((next) => { if (current === epoch) set(next); })
+    .catch((e) => { if (current === epoch) set({ error: e instanceof Error ? e.message : String(e) }); })
     .finally(() => {
-      inflight = null;
+      if (inflight?.epoch === current) inflight = null;
     });
-  return inflight;
+  inflight = { epoch: current, promise };
+  return promise;
 }
 
-async function load() {
+async function load(ownerId: string) {
   const db = supabase();
+  const { data } = await db.auth.getSession();
+  if (data.session?.user.id !== ownerId) throw new Error("계정을 다시 확인해 주세요.");
   const h = must(await db.rpc("ensure_household")) as string;
   const today = kstDate(new Date());
   const from = addDays(today, -34);
@@ -49,7 +59,7 @@ async function load() {
     db.from("meal_slots").select("date, slot, status, source").eq("household_id", h).gte("date", from).then(must),
     db.from("daily_cooker_stats").select("date, cook_count, lid_open_count").eq("household_id", h).gte("date", from).then(must),
     db.from("absences").select("start_date, end_date").eq("household_id", h).then(must),
-    db.from("alerts").select("id, type, triggered_at, acknowledged_at, resolved_at").eq("household_id", h).order("triggered_at", { ascending: false }).limit(50).then(must),
+    db.from("alerts").select("id, type, triggered_at, acknowledged_at, resolved_at, payload").eq("household_id", h).order("triggered_at", { ascending: false }).limit(50).then(must),
   ]);
   /* eslint-disable @typescript-eslint/no-explicit-any */
   const H = house as any;
@@ -92,19 +102,21 @@ async function load() {
     lastCookerAt: H.last_cooker_at,
     lastActivityAt: H.last_activity_at,
     absences: ((absences ?? []) as Array<{ start_date: string; end_date: string }>).map((a) => ({ startDate: a.start_date, endDate: a.end_date })),
-    alerts: ((alerts ?? []) as Array<{ id: string; type: AlertType; triggered_at: string; acknowledged_at: string | null; resolved_at: string | null }>).map((a) => ({
+    alerts: ((alerts ?? []) as Array<{ id: string; type: AlertType; triggered_at: string; acknowledged_at: string | null; resolved_at: string | null; payload: AlertPayload | null }>).map((a) => ({
       id: a.id,
       type: a.type,
       triggeredAt: a.triggered_at,
       acknowledgedAt: a.acknowledged_at,
       resolvedAt: a.resolved_at,
+      payload: a.payload ?? undefined,
     })),
   };
-  set({ view, householdId: h, error: null });
+  return { view, householdId: h, error: null };
 }
 
 export function clearLive() {
-  set({ view: null, householdId: null, error: null });
+  epoch++;
+  set(EMPTY);
 }
 
 const subscribe = (cb: () => void) => {
@@ -112,28 +124,42 @@ const subscribe = (cb: () => void) => {
   return () => listeners.delete(cb);
 };
 
-/** 실서비스 데이터 구독. enabled일 때만 불러오고 1분마다 새로 고친다. */
-export function useLive(enabled: boolean) {
+/** View data can only be used by the session that loaded it. */
+export function useLive(userId: string | null) {
   const s = useSyncExternalStore(subscribe, () => state, () => state);
   useEffect(() => {
-    if (!enabled) return;
+    if (!userId) return;
+    if (state.ownerId !== userId) {
+      epoch++;
+      set({ ...EMPTY, ownerId: userId });
+    }
     void refreshLive();
     const id = setInterval(() => void refreshLive(), 60_000);
     return () => clearInterval(id);
-  }, [enabled]);
-  return s;
+  }, [userId]);
+  return s.ownerId === userId ? s : EMPTY;
 }
 
 /** 동작 하나를 실행하고 화면 데이터를 새로 고친다. */
 async function act(fn: (h: string) => Promise<unknown>) {
+  const ownerId = state.ownerId;
+  const current = epoch;
   if (!state.householdId) await refreshLive();
   const h = state.householdId;
-  if (!h) throw new Error("가구 정보를 불러오지 못했어요.");
+  const { data } = await supabase().auth.getSession();
+  if (!h || !ownerId || current !== epoch || data.session?.user.id !== ownerId) throw new Error("가구 정보를 다시 불러와 주세요.");
   await fn(h);
   await refreshLive();
 }
 
 const db = () => supabase();
+const mealFields = (profile: AppView["mealProfile"]) => ({
+  meal_windows: profile.windows,
+  meals_per_day: profile.windows.length,
+  eat_out_per_week: profile.eatOutPerWeek,
+  uses_keep_warm: profile.usesKeepWarm,
+  cooks_per_week: profile.cooksPerWeek,
+});
 
 export const liveActions: AppActions = {
   saveOnboarding: (step, patch = {}) =>
@@ -142,18 +168,12 @@ export const liveActions: AppActions = {
       if (patch.senior) Object.assign(house, { senior_name: patch.senior.name, senior_relation: patch.senior.relation, senior_phone: patch.senior.phone });
       if (patch.household) Object.assign(house, { resident_count: patch.household.residentCount, has_pet: patch.household.hasPet });
       if (patch.seniorConsent) house.senior_consent_at = new Date().toISOString();
-      const jobs = [db().from("households").update(house).eq("id", h).then(must)];
+      const jobs: PromiseLike<unknown>[] = [];
       if (patch.mealProfile)
         jobs.push(
           db()
             .from("meal_profiles")
-            .update({
-              meal_windows: patch.mealProfile.windows,
-              meals_per_day: patch.mealProfile.windows.length,
-              eat_out_per_week: patch.mealProfile.eatOutPerWeek,
-              uses_keep_warm: patch.mealProfile.usesKeepWarm,
-              cooks_per_week: patch.mealProfile.cooksPerWeek,
-            })
+            .update(mealFields(patch.mealProfile))
             .eq("household_id", h)
             .then(must),
         );
@@ -170,6 +190,9 @@ export const liveActions: AppActions = {
             .then(must),
         );
       await Promise.all(jobs);
+      // A combined setup can save all preferences at once. Only advance the
+      // household's completion marker after the preferences have succeeded.
+      must(await db().from("households").update(house).eq("id", h));
     }),
 
   async registerPlug(deviceId, token) {
@@ -201,7 +224,7 @@ export const liveActions: AppActions = {
       ),
     ),
 
-  saveWindows: (w) => act(async (h) => must(await db().from("meal_profiles").update({ meal_windows: w, meals_per_day: w.length }).eq("household_id", h))),
+  saveMealProfile: (profile) => act(async (h) => must(await db().from("meal_profiles").update(mealFields(profile)).eq("household_id", h))),
 
   saveSenior: (s) =>
     act(async (h) => {

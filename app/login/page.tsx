@@ -4,8 +4,10 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { TextInput } from "@/components/forms";
 import { IconCheck } from "@/components/icons";
-import { Mascot } from "@/components/Mascot";
+import { CookerMascot } from "@/components/Mascot";
 import { Button, PageHeader } from "@/components/ui";
+import { SocialLogin } from "@/components/SocialLogin";
+import { forgetAccount, rememberAccount, useRecentAccounts } from "@/lib/data/accounts";
 import { setMode, useSession } from "@/lib/data/mode";
 import { supabase, supabaseConfigured } from "@/lib/supabase";
 
@@ -18,8 +20,11 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
+  const recent = useRecentAccounts();
+
   useEffect(() => {
     if (session) {
+      if (session.user.email) rememberAccount(session.user.email);
       setMode("live");
       router.replace("/start");
     }
@@ -39,16 +44,28 @@ export default function LoginPage() {
 
   const demo = () => {
     setMode("demo");
-    router.push("/start");
+    router.push("/start?demo=1");
   };
 
   return (
     <main className="flex flex-1 flex-col pb-8">
       <PageHeader back="/" />
       <div className="mx-6 flex flex-1 flex-col rounded-[1.75rem] border border-line bg-paper px-5 py-7 shadow-[var(--shadow-soft)]">
-        <Mascot className="mx-auto h-24 w-24" />
+        <CookerMascot className="mx-auto h-24 w-24" />
         <h1 className="mt-4 text-center text-[28px] leading-snug font-extrabold text-cocoa">보호자님, 반가워요.</h1>
         <p className="mt-2 text-center text-[15px] text-muted">멀리 있어도, 안부는 가까이.</p>
+        {!sent ? (
+          <div className="mt-8">
+            <SocialLogin />
+            {supabaseConfigured ? (
+              <div className="mt-6 flex items-center gap-3 text-[13px] text-muted" aria-hidden>
+                <span className="h-px flex-1 bg-line" />
+                또는 이메일로
+                <span className="h-px flex-1 bg-line" />
+              </div>
+            ) : null}
+          </div>
+        ) : null}
         {!supabaseConfigured ? (
           <p className="mt-4 text-[15px] text-muted">서버가 설정되지 않아 데모로만 둘러볼 수 있어요.</p>
         ) : sent ? (
@@ -66,7 +83,34 @@ export default function LoginPage() {
             </button>
           </div>
         ) : (
-          <div className="mt-8 flex flex-col gap-3">
+          <div className="mt-6 flex flex-col gap-3">
+            {recent.length ? (
+              <div className="mb-3">
+                <p className="text-[15px] font-bold text-cocoa">최근 사용한 계정</p>
+                <ul className="mt-2 flex flex-col gap-2">
+                  {recent.map((a) => (
+                    <li key={a} className="flex items-center gap-1">
+                      <button
+                        onClick={() => setEmail(a)}
+                        className={`flex min-h-12 min-w-0 flex-1 items-center rounded-2xl border-2 px-4 text-left text-[15px] font-semibold text-cocoa ${email === a ? "border-butter-deep bg-butter-soft" : "border-line bg-paper"}`}
+                      >
+                        <span className="truncate">{a}</span>
+                      </button>
+                      <button
+                        aria-label={`${a} 목록에서 지우기`}
+                        onClick={() => {
+                          forgetAccount(a);
+                          if (email === a) setEmail("");
+                        }}
+                        className="grid h-12 w-10 shrink-0 place-items-center text-[18px] text-muted hover:text-cocoa"
+                      >
+                        ×
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
             <label className="text-[15px] font-bold text-cocoa" htmlFor="email">
               이메일
             </label>

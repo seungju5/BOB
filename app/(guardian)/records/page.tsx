@@ -120,7 +120,7 @@ function RangeView({ state, now, days }: { state: AppView; now: Date; days: numb
               </tr>
             </thead>
             <tbody>
-              {(["breakfast", "lunch", "dinner"] as const).map((slot) => (
+              {state.mealProfile.windows.map(({ slot }) => (
                 <tr key={slot}>
                   <th className="text-left font-semibold text-cocoa">{SLOT_LABEL[slot]}</th>
                   {dates.map((d) => {

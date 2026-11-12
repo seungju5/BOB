@@ -125,7 +125,7 @@ function Settings({ app, view, now }: { app: App; view: AppView; now: Date }) {
         {mealFeedback && <p role="status" className="text-[15px]">{mealFeedback}</p>}
       </Section>
 
-      <Section title="부재 일정">
+      {(mode === "demo" || view.seniorConsent) && <Section title="부재 일정">
         {upcoming.length ? (
           <ul className="flex flex-col gap-2">
             {upcoming.map((a) => (
@@ -156,7 +156,7 @@ function Settings({ app, view, now }: { app: App; view: AppView; now: Date }) {
         >
           부재 일정 추가
         </Button>
-      </Section>
+      </Section>}
 
       <Section title={`${relation} 정보`}>
         <Field label="부르는 이름" hint="여러 개 고를 수 있어요.">
@@ -194,6 +194,9 @@ function Settings({ app, view, now }: { app: App; view: AppView; now: Date }) {
           <IconLock className="mt-0.5 h-4 w-4 shrink-0" />
           밥솥 전력값은 판정 직후 지우고, 가족에게는 끼니별 &lsquo;확인됨·미확인&rsquo; 요약만 보여 드려요. 카메라나 마이크는 쓰지 않아요.
         </p>
+        <a href="https://app.notion.com/p/4163d756e70080399649fedbb690842f?source=copy_link" target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center text-[15px] text-cocoa/75 underline underline-offset-4">
+          개인정보 처리방침 보기
+        </a>
       </Section>
 
       {mode === "demo" ? (

@@ -44,22 +44,27 @@ Deno.serve(async (req) => {
     const device = await deviceFor(body.token);
     if (!device) return json({ error: "연결이 끊겼어요. 다시 연결해 주세요." }, 401);
     const h = device.household_id;
+    const house = must(await db.from("households").select("senior_name, senior_relation, last_cooker_at, senior_consent_at").eq("id", h).single()) as {
+      senior_name: string;
+      senior_relation: string;
+      last_cooker_at: string | null;
+      senior_consent_at: string | null;
+    };
+    const consent = !!house.senior_consent_at;
+    if (!consent && ["eat_out", "away", "back"].includes(body.op ?? "")) {
+      return json({ error: "어르신이 생활 소식 공유에 동의한 뒤 사용할 수 있어요." }, 403);
+    }
     must(await db.from("senior_devices").update({ last_seen_at: now.toISOString() }).eq("id", device.id));
 
     switch (body.op) {
       case "status": {
-        const house = must(await db.from("households").select("senior_name, senior_relation, last_cooker_at").eq("id", h).single()) as {
-          senior_name: string;
-          senior_relation: string;
-          last_cooker_at: string | null;
-        };
-        const absence = must(
+        const absence = consent ? must(
           await db.from("absences").select("start_date, end_date").eq("household_id", h).gte("end_date", today).lte("start_date", today).limit(1),
-        ) as { start_date: string; end_date: string }[];
+        ) as { start_date: string; end_date: string }[] : [];
         return json({
           seniorName: house.senior_name,
           relation: house.senior_relation,
-          lastCookerAt: house.last_cooker_at,
+          lastCookerAt: consent ? house.last_cooker_at : null,
           absence: absence[0] ? { startDate: absence[0].start_date, endDate: absence[0].end_date } : null,
         });
       }
@@ -92,8 +97,10 @@ Deno.serve(async (req) => {
       default:
         return json({ error: "unknown op" }, 400);
     }
-    await refreshActivity(h);
-    await recomputeDay(h, today, now);
+    if (consent) {
+      await refreshActivity(h);
+      await recomputeDay(h, today, now);
+    }
     return json({ ok: true });
   } catch (e) {
     console.error(e);

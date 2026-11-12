@@ -12,6 +12,11 @@ export function rememberIntroSeen(ownerId: string | null) {
   catch { /* the current visit can still continue */ }
 }
 
+export function clearDemoIntro() {
+  try { localStorage.removeItem(INTRO_KEY + "demo"); }
+  catch { /* storage is optional */ }
+}
+
 export function readDeviceCoach() {
   try { return sessionStorage.getItem(COACH_KEY); }
   catch { return null; }

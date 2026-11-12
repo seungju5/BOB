@@ -7,6 +7,7 @@ import { IconBell, IconCheck, IconInfo, IconLock, IconPlug, IconUtensils, IconWi
 import { CookerMascot } from "@/components/Mascot";
 import { PlugForm } from "@/components/PlugForm";
 import { Button, ProgressBar, Skeleton } from "@/components/ui";
+import { Consent } from "@/app/guardian-setup/LifeSettings";
 import { refreshLive } from "@/lib/data/live";
 import { useApp } from "@/lib/data/useApp";
 import { DEFAULT_WINDOWS, type AppActions, type AppView, type OnboardingPatch } from "@/lib/data/view";
@@ -165,6 +166,7 @@ function Onboarding({
           <PlugStep
             live={live}
             actions={actions}
+            view={state}
             onConnected={(w) => {
               setWatts(w);
               next();
@@ -207,15 +209,24 @@ function Footer({ children }: { children: ReactNode }) {
   return <div className="mt-auto flex flex-col gap-2 pt-8">{children}</div>;
 }
 
-function PlugStep({ live, actions, onConnected, onSkip }: { live: boolean; actions: AppActions; onConnected: (watts: number) => void; onSkip: () => void }) {
+function PlugStep({ live, actions, view, onConnected, onSkip }: { live: boolean; actions: AppActions; view: AppView; onConnected: (watts: number) => void; onSkip: () => void }) {
+  const [consent, setConsent] = useState(false);
+  async function register(deviceId: string, token: string) {
+    if (live && !view.seniorConsent) {
+      if (!consent) throw new Error("어르신의 별도 동의를 먼저 확인해 주세요.");
+      await actions.saveOnboarding(view.onboardingStep, { seniorConsent: true });
+    }
+    return actions.registerPlug(deviceId, token);
+  }
   return (
     <>
       <div className="flex items-center gap-3 rounded-2xl bg-butter-soft px-4 py-4 text-[14px] leading-relaxed text-cocoa/80">
         <IconPlug className="h-8 w-8 shrink-0 text-cocoa" />
         밥솥 전원 코드를 삼성 스마트플러그에 꽂고, SmartThings 앱에 플러그를 등록해 주세요.
       </div>
-      <div className="mt-6">
-        <PlugForm onSubmit={actions.registerPlug} onDone={onConnected} />
+      <div className="mt-6 flex flex-col gap-4">
+        {live && !view.seniorConsent && <Consent checked={consent} onChange={setConsent} />}
+        {(!live || view.seniorConsent || consent) && <PlugForm onSubmit={register} onDone={onConnected} />}
       </div>
       <Footer>
         <Button variant="ghost" onClick={onSkip}>
@@ -379,16 +390,10 @@ function AlertStep({ state, next }: StepProps) {
             emergency: "지정한 연락처에도 알려요. 신고 기관 연동은 준비 중이에요.",
           }}
         />
-        <label className="flex items-start gap-3 rounded-2xl border-2 border-line px-4 py-4">
-          <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} className="mt-1 h-5 w-5 accent-[var(--color-sage-deep)]" />
-          <span className="text-[14px] leading-relaxed text-cocoa">
-            <span className="flex items-center gap-1 font-bold"><IconLock className="h-4 w-4" />어르신께 동의를 받았어요</span>
-            밥솥 전력 사용 여부만 확인하고, 원래 기록은 판정 후 지운다는 점을 설명드렸어요.
-          </span>
-        </label>
+        {state.seniorConsent ? <p className="rounded-xl bg-sage p-3 text-[15px]">어르신 동의가 기록되어 있어요.</p> : <Consent checked={consent} onChange={setConsent} />}
       </div>
       <Footer>
-        <Button disabled={!consent} onClick={() => next({ alertSettings: settings, seniorConsent: true })}>다음</Button>
+        <Button onClick={() => next({ alertSettings: settings, ...(consent && !state.seniorConsent ? { seniorConsent: true } : {}) })}>다음</Button>
       </Footer>
     </>
   );

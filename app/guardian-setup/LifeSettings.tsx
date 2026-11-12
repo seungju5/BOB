@@ -13,13 +13,15 @@ const BINARY = [{ value: false, label: "없어요" }, { value: true, label: "있
 
 export function Consent({ checked, onChange }: { checked: boolean; onChange: (value: boolean) => void }) {
   return (
-    <label className="flex min-h-14 items-start gap-3 rounded-2xl border border-line bg-paper p-4">
-      <input className="mt-1 size-5 shrink-0 accent-sage-deep" type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} />
-      <span>
-        <strong>어르신께 동의를 받았어요.</strong>
-        <span className="mt-1 block text-[15px] leading-relaxed text-cocoa/80">밥솥 사용 신호만 살펴요. 신호만으로 식사 여부나 양을 알 수 없어요.</span>
-      </span>
-    </label>
+    <div className="rounded-2xl border border-line bg-paper p-4">
+      <strong>안부 알림·생활 리포트 (선택)</strong>
+      <p className="mt-1 text-[15px] leading-relaxed text-cocoa/80">밥솥 사용 소식만 살펴요. 동의 없이도 가입하고 홈을 이용할 수 있어요.</p>
+      <a href="https://app.notion.com/p/4163d756e70080399649fedbb690842f?source=copy_link" target="_blank" rel="noreferrer" className="inline-flex min-h-9 items-center text-[14px] text-cocoa/75 underline underline-offset-4">개인정보 처리방침 보기</a>
+      <label className="flex min-h-10 items-center gap-3 text-[15px]">
+        <input className="size-5 shrink-0 accent-sage-deep" type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} />
+        어르신이 안부 알림과 생활 리포트에 별도로 동의했어요.
+      </label>
+    </div>
   );
 }
 
@@ -55,7 +57,7 @@ export function LifeSettings({
   const live = view.mode === "live";
   const agreed = view.seniorConsent || consent;
   const validWindows = windowsValid(windows);
-  const valid = senior.name.trim() && senior.relation.trim() && validWindows && (!live || agreed);
+  const valid = senior.name.trim() && senior.relation.trim() && validWindows;
 
   async function save() {
     if (!valid || busy) return;
@@ -119,7 +121,8 @@ export function LifeSettings({
       <Fold label="언제 알려 드릴까요?" hint={`끼니 ${alerts.missedMealsThreshold}회 · 공복 ${alerts.fastingHours}시간 · 위험 ${alerts.emergencyHours}시간`}>
         <AlertThresholdFields value={alerts} onChange={setAlerts} hints={{ missed: "끼니 소식이 연속으로 없을 때", fasting: "마지막 밥솥 사용 뒤", emergency: "위험 안내 기준이에요. 신고 기관 연동은 준비 중이에요." }} />
       </Fold>
-      {live && !view.seniorConsent && <Consent checked={consent} onChange={onConsent} />}
+      {!view.seniorConsent && <Consent checked={consent} onChange={onConsent} />}
+      {!live && <p className="text-[14px] text-cocoa/75">체험에서는 실제 동의를 저장하지 않아요.</p>}
       {live && view.seniorConsent && <p className="rounded-2xl bg-sage px-4 py-3 text-[15px] text-sage-deep">어르신 동의가 기록되어 있어요.</p>}
       {!validWindows && <p role="alert" className="text-[15px] font-bold text-blush-deep">끼니 시간이 겹치지 않게 바꿔 주세요.</p>}
       {error && <p role="alert" className="text-[15px] font-bold text-blush-deep">{error}</p>}

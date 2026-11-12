@@ -9,7 +9,7 @@ import { Logo, CookerMascot } from "@/components/Mascot";
 import { SocialLogin } from "@/components/SocialLogin";
 import { Button, ButtonLink } from "@/components/ui";
 import { setMode, useSession } from "@/lib/data/mode";
-import { readIntroSeen, rememberIntroSeen, setDeviceCoach } from "@/lib/data/setup-progress";
+import { clearDemoIntro, readIntroSeen, rememberIntroSeen, setDeviceCoach } from "@/lib/data/setup-progress";
 import { useApp } from "@/lib/data/useApp";
 import { supabase, supabaseConfigured } from "@/lib/supabase";
 import { Fold, LifeSettings } from "./LifeSettings";
@@ -25,8 +25,9 @@ export function GuardianSetup() {
   const [consent, setConsent] = useState(false);
   const heading = useRef<HTMLHeadingElement>(null);
   const scope = ownerId ?? "demo";
-  const inFlow = !!view && (view.mode === "live" || demoStarted);
-  const introSeen = finishedIntroFor === scope || (scope !== "demo" && readIntroSeen(ownerId));
+  const resumeDemo = view?.mode === "demo" && view.onboardingStep <= 7 && readIntroSeen(null);
+  const inFlow = !!view && (view.mode === "live" || demoStarted || resumeDemo);
+  const introSeen = finishedIntroFor === scope || resumeDemo || (scope !== "demo" && readIntroSeen(ownerId));
   const complete = view?.mode === "live" && view.onboardingStep > 7;
   const stage = !inFlow ? 1 : !introSeen ? 2 : 3;
 
@@ -45,6 +46,7 @@ export function GuardianSetup() {
     window.scrollTo(0, 0);
   }
   function tryDemo() {
+    clearDemoIntro();
     setMode("demo");
     setDemoStarted(true);
     setFinishedIntroFor(null);
@@ -90,6 +92,7 @@ export function GuardianSetup() {
                     consent={consent}
                     onConsent={setConsent}
                     onSave={() => {
+                      if (view.mode === "demo") clearDemoIntro();
                       setDeviceCoach(view.plug.deviceId ? null : scope);
                       router.replace("/home");
                     }}

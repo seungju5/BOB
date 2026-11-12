@@ -22,12 +22,19 @@ const JUDGE_WINDOW_MIN = 90;
 type Plug = { id: string; household_id: string; st_device_id: string };
 
 async function activeHouseholds(): Promise<string[]> {
-  const rows = must(await db.from("households").select("id").gt("onboarding_step", 7)) as { id: string }[];
+  const rows = must(await db.from("households").select("id").gt("onboarding_step", 7).not("senior_consent_at", "is", null)) as { id: string }[];
   return rows.map((r) => r.id);
 }
 
+async function monitoringPlugs(): Promise<Plug[]> {
+  return must(await db.from("smart_plugs")
+    .select("id, household_id, st_device_id, households!inner(senior_consent_at, onboarding_step)")
+    .gt("households.onboarding_step", 7)
+    .not("households.senior_consent_at", "is", null)) as Plug[];
+}
+
 async function ingest() {
-  const plugs = must(await db.from("smart_plugs").select("id, household_id, st_device_id")) as Plug[];
+  const plugs = await monitoringPlugs();
   const now = new Date();
   const minute = new Date(Math.floor(now.getTime() / MINUTE_MS) * MINUTE_MS).toISOString();
   let ok = 0;
@@ -49,7 +56,7 @@ async function ingest() {
 
 async function judge() {
   const now = new Date();
-  const plugs = must(await db.from("smart_plugs").select("id, household_id, st_device_id")) as Plug[];
+  const plugs = await monitoringPlugs();
   for (const p of plugs) {
     const rows = must(
       await db.from("power_readings_raw").select("measured_at, watts").eq("plug_id", p.id).order("measured_at"),

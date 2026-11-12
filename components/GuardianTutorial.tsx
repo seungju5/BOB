@@ -1,7 +1,5 @@
 "use client";
 
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type ComponentType, type ReactNode, type SVGProps } from "react";
 import {
   IconArrowRight,
@@ -11,7 +9,6 @@ import {
   IconFile,
   IconHeart,
   IconSmartphone,
-  IconPlay,
   IconPlug,
   IconSuitcase,
   IconUtensils,
@@ -19,9 +16,6 @@ import {
 import { CookerMascot } from "@/components/Mascot";
 import { RiceFill } from "@/components/RiceFill";
 import { Button } from "@/components/ui";
-
-/** 보호자 첫 사용 튜토리얼 (Figma T-01~T-05). 끝나면 /start가 로그인·온보딩으로 보낸다. */
-const NEXT = "/start";
 
 type Slide = { title: string; body: string; content: ReactNode };
 
@@ -32,8 +26,8 @@ const SLIDES: Slide[] = [
     content: <IntroFlow />,
   },
   {
-    title: "평소와 다르면\n바로 알려 드려요",
-    body: "끼니를 거르시거나\n식사 시간이 바뀌면\n알림이 와요.",
+    title: "평소와 다르면\n알려 드려요",
+    body: "평소 식사 시간에 소식이 없을 때,\n안부를 확인할 수 있어요.",
     content: (
       <div className="flex w-full flex-col gap-3">
         <InfoCard icon={IconBell} text={"점심시간이 지났는데\n아직 식사 소식이 없어요"} />
@@ -52,16 +46,16 @@ const SLIDES: Slide[] = [
     content: <SeniorButtons />,
   },
   {
-    title: "시작하기 전에\n준비해 주세요",
-    body: "찾기 어려운 건\n다음 단계에서 영상으로\n알려 드려요.",
+    title: "먼저 우리 집을\n알려 주세요",
+    body: "평소 끼니와 가족 정보를 알려 주세요.\n밥솥은 홈에서 편할 때 연결해요.",
     content: <ReadyChecklist />,
   },
 ];
 
 const READY: { icon: Icon; title: string; hint: string }[] = [
-  { icon: IconSmartphone, title: "SmartThings 계정", hint: "삼성 계정으로 가입해 두세요" },
-  { icon: IconPlug, title: "밥솥에 꽂을 스마트 플러그", hint: "전력을 재는 삼성 스마트플러그예요" },
-  { icon: IconPlay, title: "연결 코드와 플러그 번호", hint: "SmartThings에서 확인해요" },
+  { icon: IconSmartphone, title: "삼성 계정", hint: "SmartThings 앱에서 사용해요." },
+  { icon: IconPlug, title: "전력을 재는 스마트플러그", hint: "밥솥을 꽂을 플러그를 준비해요." },
+  { icon: IconCheckSquare, title: "SmartThings에 기기 등록", hint: "앱에 등록한 기기를 나중에 골라요." },
 ];
 
 /** T-05 준비물: 번호가 이어지는 체크리스트 카드 */
@@ -91,26 +85,19 @@ function ReadyChecklist() {
   );
 }
 
-export function GuardianTutorial({ onComplete }: { onComplete?: () => void } = {}) {
-  const router = useRouter();
+export function GuardianTutorial({ onComplete, exitLabel = "우리 집 알려주기" }: { onComplete: () => void; exitLabel?: string }) {
   const [index, setIndex] = useState(0);
   const last = index === SLIDES.length - 1;
-  const slide = last && onComplete ? {
-    title: "먼저 우리 집을\n알려 주세요",
-    body: "평소 끼니와 가족 정보를 알려 주세요.\n밥솥은 홈에서 편할 때 연결해요.",
-    content: <div className="rounded-2xl bg-butter-soft p-5 text-[17px]">홈 상단의 <strong>기기 연결이 필요해요</strong>를 누르면 연결할 수 있어요.</div>,
-  } : SLIDES[index];
+  const slide = SLIDES[index];
   const heading = useRef<HTMLHeadingElement>(null);
-  useEffect(() => { if (onComplete) heading.current?.focus({ preventScroll: true }); }, [index, onComplete]);
-  const Root = onComplete ? "section" : "main";
-  const finish = () => onComplete ? onComplete() : router.push(NEXT);
+  useEffect(() => { heading.current?.focus({ preventScroll: true }); }, [index]);
   function show(at: number) {
     setIndex(at);
-    if (onComplete) window.scrollTo(0, 0);
+    window.scrollTo(0, 0);
   }
 
   return (
-    <Root className={onComplete ? "flex flex-1 flex-col rounded-2xl bg-butter-soft" : "font-halmae flex flex-1 flex-col bg-butter"}>
+    <section className="flex flex-1 flex-col rounded-2xl bg-butter-soft">
       <div className="px-6 pt-7">
         <div className="flex h-9 items-center justify-between">
           <div className="flex items-center gap-2" role="progressbar" aria-valuenow={index + 1} aria-valuemin={1} aria-valuemax={SLIDES.length} aria-label="튜토리얼 진행">
@@ -118,38 +105,30 @@ export function GuardianTutorial({ onComplete }: { onComplete?: () => void } = {
               <span key={i} className={`h-2.5 rounded-full transition-all ${i === index ? "w-7 bg-cocoa" : "w-2.5 bg-cocoa/20"}`} />
             ))}
           </div>
-          {onComplete ? (
-            <button type="button" onClick={finish} className="min-h-11 rounded-full px-2 text-[15px] font-semibold underline">건너뛰기</button>
-          ) : (
-            <Link href={NEXT} className={`-mr-2 rounded-full px-3 py-1.5 text-[15px] font-semibold text-cocoa/70 hover:text-cocoa ${last ? "invisible" : ""}`}>
-              건너뛰기
-            </Link>
-          )}
+          <button type="button" onClick={onComplete} className="min-h-11 rounded-full px-2 text-[15px] font-semibold underline">건너뛰기</button>
         </div>
         <div key={index} className="animate-rise pb-8">
-          <h1 ref={heading} tabIndex={onComplete ? -1 : undefined} className={`mt-6 leading-[1.15] whitespace-pre-line text-cocoa ${onComplete ? "text-[clamp(1.65rem,8vw,2.25rem)] font-bold" : "text-[40px]"}`}>{slide.title}</h1>
+          <h1 ref={heading} tabIndex={-1} className="mt-6 text-[clamp(1.65rem,8vw,2.25rem)] font-bold leading-[1.15] whitespace-pre-line text-cocoa">{slide.title}</h1>
           <p className="mt-4 text-[18px] leading-relaxed whitespace-pre-line text-cocoa/80">{slide.body}</p>
         </div>
       </div>
 
       {/* 시작 화면처럼 아래쪽은 흰 시트 */}
-      <div className={`flex flex-1 flex-col rounded-t-[2.25rem] bg-paper pt-8 pb-8 ${onComplete ? "px-2 sm:px-4" : "px-6"}`}>
+      <div className="flex flex-1 flex-col rounded-t-[2.25rem] bg-paper px-2 pb-8 pt-8 sm:px-4">
         <div key={index} className="animate-rise flex flex-1 items-center justify-center pb-8">
           {slide.content}
         </div>
-        <Button variant={onComplete ? "primary" : "dark"} className="min-h-16 text-[19px]" onClick={() => (last ? finish() : show(index + 1))}>
-          {last ? (onComplete ? "우리 집 알려주기" : "시작하기") : "다음"}
+        {last && <p className="mb-4 rounded-2xl bg-butter-soft px-4 py-3 text-[15px]">플러그가 없어도 지금 시작할 수 있어요.</p>}
+        <Button className="min-h-16 text-[19px]" onClick={() => (last ? onComplete() : show(index + 1))}>
+          {last ? exitLabel : "다음"}
         </Button>
-        {/* 약관 페이지가 생기면 링크로 바꾼다 */}
-        {index === 0 ? (
-          onComplete ? null : <p className="mt-4 text-center text-[14px] text-cocoa/70 underline underline-offset-4">개인정보 처리방침 · 이용약관</p>
-        ) : (
+        {index > 0 && (
           <Button variant="ghost" className="mt-1 text-cocoa/70" onClick={() => show(index - 1)}>
             이전
           </Button>
         )}
       </div>
-    </Root>
+    </section>
   );
 }
 

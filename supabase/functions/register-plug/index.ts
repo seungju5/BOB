@@ -13,6 +13,8 @@ Deno.serve(async (req) => {
     const links = must(await db.from("household_guardians").select("household_id").eq("user_id", auth.user.id).limit(1)) as { household_id: string }[];
     const h = links[0]?.household_id;
     if (!h) return json({ error: "가구 정보가 없어요." }, 400);
+    const household = must(await db.from("households").select("senior_consent_at").eq("id", h).single()) as { senior_consent_at: string | null };
+    if (!household.senior_consent_at) return json({ error: "어르신의 별도 동의를 먼저 확인해 주세요." }, 403);
 
     const { deviceId, token } = (await req.json()) as { deviceId?: string; token?: string };
     if (!deviceId?.trim() || !token?.trim()) return json({ error: "토큰과 기기 ID를 모두 넣어 주세요." }, 400);

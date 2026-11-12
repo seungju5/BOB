@@ -26,6 +26,7 @@ export default function HomePage() {
   }
 
   const today = kstDate(now);
+  const monitoring = view.mode === "demo" || view.seniorConsent;
   const relation = view.senior.relation;
   const slots = slotsForDate(view, today, now);
   const mealNotes = slots.filter((slot) => slot.status === "confirmed" || slot.status === "eat_out").length;
@@ -80,7 +81,7 @@ export default function HomePage() {
         </section>
       ) : null}
 
-      <Link
+      {monitoring ? <Link
         href="/report"
         className={`mt-5 block rounded-[1.75rem] p-6 transition-colors ${report?.trend === "down" ? "bg-blush hover:bg-blush/70" : "bg-butter-soft hover:bg-butter/60"}`}
       >
@@ -121,9 +122,14 @@ export default function HomePage() {
               ? `마지막 기기 수신 ${kstDate(reading) === today ? "오늘" : kstDate(reading).slice(5).replace("-", "/")} ${kstTime(reading)}`
               : "기기 연결을 확인해 주세요"}
         </p>
-      </Link>
+      </Link> : (
+        <section className="mt-5 rounded-[1.75rem] bg-butter-soft p-5">
+          <h2 className="text-[17px] font-bold">안부 알림·생활 리포트는 아직 꺼져 있어요.</h2>
+          <p className="mt-1 text-[15px]">어르신이 별도로 동의하시면 기기 설정에서 시작할 수 있어요.</p>
+        </section>
+      )}
 
-      <section className="mt-4 rounded-[1.75rem] border border-line p-5">
+      {monitoring && <section className="mt-4 rounded-[1.75rem] border border-line p-5">
         <div className="flex items-center justify-between gap-2">
           <div>
             <h2 className="text-[17px] font-bold text-cocoa">오늘의 끼니</h2>
@@ -143,12 +149,12 @@ export default function HomePage() {
           ))}
         </ul>
         <p className="mt-3 text-[13px] leading-relaxed text-cocoa/70">그림 속 밥의 양은 기록 수를 뜻해요. 실제 드신 양은 알 수 없어요.</p>
-      </section>
+      </section>}
 
       <div className="mt-6 flex items-end gap-3">
         <CookerMascot className="h-16 w-16 shrink-0" mood={top ? "worried" : "happy"} />
         <p className="pb-2 text-[15px] leading-relaxed text-cocoa/80">
-          {top ? "소식이 뜸할 땐 목소리가 제일 좋아요." : "오늘도 평소처럼 지내고 계세요."}
+          {top ? "소식이 뜸할 땐 목소리가 제일 좋아요." : "편한 때 짧게 안부를 전해 보세요."}
         </p>
       </div>
 

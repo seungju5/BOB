@@ -15,7 +15,7 @@ export function RiceFill({ count, className = "" }: { count: number | null; clas
     return (
       <span role="img" aria-label={`끼니 소식 ${count}개`} className={`relative inline-block overflow-hidden ${className}`}>
         {full && <Image src={cooker} alt="" fill sizes="64px" className="scale-[1.6] object-contain" />}
-        <Image src={art} alt="" fill sizes="64px" className={`scale-[1.6] object-contain ${full ? "rice-fill-ears" : ""}`} />
+        <Image src={art} alt="" fill sizes="64px" className={`scale-[1.6] object-contain ${full ? "rice-fill-ears" : "rice-fill-level"}`} />
       </span>
     );
   }

@@ -50,16 +50,18 @@ async function load(ownerId: string) {
   const h = must(await db.rpc("ensure_household")) as string;
   const today = kstDate(new Date());
   const from = addDays(today, -34);
-  const [house, profile, settings, plug, devices, slots, stats, absences, alerts] = await Promise.all([
-    db.from("households").select("*").eq("id", h).single().then(must),
+  const house = must(await db.from("households").select("*").eq("id", h).single());
+  const consent = Boolean(house?.senior_consent_at);
+  const alertsQuery = db.from("alerts").select("id, type, triggered_at, acknowledged_at, resolved_at, payload").eq("household_id", h);
+  const [profile, settings, plug, devices, slots, stats, absences, alerts] = await Promise.all([
     db.from("meal_profiles").select("*").eq("household_id", h).single().then(must),
     db.from("alert_settings").select("*").eq("household_id", h).single().then(must),
-    db.from("smart_plugs").select("st_device_id, status, last_reading_at").eq("household_id", h).maybeSingle().then(must),
+    consent ? db.from("smart_plugs").select("st_device_id, status, last_reading_at").eq("household_id", h).maybeSingle().then(must) : null,
     db.from("senior_devices").select("pairing_code, pairing_expires_at, paired_at").eq("household_id", h).then(must),
-    db.from("meal_slots").select("date, slot, status, source").eq("household_id", h).gte("date", from).then(must),
-    db.from("daily_cooker_stats").select("date, cook_count, lid_open_count").eq("household_id", h).gte("date", from).then(must),
-    db.from("absences").select("start_date, end_date").eq("household_id", h).then(must),
-    db.from("alerts").select("id, type, triggered_at, acknowledged_at, resolved_at, payload").eq("household_id", h).order("triggered_at", { ascending: false }).limit(50).then(must),
+    consent ? db.from("meal_slots").select("date, slot, status, source").eq("household_id", h).gte("date", from).then(must) : [],
+    consent ? db.from("daily_cooker_stats").select("date, cook_count, lid_open_count").eq("household_id", h).gte("date", from).then(must) : [],
+    consent ? db.from("absences").select("start_date, end_date").eq("household_id", h).then(must) : [],
+    (consent ? alertsQuery : alertsQuery.eq("type", "help_request")).order("triggered_at", { ascending: false }).limit(50).then(must),
   ]);
   /* eslint-disable @typescript-eslint/no-explicit-any */
   const H = house as any;
@@ -92,15 +94,15 @@ async function load(ownerId: string) {
       fastingHours: S.fasting_hours,
       emergencyHours: S.emergency_hours,
     },
-    seniorConsent: Boolean(H.senior_consent_at),
+    seniorConsent: consent,
     pairingCode: code?.pairing_code ?? null,
     seniorPaired: devs.some((d) => d.paired_at),
     slots: (slots ?? []) as MealSlot[],
     stats: Object.fromEntries(
       ((stats ?? []) as Array<{ date: string; cook_count: number; lid_open_count: number }>).map((r) => [r.date, { cook: r.cook_count, lid: r.lid_open_count }]),
     ),
-    lastCookerAt: H.last_cooker_at,
-    lastActivityAt: H.last_activity_at,
+    lastCookerAt: consent ? H.last_cooker_at : null,
+    lastActivityAt: consent ? H.last_activity_at : null,
     absences: ((absences ?? []) as Array<{ start_date: string; end_date: string }>).map((a) => ({ startDate: a.start_date, endDate: a.end_date })),
     alerts: ((alerts ?? []) as Array<{ id: string; type: AlertType; triggered_at: string; acknowledged_at: string | null; resolved_at: string | null; payload: AlertPayload | null }>).map((a) => ({
       id: a.id,
@@ -149,6 +151,9 @@ async function act(fn: (h: string) => Promise<unknown>) {
   const { data } = await supabase().auth.getSession();
   if (!h || !ownerId || current !== epoch || data.session?.user.id !== ownerId) throw new Error("가구 정보를 다시 불러와 주세요.");
   await fn(h);
+  // A poll started before this write can contain a stale completion or consent value.
+  if (inflight?.epoch === current) await inflight.promise;
+  if (current !== epoch) throw new Error("계정을 다시 확인해 주세요.");
   await refreshLive();
 }
 

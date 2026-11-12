@@ -17,7 +17,12 @@
     "test:smartthings": "npm --prefix integrations/bapmunna-firebase/server test",
     "sync:design": "node scripts/sync-design.mjs",
     "check:design": "node scripts/sync-design.mjs --check",
-    "check:smartthings": "node integrations/bapmunna-firebase/scripts/check-smartthings-readiness.mjs"
+    "check:smartthings": "node integrations/bapmunna-firebase/scripts/check-smartthings-readiness.mjs",
+    "harness": "node scripts/harness.mjs",
+    "harness:doctor": "node scripts/harness.mjs doctor",
+    "harness:plan": "node scripts/harness.mjs plan",
+    "harness:check": "node scripts/harness.mjs check",
+    "test:harness": "node --test --test-reporter=tap tests/harness/*.test.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.118.0",

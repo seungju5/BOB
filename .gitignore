@@ -12,6 +12,7 @@
 
 # testing
 /coverage
+/.vitest/
 
 # next.js
 /.next/
@@ -44,3 +45,6 @@ next-env.d.ts
 
 # Local verification logs and frozen releases
 /tmp/
+
+# Local development harness evidence (may contain test diagnostics)
+/.harness/

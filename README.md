@@ -24,6 +24,18 @@ npm test
 
 CLAUDE.md → brd.md → cps.md → design.md → plan.md → todo.md → test.md (참고: stack.md, adr.md, log.md)
 
+## Super Members 개발 하네스
+
+[팀 구성과 사용 안내](harness/README.md)에 밥뭇나 전용 7개 AI 역할, 개발 순서, 작업별 완료 기준을 정리했습니다. 필요한 담당을 선택해 구현하고, 독립 검토자가 증거를 확인합니다.
+
+```sh
+npm run harness:doctor
+npm run harness:plan -- --task harness/tasks/smartthings-pilot.json
+npm run harness:check
+```
+
+검사는 변경 파일에 맞춰 기존 테스트·동기화·타입·빌드를 실행합니다. 결과와 로그는 Git에서 제외된 `.harness/runs/`에 남습니다. `--base <커밋/브랜치>`로 이미 커밋한 변경까지 포함할 수 있습니다. 배포·결제·외부 AI API는 자동 호출하지 않으며, 실기기 연결과 현장 확인은 별도 증거로 남깁니다.
+
 ## Firebase 디자인 통합판
 
 기존 Firebase 밥뭇나는 [integrations/bapmunna-firebase](integrations/bapmunna-firebase/README.md)에 별도로 보존합니다. 루트 Next.js 앱의 실행·배포는 바꾸지 않습니다.

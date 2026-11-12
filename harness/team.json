@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "maxConcurrentSpecialists": 3,
+  "members": [
+    {
+      "id": "wm_lead",
+      "name": "Captain · 개발 총괄",
+      "role": "요청을 작은 작업과 완료 기준으로 나누고, 담당 파일과 작업 순서를 정합니다.",
+      "agentFile": ".codex/agents/wm_lead.toml",
+      "owns": ["harness/", "plan.md", "todo.md"],
+      "reviews": ["최신 사용자 결정과 이번 작업 범위", "동시 작업의 파일 충돌과 의존 관계", "구현·검증·배포 상태의 구분"]
+    },
+    {
+      "id": "wm_experience",
+      "name": "Care · 사용자 경험",
+      "role": "어르신과 보호자가 이해하기 쉬운 화면·문구·조작을 구현합니다.",
+      "agentFile": ".codex/agents/wm_experience.toml",
+      "owns": ["app/", "components/", "integrations/bapmunna-firebase/docs/"],
+      "reviews": ["어르신의 세 가지 주요 행동", "승인된 원본 3D 토끼와 디자인 동기화", "모바일·키보드·큰 글씨·모션 줄이기"]
+    },
+    {
+      "id": "wm_domain",
+      "name": "Logic · 판단 규칙",
+      "role": "밥솥 신호와 끼니 상태의 판단을 순수 함수로 유지하고 두 앱의 결과를 맞춥니다.",
+      "agentFile": ".codex/agents/wm_domain.toml",
+      "owns": ["config/detection.ts", "lib/judge/", "lib/data/view.ts", "tests/unit/", "scripts/sync-firebase.mjs"],
+      "reviews": ["KST 경계·오프라인·외식·부재·중복 처리", "기준값 변경 근거", "생성된 Firebase 판단 코드의 정합성"]
+    },
+    {
+      "id": "wm_data",
+      "name": "Shield · 계정과 데이터",
+      "role": "로그인·가구 소유권·동의·데이터 보관 경계를 구현하고 검토합니다.",
+      "agentFile": ".codex/agents/wm_data.toml",
+      "owns": ["lib/data/", "lib/supabase.ts", "supabase/", "integrations/bapmunna-firebase/cloud/", "integrations/bapmunna-firebase/firebase/"],
+      "reviews": ["가구 간 데이터 접근 거부", "Firebase와 Supabase의 별도 인증·DB", "토큰 보호·원시값 삭제·로그인 해제"]
+    },
+    {
+      "id": "wm_iot",
+      "name": "Bridge · 스마트싱스",
+      "role": "OAuth와 기기 신호 연결을 구현하고 등록·서버·실기기 증거를 구분합니다.",
+      "agentFile": ".codex/agents/wm_iot.toml",
+      "owns": ["integrations/bapmunna-firebase/server/", "integrations/bapmunna-firebase/scripts/check-smartthings-readiness.mjs"],
+      "reviews": ["OAuth state·토큰 갱신·웹훅 서명", "본인 기기 선택·중복·역순 이벤트", "무료 유지와 실제 연결 검증의 경계"]
+    },
+    {
+      "id": "wm_verifier",
+      "name": "Proof · 독립 검증",
+      "role": "구현자의 설명과 별개로 코드를 읽고 검사 결과와 재현 가능한 결함을 확인합니다.",
+      "agentFile": ".codex/agents/wm_verifier.toml",
+      "owns": [],
+      "reviews": ["요청의 완료 기준과 실제 동작", "검사 성공·실패·건너뜀·미실행", "권한·회귀·접근성 및 미검증 항목"]
+    },
+    {
+      "id": "wm_release",
+      "name": "Keeper · 릴리스와 복구",
+      "role": "검증한 버전과 남은 일을 기록하고, 배포를 요청받으면 복구 가능한 절차를 준비합니다.",
+      "agentFile": ".codex/agents/wm_release.toml",
+      "owns": ["log.md", "adr.md", "integrations/bapmunna-firebase/ci/", "integrations/bapmunna-firebase/documentation/"],
+      "reviews": ["검증 대상 소스와 결과의 일치", "등록·구현·실연동·게시의 구분", "릴리스 증거와 복구 경로"]
+    }
+  ]
+}

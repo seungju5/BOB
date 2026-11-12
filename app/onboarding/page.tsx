@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
-import { Choice, Field, MealWindowsEditor, RelationPicker, Slider, Stepper, TextInput, windowsValid } from "@/components/forms";
+import { AlertThresholdFields, Choice, Field, MealWindowsEditor, RelationPicker, Slider, TextInput, windowsValid } from "@/components/forms";
 import { IconBell, IconCheck, IconInfo, IconLock, IconPlug, IconUtensils, IconWifi } from "@/components/icons";
 import { Mascot } from "@/components/Mascot";
 import { PlugForm } from "@/components/PlugForm";
@@ -370,15 +370,15 @@ function AlertStep({ state, next }: StepProps) {
   return (
     <>
       <div className="flex flex-col gap-5">
-        <Field label="결식 알림" hint="연속으로 이만큼 끼니 소식이 없으면 알려 드려요.">
-          <Stepper value={settings.missedMealsThreshold} min={1} max={6} unit="끼" onChange={(v) => setSettings({ ...settings, missedMealsThreshold: v })} />
-        </Field>
-        <Field label="공복시간 주의" hint="마지막 밥솥 사용 후">
-          <Stepper value={settings.fastingHours} min={12} max={settings.emergencyHours - 12} step={6} unit="시간" onChange={(v) => setSettings({ ...settings, fastingHours: v })} />
-        </Field>
-        <Field label="건강 위험 신고" hint="지정한 연락처에도 알려요. 신고 기관 연동은 준비 중이에요.">
-          <Stepper value={settings.emergencyHours} min={settings.fastingHours + 12} max={120} step={6} unit="시간" onChange={(v) => setSettings({ ...settings, emergencyHours: v })} />
-        </Field>
+        <AlertThresholdFields
+          value={settings}
+          onChange={setSettings}
+          hints={{
+            missed: "연속으로 이만큼 끼니 소식이 없으면 알려 드려요.",
+            fasting: "마지막 밥솥 사용 후",
+            emergency: "지정한 연락처에도 알려요. 신고 기관 연동은 준비 중이에요.",
+          }}
+        />
         <label className="flex items-start gap-3 rounded-2xl border-2 border-line px-4 py-4">
           <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} className="mt-1 h-5 w-5 accent-[var(--color-sage-deep)]" />
           <span className="text-[14px] leading-relaxed text-cocoa">

@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
-import { Field, MealWindowsEditor, RelationPicker, Stepper, TextInput, Toggle, windowsValid } from "@/components/forms";
+import { AlertThresholdFields, Field, MealWindowsEditor, RelationPicker, TextInput, Toggle, windowsValid } from "@/components/forms";
 import { IconLock, IconPlug, IconSuitcase } from "@/components/icons";
 import { PlugForm } from "@/components/PlugForm";
 import { Button, PageHeader, Skeleton } from "@/components/ui";
@@ -58,20 +58,22 @@ function Settings({ app, view, now }: { app: App; view: AppView; now: Date }) {
   const [awayStart, setAwayStart] = useState(today);
   const [awayEnd, setAwayEnd] = useState(addDays(today, 2));
   const upcoming = view.absences.filter((a) => a.endDate >= today);
-  const s = view.alertSettings;
+  const [alertDraft, setAlertDraft] = useState(view.alertSettings);
 
   return (
     <div>
       <Section title="알림 기준">
-        <Field label="결식 알림" hint="연속으로 이만큼 끼니 소식이 없으면 알려 드려요.">
-          <Stepper value={s.missedMealsThreshold} min={1} max={6} unit="끼" onChange={(v) => void actions.saveAlertSettings({ ...s, missedMealsThreshold: v })} />
-        </Field>
-        <Field label="공복시간 주의 알림" hint="마지막 밥솥 사용 후 이 시간이 지나면 알려 드려요.">
-          <Stepper value={s.fastingHours} min={12} max={s.emergencyHours - 12} step={6} unit="시간" onChange={(v) => void actions.saveAlertSettings({ ...s, fastingHours: v })} />
-        </Field>
-        <Field label="건강 위험 신고" hint="이 시간이 지나면 지정한 연락처에도 알려요. (신고 기관 연동은 준비 중)">
-          <Stepper value={s.emergencyHours} min={s.fastingHours + 12} max={120} step={6} unit="시간" onChange={(v) => void actions.saveAlertSettings({ ...s, emergencyHours: v })} />
-        </Field>
+        {/* 끄는 동안은 화면에만 반영하고, 손을 뗄 때 한 번 저장한다 */}
+        <AlertThresholdFields
+          value={alertDraft}
+          onChange={setAlertDraft}
+          onCommit={(next) => void actions.saveAlertSettings(next)}
+          hints={{
+            missed: "연속으로 이만큼 끼니 소식이 없으면 알려 드려요.",
+            fasting: "마지막 밥솥 사용 후 이 시간이 지나면 알려 드려요.",
+            emergency: "이 시간이 지나면 지정한 연락처에도 알려요. (신고 기관 연동은 준비 중)",
+          }}
+        />
       </Section>
 
       <Section title="식사 시간대">

@@ -66,6 +66,8 @@ export function Slider({
   onChange,
   marks,
   format,
+  step = 1,
+  onCommit,
 }: {
   value: number;
   min: number;
@@ -75,8 +77,11 @@ export function Slider({
   onChange: (v: number) => void;
   marks?: number[];
   format?: (v: number) => string | null;
+  step?: number;
+  /** 끌기를 마쳤을 때(손을 뗐을 때·키를 뗐을 때·눈금을 눌렀을 때) 한 번 불린다. 바로 저장하는 화면용. */
+  onCommit?: (v: number) => void;
 }) {
-  const ticks = marks ?? Array.from({ length: max - min + 1 }, (_, i) => min + i);
+  const ticks = marks ?? Array.from({ length: Math.floor((max - min) / step) + 1 }, (_, i) => min + i * step);
   const pct = ((value - min) / (max - min)) * 100;
   const text = (v: number) => format?.(v) ?? `${v}${unit}`;
   return (
@@ -93,11 +98,13 @@ export function Slider({
         type="range"
         min={min}
         max={max}
-        step={1}
+        step={step}
         value={value}
         aria-label={label}
         aria-valuetext={text(value)}
         onChange={(e) => onChange(Number(e.target.value))}
+        onPointerUp={(e) => onCommit?.(Number(e.currentTarget.value))}
+        onKeyUp={(e) => onCommit?.(Number(e.currentTarget.value))}
         className="mt-2 h-3 w-full cursor-pointer appearance-none rounded-full accent-[var(--color-butter-deep)]"
         style={{ background: `linear-gradient(to right, var(--color-butter-deep) ${pct}%, var(--color-line) ${pct}%)` }}
       />
@@ -111,7 +118,10 @@ export function Slider({
               key={t}
               type="button"
               tabIndex={-1}
-              onClick={() => onChange(t)}
+              onClick={() => {
+                onChange(t);
+                onCommit?.(t);
+              }}
               style={{ left: `${at}%` }}
               className={`absolute top-0 py-1 text-[13px] font-bold whitespace-nowrap ${align} ${t === value ? "text-cocoa" : "text-muted"}`}
             >
@@ -182,6 +192,80 @@ export function RelationPicker({ value, onChange }: { value: string; onChange: (
         />
       ) : null}
     </div>
+  );
+}
+
+/** 알림 기준 슬라이더 범위. 공복 주의는 건강 위험보다 최소 GAP시간 앞서야 한다 (기존 Stepper 규칙과 같다). */
+export const ALERT_RANGE = {
+  missed: { min: 1, max: 6 },
+  fasting: { min: 12, max: 108, step: 6 },
+  emergency: { min: 24, max: 120, step: 6 },
+  gap: 12,
+} as const;
+
+type AlertHours = { missedMealsThreshold: number; fastingHours: number; emergencyHours: number };
+
+/** 한쪽 시간을 바꾸면 다른 쪽을 밀어 GAP을 지킨다 (끼니 시간대의 fitWindows와 같은 방식) */
+export function fitAlertHours<T extends AlertHours>(s: T, changed: "fastingHours" | "emergencyHours"): T {
+  const { gap } = ALERT_RANGE;
+  if (changed === "fastingHours" && s.emergencyHours - s.fastingHours < gap) return { ...s, emergencyHours: Math.min(s.fastingHours + gap, ALERT_RANGE.emergency.max) };
+  if (changed === "emergencyHours" && s.emergencyHours - s.fastingHours < gap) return { ...s, fastingHours: Math.max(s.emergencyHours - gap, ALERT_RANGE.fasting.min) };
+  return s;
+}
+
+/** 알림 기준 세 가지(결식·공복·건강 위험) 슬라이더. 양 끝에 최소·최대 값을 표시한다. */
+export function AlertThresholdFields<T extends AlertHours>({
+  value,
+  onChange,
+  onCommit,
+  hints,
+}: {
+  value: T;
+  onChange: (s: T) => void;
+  onCommit?: (s: T) => void;
+  hints: { missed: string; fasting: string; emergency: string };
+}) {
+  const { missed, fasting, emergency } = ALERT_RANGE;
+  const set = (key: keyof AlertHours, v: number) => {
+    const next = { ...value, [key]: v };
+    return key === "missedMealsThreshold" ? next : fitAlertHours(next, key);
+  };
+  return (
+    <>
+      <Field label="결식 알림" hint={hints.missed}>
+        <Slider
+          value={value.missedMealsThreshold}
+          {...missed}
+          marks={[missed.min, missed.max]}
+          unit="끼"
+          label="결식 알림 기준"
+          onChange={(v) => onChange(set("missedMealsThreshold", v))}
+          onCommit={(v) => onCommit?.(set("missedMealsThreshold", v))}
+        />
+      </Field>
+      <Field label="공복시간 주의" hint={hints.fasting}>
+        <Slider
+          value={value.fastingHours}
+          {...fasting}
+          marks={[fasting.min, fasting.max]}
+          unit="시간"
+          label="공복시간 주의 기준"
+          onChange={(v) => onChange(set("fastingHours", v))}
+          onCommit={(v) => onCommit?.(set("fastingHours", v))}
+        />
+      </Field>
+      <Field label="건강 위험 신고" hint={hints.emergency}>
+        <Slider
+          value={value.emergencyHours}
+          {...emergency}
+          marks={[emergency.min, emergency.max]}
+          unit="시간"
+          label="건강 위험 신고 기준"
+          onChange={(v) => onChange(set("emergencyHours", v))}
+          onCommit={(v) => onCommit?.(set("emergencyHours", v))}
+        />
+      </Field>
+    </>
   );
 }
 

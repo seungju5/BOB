@@ -53,15 +53,41 @@ export function Choice<T extends string | number | boolean>({
   );
 }
 
-/** 정수 슬라이더: 위에 현재 값, 아래에 눈금 라벨. 눈금을 눌러도 바뀐다. */
-export function Slider({ value, min, max, unit, label, onChange }: { value: number; min: number; max: number; unit: string; label: string; onChange: (v: number) => void }) {
-  const ticks = Array.from({ length: max - min + 1 }, (_, i) => min + i);
+/**
+ * 정수 슬라이더: 위에 현재 값, 아래에 눈금 라벨. 눈금을 눌러도 바뀐다.
+ * marks로 라벨을 붙일 눈금만 고를 수 있고(기본: 전부), format으로 값 표시를 바꿀 수 있다 (예: 0 → "거의 안 함").
+ */
+export function Slider({
+  value,
+  min,
+  max,
+  unit,
+  label,
+  onChange,
+  marks,
+  format,
+}: {
+  value: number;
+  min: number;
+  max: number;
+  unit: string;
+  label: string;
+  onChange: (v: number) => void;
+  marks?: number[];
+  format?: (v: number) => string | null;
+}) {
+  const ticks = marks ?? Array.from({ length: max - min + 1 }, (_, i) => min + i);
   const pct = ((value - min) / (max - min)) * 100;
+  const text = (v: number) => format?.(v) ?? `${v}${unit}`;
   return (
     <div className="rounded-2xl border-2 border-line px-4 pt-3 pb-2">
       <p className="text-center text-[22px] font-extrabold text-cocoa" aria-hidden>
-        {value}
-        <span className="ml-0.5 text-[15px] font-bold">{unit}</span>
+        {format?.(value) ?? (
+          <>
+            {value}
+            <span className="ml-0.5 text-[15px] font-bold">{unit}</span>
+          </>
+        )}
       </p>
       <input
         type="range"
@@ -70,24 +96,29 @@ export function Slider({ value, min, max, unit, label, onChange }: { value: numb
         step={1}
         value={value}
         aria-label={label}
-        aria-valuetext={`${value}${unit}`}
+        aria-valuetext={text(value)}
         onChange={(e) => onChange(Number(e.target.value))}
         className="mt-2 h-3 w-full cursor-pointer appearance-none rounded-full accent-[var(--color-butter-deep)]"
         style={{ background: `linear-gradient(to right, var(--color-butter-deep) ${pct}%, var(--color-line) ${pct}%)` }}
       />
-      <div className="mt-1 flex justify-between">
-        {ticks.map((t) => (
-          <button
-            key={t}
-            type="button"
-            tabIndex={-1}
-            onClick={() => onChange(t)}
-            className={`w-8 py-1 text-center text-[13px] font-bold ${t === value ? "text-cocoa" : "text-muted"}`}
-          >
-            {t}
-            {unit}
-          </button>
-        ))}
+      {/* 눈금 라벨은 실제 위치에 둔다 (양 끝은 넘치지 않게 안쪽 정렬) */}
+      <div className="relative mx-1.5 mt-1 h-7">
+        {ticks.map((t, i) => {
+          const at = ((t - min) / (max - min)) * 100;
+          const align = i === 0 && at === 0 ? "" : i === ticks.length - 1 && at === 100 ? "-translate-x-full" : "-translate-x-1/2";
+          return (
+            <button
+              key={t}
+              type="button"
+              tabIndex={-1}
+              onClick={() => onChange(t)}
+              style={{ left: `${at}%` }}
+              className={`absolute top-0 py-1 text-[13px] font-bold whitespace-nowrap ${align} ${t === value ? "text-cocoa" : "text-muted"}`}
+            >
+              {text(t)}
+            </button>
+          );
+        })}
       </div>
     </div>
   );

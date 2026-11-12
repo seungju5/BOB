@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import { Choice, Field, MealWindowsEditor, RelationPicker, Slider, Stepper, TextInput, windowsValid } from "@/components/forms";
-import { IconBell, IconCheck, IconChevronLeft, IconInfo, IconLock, IconPlug, IconUtensils, IconWifi } from "@/components/icons";
+import { IconBell, IconCheck, IconInfo, IconLock, IconPlug, IconUtensils, IconWifi } from "@/components/icons";
 import { Mascot } from "@/components/Mascot";
 import { PlugForm } from "@/components/PlugForm";
 import { Button, ProgressBar, Skeleton } from "@/components/ui";
@@ -150,11 +150,6 @@ function Onboarding({
   return (
     <main className={`flex flex-1 flex-col px-6 pt-4 pb-8 ${busy ? "pointer-events-none opacity-70" : ""}`}>
       <div className="flex h-12 items-center gap-3">
-        {step > 1 ? (
-          <button onClick={back} aria-label="이전 단계" className="-ml-2 grid h-10 w-10 place-items-center rounded-full text-cocoa hover:bg-butter-soft">
-            <IconChevronLeft className="h-6 w-6" />
-          </button>
-        ) : null}
         <div className="flex-1">
           <ProgressBar value={step} max={TOTAL} />
         </div>
@@ -196,6 +191,12 @@ function Onboarding({
         {step === 6 && <AlertStep state={state} next={next} />}
         {step === 7 && <PairStep state={state} actions={actions} live={live} next={next} />}
       </div>
+      {/* 이전 단계: 각 단계의 다음 버튼 바로 아래 (튜토리얼과 같은 자리) */}
+      {step > 1 ? (
+        <Button variant="ghost" className="mt-1 text-cocoa/70" onClick={back}>
+          이전
+        </Button>
+      ) : null}
     </main>
   );
 }
@@ -308,7 +309,16 @@ function MealStep({ state, next }: StepProps) {
         </Field>
         {!windowsValid(windows) ? <p className="text-[13px] font-semibold text-blush-deep">시간대가 겹치거나 순서가 맞지 않아요.</p> : null}
         <Field label="일주일에 외식은 몇 번쯤?">
-          <Choice value={eatOut} options={[{ value: 0, label: "거의 안 함" }, { value: 1, label: "1~2번" }, { value: 3, label: "3번 이상" }]} onChange={setEatOut} />
+          <Slider
+            value={eatOut}
+            min={0}
+            max={7}
+            unit="번"
+            label="일주일에 외식 횟수"
+            marks={[0, 2, 4, 7]}
+            format={(v) => (v === 0 ? "거의 안 함" : v === 7 ? "7번 이상" : null)}
+            onChange={setEatOut}
+          />
         </Field>
       </div>
       <Footer>
@@ -344,7 +354,7 @@ function CookerStep({ state, next }: StepProps) {
           </p>
         ) : null}
         <Field label="일주일에 밥은 몇 번 지으세요?">
-          <Stepper value={cooks} min={1} max={21} unit="번" onChange={setCooks} />
+          <Slider value={cooks} min={1} max={21} unit="번" label="일주일에 밥 짓는 횟수" marks={[1, 7, 14, 21]} onChange={setCooks} />
         </Field>
       </div>
       <Footer>

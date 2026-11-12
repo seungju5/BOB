@@ -1,0 +1,45 @@
+{
+  "version": "2026-11-03",
+  "source": "integrations/bapmunna-firebase/docs/brand.css",
+  "figma": "https://www.figma.com/design/9Io11mLh2rLORVmeyQdg57/?node-id=3317-189",
+  "tokens": {
+    "paper": "#fffdf7",
+    "canvas": "#f6f1e7",
+    "yellow": "#f8d14a",
+    "action": "#f2d16e",
+    "ink": "#3c3026",
+    "muted": "#726653",
+    "line": "#e3d8bf",
+    "soft": "#f7edd6",
+    "brown": "#533f2d",
+    "green": "#436953",
+    "green-soft": "#eaf0e9",
+    "red": "#8b4138",
+    "red-soft": "#f9eae5"
+  },
+  "assets": {
+    "bunny.png": "87d86ce95e85f69168a6720419fd0cc3a22f32a67f13db2dea37e96e626f19f6",
+    "bunny-underlay.webp": "910701b6351d1e600e776ed240c1406388b9d73b9c7c8af4284a543454a7d82a",
+    "bunny-greeting.webp": "76891f00f8fa4602664abd2881ad346482711e100c0fe6f4ed0cb4efb6093571",
+    "rice-logo.png": "feff84d1a626d270bb6e914898bbc3ebb2cdaf5ddff6a57247583893903dee03",
+    "PretendardVariable.woff2": "9599f12fd42fc0bce1cd50b47a0c022e108d7aa64dd0d1bb0ed44f3282d900b4",
+    "NanumPenScript-Regular.ttf": "6f0d1ab29c7894010dc88831fb7a0a51edb79136e450344183de5b1a8b52bd43",
+    "OFL-Pretendard.txt": "85fce85e25260b03777bf10373d3bd9363b9da96d9e0ca86a280dd37ed7667a0",
+    "OFL-NanumPenScript.txt": "90f6a909ffb2af7f6422ea20042a26180fe5520cba80bbbf75a5e660320d7924"
+  },
+  "identity": {
+    "mascot": "bunny.png",
+    "symbol": "rice-logo.png"
+  },
+  "navigation": [
+    "홈",
+    "기록",
+    "더보기"
+  ],
+  "seniorActions": [
+    "외식했어요",
+    "놀러가요",
+    "도와줘요"
+  ],
+  "api": "Presentation only; authentication, consent and API contracts remain independent."
+}

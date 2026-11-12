@@ -1,5 +1,5 @@
-import Image from "next/image";
 import { Logo } from "@/components/Mascot";
+import { BunnyGreeting } from "@/components/BunnyGreeting";
 import { ButtonLink } from "@/components/ui";
 
 export default function StartPage() {
@@ -22,15 +22,7 @@ export default function StartPage() {
           <br />
           대신 전하는 안부
         </p>
-        {/* 밥뭇나 토끼 (Peter 브랜치의 public/brand/bunny.png 원본) */}
-        <Image
-          src="/brand/bunny.png"
-          width={480}
-          height={480}
-          priority
-          alt="초록 가디건을 입은 밥뭇나 토끼"
-          className="animate-bob absolute right-0 bottom-0 h-60 w-60 object-contain"
-        />
+        <BunnyGreeting className="absolute right-6 bottom-8 h-48 w-48" />
       </div>
 
       <div className="rounded-t-[2.25rem] bg-paper px-6 pt-8 pb-8">

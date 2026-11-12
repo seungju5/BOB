@@ -1,0 +1,163 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {randomBytes,generateKeyPairSync,sign,createHash} from 'node:crypto';
+import {createService,CONSENT} from '../service.mjs';
+import {ApiError,hash,readConfig,vault,webhookVerifier} from '../security.mjs';
+import {smartThingsClient,readingSummary} from '../smartthings.mjs';
+
+const instant=Date.parse('2026-11-03T03:00:00Z');
+const config=readConfig({PUBLIC_ORIGIN:'https://example.test',APP_URL:'https://example.test/carer/',FIREBASE_PROJECT_ID:'test-only',SMARTTHINGS_APP_ID:'app1',SMARTTHINGS_CLIENT_ID:'client',SMARTTHINGS_CLIENT_SECRET:'secret',SMARTTHINGS_ENCRYPTION_KEY:randomBytes(32).toString('base64')});
+function fixture(){
+  let time=instant,refreshes=0,subscriptions=0;
+  const connections=new Map(),states=new Map(),locks=new Set(),seen=new Set();
+  const store={
+    get:async uid=>structuredClone(connections.get(uid)||null),
+    patch:async(uid,value)=>{if(!connections.has(uid))throw new ApiError(409,'reconnect_required');const next={...connections.get(uid),...value};connections.set(uid,next);return structuredClone(next);},
+    saveConnection:async(uid,value)=>{for(const [other,current]of connections)if(other!==uid&&current.installId===value.installId)throw new ApiError(409,'installation_in_use');connections.set(uid,value);},
+    remove:async(uid,id)=>{if(connections.get(uid)?.installId===id)connections.delete(uid);},
+    installation:async id=>{for(const [uid,c]of connections)if(c.installId===id)return {uid};return null;},
+    saveState:async(state,value)=>states.set(state,value),
+    consumeState:async(state,nonceHash)=>{const pending=states.get(state);if(!pending||pending.until<time||pending.nonceHash!==nonceHash)throw new ApiError(400,'invalid_state');states.delete(state);return pending;},
+    withLease:async(uid,fn)=>{if(locks.has(uid))throw new ApiError(409,'busy');locks.add(uid);try{return await fn();}finally{locks.delete(uid);}},
+    receive:async(uid,installId,event)=>{const c=connections.get(uid);if(!c||c.installId!==installId||c.deviceId!==event.deviceId||seen.has(event.id))return false;seen.add(event.id);if(event.time>=(c.lastSignalAt||0))Object.assign(c,{lastSignalAt:event.time,lastReceivedAt:time,lastKind:event.kind});return true;},
+  };
+  const device={deviceId:'mine',label:'주방 플러그',components:[{capabilities:[{id:'powerMeter'}]}]};
+  const smartthings={
+    exchange:async()=>({access_token:'access-private',refresh_token:'refresh-private',expires_in:3600,installed_app_id:'install1'}),
+    refresh:async()=>{refreshes++;await new Promise(resolve=>setTimeout(resolve,5));return {access_token:'access-new',refresh_token:'refresh-new',expires_in:3600};},
+    devices:async()=>[device,{deviceId:'light',components:[]}],
+    device:async(_token,id)=>{if(id!=='mine')throw new ApiError(502,'device_missing');return device;},
+    status:async()=>({components:{main:{powerMeter:{power:{value:54,unit:'W',timestamp:new Date(time).toISOString()}}}}}),
+    subscribe:async()=>{subscriptions++;},unsubscribe:async()=>{},confirm:async()=>{},
+  };
+  const handle=createService({config,store,smartthings,now:()=>time,verifyUser:async token=>{if(token==='revoked')throw Error();return {uid:token,email_verified:token!=='unverified'};},verifyWebhook:async request=>{if(request.headers.get('authorization')!=='test-signed')throw new ApiError(401,'invalid_webhook');}});
+  const call=(path,{method='GET',user='alice',body,headers={}}={})=>handle(new Request(config.origin+'/api/smartthings'+path,{method,headers:{Authorization:`Bearer ${user}`,Origin:config.origin,'Content-Type':'application/json',...headers},body:body===undefined?undefined:JSON.stringify(body)}));
+  async function link(){
+    const start=await call('/start',{method:'POST',body:{consentVersion:CONSENT}}),payload=await start.json(),state=new URL(payload.url).searchParams.get('state'),cookie=start.headers.get('set-cookie').split(';')[0];
+    const callback=await call(`/callback?state=${state}&code=test-code`,{headers:{cookie}});assert.equal(callback.status,303);return {state,cookie};
+  }
+  return {call,link,store,connections,states,smartthings,advance:ms=>{time+=ms;},stats:()=>({refreshes,subscriptions})};
+}
+test('OAuth binds state to user and browser, encrypts credentials, and consumes state once',async()=>{
+  const f=fixture(),{state,cookie}=await f.link();
+  assert.equal((await f.call('/status')).status,200);
+  const saved=await f.store.get('alice');assert.equal(saved.stage,'choose_device');
+  assert.doesNotMatch(JSON.stringify(saved),/access-private|refresh-private/);
+  assert.equal(vault(config.key).open(saved.tokens,'alice:install1').access,'access-private');
+  assert.throws(()=>vault(config.key).open(saved.tokens,'bob:install1'));
+  assert.equal((await f.call(`/callback?state=${state}&code=replay`,{headers:{cookie}})).status,400);
+  assert.deepEqual(await (await f.call('/status',{user:'bob'})).json(),{stage:'disconnected'});
+});
+test('rejects forged, cross-browser, expired state, denied consent and cross-origin mutation',async()=>{
+  const f=fixture();
+  assert.equal((await f.call('/start',{method:'POST',body:{}})).status,400);
+  assert.equal((await f.call('/start',{method:'POST',body:{consentVersion:CONSENT},headers:{Origin:'https://attacker.test'}})).status,403);
+  const start=await f.call('/start',{method:'POST',body:{consentVersion:CONSENT}}),{url}=await start.json(),state=new URL(url).searchParams.get('state'),cookie=start.headers.get('set-cookie').split(';')[0];
+  assert.equal((await f.call(`/callback?state=${state}&code=a`,{headers:{cookie:'__session=wrong'}})).status,400);
+  f.advance(600001);assert.equal((await f.call(`/callback?state=${state}&code=a`,{headers:{cookie}})).status,400);
+  assert.equal(f.connections.size,0);
+});
+test('unverified and revoked Firebase tokens cannot read or mutate',async()=>{
+  const f=fixture();assert.equal((await f.call('/status',{user:'unverified'})).status,403);assert.equal((await f.call('/status',{user:'revoked'})).status,401);
+  assert.equal((await f.call('/status',{headers:{Authorization:''}})).status,401);
+});
+test('only authorized power devices can be selected; no raw power or tokens leave server',async()=>{
+  const f=fixture();await f.link();assert.equal((await (await f.call('/devices')).json()).devices.length,1);
+  assert.equal((await f.call('/device',{method:'POST',body:{deviceId:'somebody-else'}})).status,502);
+  assert.equal((await f.call('/device',{method:'POST',body:{deviceId:'../mine'}})).status,400);
+  const selected=await f.call('/device',{method:'POST',body:{deviceId:'mine',label:'spoof'}}),data=await selected.json();
+  assert.equal(data.stage,'connected');assert.equal(data.device.label,'주방 플러그');assert.equal(data.hasPower,true);assert.equal(f.stats().subscriptions,1);
+  assert.doesNotMatch(JSON.stringify(data),/access|refresh|"value"|54/);
+  assert.equal((await f.call('/check',{method:'POST',body:{}})).status,429);
+  f.advance(31000);assert.equal((await f.call('/check',{method:'POST',body:{}})).status,200);
+});
+test('single-use refresh is serialized; second concurrent request gets retryable busy',async()=>{
+  const f=fixture();await f.link();f.advance(3600001);
+  const results=await Promise.all([f.call('/devices'),f.call('/devices')]);assert.deepEqual(results.map(x=>x.status).sort(),[200,409]);assert.equal(f.stats().refreshes,1);
+  assert.equal(vault(config.key).open((await f.store.get('alice')).tokens,'alice:install1').refresh,'refresh-new');
+});
+test('uncertain refresh fails closed and offers explicit Samsung revocation instructions',async()=>{
+  const f=fixture();await f.link();f.advance(3600001);f.smartthings.refresh=async()=>{throw Error('secret upstream body');};
+  const result=await f.call('/devices');assert.equal(result.status,409);assert.doesNotMatch(await result.text(),/secret/);
+  assert.equal((await f.store.get('alice')).stage,'reconnect_required');
+  assert.equal((await f.call('/connection',{method:'DELETE',body:{confirm:true}})).status,409);
+  assert.equal((await f.call('/connection',{method:'DELETE',body:{confirm:true,forgetExpired:true}})).status,200);
+  assert.equal(await f.store.get('alice'),null);
+});
+test('signed events are scoped to installation and selected device; disconnect clears connection',async()=>{
+  const f=fixture();await f.link();await f.call('/device',{method:'POST',body:{deviceId:'mine'}});f.advance(60000);
+  const body={messageType:'EVENT',eventData:{installedApp:{installedAppId:'install1'},events:[{eventType:'DEVICE_EVENT',eventTime:new Date(instant+60000).toISOString(),deviceEvent:{eventId:'event1',deviceId:'mine',capability:'powerMeter',attribute:'power',value:999}}]}};
+  assert.equal((await f.call('/events',{method:'POST',body})).status,401);
+  const signed={method:'POST',body,headers:{Authorization:'test-signed'}};
+  assert.equal((await f.call('/events',signed)).status,200);assert.equal((await f.call('/events',signed)).status,200);
+  assert.equal((await f.store.get('alice')).lastSignalAt,instant+60000);assert.doesNotMatch(JSON.stringify(await f.store.get('alice')),/999/);
+  body.eventData.events[0].deviceEvent.deviceId='someone-else';body.eventData.events[0].deviceEvent.eventId='event2';body.eventData.events[0].eventTime=new Date(instant).toISOString();
+  await f.call('/events',signed);assert.equal((await f.store.get('alice')).lastSignalAt,instant+60000);
+  assert.equal((await f.call('/connection',{method:'DELETE',body:{confirm:true}})).status,200);assert.equal(await f.store.get('alice'),null);
+});
+test('unconfigured backend reports setup required and never initiates OAuth',async()=>{
+  const handle=createService({config:{...config,key:''}});
+  assert.equal((await (await handle(new Request(config.origin+'/api/smartthings/config'))).json()).enabled,false);
+  assert.equal((await handle(new Request(config.origin+'/api/smartthings/start',{method:'POST'}))).status,503);
+});
+test('verifies a real RSA signature, digest, freshness and approved key origin',async()=>{
+  const {privateKey,publicKey}=generateKeyPairSync('rsa',{modulusLength:2048});let fetches=0;
+  const verify=webhookVerifier({now:()=>instant,fetcher:async url=>{assert.equal(url,'https://key.smartthings.com/key/one');fetches++;return new Response(publicKey.export({type:'spki',format:'pem'}));}});
+  const raw=Buffer.from('{"messageType":"EVENT"}'),date=new Date(instant).toUTCString(),digest='SHA256='+createHash('sha256').update(raw).digest('base64');
+  const signature=sign('RSA-SHA256',Buffer.from(`(request-target): post /api/smartthings/events\ndigest: ${digest}\ndate: ${date}`),privateKey).toString('base64');
+  const headers=new Headers({date,digest,authorization:`Signature keyId="/key/one",signature="${signature}",headers="(request-target) digest date",algorithm="rsa-sha256"`});
+  const req={method:'POST',path:'/api/smartthings/events',raw,headers};await verify(req);await verify(req);assert.equal(fetches,1);
+  await assert.rejects(()=>verify({...req,raw:Buffer.from('{}')}),{code:'invalid_webhook'});
+  const stale=new Headers(headers);stale.set('date',new Date(instant-600000).toUTCString());await assert.rejects(()=>verify({...req,headers:stale}),{code:'invalid_webhook'});
+  const malicious=new Headers(headers);malicious.set('authorization',headers.get('authorization').replace('/key/one','//attacker.test/key'));await assert.rejects(()=>verify({...req,headers:malicious}),{code:'invalid_webhook'});
+});
+test('SmartThings API budget errors are surfaced without automatic retry',async()=>{
+  for(const [status,code]of [[402,'plan_required'],[429,'rate_limited']]){
+    let calls=0;const client=smartThingsClient(config,async()=>{calls++;return new Response('{}',{status});});await assert.rejects(()=>client.devices('hidden'),{code});assert.equal(calls,1);
+  }
+  assert.deepEqual(readingSummary({components:{main:{powerMeter:{power:{value:0,unit:'W',timestamp:new Date(instant).toISOString()}}}}},instant),{hasPower:true,measuredAt:instant});
+});
+
+test('webhook registration only follows the exact old or new Samsung confirmation endpoint',async()=>{
+  const seen=[];const client=smartThingsClient(config,async url=>{seen.push(String(url));return new Response('{}');});
+  for(const prefix of ['/apps','/v1/apps'])await client.confirm(`https://api.smartthings.com${prefix}/app1/confirm-registration?token=example`);
+  assert.equal(seen.length,2);
+  for(const url of ['https://attacker.test/apps/app1/confirm-registration?token=a','https://api.smartthings.com/v1/apps/other/confirm-registration?token=a','https://api.smartthings.com/v1/apps/app1/confirm-registration','https://api.smartthings.com/v1/apps/app1/confirm-registration?token=a#hidden'])await assert.rejects(()=>client.confirm(url),{code:'invalid_confirmation'});
+  assert.equal(seen.length,2);
+});
+test('reauthorization rechecks an existing device subscription before reporting connected',async()=>{
+  const f=fixture();await f.link();await f.call('/device',{method:'POST',body:{deviceId:'mine'}});
+  await f.store.patch('alice',{stage:'reconnect_required'});await f.link();
+  assert.equal((await f.store.get('alice')).stage,'subscribing');
+  assert.equal((await f.call('/check',{method:'POST',body:{}})).status,409);
+  assert.equal((await (await f.call('/device',{method:'POST',body:{deviceId:'mine'}})).json()).stage,'connected');
+  assert.equal(f.stats().subscriptions,2);
+});
+
+test('subscription payload matches the registered legacy or new API app format',async()=>{
+  for(const oauth of ['/oauth','/v1/oauth']){
+    let sent;const client=smartThingsClient({...config,oauth},async(url,init)=>{sent={url,body:JSON.parse(init.body)};return new Response('{}');});
+    await client.subscribe('test-access','test-install','test-device');
+    assert.equal(sent.url,'https://api.smartthings.com/v1/installedapps/test-install/subscriptions');
+    assert.equal(sent.body.device.deviceId,'test-device');
+    assert.equal(oauth==='/oauth'?sent.body.device.subscriptionName:sent.body.subscriptionName,'bapmunnaSignals');
+    assert.equal(sent.body.sourceType,'DEVICE');
+  }
+});
+
+test('a subscription name conflict cannot falsely confirm a different device',async()=>{
+  for(const oauth of ['/oauth','/v1/oauth']){
+    let deviceId='other-device',reads=0;
+    const client=smartThingsClient({...config,oauth},async(_url,init)=>{
+      if(init.method==='POST')return new Response('{}',{status:409});
+      reads++;
+      return Response.json({items:[{sourceType:'DEVICE',device:{deviceId,capability:'*',attribute:'*',subscriptionName:'bapmunnaSignals'},subscriptionName:'bapmunnaSignals'}]});
+    });
+    await assert.rejects(()=>client.subscribe('test-access','test-install','mine'),{code:'subscription_conflict'});
+    deviceId='mine';assert.equal((await client.subscribe('test-access','test-install','mine')).device.deviceId,'mine');
+    assert.equal(reads,2);
+  }
+  const f=fixture();await f.link();f.smartthings.subscribe=async()=>{throw new ApiError(409,'subscription_conflict');};
+  assert.equal((await f.call('/device',{method:'POST',body:{deviceId:'mine'}})).status,409);
+  assert.equal((await f.store.get('alice')).stage,'subscribing');
+});

@@ -2,9 +2,10 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useSyncExternalStore } from "react";
+import { APP_BASE_PATH, appPath } from "@/lib/app-path";
 import { TextInput } from "@/components/forms";
 import { IconCheck } from "@/components/icons";
-import { Logo, Mascot } from "@/components/Mascot";
+import { Mascot } from "@/components/Mascot";
 import { Button, PageHeader } from "@/components/ui";
 import { SocialLogin } from "@/components/SocialLogin";
 import { forgetAccount, rememberAccount, useRecentAccounts } from "@/lib/data/accounts";
@@ -44,7 +45,7 @@ export default function LoginPage() {
     setError("");
     const { error } = await supabase().auth.signInWithOtp({
       email: email.trim(),
-      options: { emailRedirectTo: `${location.origin}/auth/callback` },
+      options: { emailRedirectTo: `${location.origin}${appPath("/auth/callback")}` },
     });
     setBusy(false);
     if (error) setError(error.message.includes("rate") ? "잠시 후 다시 시도해 주세요. (메일 발송 제한)" : "메일을 보내지 못했어요. 주소를 확인해 주세요.");
@@ -59,13 +60,10 @@ export default function LoginPage() {
   return (
     <main className="flex flex-1 flex-col pb-8">
       <PageHeader back="/" />
-      <div className="flex flex-1 flex-col px-6">
-        <Logo />
-        <h1 className="mt-6 text-[28px] leading-snug font-extrabold text-cocoa">
-          보호자로
-          <br />
-          시작할게요
-        </h1>
+      <div className="mx-6 flex flex-1 flex-col rounded-[1.75rem] border border-line bg-paper px-5 py-7 shadow-[var(--shadow-soft)]">
+        <Mascot className="mx-auto h-24 w-24" />
+        <h1 className="mt-4 text-center text-[28px] leading-snug font-extrabold text-cocoa">보호자님, 반가워요.</h1>
+        <p className="mt-2 text-center text-[15px] text-muted">멀리 있어도, 안부는 가까이.</p>
         {!sent ? (
           <div className="mt-8">
             {authError ? <p role="alert" className="mb-4 text-[14px] font-semibold text-blush-deep">{authError}</p> : null}
@@ -80,7 +78,11 @@ export default function LoginPage() {
           </div>
         ) : null}
         {!supabaseConfigured ? (
-          <p className="mt-4 text-[15px] text-muted">서버가 설정되지 않아 데모로만 둘러볼 수 있어요.</p>
+          <p className="mt-4 text-[15px] leading-relaxed text-muted">
+            {APP_BASE_PATH === "/bapmunna/app"
+              ? "Google·이메일 로그인은 기존 계정 화면에서 이용해요. 아래 데모의 체험 기록과 계정 기록은 별도로 보관돼요."
+              : "지금은 로그인 없이 데모로 둘러볼 수 있어요."}
+          </p>
         ) : sent ? (
           <div className="mt-8 flex flex-col items-center rounded-[1.75rem] bg-butter-soft px-6 py-8 text-center">
             <span className="grid h-14 w-14 place-items-center rounded-full bg-sage text-sage-deep">
@@ -132,8 +134,7 @@ export default function LoginPage() {
             <p className="text-[13px] text-muted">비밀번호 없이, 메일로 받은 링크로 로그인해요.</p>
           </div>
         )}
-        <Mascot className="mx-auto mt-auto h-24 w-24 pt-6" mood="happy" />
-        <div className="mt-4 flex flex-col gap-2">
+        <div className="mt-8 flex flex-col gap-2">
           {supabaseConfigured && !sent ? (
             <Button disabled={busy || !/^\S+@\S+\.\S+$/.test(email.trim())} onClick={send}>
               {busy ? "보내는 중…" : "로그인 링크 받기"}

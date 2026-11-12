@@ -1,0 +1,3 @@
+# Official SDK bundles contain intentional whitespace inside template literals.
+docs/cloud/* linguist-generated=true -whitespace
+workshop/bapmunna.html linguist-generated=true

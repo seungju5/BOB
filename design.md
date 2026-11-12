@@ -16,7 +16,7 @@
 | IoT | **삼성 스마트플러그 + SmartThings API** (`powerMeter` capability) | 홈어시스턴트 경유는 대안 (ADR-003) |
 | 알림 | **Web Push (VAPID)** | iOS는 16.4 이상, 홈 화면에 추가해야 받을 수 있다 |
 | 차트 | CSS 막대 (Recharts 미도입) | |
-| 로그인 | **Supabase Auth 이메일 링크·Google·Kakao** (PKCE, `/auth/callback`) | ADR-004·006 |
+| 로그인 | **Supabase Auth 이메일 링크·Google·Kakao** (PKCE, `/auth/callback`) | ADR-004·011 |
 
 자세한 버전과 명령어는 stack.md에 있다.
 

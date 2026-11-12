@@ -1,0 +1,11 @@
+import {build} from 'esbuild';
+import {mkdir,cp} from 'node:fs/promises';
+import path from 'node:path';
+import {syncPublicConfig} from './public-config.mjs';
+const root=path.resolve(import.meta.dirname,'..');
+await syncPublicConfig(root);
+await mkdir(path.join(root,'docs/cloud'),{recursive:true});
+for(const provider of ['firebase','supabase'])await build({entryPoints:[path.join(root,`cloud/${provider}-provider.src.mjs`)],bundle:true,format:'esm',platform:'browser',target:'es2022',outfile:path.join(root,`docs/cloud/${provider}-provider.mjs`),minify:true,sourcemap:false,legalComments:'linked'});
+await cp(path.join(root,'cloud/auth-utils.mjs'),path.join(root,'docs/auth-utils.mjs'));
+await cp(path.join(root,'node_modules/@supabase/supabase-js/LICENSE'),path.join(root,'docs/cloud/LICENSE-Supabase.txt'));
+console.log('Built both official authentication/database adapters and their license notices.');

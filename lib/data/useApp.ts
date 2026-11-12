@@ -25,7 +25,7 @@ export function useApp(): App {
   const session = useSession();
   const now = useNow();
   const live = mode === "live" && !!session;
-  const liveState = useLive(live);
+  const liveState = useLive(live ? session.user.id : null);
   const demo = useDemo();
   useAlertSync(mode === "demo" ? now : null);
 

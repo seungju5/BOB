@@ -1,0 +1,7 @@
+// Public browser SDK configuration only.
+export const firebaseConfig={
+  "apiKey": "AIzaSyBcziVczLrC36TaeewJw_R_odcUYGl8Xxk",
+  "authDomain": "ku-gpa.firebaseapp.com",
+  "projectId": "ku-gpa",
+  "appId": "1:344037918070:web:a4a06ae7bd3f747f91e657"
+};

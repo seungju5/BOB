@@ -8,6 +8,7 @@
 // iPhone은 홈 화면에 추가한 앱에서만 알림을 받을 수 있다 (iOS 16.4+).
 
 import { useEffect, useSyncExternalStore } from "react";
+import { appPath } from "@/lib/app-path";
 import { alertCopy, alertUrl } from "@/lib/alerts/copy";
 import type { AppView } from "@/lib/data/view";
 import { supabase, supabaseConfigured } from "@/lib/supabase";
@@ -50,7 +51,7 @@ export async function enablePush(mode: "demo" | "live" | null, alertIds: string[
   window.dispatchEvent(new Event(EVENT));
   if (permission !== "granted") return permission as PushState;
 
-  const reg = await navigator.serviceWorker.register("/sw.js");
+  const reg = await navigator.serviceWorker.register(appPath("/sw.js"), { scope: appPath("/") });
   // 지금 있는 알림은 이미 본 것으로 두어, 켜자마자 알림이 쏟아지지 않게 한다
   markSeen(alertIds);
 
@@ -92,7 +93,7 @@ export function useAlertNotifications(view: AppView | null) {
     const fresh = view.alerts.filter((a) => !a.acknowledgedAt && !a.resolvedAt && !seen.has(a.id));
     if (!fresh.length) return;
     markSeen(fresh.map((a) => a.id));
-    void navigator.serviceWorker.getRegistration("/sw.js").then((reg) => {
+    void navigator.serviceWorker.getRegistration(appPath("/")).then((reg) => {
       for (const a of fresh) {
         const copy = alertCopy(a.type, view.senior.relation, {
           missed: view.alertSettings.missedMealsThreshold,
@@ -101,7 +102,7 @@ export function useAlertNotifications(view: AppView | null) {
           plugRegistered: !!view.plug.deviceId,
           payload: a.payload,
         });
-        const options = { body: copy.body, tag: a.id, icon: "/icon.svg", data: { url: alertUrl(a.type) } };
+        const options = { body: copy.body, tag: a.id, icon: appPath("/icon.svg"), data: { url: appPath(alertUrl(a.type)) } };
         if (reg) void reg.showNotification(copy.title, options);
         else new Notification(copy.title, options);
       }

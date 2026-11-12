@@ -1,0 +1,34 @@
+{
+  "version": "2026-10-16.1",
+  "projectId": "ku-gpa",
+  "database": "(default)",
+  "primaryApp": "https://ku-gpa.web.app/bapmunna/",
+  "timeZone": "Asia/Seoul",
+  "consentVersion": "2026-10-16",
+  "collections": [
+    {"path":"bapmunnaAccounts/{uid}","fields":{"ownerUid":"uid","email":"auth email","displayName":"string:2..30","consentVersion":"2026-10-16","createdAt":"server timestamp","updatedAt":"server timestamp"},"access":"verified owner only"},
+    {"path":"bapmunnaAccounts/{uid}/meals/{YYYY-MM-DD_meal}","fields":{"ownerUid":"uid","day":"KST YYYY-MM-DD, today only on write","meal":"breakfast|lunch|dinner","kind":"home|outside","dayStart":"exact KST midnight timestamp","createdAt":"server timestamp","updatedAt":"server timestamp"},"access":"verified owner only; recent 90 read; owner may delete"},
+    {"path":"bapmunnaCRMContacts/{uid}","fields":{"ownerUid":"uid","email":"auth email","displayName":"string:2..30","consentVersion":"2026-10-16","source":"bapmunna","createdAt":"server timestamp","updatedAt":"server timestamp","lastLoginAt":"server timestamp"},"access":"owner writes own basic contact; assigned staff read"},
+    {"path":"bapmunnaCRMNotes/{uid}","fields":{"stage":"new|contacted|active|paused","note":"string:max1000","updatedBy":"staff uid","updatedAt":"server timestamp"},"access":"verified assigned staff only"},
+    {"path":"bapmunnaStaff/{uid}","fields":{"role":"owner|manager","grantedBy":"trusted provisioner","createdAt":"timestamp"},"access":"trusted administrator writes; self get only"},
+    {"path":"bapmunnaHouseholds/{hid}","fields":{"ownerUid":"uid","seniorName":"string:2..30","timeZone":"Asia/Seoul","consentEnabled":"boolean","consentVersion":"2026-10-16","sharingEpoch":"integer:increment each consent transition","sharedFrom":"timestamp|null","activeInviteHash":"SHA256|null","lastConsentEventId":"string:2..80","createdAt":"server timestamp","updatedAt":"server timestamp"},"access":"owner writes with atomic consent event; current members read"},
+    {"path":"bapmunnaHouseholds/{hid}/members/{uid}","fields":{"uid":"member uid","role":"caregiver|viewer","alias":"string:2..30","inviteHash":"SHA256","sharingEpoch":"current household epoch","joinedAt":"server timestamp","updatedAt":"server timestamp"},"access":"single-use atomic invitation acceptance; owner changes role/revokes; member can leave"},
+    {"path":"bapmunnaHouseholds/{hid}/preferences/main","fields":{"mealWindows":"breakfast/lunch/dinner start,end minutes:0..1440, ordered nonoverlap","graceMinutes":"integer:0..180","household":"alone|together","ageBand":"null|60s|70s|80plus","riceRoutine":"daily|sometimes|rare","meals":"distinct meal list:1..3","primaryDevice":"cooker|fridge|microwave|kettle","eatOutWeekly":"integer:0..21","cookEveryDays":"integer:1..7","baselineDays":"7|14|21|28","consecutiveMissed":"integer:1..6","fastingHours":"integer:4..48","inactiveHours":"integer:1..71","followupHours":"integer:greater than inactiveHours, max72","updatedAt":"server timestamp"},"access":"owner only"},
+    {"path":"bapmunnaHouseholds/{hid}/devices/{deviceId}","fields":{"kind":"cooker|fridge|microwave|kettle","label":"string:2..40","connectionStatus":"unconfigured|online|offline","lastSeenAt":"timestamp|null","createdAt":"server timestamp","updatedAt":"server timestamp"},"access":"owner registers unconfigured and edits label; trusted ingestion updates telemetry; owner read/delete"},
+    {"path":"bapmunnaHouseholds/{hid}/mealSummaries/{YYYY-MM-DD_meal}","fields":{"ownerUid":"household owner uid","day":"YYYY-MM-DD","meal":"breakfast|lunch|dinner","confirmed":"true","kind":"home|outside","sharingEpoch":"current epoch","updatedAt":"server timestamp"},"access":"owner mirrors same-batch private meal; current consented members read"},
+    {"path":"bapmunnaHouseholds/{hid}/deviceDaily/{summaryId}","fields":{"deviceId":"registered device id","day":"YYYY-MM-DD","cookCount":"integer:0..10000","lidCount":"integer:0..10000","useCount":"integer:0..10000","observed":"boolean","lastActivityAt":"timestamp|null","sharingEpoch":"current epoch","updatedAt":"timestamp"},"access":"trusted ingestion only, not deployed; current consented members read; never infer a meal from counts"},
+    {"path":"bapmunnaHouseholds/{hid}/alerts/{alertId}","fields":{"kind":"meal_unconfirmed|device_offline|inactivity|help_request|social","level":"notice|attention|followup|help","title":"string:1..160","detail":"string:max500","status":"open|acknowledged|resolved","sharingEpoch":"current epoch","createdAt":"server timestamp","updatedAt":"server timestamp","acknowledgedBy":"uid|null","acknowledgedAt":"timestamp|null","resolvedAt":"timestamp|null"},"access":"owner creates help/social; trusted system creates other types; caregivers acknowledge; viewers cannot read help/social"},
+    {"path":"bapmunnaHouseholds/{hid}/away/{awayId}","fields":{"startsAt":"timestamp:now through next7days","endsAt":"timestamp:after start, max7days","cancelledAt":"timestamp|null","createdAt":"server timestamp","sharingEpoch":"current epoch"},"access":"owner only; family summaries may expose only an away boolean"},
+    {"path":"bapmunnaHouseholds/{hid}/consentEvents/{eventId}","fields":{"actorUid":"owner uid","enabled":"boolean","version":"2026-10-16","sharingEpoch":"household epoch","createdAt":"server timestamp"},"access":"append in same batch as household consent; owner reads; no client update/delete"},
+    {"path":"bapmunnaInviteTokens/{SHA256}","fields":{"householdId":"hid","role":"caregiver|viewer","label":"string:2..30","sharingEpoch":"current epoch","createdBy":"owner uid","createdAt":"server timestamp","expiresAt":"timestamp:max24hours","acceptedBy":"uid|null","acceptedAt":"timestamp|null","revokedAt":"timestamp|null"},"access":"unguessable hashed bearer token get for verified user; single-use same-batch membership; owner manages; no public list"},
+    {"path":"bapmunnaSystem/schema","fields":{"version":"schema version","manifestSha256":"SHA256","schemaJSON":"manifest JSON","provisionedAt":"timestamp"},"access":"trusted provisioning only; no client read or write"}
+  ],
+  "boundaries": [
+    "Passwords remain in Firebase Authentication; never store them in Firestore or CRM.",
+    "No customer rows are seeded by provisioning; collections materialize on valid first writes.",
+    "Consent withdrawal increments sharingEpoch; old members, invitations and summaries remain inaccessible after resume.",
+    "Firebase epoch revocation is immediate but does not physically purge old subcollections. Trusted erasure/retention jobs are not deployed.",
+    "Only account, personal meal and CRM UI currently use cloud adapters. Family/device/alert screens remain explicitly labeled simulation.",
+    "No Cloud Functions, device gateway, automatic calls, notification delivery or paid plan is provisioned."
+  ]
+}

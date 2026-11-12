@@ -3,6 +3,7 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase, supabaseConfigured } from "@/lib/supabase";
+import { setLiveUser } from "./live";
 
 // 보호자 앱 모드: 'live' = Supabase 로그인, 'demo' = 브라우저 저장소 데모
 const KEY = "bapmutna.mode";
@@ -49,9 +50,20 @@ export function useSession(): Session | null | undefined {
   useEffect(() => {
     if (!supabaseConfigured) return;
     const auth = supabase().auth;
-    auth.getSession().then(({ data }) => setSession(data.session));
-    const { data } = auth.onAuthStateChange((_e, s) => setSession(s));
-    return () => data.subscription.unsubscribe();
+    let active = true, receivedEvent = false;
+    const update = (next: Session | null) => {
+      if (!active) return;
+      setLiveUser(next?.user.id ?? null);
+      setSession(next);
+    };
+    const { data } = auth.onAuthStateChange((_e, s) => {
+      receivedEvent = true;
+      update(s);
+    });
+    void auth.getSession().then(({ data }) => {
+      if (!receivedEvent) update(data.session);
+    });
+    return () => { active = false; data.subscription.unsubscribe(); };
   }, []);
   return session;
 }

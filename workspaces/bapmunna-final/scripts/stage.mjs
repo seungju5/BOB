@@ -1,0 +1,19 @@
+import {cp,mkdir,readFile,readdir,rm,writeFile} from 'node:fs/promises';
+import {createHash} from 'node:crypto';
+import {execFileSync} from 'node:child_process';
+import path from 'node:path';
+const root=path.resolve(import.meta.dirname,'../../..');
+const target=path.join(root,'tmp/impact-final/site');
+const source=path.join(root,'integrations/bapmunna-firebase/tmp/firebase-hosting');
+const next=path.join(root,'tmp/impact-final/next');
+await readFile(path.join(next,'index.html'));
+await readFile(path.join(source,'index.html'));
+await rm(target,{recursive:true,force:true});await mkdir(target,{recursive:true});
+await cp(source,path.join(target,'bapmunna'),{recursive:true});
+await cp(next,path.join(target,'bapmunna/app'),{recursive:true});
+await cp(path.join(root,'workspaces/bapmunna-final/site'),path.join(target,'bapmunna/final'),{recursive:true});
+const files={};async function walk(dir){for(const entry of await readdir(dir,{withFileTypes:true})){const full=path.join(dir,entry.name);if(entry.isDirectory())await walk(full);else if(entry.isFile()){const name=path.relative(target,full).split(path.sep).join('/');if(name.split('/').some(p=>p.startsWith('.'))||/\.(env|pem|sql|map)$/i.test(name))throw Error('Private or source-only file: '+name);files['/'+name]=createHash('sha256').update(await readFile(full)).digest('hex');}else throw Error('Symlink is not a public artifact');}}
+await walk(target);
+const manifest={at:new Date().toISOString(),commit:execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim(),fileCount:Object.keys(files).length,files};
+await writeFile(path.join(root,'tmp/impact-final/stage.json'),JSON.stringify(manifest,null,2)+'\n');
+console.log(JSON.stringify({stagedFiles:manifest.fileCount,target}));

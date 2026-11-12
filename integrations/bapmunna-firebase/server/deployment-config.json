@@ -1,0 +1,27 @@
+{
+  "state": "prepared_not_deployed",
+  "projectId": "ku-gpa",
+  "hostingSite": "impact-series",
+  "serviceId": "bapmunna-smartthings",
+  "region": "asia-northeast3",
+  "publicOrigin": "https://impact-series.web.app",
+  "appUrl": "https://impact-series.web.app/bapmunna/carer/",
+  "appId": "f1b8149d-45c5-4f4b-8136-2ad518faf4ec",
+  "redirectUri": "https://impact-series.web.app/api/smartthings/callback",
+  "webhookUrl": "https://impact-series.web.app/api/smartthings/events",
+  "scope": ["r:devices:*"],
+  "oauthPrefix": "/oauth",
+  "runtime": {
+    "minInstances": 0,
+    "maxInstances": 1,
+    "cpu": 1,
+    "memory": "512Mi",
+    "timeoutSeconds": 60
+  },
+  "billing": {
+    "automaticUpgrade": false,
+    "explicitApprovalRequired": true,
+    "proposedMonthlyBudgetAlertKRW": 10000,
+    "budgetIsHardCap": false
+  }
+}

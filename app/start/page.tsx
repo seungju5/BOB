@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { appPath } from "@/lib/app-path";
 import { Button, Skeleton } from "@/components/ui";
 import { useApp } from "@/lib/data/useApp";
 
@@ -12,7 +13,7 @@ export default function GuardianStart() {
 
   useEffect(() => {
     const query = new URLSearchParams(location.search);
-    if (query.has("code") || query.has("error")) location.replace(`/auth/callback${location.search}`);
+    if (query.has("code") || query.has("error")) location.replace(appPath(`/auth/callback${location.search}`));
   }, []);
 
   useEffect(() => {

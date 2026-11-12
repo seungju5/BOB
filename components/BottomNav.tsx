@@ -2,27 +2,26 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { routePath } from "@/lib/app-path";
 import { useApp } from "@/lib/data/useApp";
 import { unackedAlerts } from "@/lib/data/view";
-import { IconBell, IconChart, IconClock, IconHome, IconSettings } from "./icons";
+import { IconClock, IconHome, IconSettings } from "./icons";
 
 const items = [
   { href: "/home", label: "홈", Icon: IconHome },
   { href: "/records", label: "기록", Icon: IconClock },
-  { href: "/report", label: "리포트", Icon: IconChart },
-  { href: "/alerts", label: "알림", Icon: IconBell },
-  { href: "/settings", label: "설정", Icon: IconSettings },
+  { href: "/more", label: "더보기", Icon: IconSettings },
 ];
 
 export function BottomNav() {
-  const path = usePathname();
+  const path = routePath(usePathname());
   const { view } = useApp();
   const badge = view ? unackedAlerts(view).length : 0;
   return (
-    <nav className="sticky bottom-0 z-40 mt-auto border-t border-line bg-paper/95 backdrop-blur">
-      <ul className="grid grid-cols-5 px-2 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+    <nav aria-label="주요 메뉴" className="sticky bottom-0 z-40 mt-auto border-t border-line bg-paper/95 backdrop-blur">
+      <ul className="grid grid-cols-3 px-2 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
         {items.map(({ href, label, Icon }) => {
-          const active = path === href;
+          const active = path === href || (href === "/more" && ["/report", "/alerts", "/settings"].includes(path));
           return (
             <li key={href}>
               <Link
@@ -36,7 +35,7 @@ export function BottomNav() {
                   <Icon className="h-5 w-5" />
                 </span>
                 {label}
-                {href === "/alerts" && badge > 0 ? (
+                {href === "/more" && badge > 0 ? (
                   <span className="absolute top-0 right-3 grid h-5 min-w-5 place-items-center rounded-full bg-blush-deep px-1 text-[11px] text-paper">
                     {badge}
                   </span>

@@ -1,0 +1,16 @@
+import {readFileSync,writeFileSync,mkdirSync,existsSync} from 'node:fs';
+import {spawnSync} from 'node:child_process';
+import {createHash} from 'node:crypto';
+import path from 'node:path';
+const root=path.resolve(import.meta.dirname,'..');
+const javaMarker=path.join(root,'tmp/java/java-home.txt');
+const javaHome=process.env.BAPMUNNA_JAVA_HOME||(existsSync(javaMarker)?readFileSync(javaMarker,'utf8').trim():process.env.JAVA_HOME);
+const env={...process.env,FIREBASE_EMULATORS_PATH:path.join(root,'tmp/firebase-emulators'),...(javaHome?{JAVA_HOME:javaHome,PATH:`${javaHome}/bin:${process.env.PATH}`}:{})};
+const result=spawnSync(process.execPath,[path.join(root,'node_modules/firebase-tools/lib/bin/firebase.js'),'emulators:exec','--only','auth,firestore','--project','demo-bapmunna','--config','firebase.emulators.json','node --test --test-reporter=tap tests/cloud.test.mjs'],{cwd:root,env,encoding:'utf8',maxBuffer:8*1024*1024});
+process.stdout.write(result.stdout||'');process.stderr.write(result.stderr||'');
+if(result.status!==0)process.exit(result.status||1);
+const count=Number(result.stdout.match(/# tests (\d+)/)?.[1]||0);
+if(!count)throw Error('No tests were reported.');
+const rules=readFileSync(path.join(root,'tmp/firebase/merged.rules'));
+mkdirSync(path.join(root,'tmp/firebase'),{recursive:true});
+writeFileSync(path.join(root,'tmp/firebase/emulator-proof.json'),JSON.stringify({tests:count,passed:count,sourceHash:createHash('sha256').update(rules).digest('hex'),checkedAt:new Date().toISOString()},null,2)+'\n');

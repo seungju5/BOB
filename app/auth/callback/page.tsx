@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { appPath } from "@/lib/app-path";
 import { verifyCallback } from "@/lib/auth/verifyCallback";
 import { clearLive } from "@/lib/data/live";
 import { rememberAccount } from "@/lib/data/accounts";
@@ -10,7 +11,7 @@ import { supabase, supabaseConfigured } from "@/lib/supabase";
 type Failure = "cancelled" | "expired" | "configuration";
 
 function backToLogin(reason: Failure) {
-  location.replace(`/login?auth_error=${reason}`);
+  location.replace(appPath(`/login?auth_error=${reason}`));
 }
 
 /** Google·Kakao OAuth 및 이메일 링크의 PKCE 코드 교환을 한 곳에서 처리한다. */
@@ -43,7 +44,7 @@ export default function AuthCallbackPage() {
         clearLive();
         if (email) rememberAccount(email);
         setMode("live");
-        location.replace("/start");
+        location.replace(appPath("/start"));
       } catch {
         backToLogin("expired");
       }

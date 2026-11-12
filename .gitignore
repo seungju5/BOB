@@ -2,6 +2,7 @@
 
 # dependencies
 /node_modules
+**/node_modules
 /.pnp
 .pnp.*
 .yarn/*
@@ -12,6 +13,7 @@
 
 # testing
 /coverage
+/.vitest/
 
 # next.js
 /.next/
@@ -19,6 +21,7 @@
 
 # production
 /build
+/outputs/bapmunna-introduction-2026-10-17/
 
 # misc
 .DS_Store
@@ -40,3 +43,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Local verification logs and frozen releases
+/tmp/
+
+# Local development harness evidence (may contain test diagnostics)
+/.harness/

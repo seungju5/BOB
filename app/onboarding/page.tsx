@@ -149,6 +149,7 @@ function Onboarding({
 
   return (
     <main className={`flex flex-1 flex-col px-6 pt-4 pb-8 ${busy ? "pointer-events-none opacity-70" : ""}`}>
+      {!live ? <p className="rounded-2xl bg-butter-soft px-4 py-3 text-[15px] font-semibold text-cocoa">데모 체험 중이에요. 기기 신호와 가족 정보는 실제로 연결되지 않아요.</p> : null}
       <div className="flex h-12 items-center gap-3">
         <div className="flex-1">
           <ProgressBar value={step} max={TOTAL} />

@@ -4,6 +4,21 @@
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", (event) => event.waitUntil(self.clients.claim()));
 
+const appScope = new URL(self.registration.scope);
+function appNotificationURL(value) {
+  const fallback = new URL("alerts/", appScope);
+  if (typeof value !== "string" || value.includes("\\")) return fallback.href;
+  let candidate;
+  try { candidate = new URL(value, appScope); } catch { return fallback.href; }
+  if (candidate.origin !== appScope.origin) return fallback.href;
+  if (candidate.pathname.startsWith(appScope.pathname)) return candidate.href;
+  // Existing server payloads use /alerts or /report, independent of the hosting mount.
+  if (["/alerts", "/report"].includes(candidate.pathname)) {
+    return new URL(candidate.pathname.slice(1) + "/" + candidate.search + candidate.hash, appScope).href;
+  }
+  return fallback.href;
+}
+
 self.addEventListener("push", (event) => {
   let data = {};
   try {
@@ -15,21 +30,21 @@ self.addEventListener("push", (event) => {
     self.registration.showNotification(data.title || "밥뭇나", {
       body: data.body || "새 소식이 있어요.",
       tag: data.tag,
-      icon: "/icon.svg",
-      badge: "/icon.svg",
-      data: { url: data.url || "/alerts" },
+      icon: new URL("icon.svg", appScope).href,
+      badge: new URL("icon.svg", appScope).href,
+      data: { url: appNotificationURL(data.url) },
     }),
   );
 });
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const url = (event.notification.data && event.notification.data.url) || "/alerts";
+  const url = appNotificationURL(event.notification.data?.url);
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((list) => {
       for (const c of list) {
-        if ("focus" in c) {
-          c.navigate(url);
+        if (c.url.startsWith(appScope.href) && "focus" in c) {
+          void c.navigate(url);
           return c.focus();
         }
       }

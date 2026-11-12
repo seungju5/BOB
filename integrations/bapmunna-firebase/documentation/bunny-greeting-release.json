@@ -1,0 +1,79 @@
+{
+  "date": "2026-11-04",
+  "implementation": "Canvas 2D original body/face and rigid hand/pencil layers; generated repair plate used only behind hand",
+  "durationMs": 3600,
+  "hops": 2,
+  "originalSha256": "87d86ce95e85f69168a6720419fd0cc3a22f32a67f13db2dea37e96e626f19f6",
+  "repairSha256": "910701b6351d1e600e776ed240c1406388b9d73b9c7c8af4284a543454a7d82a",
+  "releases": {
+    "impact": {
+      "site": "impact-series",
+      "version": "sites/impact-series/versions/9c48044d28de2e5b",
+      "release": "sites/impact-series/releases/1793751878914000",
+      "previous": "sites/impact-series/versions/df72a4cce4229206",
+      "changed": 6,
+      "preserved": 2415,
+      "uploads": 3,
+      "hostingConfig": "unchanged",
+      "authDatabase": "unchanged",
+      "publicSmartThingsApi": "not deployed"
+    },
+    "legacy": {
+      "site": "ku-gpa",
+      "version": "sites/ku-gpa/versions/12364f8a5f516eb6",
+      "release": "sites/ku-gpa/releases/1793751989864000",
+      "previous": "sites/ku-gpa/versions/3c8e557fb39d18c1",
+      "changed": 4,
+      "preserved": 171,
+      "uploads": 2,
+      "hostingConfig": "unchanged",
+      "authDatabase": "unchanged",
+      "publicSmartThingsApi": "not deployed"
+    }
+  },
+  "validation": {
+    "unitTests": 56,
+    "greetingTests": 14,
+    "facePixels": {
+      "maximumRGBADifference": 0,
+      "originalCoordinates": {
+        "x": 120,
+        "y": 145,
+        "width": 210,
+        "height": 94
+      },
+      "posesMs": [
+        0,
+        2128,
+        1882
+      ]
+    },
+    "firebaseChecks": [
+      58,
+      31,
+      9,
+      8,
+      41
+    ],
+    "legacyChecks": [
+      58,
+      31,
+      9
+    ],
+    "typescript": "passed",
+    "builds": [
+      "Firebase",
+      "Synagogue portable",
+      "Next.js webpack"
+    ],
+    "mobileWidths": [
+      320,
+      390
+    ],
+    "livePlaybackFrames": 56,
+    "liveEndState": "idle",
+    "browserConsoleErrors": 0,
+    "legacyCompatibility": "original app.mjs retained; inferred repair image path verified"
+  },
+  "scope": "Static UI only; authentication, database, rules, billing and SmartThings deployment unchanged"
+}

@@ -11,7 +11,9 @@ import type { AppActions, AppView } from "./view";
 
 type LiveState = { view: AppView | null; householdId: string | null; error: string | null };
 
-let state: LiveState = { view: null, householdId: null, error: null };
+const EMPTY_STATE: LiveState = { view: null, householdId: null, error: null };
+let state: LiveState = EMPTY_STATE;
+let liveUserId: string | null = null;
 const listeners = new Set<() => void>();
 const emit = () => listeners.forEach((l) => l());
 const set = (patch: Partial<LiveState>) => {
@@ -28,6 +30,7 @@ let inflight: Promise<void> | null = null;
 let epoch = 0;
 
 export function refreshLive(): Promise<void> {
+  if (!liveUserId) return Promise.resolve();
   if (inflight) return inflight;
   const startedAt = epoch;
   const request = load(startedAt)
@@ -116,20 +119,31 @@ export function clearLive() {
   set({ view: null, householdId: null, error: null });
 }
 
+/** Auth events, including other tabs, invalidate the previous household before rendering. */
+export function setLiveUser(userId: string | null) {
+  if (liveUserId === userId) return;
+  liveUserId = userId;
+  clearLive();
+}
+
+export function readLiveForUser(userId: string | null): LiveState {
+  return userId && userId === liveUserId ? state : EMPTY_STATE;
+}
+
 const subscribe = (cb: () => void) => {
   listeners.add(cb);
   return () => listeners.delete(cb);
 };
 
-/** 실서비스 데이터 구독. enabled일 때만 불러오고 1분마다 새로 고친다. */
-export function useLive(enabled: boolean) {
-  const s = useSyncExternalStore(subscribe, () => state, () => state);
+/** 실서비스 데이터 구독. 사용자별로 구독하고 1분마다 새로 고친다. */
+export function useLive(userId: string | null) {
+  const s = useSyncExternalStore(subscribe, () => readLiveForUser(userId), () => EMPTY_STATE);
   useEffect(() => {
-    if (!enabled) return;
+    if (!userId) return;
     void refreshLive();
     const id = setInterval(() => void refreshLive(), 60_000);
     return () => clearInterval(id);
-  }, [enabled]);
+  }, [userId]);
   return s;
 }
 

@@ -1,0 +1,14 @@
+import {readFile,writeFile,mkdir,cp,rm} from 'node:fs/promises';
+import {createRequire} from 'node:module';
+import {fileURLToPath} from 'node:url';
+import path from 'node:path';
+const dir=fileURLToPath(new URL('../',import.meta.url)),root=path.resolve(dir,'../..');
+const require=createRequire(path.join(root,'integrations/bapmunna-firebase/package.json'));
+const team=JSON.parse(await readFile(path.join(root,'harness/team.json'),'utf8'));
+const roster=team.members.map(m=>({id:m.character.aliases[0].toLowerCase(),agentId:m.id,name:m.character.nameKo,english:m.character.aliases[0],role:m.name.split(' · ')[1],description:m.role,color:m.character.color,symbol:m.character.symbol,greeting:m.character.greeting,reviews:m.reviews}));
+await writeFile(path.join(dir,'roster.mjs'),'// Generated from harness/team.json; run scripts/build.mjs to refresh.\nexport const roster = '+JSON.stringify(roster,null,2)+';\n');
+const stage=path.join(root,'tmp/super-members/site/super-members');
+await rm(stage,{recursive:true,force:true});await mkdir(stage,{recursive:true});
+for(const name of ['index.html','styles.css','assets'])await cp(path.join(dir,name),path.join(stage,name),{recursive:true});
+await require('esbuild').build({entryPoints:[path.join(dir,'app.mjs')],outfile:path.join(stage,'app.mjs'),bundle:true,format:'esm',target:['es2022'],minify:true,sourcemap:false,legalComments:'external',nodePaths:[path.join(root,'integrations/bapmunna-firebase/node_modules')]});
+console.log('Built isolated /super-members/ at '+stage);

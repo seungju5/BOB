@@ -159,3 +159,13 @@ Impact `df72a4cce4229206`(UI 6개 변경, 2,413개 파일 보존), KU GPA `3c8e5
 - 사용자가 일곱 역할을 이름으로 대화할 수 있는 상징 캐릭터로 만들도록 요청했다. 내장 image_gen에 기존 3D 토끼를 외형 참고로 제공해 7명 소개판을 제작하고, 이름·한글 역할·색·소품·전체 수를 시각 확인했다.
 - `harness/characters/`에 소개판 PNG·제작 프롬프트·호칭 안내를 저장했다. Captain/Care/Logic/Shield/Bridge/Proof/Keeper의 한국어·영어 별칭 16개와 말투를 `team.json`, 역할 TOML, AGENTS.md에 연결했다.
 - 7개 역할·중복 없는 별칭·TOML 문법·team 명령을 확인했다. 표시용 자산과 역할 지침만 변경했으므로 앱 테스트는 재실행하지 않았다. 앱 원본 마스코트·운영 서비스·과금은 변경하지 않았다.
+
+## 2026-11-12 Super Members 공개 가상 작업실
+
+- 사용자의 Firebase 게시·실제 대화·꾸민 작업실·움직이는 캐릭터 요청에 따라 `workspaces/super-members/`를 독립 정적 앱으로 구현했다. Sites 스킬의 로컬 제작/검수 흐름을 적용하고 게시 위치는 명시된 Firebase로 유지했다.
+- 호스팅 `impact-series`가 KU GPA 프로젝트가 아니라 별도 Impact Series 프로젝트에 속함을 새로 조회했다. 그 프로젝트에 `Warming Up Super Members` 웹 앱을 만들고 Firebase AI Logic/Gemini Developer API와 reCAPTCHA App Check를 연결했다. App Check는 ENFORCED, 도메인은 Impact Series 두 공식 호스트다. 결제 계정이 연결되지 않은 Spark 상태를 설정 전후·게시 후 조회했다. 기존 KU GPA 인증·DB·SmartThings 설정은 변경하지 않았다.
+- 내장 image_gen으로 기존 팀 소개판을 참고한 7개 2×2 투명 포즈 시트와 3D 작업실 내부를 제작했다. 캐릭터 선택·인사·말하기·점프, 낮/밤·러그·추가 화분, 움직임 정지와 OS reduced-motion 지원을 구현했다. 원래 밥뭇나 앱 마스코트는 보존했다.
+- 멤버마다 별도 대화와 역할 프롬프트를 갖고 Gemini의 실제 스트리밍 응답을 표시한다. 코드/기기/DB 실행 권한은 없으며 실행 요청 복사로 개발 도구에 인계한다. 첫 대화 전에 Google 전송과 무료 등급 데이터 이용을 안내한다. 대화 기록은 로컬 보관, 최근 8회만 모델 문맥, 실패·중단한 부분 답변은 저장하지 않는다.
+- 독립 검토자가 bfcache 복원, skip-link의 멤버 초기화, 실패 시 새 초안 덮어쓰기, 저장 실패에도 삭제 완료 표시 문제를 재현했다. 모두 수정하고 실제 앱 컨트롤러를 사용하는 회귀 검사 7개와 코어 검사 6개가 통과했다. 공개 브라우저에서 캡틴·브릿지·케어의 서로 다른 실제 답변, 재접속 기록과 이전 질문 문맥을 확인했다. 데스크톱/390px와 방 꾸미기·정지를 확인했으며 OS 설정 변경 자체는 시험하지 않았다.
+- 기존 앱 전체 하네스: 역할 24개, 루트 56개, Firebase 구조화 58개, SmartThings 14개 통과; 동기화·타입·Firebase·Next 빌드 통과. 기존 Firestore emulator 항목 1개는 준비되지 않아 skip이며 전체 보고서는 incomplete다. 작업실 AI 연동과 기존 SmartThings 실연동을 혼동하지 않는다.
+- `/super-members/` 14개 공개 파일만 기존 릴리스 위에 추가했다. 2,421개 기존 경로와 Hosting 설정을 보존하며 공개 바이트를 대조했다. 최초 이전 버전은 `9c48044d28de2e5b`; 이후 배포 영수증·복구 기준은 `tmp/super-members/`에 별도 기록한다. 배포 스크립트는 현재 버전/파일 변동과 과금 연결 시 게시·복구를 중단한다.

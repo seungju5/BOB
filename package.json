@@ -22,7 +22,9 @@
     "harness:doctor": "node scripts/harness.mjs doctor",
     "harness:plan": "node scripts/harness.mjs plan",
     "harness:check": "node scripts/harness.mjs check",
-    "test:harness": "node --test --test-reporter=tap tests/harness/*.test.mjs"
+    "test:harness": "node --test --test-reporter=tap tests/harness/*.test.mjs",
+    "build:office": "node workspaces/super-members/scripts/build.mjs",
+    "test:office": "npm run build:office && node --test workspaces/super-members/*.test.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.118.0",

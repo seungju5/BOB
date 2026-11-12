@@ -1,0 +1,39 @@
+{
+  "at": "2026-11-12T10:12:47.322Z",
+  "url": "https://impact-series.web.app/super-members/",
+  "site": "impact-series",
+  "version": "sites/impact-series/versions/d5e811f81e21059b",
+  "release": "sites/impact-series/releases/1794478366532000",
+  "previous": "sites/impact-series/versions/86fc8c4b9578068f",
+  "preserved": 2421,
+  "overlayFiles": 14,
+  "uploads": 1,
+  "hostingConfig": "unchanged",
+  "existingAuthDatabase": "unchanged",
+  "billingEnabled": false,
+  "appId": "1:634921658163:web:172d8068f4de8e90984046",
+  "model": "gemini-3.5-flash-lite",
+  "appCheck": "ENFORCED",
+  "priorToOffice": "sites/impact-series/versions/9c48044d28de2e5b",
+  "verification": {
+    "officeTests": {
+      "passed": 13,
+      "failed": 0,
+      "skipped": 0
+    },
+    "liveRoles": [
+      "captain",
+      "bridge",
+      "care"
+    ],
+    "historyAfterReload": true,
+    "followUpContext": true,
+    "desktop": true,
+    "mobileWidth": 390,
+    "decorAndMotionToggle": true,
+    "osReducedMotion": "implemented_and_reviewed_not_OS_toggled",
+    "harnessReport": ".harness/runs/2026-11-12T10-12-31-393Z-21949/report.md",
+    "harnessStatus": "incomplete: existing SmartThings Firestore emulator test skipped",
+    "existingAppPathsPreserved": 2421
+  }
+}

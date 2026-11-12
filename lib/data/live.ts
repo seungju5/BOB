@@ -5,7 +5,7 @@
 import { useEffect, useSyncExternalStore } from "react";
 import { FunctionsHttpError } from "@supabase/supabase-js";
 import { addDays, kstDate } from "@/lib/judge/time";
-import type { AlertType, MealSlot, MealWindow } from "@/lib/judge/types";
+import type { AlertPayload, AlertType, MealSlot, MealWindow } from "@/lib/judge/types";
 import { supabase } from "@/lib/supabase";
 import type { AppActions, AppView } from "./view";
 
@@ -49,7 +49,7 @@ async function load() {
     db.from("meal_slots").select("date, slot, status, source").eq("household_id", h).gte("date", from).then(must),
     db.from("daily_cooker_stats").select("date, cook_count, lid_open_count").eq("household_id", h).gte("date", from).then(must),
     db.from("absences").select("start_date, end_date").eq("household_id", h).then(must),
-    db.from("alerts").select("id, type, triggered_at, acknowledged_at, resolved_at").eq("household_id", h).order("triggered_at", { ascending: false }).limit(50).then(must),
+    db.from("alerts").select("id, type, triggered_at, acknowledged_at, resolved_at, payload").eq("household_id", h).order("triggered_at", { ascending: false }).limit(50).then(must),
   ]);
   /* eslint-disable @typescript-eslint/no-explicit-any */
   const H = house as any;
@@ -92,12 +92,13 @@ async function load() {
     lastCookerAt: H.last_cooker_at,
     lastActivityAt: H.last_activity_at,
     absences: ((absences ?? []) as Array<{ start_date: string; end_date: string }>).map((a) => ({ startDate: a.start_date, endDate: a.end_date })),
-    alerts: ((alerts ?? []) as Array<{ id: string; type: AlertType; triggered_at: string; acknowledged_at: string | null; resolved_at: string | null }>).map((a) => ({
+    alerts: ((alerts ?? []) as Array<{ id: string; type: AlertType; triggered_at: string; acknowledged_at: string | null; resolved_at: string | null; payload: AlertPayload | null }>).map((a) => ({
       id: a.id,
       type: a.type,
       triggeredAt: a.triggered_at,
       acknowledgedAt: a.acknowledged_at,
       resolvedAt: a.resolved_at,
+      payload: a.payload ?? undefined,
     })),
   };
   set({ view, householdId: h, error: null });

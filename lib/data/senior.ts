@@ -116,12 +116,16 @@ export function useSenior() {
         const actions = [...s.seniorActions, { type: op === "back" ? ("away" as const) : op === "help" ? ("help" as const) : op === "away" ? ("away" as const) : ("eat_out" as const), at: iso }];
         if (op === "help")
           return { ...s, seniorActions: actions, alerts: [...s.alerts, { id: `help-${iso}`, type: "help_request", triggeredAt: iso, acknowledgedAt: null, resolvedAt: null }] };
-        if (op === "away")
+        if (op === "away") {
+          const endDate = addDays(today, (days ?? 1) - 1);
           return {
             ...s,
             seniorActions: actions,
-            absences: [...s.absences.filter((a) => !(a.startDate <= today && today <= a.endDate)), { startDate: today, endDate: addDays(today, (days ?? 1) - 1) }],
+            absences: [...s.absences.filter((a) => !(a.startDate <= today && today <= a.endDate)), { startDate: today, endDate }],
+            // 가족에게 '자리 비워요' 소식 (senior 함수의 away와 같다)
+            alerts: [...s.alerts, { id: `away-${iso}`, type: "away", triggeredAt: iso, acknowledgedAt: null, resolvedAt: null, payload: { endDate } }],
           };
+        }
         if (op === "back")
           return {
             ...s,
@@ -130,7 +134,8 @@ export function useSenior() {
               .map((a) => (a.startDate <= today && today <= a.endDate ? { ...a, endDate: addDays(today, -1) } : a))
               .filter((a) => a.endDate >= a.startDate),
           };
-        return { ...s, seniorActions: actions };
+        // eat_out: 가족에게 '외식했어요' 소식
+        return { ...s, seniorActions: actions, alerts: [...s.alerts, { id: `eat_out-${iso}`, type: "eat_out", triggeredAt: iso, acknowledgedAt: null, resolvedAt: null }] };
       });
       return;
     }

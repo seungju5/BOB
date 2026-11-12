@@ -3,6 +3,7 @@
 //   ?job=judge   5분: 이벤트 판정, 원시값 삭제, 오늘 끼니 상태 갱신
 //   ?job=alerts 10분: 알림 판단
 //   ?job=daily  00:00 KST: 어제 확정, 지난 이벤트 삭제
+//   ?job=weekly 월 09:00 KST: 주간 리포트 소식
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { DETECTION, RAW_RETENTION_HOURS } from "@/config/detection.ts";
 import { detectEvents } from "@/lib/judge/detectEvents.ts";
@@ -10,6 +11,10 @@ import { evaluateAlerts } from "@/lib/judge/evaluateAlerts.ts";
 import { addDays, HOUR_MS, kstDate, MINUTE_MS } from "@/lib/judge/time.ts";
 import type { AlertType, MealSlot } from "@/lib/judge/types.ts";
 import { dayRange, db, getAbsences, json, must, readPower, recomputeDay, refreshActivity } from "@/_shared/core.ts";
+import { pushAlerts, type SentAlert } from "@/_shared/push.ts";
+
+/** 판단 로직이 만들지 않는 '소식' 알림. 열려 있어도 판단에 넣지 않는다. */
+const NEWS_ALERTS: AlertType[] = ["help_request", "eat_out", "away", "weekly_report"];
 
 /** 판정에 쓰는 원시값 창. 이보다 오래된 값은 판정이 끝난 것으로 보고 지운다. */
 const JUDGE_WINDOW_MIN = 90;
@@ -87,7 +92,8 @@ async function alerts() {
       db.from("alert_settings").select("missed_meals_threshold, fasting_hours, emergency_hours").eq("household_id", h).single().then(must),
       db.from("smart_plugs").select("last_reading_at").eq("household_id", h).maybeSingle().then(must),
       db.from("meal_slots").select("date, slot, status, source").eq("household_id", h).gte("date", addDays(today, -2)).lte("date", today).then(must),
-      db.from("alerts").select("type").eq("household_id", h).is("resolved_at", null).neq("type", "help_request").then(must),
+      // 판단 대상만 (도움 요청·외식·자리 비움·주간 리포트 같은 '소식' 알림은 빼고)
+      db.from("alerts").select("type").eq("household_id", h).is("resolved_at", null).not("type", "in", `(${NEWS_ALERTS.join(",")})`).then(must),
       getAbsences(h),
     ]);
     const order = { breakfast: 0, lunch: 1, dinner: 2 } as const;
@@ -105,7 +111,8 @@ async function alerts() {
       openAlerts: ((open ?? []) as { type: AlertType }[]).map((a) => a.type),
     });
     if (result.create.length) {
-      must(await db.from("alerts").insert(result.create.map((type) => ({ household_id: h, type }))));
+      const rows = must(await db.from("alerts").insert(result.create.map((type) => ({ household_id: h, type }))).select("id, type, payload")) as SentAlert[];
+      await pushAlerts(h, rows);
       created += result.create.length;
     }
     if (result.resolve.length) {
@@ -131,7 +138,30 @@ async function daily() {
   return { households: households.length };
 }
 
-const JOBS: Record<string, () => Promise<unknown>> = { ingest, judge, alerts, daily };
+/**
+ * 주간 리포트 소식 (매주 월요일 09:00 KST). 지난 7일(어제까지) 끼니 확인율을 담아 보낸다.
+ * 앱의 lib/data/view.ts patternReport와 같은 셈: 부재·대기는 빼고, 외식은 확인으로 본다.
+ */
+async function weekly() {
+  const now = new Date();
+  const today = kstDate(now);
+  const households = await activeHouseholds();
+  let sent = 0;
+  for (const h of households) {
+    const slots = must(
+      await db.from("meal_slots").select("status").eq("household_id", h).gte("date", addDays(today, -7)).lte("date", addDays(today, -1)),
+    ) as { status: MealSlot["status"] }[];
+    const counted = slots.filter((s) => s.status !== "away" && s.status !== "pending");
+    if (!counted.length) continue; // 기록이 없는 주는 보내지 않는다
+    const rate = Math.round((counted.filter((s) => s.status === "confirmed" || s.status === "eat_out").length / counted.length) * 100);
+    const rows = must(await db.from("alerts").insert({ household_id: h, type: "weekly_report", payload: { rate } }).select("id, type, payload")) as SentAlert[];
+    await pushAlerts(h, rows);
+    sent++;
+  }
+  return { households: households.length, sent };
+}
+
+const JOBS: Record<string, () => Promise<unknown>> = { ingest, judge, alerts, daily, weekly };
 
 Deno.serve(async (req) => {
   const expected = must(await db.rpc("job_secret")) as string | null;

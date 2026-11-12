@@ -4,7 +4,7 @@
 import { ALERT_DEFAULTS } from "@/config/detection";
 import { DEFAULT_WINDOWS } from "@/lib/data/view";
 import { addDays, kstDate, kstDateTime, MINUTE_MS } from "@/lib/judge/time";
-import type { Absence, AlertType, MealWindow } from "@/lib/judge/types";
+import type { Absence, AlertPayload, AlertType, MealWindow } from "@/lib/judge/types";
 
 export type StoredEvent = { type: "cook" | "lid_open"; startedAt: string; endedAt: string };
 export type StoredAlert = {
@@ -13,6 +13,7 @@ export type StoredAlert = {
   triggeredAt: string;
   acknowledgedAt: string | null;
   resolvedAt: string | null;
+  payload?: AlertPayload;
 };
 export type SeniorAction = { type: "eat_out" | "away" | "help"; at: string };
 

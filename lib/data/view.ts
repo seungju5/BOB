@@ -3,7 +3,7 @@
 
 import { resolveMealSlots } from "@/lib/judge/resolveMealSlots";
 import { addDays, kstDate } from "@/lib/judge/time";
-import type { Absence, AlertType, MealSlot, MealWindow } from "@/lib/judge/types";
+import type { Absence, AlertPayload, AlertType, MealSlot, MealWindow } from "@/lib/judge/types";
 
 export type ViewAlert = {
   id: string;
@@ -11,6 +11,7 @@ export type ViewAlert = {
   triggeredAt: string;
   acknowledgedAt: string | null;
   resolvedAt: string | null;
+  payload?: AlertPayload;
 };
 
 export type AppView = {
@@ -26,8 +27,11 @@ export type AppView = {
   seniorPaired: boolean;
   /** 최근 35일 끼니 상태 (있는 날만) */
   slots: MealSlot[];
-  /** 날짜별 취사·열림 횟수 */
-  stats: Record<string, { cook: number; lid: number }>;
+  /**
+   * 날짜별 취사·열림 횟수.
+   * energyWh: 하루 전력량 합계(Wh). 아직 서버가 저장하지 않아 비어 있다 (리포트 전기요금용, 원시값 아님).
+   */
+  stats: Record<string, { cook: number; lid: number; energyWh?: number }>;
   lastCookerAt: string | null;
   lastActivityAt: string | null;
   absences: Absence[];

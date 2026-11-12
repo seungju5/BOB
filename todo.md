@@ -42,10 +42,11 @@
 - [x] T-ALR-01~09 테스트 작성 (T-ALR-07 즉시 발송은 화면에서 확인)
 - [x] `evaluateAlerts()` 구현 (부재·오프라인 처리 포함)
 - [x] `check-alerts` → `jobs?job=alerts` + pg_cron 10분, 중복 방지(유니크 인덱스)
-- [ ] VAPID 키 생성, Web Push 발송 유틸
-- [ ] `/api/push/subscribe`, 알림 권한 요청 UI
+- [ ] VAPID 키 생성, Web Push 발송 유틸 — 발송 유틸(`_shared/push.ts`, npm:web-push) 작성, **키 생성·Secrets 등록·재배포 남음**
+- [x] 알림 권한 요청 UI(알림 화면 카드), 서비스 워커(`public/sw.js`), 구독 저장(`push_subscriptions` 직접 upsert, `/api/push/subscribe` 대신) (2026-11-12)
 - [x] device_offline 알림 판단 (T-EDGE-01·02) — 발송은 check-alerts 구현 후
 - [ ] 실제 기기 푸시 수신 확인 (Android, iOS 홈 화면 추가)
+- [ ] 외식·자리 비움·주간 리포트 알림: 앱·데모 완료, `0003_news_alerts_weekly.sql` 적용 + senior·jobs 재배포 남음 (팀 확인)
 
 ## Phase 3 — 부양자 앱
 

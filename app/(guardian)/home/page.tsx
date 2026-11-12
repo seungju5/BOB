@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ALERT_PRIORITY, ALERT_TONE, alertCopy, fmtDateLong, STATUS_META, StatusIcon, withWa } from "@/components/guardian";
+import { ALERT_PRIORITY, ALERT_TONE, alertCopy, AlertShortcut, fmtDateLong, STATUS_META, StatusIcon, withWa } from "@/components/guardian";
 import { IconArrowRight, IconChart, IconClock, IconPhone, IconSuitcase, IconWifi } from "@/components/icons";
 import { Logo, Mascot } from "@/components/Mascot";
 import { buttonClass, Skeleton } from "@/components/ui";
@@ -37,6 +37,7 @@ export default function HomePage() {
         fasting: view.alertSettings.fastingHours,
         emergency: view.alertSettings.emergencyHours,
         plugRegistered: !!view.plug.deviceId,
+        payload: top.payload,
       })
     : null;
 
@@ -58,10 +59,11 @@ export default function HomePage() {
         <section className={`animate-rise mt-5 rounded-[1.75rem] p-5 ${ALERT_TONE[top.type]}`} role="alert">
           <p className="text-[18px] font-extrabold text-cocoa">{copy.title}</p>
           <p className="mt-1 text-[15px] text-cocoa/75">{copy.body}</p>
-          <div className="mt-4 flex gap-2">
+          <div className="mt-4 flex flex-wrap gap-2">
             <button onClick={() => void actions.ackAlert(top.id)} className="h-10 rounded-full bg-cocoa px-5 text-sm font-bold text-paper">
               확인했어요
             </button>
+            <AlertShortcut type={top.type} relation={relation} phone={view.senior.phone} />
             {alerts.length > 1 ? (
               <Link href="/alerts" className="flex h-10 items-center rounded-full px-4 text-sm font-semibold text-cocoa/70">
                 알림 {alerts.length}개 보기

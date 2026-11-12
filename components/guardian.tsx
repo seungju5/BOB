@@ -1,7 +1,8 @@
 // 보호자 화면 공통 조각
 
+import Link from "next/link";
 import type { AlertType, MealStatus } from "@/lib/judge/types";
-import { IconCheck, IconClock, IconSuitcase, IconUtensils } from "./icons";
+import { IconChart, IconCheck, IconClock, IconPhone, IconSuitcase, IconUtensils } from "./icons";
 
 export const STATUS_META: Record<MealStatus, { label: string; className: string }> = {
   confirmed: { label: "확인됨", className: "bg-sage text-sage-deep" },
@@ -18,27 +19,8 @@ export function StatusIcon({ status, className = "h-4 w-4" }: { status: MealStat
   return <IconClock className={className} />;
 }
 
-/** 알림 문구. "판정"이 아니라 안부를 물을 계기로 쓴다 (CLAUDE.md 금지 항목). */
-export function alertCopy(
-  type: AlertType,
-  relation: string,
-  s: { missed: number; fasting: number; emergency: number; plugRegistered?: boolean },
-) {
-  switch (type) {
-    case "missed_meals":
-      return { title: `${relation} 식사 소식이 ${s.missed}끼째 없어요`, body: "안부 전화 한 통 어떠세요?" };
-    case "fasting":
-      return { title: `${s.fasting}시간 넘게 밥솥 소식이 없어요`, body: `${relation}께 한번 연락해 보세요.` };
-    case "emergency":
-      return { title: `${s.emergency}시간째 소식이 없어요`, body: "지정한 연락처에도 알렸어요. 바로 확인해 주세요." };
-    case "help_request":
-      return { title: `${relation}께서 도움을 요청하셨어요`, body: "지금 바로 연락해 주세요." };
-    case "device_offline":
-      if (s.plugRegistered === false)
-        return { title: "밥솥 플러그를 연결해 주세요", body: "플러그가 연결되어야 끼니 소식을 전해 드릴 수 있어요. 설정에서 연결할 수 있어요." };
-      return { title: "밥솥 플러그 연결이 끊겼어요", body: "와이파이나 플러그 전원을 확인해 주세요. 그동안은 끼니 알림을 보내지 않아요." };
-  }
-}
+/** 알림 문구는 푸시와 같이 쓰려고 lib/alerts/copy.ts에 둔다 */
+export { alertCopy, alertUrl } from "@/lib/alerts/copy";
 
 export const ALERT_TONE: Record<AlertType, string> = {
   missed_meals: "bg-butter-soft",
@@ -46,9 +28,32 @@ export const ALERT_TONE: Record<AlertType, string> = {
   emergency: "bg-blush",
   help_request: "bg-blush",
   device_offline: "bg-sky",
+  eat_out: "bg-butter-soft",
+  away: "bg-sky",
+  weekly_report: "bg-sage",
 };
 
-export const ALERT_PRIORITY: AlertType[] = ["help_request", "emergency", "fasting", "missed_meals", "device_offline"];
+export const ALERT_PRIORITY: AlertType[] = ["help_request", "emergency", "fasting", "missed_meals", "device_offline", "eat_out", "away", "weekly_report"];
+
+/** 알림 카드 아래 바로가기: 외식·도움 요청은 전화, 주간 리포트는 리포트 화면 */
+export function AlertShortcut({ type, relation, phone }: { type: AlertType; relation: string; phone: string }) {
+  const pill = "flex h-9 items-center gap-1.5 rounded-full border-2 border-cocoa/15 bg-paper px-4 text-[13px] font-bold text-cocoa";
+  if ((type === "eat_out" || type === "help_request") && phone)
+    return (
+      <a href={`tel:${phone.replace(/\D/g, "")}`} className={pill}>
+        <IconPhone className="h-4 w-4" />
+        {relation}께 전화하기
+      </a>
+    );
+  if (type === "weekly_report")
+    return (
+      <Link href="/report" className={pill}>
+        <IconChart className="h-4 w-4" />
+        리포트 보기
+      </Link>
+    );
+  return null;
+}
 
 const WEEKDAY = ["일", "월", "화", "수", "목", "금", "토"];
 export function fmtDateLong(date: string) {

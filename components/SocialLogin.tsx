@@ -6,7 +6,7 @@ import { supabase, supabaseConfigured } from "@/lib/supabase";
 type Provider = "kakao" | "google";
 
 /**
- * 카카오·구글 간편 로그인 (Supabase OAuth). 이메일 링크와 같이 /start?code= 로 돌아온다.
+ * 카카오·구글 간편 로그인 (Supabase OAuth). /auth/callback에서 PKCE 코드를 교환한다.
  * Supabase 대시보드 > Authentication > Providers에서 각 공급자를 켜야 동작한다.
  * 버튼 색·로고는 각 회사의 로그인 버튼 가이드를 따른다.
  */
@@ -17,12 +17,14 @@ export function SocialLogin() {
   const login = async (provider: Provider) => {
     setBusy(provider);
     setError("");
-    const { error } = await supabase().auth.signInWithOAuth({
-      provider,
-      options: { redirectTo: `${location.origin}/start` },
-    });
-    // 성공하면 공급자 화면으로 이동하므로 여기로 돌아오는 건 실패뿐이다
-    if (error) {
+    try {
+      const { data, error } = await supabase().auth.signInWithOAuth({
+        provider,
+        options: { redirectTo: `${location.origin}/auth/callback`, skipBrowserRedirect: true },
+      });
+      if (error || !data.url) throw error ?? new Error("OAuth URL이 없습니다.");
+      location.assign(data.url);
+    } catch {
       setError("로그인 화면을 열지 못했어요. 잠시 후 다시 시도해 주세요.");
       setBusy(null);
     }

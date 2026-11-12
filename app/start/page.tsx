@@ -3,22 +3,22 @@
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { Button, Skeleton } from "@/components/ui";
-import { setMode } from "@/lib/data/mode";
 import { useApp } from "@/lib/data/useApp";
-import { supabaseConfigured } from "@/lib/supabase";
 
-/** 보호자 진입점: 로그인 링크도 이리로 돌아온다. 온보딩이 끝났으면 홈, 아니면 온보딩. */
+/** 보호자 진입점. 과거 /start로 보낸 로그인 링크도 콜백으로 넘긴다. */
 export default function GuardianStart() {
-  const { view, mode, needsLogin, error } = useApp();
+  const { view, needsLogin, error } = useApp();
   const router = useRouter();
 
   useEffect(() => {
-    // 로그인 링크(?code=)로 돌아왔으면 실서비스 모드
-    if (mode === null && supabaseConfigured && new URLSearchParams(location.search).has("code")) setMode("live");
-  }, [mode]);
+    const query = new URLSearchParams(location.search);
+    if (query.has("code") || query.has("error")) location.replace(`/auth/callback${location.search}`);
+  }, []);
 
   useEffect(() => {
-    if (needsLogin && !new URLSearchParams(location.search).has("code")) router.replace("/login");
+    const query = new URLSearchParams(location.search);
+    if (query.has("code") || query.has("error")) return;
+    if (needsLogin) router.replace("/login");
     else if (view) router.replace(view.onboardingStep > 7 ? "/home" : "/onboarding");
   }, [view, needsLogin, router]);
 

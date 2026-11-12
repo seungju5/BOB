@@ -25,17 +25,23 @@ function must<T>(res: { data: T; error: { message: string } | null }): T {
 }
 
 let inflight: Promise<void> | null = null;
+let epoch = 0;
 
 export function refreshLive(): Promise<void> {
-  inflight ??= load()
-    .catch((e) => set({ error: e instanceof Error ? e.message : String(e) }))
+  if (inflight) return inflight;
+  const startedAt = epoch;
+  const request = load(startedAt)
+    .catch((e) => {
+      if (epoch === startedAt) set({ error: e instanceof Error ? e.message : String(e) });
+    })
     .finally(() => {
-      inflight = null;
+      if (inflight === request) inflight = null;
     });
-  return inflight;
+  inflight = request;
+  return request;
 }
 
-async function load() {
+async function load(startedAt: number) {
   const db = supabase();
   const h = must(await db.rpc("ensure_household")) as string;
   const today = kstDate(new Date());
@@ -101,10 +107,12 @@ async function load() {
       payload: a.payload ?? undefined,
     })),
   };
-  set({ view, householdId: h, error: null });
+  if (epoch === startedAt) set({ view, householdId: h, error: null });
 }
 
 export function clearLive() {
+  epoch += 1;
+  inflight = null;
   set({ view: null, householdId: null, error: null });
 }
 

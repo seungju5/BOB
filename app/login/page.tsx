@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { TextInput } from "@/components/forms";
 import { IconCheck } from "@/components/icons";
 import { Logo, Mascot } from "@/components/Mascot";
@@ -11,7 +11,15 @@ import { forgetAccount, rememberAccount, useRecentAccounts } from "@/lib/data/ac
 import { setMode, useSession } from "@/lib/data/mode";
 import { supabase, supabaseConfigured } from "@/lib/supabase";
 
-/** 보호자 로그인: 이메일 로그인 링크 (Supabase Auth, 비밀번호 없음) */
+/** 보호자 로그인: Google·Kakao OAuth와 이메일 로그인 링크 */
+function readAuthError() {
+  const reason = new URLSearchParams(location.search).get("auth_error");
+  if (reason === "cancelled") return "로그인이 취소됐어요. 다시 시도해 주세요.";
+  if (reason === "expired") return "로그인 링크가 만료됐거나 이미 사용됐어요. 다시 시도해 주세요.";
+  if (reason === "configuration") return "로그인 설정을 확인하고 있어요. 잠시 후 다시 시도해 주세요.";
+  return "";
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const session = useSession();
@@ -19,6 +27,7 @@ export default function LoginPage() {
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const authError = useSyncExternalStore(() => () => {}, readAuthError, () => "");
 
   const recent = useRecentAccounts();
 
@@ -35,7 +44,7 @@ export default function LoginPage() {
     setError("");
     const { error } = await supabase().auth.signInWithOtp({
       email: email.trim(),
-      options: { emailRedirectTo: `${location.origin}/start` },
+      options: { emailRedirectTo: `${location.origin}/auth/callback` },
     });
     setBusy(false);
     if (error) setError(error.message.includes("rate") ? "잠시 후 다시 시도해 주세요. (메일 발송 제한)" : "메일을 보내지 못했어요. 주소를 확인해 주세요.");
@@ -59,6 +68,7 @@ export default function LoginPage() {
         </h1>
         {!sent ? (
           <div className="mt-8">
+            {authError ? <p role="alert" className="mb-4 text-[14px] font-semibold text-blush-deep">{authError}</p> : null}
             <SocialLogin />
             {supabaseConfigured ? (
               <div className="mt-6 flex items-center gap-3 text-[13px] text-muted" aria-hidden>

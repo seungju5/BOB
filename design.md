@@ -16,7 +16,7 @@
 | IoT | **삼성 스마트플러그 + SmartThings API** (`powerMeter` capability) | 홈어시스턴트 경유는 대안 (ADR-003) |
 | 알림 | **Web Push (VAPID)** | iOS는 16.4 이상, 홈 화면에 추가해야 받을 수 있다 |
 | 차트 | CSS 막대 (Recharts 미도입) | |
-| 로그인 | **Supabase Auth 이메일 로그인 링크** (비밀번호 없음, PKCE) | ADR-004 |
+| 로그인 | **Supabase Auth 이메일 링크·Google·Kakao** (PKCE, `/auth/callback`) | ADR-004·006 |
 
 자세한 버전과 명령어는 stack.md에 있다.
 
@@ -210,7 +210,7 @@ daily_cooker_stats (
 
 | 화면 | 경로 | 내용 |
 |---|---|---|
-| 로그인 | `/login` | 이메일 매직링크 또는 카카오 로그인 `(가정)` |
+| 로그인 | `/login` | 이메일 링크·Google·Kakao 로그인. 공급자 콘솔 설정과 실계정 검증 필요 |
 | 온보딩 | `/onboarding/[step]` | 상단 진행도 바와 "거의 다 왔어요!" 안내. ① 스마트플러그 연결(SmartThings 토큰) ② 와이파이·수신 확인 ③ 가구 정보 ④ 식사 패턴 ⑤ 밥솥 습관 ⑥ 알림 기준 ⑦ 시니어 기기 페어링 코드 발급 |
 | 홈 | `/` | 오늘 끼니 상태 카드(아침·점심·저녁: 확인됨/미확인/외식/부재), 마지막 활동 시각, 기기 상태, 진행 중인 알림 |
 | 식사 기록 | `/records?range=day\|week\|month` | 취사·열림 횟수 차트, 끼니 상태 캘린더 |

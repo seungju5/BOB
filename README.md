@@ -23,3 +23,5 @@ npm test
 ## 문서
 
 CLAUDE.md → brd.md → cps.md → design.md → plan.md → todo.md → test.md (참고: stack.md, adr.md, log.md)
+
+Google·카카오 로그인 콘솔 설정과 검증 순서는 [로그인 연결 가이드](docs/google-kakao-login.md)를 참고하세요.

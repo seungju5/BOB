@@ -1,0 +1,37 @@
+{
+  "release": {
+    "at": "2026-11-13T14:10:06.581Z",
+    "site": "impact-series",
+    "url": "https://impact-series.web.app/bapmunna/final/",
+    "version": "sites/impact-series/versions/66beb76f7bf738fd",
+    "previous": "sites/impact-series/versions/ba77c944182e5d1b",
+    "release": "sites/impact-series/releases/1794579007698000",
+    "source": "6c07408b0ba55a57208a492cd064f1ea7f001b58",
+    "changed": 110,
+    "preserved": 2503,
+    "totalFiles": 2613,
+    "uploads": 83,
+    "hostingConfig": "unchanged",
+    "billingEnabled": false
+  },
+  "verify": {
+    "at": "2026-11-13T14:10:46.526Z",
+    "version": "sites/impact-series/versions/66beb76f7bf738fd",
+    "publicFilesVerified": 110,
+    "existingPathsMissing": 0,
+    "project": "impact-series",
+    "billingEnabled": false
+  },
+  "rules": {
+    "at": "2026-11-13T13:53:41.114Z",
+    "project": "ku-gpa",
+    "previous": "projects/ku-gpa/rulesets/407b97da-502a-4f46-8928-ec44ee17166d",
+    "ruleset": "projects/ku-gpa/rulesets/e0d9c16c-84a1-4eac-aa9b-3932de857e53",
+    "sourceHash": "af8bf7e80a622a0cbc7eb8f3f3ef046c782cd403f7affed43752597a0686b2cb",
+    "emulatorTests": 37,
+    "billingChanged": false
+  },
+  "harness": ".harness/runs/2026-11-13T14-06-30-166Z-7231/report.md",
+  "backendDeployed": false,
+  "liveSmartThingsVerified": false
+}

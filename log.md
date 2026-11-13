@@ -210,3 +210,17 @@ SmartThings config는 인증 SDK보다 먼저 확인한다. SDK/첫 인증 이�
 최종 동결 검증: 하네스24·루트73·Firebase 시나리오58 및 node83(워크시트31+새회귀52)·Firebase 역할/관리/동등성·경험58, SmartThings 서버14 통과. 타입·디자인/판단 동기화·Firebase 빌드·Next 빌드 통과. 최초 하네스는 스스로 portable 생성물을 갱신해 소스 안정성만 실패했고, 생성본 갱신 후 재실행에서 소스 지문이 동일함을 확인했다. 기존 Firestore emulator1개 skip으로 전체 상태는 incomplete로 기록한다. 최종 보고서는 .harness/runs/2026-11-13T01-45-49-732Z-77072/report.md. Next export는 2a1ad09 이후 해당 소스 변경0이므로 기존 공개 바이트를 재사용한다.
 
 통합 공개 반영 완료: 코드21ccabe 푸시 후 Firebase ba77c944182e5d1b 게시. 변경12개(Firebase/Supabase 각6개 mjs)의 공개 바이트 확인, 기존 경로 누락0, 기존2580개 파일/Next·브랜드·Hosting설정/Spark보존. 공개 로그인 폼과 #connect 준비 상태 종료·재조회·홈복귀, JS오류로그없음을 확인했다. 인증 완료 흐름은 모의 브라우저로 확인했고 실제 새 Google/Samsung OAuth나 실기기 수신을 수행하지 않았다. 영수증은 workspaces/bapmunna-final/releases/20261113-account-smartthings.json, 다음 게시용 기준은 tmp/smartthings-runtime-20261113/published-bapmunna.
+
+## 2026-11-13 최종 요구사항 대조·계정 격리·가구 저장 감사
+
+Notion의 회의/과제/개인정보 문서와 Figma v1106 전체 추출본을 대조했다. 최신 사용자 결정, 채택된 변경, 확인 필요, 대체된 예전 제안을 구분한 전체 대조표와 수정 후 재판정은 workspace output/bapmunna-final-audit-20261113에 보관했다. PRD 전체 구현 완료로 판정하지 않았다.
+
+로그인→안내→본인 전용 가구 기본정보→홈→선택적 기기 연결을 구현하고, Firebase/Supabase 이전 계정의 늦은 조회 응답과 UI보다 먼저 바뀐 auth.currentUser에 이전 초안이 저장되는 경합을 수정했다. getHousehold/saveHousehold에는 expectedUid를 반드시 전달한다. 가구 저장은 6개 허용 필드와 서버 readback 성공이 필요하며 가족 공유·동의 생성과 별개다. 사용자 명시 승인 후 KU GPA ruleset e0d9c16c-84a1-4eac-aa9b-3932de857e53를 적용했고 이전 규칙·모든 기존 namespace를 보존했다.
+
+Next의 동의 전 홈 진입, 생활 설정 재편집·저장 순서, 페어링 실패→데모 자동 전환 금지, 접수/전송 문구, 접근 가능한 시니어 대화상자를 보강했다. 최신 PRD의 호칭 단일 선택·대표자 연락처 안내·외식0~20·취사1~21을 적용했다. 네 번째 끼니 모델은 미결정이므로 실제 지원하는1~3끼만 표시한다. 원시 전력값 등록 응답을 제거하고 BOB 수집·페어링·발송에 동의 검사를 추가했지만 운영 SQL/Edge는 배포하지 않았다.
+
+다른 채팅의 5c1cfb1 서버 준비 변경을 함께 포함했다. Hosting 프로젝트 Impact Series와 Auth/Firestore KU GPA를 분리한 배포 계약, Docker 범위와 4개 회귀, parser 의존성 보완이다. 삼성 현재 공식 조회403·공개 config/callback404이며 과거 등록 결과를 실제 연동 완료로 승격하지 않는다. 사용자의 무료 유지·삼성 공개 서버 보류는 그대로다.
+
+최종 소스6c07408 전체 하네스:25/121/48/58/19개 통과, Firebase 계약58시나리오+Node121 통과, 타입·동기화·빌드 통과, skip0·source drift0. 실제 로컬 Auth/Firestore37개 별도 통과. 하네스 환경 제거로 발생한 skip은 명시적 loopback opt-in으로 수정했고, 고정 설치ID의 이전 receipt 충돌은 실행별 UUID로 격리했다. 최종 보고서 .harness/runs/2026-11-13T14-06-30-166Z-7231/report.md.
+
+운영 Hosting66beb76f7bf738fd 게시 및110개 공개해시 일치, 이전ba77c944182e5d1b/기존2503경로·설정 보존, 누락0/총2613/결제false 확인. 실제 공개 로그인 진입과 기기 준비 화면, 로컬320/390px·큰글씨·가구 저장 재로딩·시니어 키보드 동작 확인. 실제 새 소셜OAuth·밥솥·푸시·BOB RLS 운영검사는 미수행. 카카오 연결은 별도 채팅 후속 작업이며 이번 완료 항목 아님. 복구·영수증은 workspaces/bapmunna-final/releases/20261113-final-audit.json과 tmp/final-audit-20261113에 보관한다.

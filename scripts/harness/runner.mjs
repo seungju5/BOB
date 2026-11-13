@@ -72,10 +72,17 @@ export function runProcess(command, args, {cwd, timeoutMs = 180000, maxBytes = 8
   });
 }
 
-export function localEnv() {
+export function localEnv({allowEmulator = false} = {}) {
   const env = {...process.env, CI: '1', NO_COLOR: '1', NEXT_TELEMETRY_DISABLED: '1'};
   // A local unit run must not attach itself to an ambient emulator or cloud credential.
   for (const key of Object.keys(env)) if (/^(?:FIREBASE|FIRESTORE|GOOGLE_APPLICATION_CREDENTIALS|GCLOUD_PROJECT|GOOGLE_CLOUD_PROJECT|SMARTTHINGS|SUPABASE_SERVICE_ROLE|VAPID_PRIVATE)/.test(key)) delete env[key];
+  // Opt in only for an allowlisted integration check; never forward cloud credentials.
+  if (allowEmulator && process.env.BAPMUNNA_HARNESS_EMULATOR === '1') {
+    const host = process.env.FIRESTORE_EMULATOR_HOST || '';
+    const match = /^(?:127\.0\.0\.1|localhost):(\d{1,5})$/.exec(host);
+    if (!match || Number(match[1]) < 1 || Number(match[1]) > 65535) throw new Error('Harness emulator checks require a loopback Firestore host and valid port.');
+    env.FIRESTORE_EMULATOR_HOST = host;
+  }
   delete env.FORCE_COLOR;
   return env;
 }
@@ -113,7 +120,7 @@ export async function runChecks(plan, {root = ROOT, progress = () => {}} = {}) {
     const startedAt = new Date().toISOString();
     const reportFile = path.join(dir, id + '.json');
     const args = check.args.map(arg => arg === '{reportFile}' ? reportFile : arg);
-    const result = await runProcess(process.execPath, args, {cwd: path.join(root, check.cwd || ''), timeoutMs: check.timeoutMs, env: localEnv()});
+    const result = await runProcess(process.execPath, args, {cwd: path.join(root, check.cwd || ''), timeoutMs: check.timeoutMs, env: localEnv({allowEmulator: check.emulator === true})});
     let summary = result.stdout;
     if (check.format === 'vitest') {
       summary = await readFile(reportFile, 'utf8').catch(() => '');

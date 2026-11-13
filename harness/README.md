@@ -42,6 +42,9 @@ npm run harness:check
 # 지정한 작업의 검사 또는 전체 검사
 npm run harness:check -- --task harness/tasks/login-isolation.json
 npm run harness:check -- --profile full
+
+# 직접 시작한 demo-bapmunna 로컬 Firestore만 통합 검사에 사용
+BAPMUNNA_HARNESS_EMULATOR=1 FIRESTORE_EMULATOR_HOST=127.0.0.1:8180 npm run harness:check -- --profile full
 ```
 
 `--base <gitref>`로 비교할 기준을 지정할 수 있습니다. 작업 계획은 `smartthings-pilot`, `senior-experience`, `login-isolation` 세 개를 제공합니다. 이 계획은 실제 기능 개발을 자동 승인하는 문서가 아닙니다.

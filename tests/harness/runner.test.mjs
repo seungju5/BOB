@@ -100,6 +100,26 @@ test('unit environment cannot accidentally use ambient emulator credentials', ()
   finally { if (before === undefined) delete process.env.FIRESTORE_EMULATOR_HOST; else process.env.FIRESTORE_EMULATOR_HOST = before; }
 });
 
+test('explicit emulator opt-in is scoped to integration checks and strips credentials', () => {
+  const keys = ['BAPMUNNA_HARNESS_EMULATOR', 'FIRESTORE_EMULATOR_HOST', 'GOOGLE_APPLICATION_CREDENTIALS'];
+  const before = Object.fromEntries(keys.map(key => [key, process.env[key]]));
+  try {
+    process.env.BAPMUNNA_HARNESS_EMULATOR = '1';
+    process.env.FIRESTORE_EMULATOR_HOST = '127.0.0.1:8180';
+    process.env.GOOGLE_APPLICATION_CREDENTIALS = '/must/not/pass.json';
+    assert.equal(localEnv().FIRESTORE_EMULATOR_HOST, undefined);
+    const env = localEnv({allowEmulator: true});
+    assert.equal(env.FIRESTORE_EMULATOR_HOST, '127.0.0.1:8180');
+    assert.equal(env.GOOGLE_APPLICATION_CREDENTIALS, undefined);
+    for (const host of ['example.invalid:8180', 'localhost:0', 'localhost:65536', 'http://127.0.0.1:8180', '']) {
+      process.env.FIRESTORE_EMULATOR_HOST = host;
+      assert.throws(() => localEnv({allowEmulator: true}), /loopback/);
+    }
+  } finally {
+    for (const key of keys) if (before[key] === undefined) delete process.env[key]; else process.env[key] = before[key];
+  }
+});
+
 test('failed generation prerequisite blocks artifact build and still writes evidence', async t => {
   const {root} = await fixture(t);
   await mkdir(path.join(root, 'scripts'));

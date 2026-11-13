@@ -1,5 +1,7 @@
 # 공개 서버 배포와 팀 시연 계획
 
+**2026-11-13 정정:** [최신 배포 점검](deployment-readiness-20261113.md)을 우선한다. 실제 Hosting 소유 프로젝트는 `impact-series`이며 `ku-gpa`는 별도 Firebase 계정·데이터 프로젝트다. 서버 배포 재개를 요청받아 준비한 뒤, 사용자가 **무료 유지·공개 서버 배포 보류**를 최종 선택했다. 아래 유료 배포안은 보관하며 실행하지 않는다.
+
 2026-11-03 기준. 삼성 OAuth **앱 등록은 완료**, 공개 서버·사용자 연결·자동 수신은 **검증 전**이다. [실제 등록 재조회](registration-status.json)와 [서버 설정](README.md)을 함께 본다.
 
 **현재 결정:** 사용자가 “유료 전환 없이 현재 등록·구현 상태 유지”를 선택했다. Firebase Spark를 유지하며 결제 연결·유료 서비스 활성화·공개 API 배포는 진행하지 않는다. 아래 배포안과 실제 연결 시연은 보관용 계획이며, 사용자가 다시 요청하기 전 실행하거나 결제 승인을 반복 요청하지 않는다. 팀에는 구현 화면과 앱 등록 결과를 공유할 수 있고, 실제 OAuth 연결·자동 신호 수신은 미검증으로 표시한다.
@@ -29,7 +31,7 @@
 
 ## 보관하는 배포안
 
-- 프로젝트 `ku-gpa`, Hosting 사이트 `impact-series`, 서비스 `bapmunna-smartthings`.
+- Hosting/Run/Secret 프로젝트 `impact-series`, 기존 Firebase Auth/Firestore 프로젝트 `ku-gpa`, Hosting 사이트 `impact-series`, 서비스 `bapmunna-smartthings`. 두 프로젝트의 IAM 경계를 명시하고 데이터는 이전하지 않는다.
 - 기존 기본 Firestore와 같은 서울 `asia-northeast3` 리전.
 - 요청 기반 Cloud Run: 1 vCPU, 512 MiB, 최소 인스턴스 0, 최대 1, 요청 제한 60초. 요청이 없을 때 줄어드는 구성이다. 최대 인스턴스 설정은 청구 상한이 아니다.
 - Client Secret과 암호화 키는 Secret Manager, 서비스 실행 권한은 필요한 Auth 조회·Firestore·해당 비밀만 허용한다. 비밀값은 이미지·소스·브라우저에 포함하지 않는다.

@@ -1,6 +1,10 @@
 {
-  "state": "prepared_not_deployed",
+  "schemaVersion": 2,
+  "state": "prepared_deployment_deferred_free_plan",
   "projectId": "ku-gpa",
+  "hostingProjectId": "impact-series",
+  "runtimeProjectId": "impact-series",
+  "secretsProjectId": "impact-series",
   "hostingSite": "impact-series",
   "serviceId": "bapmunna-smartthings",
   "region": "asia-northeast3",
@@ -22,6 +26,8 @@
     "automaticUpgrade": false,
     "explicitApprovalRequired": true,
     "proposedMonthlyBudgetAlertKRW": 10000,
-    "budgetIsHardCap": false
+    "budgetIsHardCap": false,
+    "requiredProjects": ["impact-series", "ku-gpa"],
+    "dataProjectReason": "The existing retention design uses billed Firestore TTL deletion."
   }
 }

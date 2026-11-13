@@ -1,8 +1,11 @@
 // Read-only preflight. No billing, deployment, OAuth grant, or device commands.
 import {readFile,stat} from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
+import path from 'node:path';
 import {readConfig} from '../server/security.mjs';
 import {configured} from '../server/service.mjs';
+import {firebaseConfig} from '../docs/firebase-config.mjs';
+import {validateDeploymentTargets} from './smartthings-deployment.mjs';
 
 const root=new URL('../',import.meta.url);
 const json=async path=>JSON.parse(await readFile(new URL(path,root),'utf8'));
@@ -11,6 +14,7 @@ const [plan,manifest,evidence,rewrite]=await Promise.all([
   json('server/deployment-config.json'),json('server/app-registration.json'),
   json('server/registration-status.json'),json('server/hosting-rewrite.example.json'),
 ]);
+const deploymentTargets=validateDeploymentTargets(plan,{firebaseProjectId:firebaseConfig.projectId});
 const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
 const match=plan.appId===evidence.appId&&manifest.appName===evidence.appName
   &&same(plan.scope,manifest.oauth.scope)&&same(plan.scope,evidence.scope)
@@ -28,11 +32,11 @@ if(!match||plan.billing.automaticUpgrade!==false||plan.billing.explicitApprovalR
 
 let localSecretsReady=false,privateFilePermissions=false;
 try{
-  const folder='tmp/smartthings-private/';
+  const folder=process.env.BAPMUNNA_SMARTTHINGS_PRIVATE_DIR||fileURLToPath(new URL('tmp/smartthings-private/',root));
   const [saved,key,secret,files]=await Promise.all([
-    json(folder+'registration-result.json'),readFile(new URL(folder+'encryption-key',root),'utf8'),
-    readFile(new URL(folder+'client-secret',root),'utf8'),
-    Promise.all(['registration-result.json','encryption-key','client-secret'].map(name=>stat(new URL(folder+name,root)))),
+    readFile(path.join(folder,'registration-result.json'),'utf8').then(JSON.parse),readFile(path.join(folder,'encryption-key'),'utf8'),
+    readFile(path.join(folder,'client-secret'),'utf8'),
+    Promise.all(['registration-result.json','encryption-key','client-secret'].map(name=>stat(path.join(folder,name)))),
   ]);
   privateFilePermissions=files.every(file=>(file.mode&0o077)===0);
   const config=readConfig({FIREBASE_PROJECT_ID:plan.projectId,APP_URL:plan.appUrl,PUBLIC_ORIGIN:plan.publicOrigin,
@@ -61,8 +65,11 @@ console.log(JSON.stringify({
   checkedAt:new Date().toISOString(),mode:offline?'offline':'public_endpoint_check',
   registration:{source:'saved_official_cli_readback',checkedAt:evidence.checkedAt,matchesManifest:match,
     redirectUri:plan.redirectUri,webhookUrl:plan.webhookUrl,scope:plan.scope,targetStatus:evidence.targetStatus},
-  localSecretsReady,privateFilePermissions,preparedSettingsFile:fileURLToPath(new URL('server/deployment-config.json',root)),
+  localSecretsReady,privateFilePermissions,deploymentTargets,preparedSettingsFile:fileURLToPath(new URL('server/deployment-config.json',root)),
   endpoints,billingSnapshot:{source:'saved_google_api_readback',checkedAt:evidence.checkedAt,...evidence.firebase},
   deploymentPerformed:false,billingChanged:false,
-  nextStep:'Owner approval is required before billing activation. Then deploy, confirm webhook, and verify real OAuth/events.',
+  deploymentDecision:plan.state,
+  nextStep:plan.state==='prepared_deployment_deferred_free_plan'
+    ?'Public deployment is deferred by the owner’s free-plan decision. Continue local verification; wait for an explicit request to resume deployment.'
+    :'Owner approval is required before billing activation. Then deploy, confirm webhook, and verify real OAuth/events.',
 },null,2));

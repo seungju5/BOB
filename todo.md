@@ -243,4 +243,4 @@
 - [x] 로고 전용 1200×630 공유 이미지와 Open Graph/Twitter metadata
 - [x] 튜토리얼의 외부 손글씨 제거, 로컬 Pretendard 및 굵기·줄 간격 조정
 - [x] 320/390px 튜토리얼·공통 밥솥이 표시와 기존 기능 검사
-- [ ] GitHub 푸시 및 Firebase 공개 배포·메타데이터 확인
+- [x] GitHub 푸시 및 Firebase 공개 배포·메타데이터 확인 (4e797660f901e693)

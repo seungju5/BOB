@@ -1,0 +1,70 @@
+{
+  "current": {
+    "at": "2026-11-13T00:44:18.110Z",
+    "site": "impact-series",
+    "url": "https://impact-series.web.app/bapmunna/final/",
+    "version": "sites/impact-series/versions/1c2487e9e8d38519",
+    "previous": "sites/impact-series/versions/529ec79f5617940a",
+    "release": "sites/impact-series/releases/1794530657239000",
+    "source": "22cab86956ae7a7f6bba609c01d6d5bb23248be6",
+    "changed": 83,
+    "preserved": 2485,
+    "totalFiles": 2568,
+    "uploads": 62,
+    "hostingConfig": "unchanged",
+    "billingEnabled": false
+  },
+  "verified": {
+    "at": "2026-11-13T00:45:05.318Z",
+    "version": "sites/impact-series/versions/1c2487e9e8d38519",
+    "publicFilesVerified": 83,
+    "existingPathsMissing": 0,
+    "project": "impact-series",
+    "billingEnabled": false
+  },
+  "history": [
+    {
+      "at": "2026-11-12T13:53:30.796Z",
+      "site": "impact-series",
+      "url": "https://impact-series.web.app/bapmunna/final/",
+      "version": "sites/impact-series/versions/64821bcd8d951d76",
+      "previous": "sites/impact-series/versions/bd67e2529d1169b7",
+      "release": "sites/impact-series/releases/1794491609921000",
+      "source": "d6f36cc868a9951891b42a699a8afb7788288d98",
+      "changed": 142,
+      "preserved": 2421,
+      "totalFiles": 2563,
+      "uploads": 102,
+      "hostingConfig": "unchanged",
+      "billingEnabled": false
+    },
+    {
+      "at": "2026-11-12T13:55:43.440Z",
+      "site": "impact-series",
+      "url": "https://impact-series.web.app/bapmunna/final/",
+      "version": "sites/impact-series/versions/529ec79f5617940a",
+      "previous": "sites/impact-series/versions/64821bcd8d951d76",
+      "release": "sites/impact-series/releases/1794491742536000",
+      "source": "267c1492e3d34b87ab104f1025d7b9a1591566b7",
+      "changed": 1,
+      "preserved": 2562,
+      "totalFiles": 2563,
+      "uploads": 1,
+      "hostingConfig": "unchanged",
+      "billingEnabled": false
+    }
+  ],
+  "browserEvidence": [
+    "evidence/mobile-final.jpg",
+    "evidence/mobile-welcome.jpg",
+    "evidence/mobile-bapsoti.jpg"
+  ],
+  "pullRequest": "https://github.com/seungju5/-1/pull/3",
+  "limitations": {
+    "kakao": "Provider/application settings not verified; shown as preparing",
+    "smartthings": "Public API not deployed; Spark decision preserved",
+    "firestoreEmulator": "1 integration case skipped",
+    "googleFreshSignIn": "Configured provider and existing Chrome session observed; fresh OAuth completion not verified",
+    "vercelPreview": "Separate Vercel status: Deployment was blocked"
+  }
+}

@@ -1,3 +1,6 @@
+import {connectCloud} from './cloud-api.mjs';
+import {runtimeSurface,runtimeSession,createAccountBoundary,createRuntimeSession,browserTutorialSeen,rememberBrowserTutorial} from './runtime-mode.mjs';
+import {livePage,liveTutorialPage} from './live-view.mjs';
 import {createBunnyGreeting} from './bunny-greeting.mjs';
 import {MEALS,LABELS,DAY,DEVICES,dayOf,hhmm,dateLabel,key,createState,record,status,evaluate,activeMeal,inAway,advance,confirmMeal,ingestSensor,ingestDevice,setDeviceOnline,deviceOnline,setAway,cancelAway,setConsent,configure,updateProfile,baseline,report,requestHelp,resolveHelp,setSocial} from './engine.mjs';
 import {FAMILY_ROLES,createInvite,acceptInvite,revokeMember,familySummary} from './family.mjs';
@@ -12,13 +15,16 @@ import {mealEvidence,careHeadline,JOURNEY_SCENARIOS,journeyScene,reportDayAfterK
 // Resolve once against the entry document; role switches change the URL without reloading.
 const ASSETS=Object.fromEntries(Object.entries({logo:'./assets/rice-logo.png',partner:'./assets/partner.png',bunny:'./assets/bunny.png',underlay:'./assets/bunny-underlay.webp',companion:'./assets/rice-cooker-companion.png',cooker:'./assets/rice-cooker-companion.png',full:'./assets/rice-full.png',half:'./assets/rice-half.webp',empty:'./assets/rice-empty.webp',eatout:'./assets/eatout.svg',away:'./assets/away.svg',help:'./assets/help.svg',family:'./assets/family.svg',info:'./assets/info.svg',phone:'./assets/phone.svg',heart:'./assets/heart.svg',history:'./assets/history.svg'}).map(([name,path])=>[name,new URL(path,document.baseURI).href]));
 const root=document.querySelector('#view');
-const viewNames=['welcome','senior','guardian','report','family','settings','devices','about','account','more','alerts','privacy','setup','journey','connect'];
+const viewNames=['welcome','senior','guardian','report','family','settings','devices','about','account','more','alerts','privacy','setup','journey','connect','tutorial'];
 const CLOUD_AVAILABLE=document.querySelector('meta[name="bapmunna-cloud"]')?.content==='enabled';
 const appBase=new URL('./',import.meta.url);
 let edition=editionFromLocation(location,document.querySelector('meta[name="bapmunna-edition"]')?.content,CLOUD_AVAILABLE?recalledEdition(appBase):null);
 function initialView(){return initialEditionView(location,edition);}
-const editionHref=(id,route='')=>CLOUD_AVAILABLE?editionLink(appBase,id,route):`#${id?`${id}/${route||EDITIONS[id].home}`:'welcome'}`;
-const routeHref=route=>`${location.pathname}#${!CLOUD_AVAILABLE&&edition?`${edition}/`:''}${route}`;
+let explicitDemo=!CLOUD_AVAILABLE||new URLSearchParams(location.search).get('demo')==='1';
+let runtime={status:'checking',uid:null},runtimeControl=null,tutorialIndex=0,tutorialSeenUid=null;
+const accountChanged=createAccountBoundary();
+const editionHref=(id,route='')=>{if(!CLOUD_AVAILABLE)return `#${id?`${id}/${route||EDITIONS[id].home}`:'welcome'}`;const url=new URL(editionLink(appBase,id,route));if(explicitDemo)url.searchParams.set('demo','1');return url.href;};
+const routeHref=route=>`${location.pathname}${CLOUD_AVAILABLE&&explicitDemo?'?demo=1':''}#${!CLOUD_AVAILABLE&&edition?`${edition}/`:''}${route}`;
 let state=demoState(),view=initialView(),accountCleanup=null;
 let period=7,chosenMeal=null,modal=null,checkResults=null,toastTimer,focusReturn=null;
 let welcomeSeen=false,welcomeGreeting=null;
@@ -97,7 +103,7 @@ function welcome(){
     <button class="welcome-replay" data-action="welcome-replay" aria-label="토끼의 환영 인사 다시 보기"><span aria-hidden="true">↻</span> 다시 인사하기</button>
     </div><div class="welcome-dock"><span class="eyebrow">A LITTLE MESSAGE, A WARM REPLY</span><h2>밥 한 끼로 전하는 안부</h2><p>밥솥을 쓰는 평소의 하루가,<br>멀리 있는 가족에게 작은 안부로.</p>
     <div class="role-buttons edition-choices"><a class="edition-choice senior-choice" href="${editionHref('senior')}" data-edition="senior"><span class="edition-choice-icon">${brandSymbol()}</span><span><small>Senior</small><strong>어르신용</strong><span>필요한 소식만, 한 번에 전해요.</span></span>${uiIcon('arrow')}</a><a class="edition-choice carer-choice" href="${editionHref('carer')}" data-edition="carer"><span class="edition-choice-icon">${uiIcon('share')}</span><span><small>Carer</small><strong>보호자용</strong><span>안부와 하루의 변화를 살펴봐요.</span></span>${uiIcon('arrow')}</a></div><p class="welcome-note">서로의 하루에, 작은 온기를.</p>
-    ${journeyEntry()}${CLOUD_AVAILABLE?'<a class="final-release-link" href="/bapmunna/final/">최신 앱·계정·토끼 작업실 모아보기 →</a>':''}<p class="welcome-simple-note">두 화면은 로그인 없이 둘러볼 수 있어요.<br>${CLOUD_AVAILABLE?'본인 식사 저장은 로그인 후, 가족 연동은 아직 체험이에요.':'인터넷 없이 열리는 체험판이에요. 실제 저장·가족 전송은 하지 않아요.'}</p></div></section>`;
+    ${journeyEntry()}${CLOUD_AVAILABLE?'<a class="final-release-link" href="/bapmunna/final/">최신 앱·계정·토끼 작업실 모아보기 →</a>':''}<p class="welcome-simple-note">내 계정으로 시작하거나, 예시로 체험할 수 있어요.<br>${CLOUD_AVAILABLE?'본인 기록은 로그인 후 이용해요. 가족 연동은 준비 중이에요.':'인터넷 없이 열리는 체험판이에요. 실제 저장·가족 전송은 하지 않아요.'}</p></div></section>`;
 }
 function greetWelcome(){return welcomeGreeting?.play();}
 function senior(){
@@ -300,7 +306,27 @@ function closeModal(){
   modal=null;render();
   (focusReturn?document.querySelector(focusReturn):null)?.focus();
 }
+function isDemoSurface(){return runtimeSurface({cloudEnabled:CLOUD_AVAILABLE,explicitDemo,view})==='demo';}
+function tutorialSeen(){return !!runtime.uid&&(tutorialSeenUid===runtime.uid||browserTutorialSeen(appBase,runtime.uid));}
+function ensureLiveEntry(){
+  if(CLOUD_AVAILABLE&&!explicitDemo&&edition==='carer'&&runtime.status==='signed-out'&&view==='guardian'){view='account';history.replaceState(null,'',routeHref(view));}
+  if(CLOUD_AVAILABLE&&!explicitDemo&&edition==='carer'&&runtime.status==='signed-in'&&['guardian','account'].includes(view)&&!tutorialSeen()){
+    tutorialIndex=0;view='tutorial';history.replaceState(null,'',routeHref(view));
+  }
+}
+function runtimeBadge(){
+  if(['welcome','journey'].includes(view))return '';
+  const demo=isDemoSurface(),signedIn=runtime.status==='signed-in';
+  const label=demo?'체험 중 · 예시 데이터':runtime.status==='checking'?'계정 확인 중':signedIn?'내 계정 화면':runtime.status==='error'?'계정 확인 필요':'내 계정으로 시작';
+  return `<div class="edition-mode ${demo?'':'is-live'}" role="note"><span class="mode-dot" aria-hidden="true"></span><span>${label}</span>${demo?'<button class="text-button" data-action="leave-demo">체험 끝내기</button>':''}</div>`;
+}
+function syncRuntimeChrome(){
+  const badge=root.querySelector('.edition-mode');if(badge)badge.outerHTML=runtimeBadge();
+  document.querySelector('#storage-hint').textContent=isDemoSurface()?'체험 기록은 내 계정에 저장되지 않아요.':'본인 계정과 연결 상태를 확인해요.';
+  const count=document.querySelector('#nav-alert-count');const total=isDemoSurface()?alertEntries().length:0;count.textContent=String(total);count.hidden=edition!=='carer'||!total;
+}
 function render(focus=false){
+  ensureLiveEntry();
   const active=document.activeElement;
   const preserve=active&&root.contains(active)?['data-action','data-period','data-record-day','data-scenario','data-away-days'].find(name=>active.hasAttribute(name)):null;
   const restore=preserve?`[${preserve}="${active.getAttribute(preserve)}"]`:null;
@@ -314,7 +340,7 @@ function render(focus=false){
   if(CLOUD_AVAILABLE&&edition)rememberEdition(appBase,edition);
   document.title=edition?`밥뭇나 ${EDITIONS[edition].label} · ${EDITIONS[edition].english}`:'밥뭇나 · 밥 한 끼로 전하는 안부';
   document.querySelector('#app-header').hidden=['welcome','journey'].includes(view);
-  document.querySelector('#app-nav').hidden=['welcome','journey'].includes(view);
+  document.querySelector('#app-nav').hidden=['welcome','journey','tutorial'].includes(view);
   document.querySelector('#account-entry').hidden=view==='account';
   document.querySelector('#account-entry').textContent=edition?EDITIONS[edition].account:'내 기록';
   document.querySelector('#edition-switcher').innerHTML=Object.entries(EDITIONS).map(([id,details])=>`<a href="${esc(editionHref(id))}" data-edition="${id}"${id===edition?' aria-current="true"':''}><span class="edition-check" aria-hidden="true">${id===edition?'✓':''}</span>${details.label}</a>`).join('');
@@ -326,9 +352,12 @@ function render(focus=false){
   for(const button of document.querySelectorAll('#app-nav button')){
     if(button.dataset.view===(['senior','guardian','report'].includes(view)?view:'more'))button.setAttribute('aria-current','page');else button.removeAttribute('aria-current');
   }
-  const liveAccount=['account','connect'].includes(view)&&CLOUD_AVAILABLE;
-  const mode=['welcome','journey'].includes(view)?'':`<div class="edition-mode ${liveAccount?'is-live':''}" role="note"><span class="mode-dot" aria-hidden="true"></span><span>${liveAccount?(view==='connect'?'내 기기 연결 확인':edition==='carer'?'실제 계정 관리':'실제 내 기록 저장'):'둘러보기 · 가상 데이터'}</span>${liveAccount?'<small>로그인한 본인 계정</small>':'<small>실제 가족에게 전송되지 않아요</small>'}</div>`;
-  root.innerHTML=mode+({welcome,senior,guardian,report:edition==='senior'?seniorRecords:recent,family:familyView,settings,setup:setupView,devices,about,account:accountView,connect:connectView,more:moreView,alerts:alertsView,privacy:privacyView,journey:journeyView}[view]||welcome)()+modalMarkup();
+  const surface=runtimeSurface({cloudEnabled:CLOUD_AVAILABLE,explicitDemo,view});
+  document.body.dataset.runtime=surface;
+  const mode=runtimeBadge();
+  const content=surface==='live'?(view==='tutorial'&&runtime.status==='signed-in'?liveTutorialPage({index:tutorialIndex,companion:ASSETS.companion}):livePage({view,edition,session:runtime,href:routeHref,companion:ASSETS.companion})):({welcome,senior,guardian,report:edition==='senior'?seniorRecords:recent,family:familyView,settings,setup:setupView,devices,about,account:accountView,connect:connectView,more:moreView,alerts:alertsView,privacy:privacyView,journey:journeyView}[view]||welcome)();
+  root.innerHTML=mode+content+(surface==='demo'?modalMarkup():'');
+  syncRuntimeChrome();
   // The canonical Supabase model has no independent post-window grace interval.
   for(const field of root.querySelectorAll('input[name="grace"]')){field.value='0';field.type='hidden';field.closest('label')?.setAttribute('hidden','');}
   for(const link of root.querySelectorAll('a[href^="#"]'))link.setAttribute('href',routeHref(link.getAttribute('href').slice(1)));
@@ -337,8 +366,8 @@ function render(focus=false){
     welcomeGreeting=createBunnyGreeting(root.querySelector('.welcome'),{imageUrl:ASSETS.bunny,underlayUrl:ASSETS.underlay});
     if(!welcomeSeen){welcomeSeen=true;void greetWelcome();}
   }
-  if(view==='account'&&CLOUD_AVAILABLE)accountCleanup=mountAccount(document.querySelector('#account-surface'),{audience:edition,browseHref:routeHref(EDITIONS[edition].home),familyHref:routeHref('family'),connectHref:routeHref('connect')});
-  if(view==='connect'&&CLOUD_AVAILABLE)accountCleanup=mountSmartThings(document.querySelector('#smartthings-surface'),{accountHref:routeHref('account')});
+  if(view==='account'&&CLOUD_AVAILABLE)accountCleanup=mountAccount(document.querySelector('#account-surface'),{audience:edition,browseHref:routeHref(EDITIONS[edition].home),demoHref:`${location.pathname}?demo=1#${EDITIONS[edition].home}`,familyHref:routeHref('family'),connectHref:routeHref('connect'),onSessionRefresh:(user,metadata)=>applyRuntimeSession(runtimeSession(user,metadata))});
+  if(view==='connect'&&CLOUD_AVAILABLE)accountCleanup=mountSmartThings(document.querySelector('#smartthings-surface'),{accountHref:routeHref('account'),homeHref:routeHref(EDITIONS[edition].home)});
   if(modal){const dialog=root.querySelector('dialog');dialog.showModal();dialog.addEventListener('cancel',event=>{event.preventDefault();closeModal();});}
   else if(focus)root.querySelector('h1')?.focus({preventScroll:true});
   else if(wasModal&&focusReturn)root.querySelector(focusReturn)?.focus({preventScroll:true});
@@ -349,6 +378,8 @@ function go(next,push=true){
   if(!viewNames.includes(next))return;
   if(push&&next==='welcome'&&edition!==null){switchEdition(null);return;}
   if(push&&(next==='senior'&&edition!=='senior'||next==='guardian'&&edition!=='carer')){switchEdition(next==='senior'?'senior':'carer');return;}
+  if(CLOUD_AVAILABLE&&['account','connect'].includes(next))explicitDemo=false;
+  if(next==='tutorial')tutorialIndex=0;
   view=editionView(edition,next);modal=null;
   if(push&&location.hash!==`#${view}`)history.pushState(null,'',routeHref(view));
   render(true);window.scrollTo({top:0,behavior:'instant'});
@@ -362,6 +393,15 @@ function switchEdition(next){
   if(next)toast(`${EDITIONS[next].label}으로 바꿨어요.`);
 }
 function action(name,explicitMeal){
+  if(name==='enter-demo'){explicitDemo=true;modal=null;history.replaceState(null,'',routeHref(edition?EDITIONS[edition].home:'welcome'));go(edition?EDITIONS[edition].home:'welcome',false);return;}
+  if(name==='leave-demo'){explicitDemo=!CLOUD_AVAILABLE;modal=null;history.replaceState(null,'',routeHref(edition?EDITIONS[edition].home:'welcome'));go(edition?EDITIONS[edition].home:'welcome',false);return;}
+  if(name==='retry-session'){runtimeControl?.start();return;}
+  if(['next-live-tutorial','previous-live-tutorial','finish-tutorial'].includes(name)){
+    if(runtime.status!=='signed-in'||view!=='tutorial')return;
+    if(name==='finish-tutorial'){tutorialSeenUid=runtime.uid;rememberBrowserTutorial(appBase,runtime.uid);go(EDITIONS[edition].home);return;}
+    tutorialIndex=Math.max(0,Math.min(4,tutorialIndex+(name==='next-live-tutorial'?1:-1)));render(true);window.scrollTo({top:0,behavior:'instant'});return;
+  }
+  if(!isDemoSurface()&&!['journey-start','welcome-replay','text-size'].includes(name))return;
   switch(name){
     case 'journey-start':journey={step:0,scenario:'ordinary',returnView:view};go('journey');return;
     case 'journey-next':journey.step=Math.min(3,journey.step+1);render(true);window.scrollTo({top:0,behavior:'instant'});return;
@@ -439,6 +479,7 @@ document.addEventListener('click',event=>{
   if(button.closest('form')&&button.type==='submit')return;
   try{
     if(button.dataset.view){go(button.dataset.view);return;}
+    if(!isDemoSurface()){if(button.dataset.action)action(button.dataset.action);return;}
     if(button.dataset.mealDetail){openModal('meal',{meal:button.dataset.mealDetail,day:Number(button.dataset.day)});render();return;}
     if(button.dataset.awayDays&&modal?.type==='away'){
       awayPresetRange(state.now,Number(button.dataset.awayDays));modal.awayDays=Number(button.dataset.awayDays);render();
@@ -523,7 +564,7 @@ document.addEventListener('submit',event=>{
     if(savedSection)document.querySelector(`#setting-${savedSection}>summary`)?.focus({preventScroll:true});
   }catch(error){const output=form.querySelector('.error')||form.closest('.card')?.querySelector('.error');if(output){output.textContent=error.message;output.tabIndex=-1;output.focus();}else toast(error.message);}
 });
-function restoreRoute(){if(location.hash==='#main'||location.hash.endsWith('/main'))return;edition=editionFromLocation(location,'',CLOUD_AVAILABLE?recalledEdition(appBase):null);go(initialView(),false);}
+function restoreRoute(){if(location.hash==='#main'||location.hash.endsWith('/main'))return;explicitDemo=!CLOUD_AVAILABLE||new URLSearchParams(location.search).get('demo')==='1';edition=editionFromLocation(location,'',CLOUD_AVAILABLE?recalledEdition(appBase):null);go(initialView(),false);}
 window.addEventListener('hashchange',restoreRoute);
 window.addEventListener('popstate',restoreRoute);
 // Hidden advanced fields still validate. Reveal their group before native error focus.
@@ -536,12 +577,36 @@ document.addEventListener('invalid',event=>{
 const modelContext=document.modelContext;
 if(modelContext?.registerTool){
   const controller=new AbortController();
-  const demoSummary=()=>({demo:true,now:hhmm(state.now),consent:state.consent,online:state.online,meals:MEALS.map(id=>({id,status:status(state,dayOf(state.now),id)})),alerts:alertEntries()});
+  const demoSummary=()=>{if(!isDemoSurface())throw Error('체험 화면에서만 사용할 수 있어요.');return {demo:true,now:hhmm(state.now),consent:state.consent,online:state.online,meals:MEALS.map(id=>({id,status:status(state,dayOf(state.now),id)})),alerts:alertEntries()};};
   const demoTools=[
     {name:'read_meal_demo',description:'Read this tab’s in-memory meal-care demonstration. Never real health or device data.',inputSchema:{type:'object',properties:{},additionalProperties:false},annotations:{readOnlyHint:true},execute:demoSummary},
-    {name:'simulate_meal_demo_action',description:'Simulate a sensor, 30-minute clock advance or self-report in this tab. Does not notify people or operate hardware.',inputSchema:{type:'object',properties:{action:{type:'string',enum:['sensor','advance30','confirm']},meal:{type:'string',enum:MEALS}},required:['action'],additionalProperties:false},annotations:{readOnlyHint:false},execute:input=>{if(!input||!['sensor','advance30','confirm'].includes(input.action)||Object.keys(input).some(name=>!['action','meal'].includes(name))||(input.action==='confirm'&&!MEALS.includes(input.meal)))throw Error('Invalid demo action');action(input.action,input.meal);return demoSummary();}},
+    {name:'simulate_meal_demo_action',description:'Simulate a sensor, 30-minute clock advance or self-report in this tab. Does not notify people or operate hardware.',inputSchema:{type:'object',properties:{action:{type:'string',enum:['sensor','advance30','confirm']},meal:{type:'string',enum:MEALS}},required:['action'],additionalProperties:false},annotations:{readOnlyHint:false},execute:input=>{if(!isDemoSurface())throw Error('체험 화면에서만 사용할 수 있어요.');if(!input||!['sensor','advance30','confirm'].includes(input.action)||Object.keys(input).some(name=>!['action','meal'].includes(name))||(input.action==='confirm'&&!MEALS.includes(input.meal)))throw Error('Invalid demo action');action(input.action,input.meal);return demoSummary();}},
   ];
   for(const tool of demoTools){try{Promise.resolve(modelContext.registerTool(tool,{signal:controller.signal})).catch(()=>{});}catch{}}
   window.addEventListener('pagehide',()=>controller.abort(),{once:true});
 }
 render();
+function clearRuntimePresentation(){
+  explicitDemo=false;state=demoState(false);setup=null;modal=null;receipt=null;reportDay=null;tutorialSeenUid=null;
+  history.replaceState(null,'',routeHref(view));
+}
+function applyRuntimeSession(next){
+  if(accountChanged(next))clearRuntimePresentation();
+  runtime=next;
+  if(!['account','connect'].includes(view)||(view==='account'&&edition==='carer'&&next.status==='signed-in'&&!tutorialSeen()))render(true);else syncRuntimeChrome();
+}
+function observeRuntime(){
+  runtimeControl?.dispose();
+  runtimeControl=createRuntimeSession({connect:connectCloud,onChange:applyRuntimeSession});
+  runtimeControl.start();
+}
+if(CLOUD_AVAILABLE){
+  observeRuntime();
+  window.addEventListener('pagehide',()=>{
+    runtimeControl?.dispose();accountCleanup?.();accountCleanup=null;
+    clearRuntimePresentation();
+    runtime={status:'checking',uid:null};
+    root.innerHTML='<section class="card" role="status"><h1 tabindex="-1">계정을 다시 확인할게요.</h1></section>';
+  });
+  window.addEventListener('pageshow',event=>{if(event.persisted){render();observeRuntime();}});
+}

@@ -6,10 +6,10 @@ const accountAssetRoot=new URL('./assets/',import.meta.url).href;
 const safe=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const selectOptions=(values,current)=>Object.entries(values).map(([id,label])=>`<option value="${id}" ${id===current?'selected':''}>${label}</option>`).join('');
 
-export function mountAccount(element,{admin=false,management,audience='senior',browseHref='#guardian',familyHref='#family',connectHref='#connect'}={}){
+export function mountAccount(element,{admin=false,management,audience='senior',browseHref='#guardian',demoHref=browseHref,familyHref='#family',connectHref='#connect',onSessionRefresh=()=>{},connect=getProvider}={}){
   const carer=!admin&&audience==='carer';
   const primaryAccountHref=`https://impact-series.web.app/bapmunna/${carer?'carer':'senior'}/#account`;
-  let alive=true,provider,unwatchAuth,unwatchMeals,disposeManagement,generation=0;
+  let alive=true,provider,unwatchAuth,unwatchMeals,disposeManagement,generation=0,accountEpoch=0;
   const model={loading:true,busy:false,user:null,profile:null,staff:false,meals:[],tab:'login',notice:'',problem:'',email:'',pendingVerificationEmail:'',recovery:false};
   function feedback(){return `${model.problem?`<p class="notice error" role="alert">${safe(model.problem)}</p>`:''}${model.notice?`<p class="account-success" role="status">${safe(model.notice)}</p>`:''}`;}
   function policy(){return '<details class="account-policy"><summary>저장되는 정보와 이용 목적</summary><p>이메일·표시 이름·가입 및 최근 계정 이용 시각은 회원 서비스와 고객 문의 관리를 위해 저장해요. 식사 직접 확인은 내 계정의 별도 기록으로 저장해요.</p><p>운영자는 고객 기본정보와 운영 메모를 보고, 일반 운영자 권한으로 개인 식사 기록은 조회할 수 없어요. 비밀번호는 인증 서비스가 관리하며 고객관리 표에 저장하지 않아요.</p><p>가상 체험 데이터는 자동으로 업로드하지 않아요. 내 기록에서 직접 입력한 내용만 저장하며, 저장한 식사 기록은 개별 삭제할 수 있어요.</p></details>';}
@@ -24,7 +24,7 @@ export function mountAccount(element,{admin=false,management,audience='senior',b
     ${signup?'<label class="check-row consent-check"><input type="checkbox" name="consent" required>회원 정보 저장 안내를 확인했어요.</label>':''}
     <button class="primary full" type="submit" ${model.busy?'disabled':''}>${model.busy?'진행 중…':reset?'재설정 메일 받기':signup?'가입하기':'로그인'}</button></form>
     <div class="auth-links">${signup||reset?'<button type="button" class="text-button" data-auth-tab="login">로그인으로 돌아가기</button>':`${!admin?'<button class="text-button" type="button" data-auth-tab="signup">회원가입</button>':''}<button class="text-button" type="button" data-auth-tab="reset">비밀번호 찾기</button>`}${model.pendingVerificationEmail?'<button class="text-button" type="button" data-cloud-action="resend">확인 메일 다시 받기</button>':''}</div>
-    ${carer?'<p class="notice">보호자 본인의 계정으로 시작해요. 로그인해도 어르신의 기록이 자동으로 연결되지는 않아요.</p>':''}${policy()}<p class="auth-provider">${admin?'지정된 운영자만 이용할 수 있어요.':provider?.name==='Supabase'?'Supabase 별도 계정으로 이용해요.':'로그인 없이 먼저 둘러볼 수도 있어요.'}</p></section>${!admin?`<a class="auth-back" href="${safe(browseHref)}">${carer?'보호자용':'어르신용'} 먼저 둘러보기 →</a>`:''}</div>`;
+    ${carer?'<p class="notice">보호자 본인의 계정으로 시작해요. 로그인해도 어르신의 기록이 자동으로 연결되지는 않아요.</p>':''}${policy()}<p class="auth-provider">${admin?'지정된 운영자만 이용할 수 있어요.':provider?.name==='Supabase'?'Supabase 별도 계정으로 이용해요.':'로그인 없이 먼저 둘러볼 수도 있어요.'}</p></section>${!admin?`<a class="auth-back" href="${safe(demoHref)}">${carer?'보호자용':'어르신용'} 예시로 체험하기 →</a>`:''}</div>`;
   }
   function verifyView(){
     return `<section class="card account-narrow"><span class="pill">이메일 확인</span><h2>메일함에서 한 번 확인해 주세요.</h2><p>${safe(model.user.email)}</p><p>이메일을 확인한 뒤 ‘확인했어요’를 눌러 주세요. 확인 전에는 식사 기록과 고객관리 정보를 만들지 않아요.</p>${feedback()}<div class="buttons"><button class="primary" data-cloud-action="refresh-user">확인했어요</button><button data-cloud-action="resend">확인 메일 다시 받기</button></div><button class="text-button full" data-cloud-action="logout">로그아웃</button></section>`;
@@ -49,7 +49,7 @@ export function mountAccount(element,{admin=false,management,audience='senior',b
     return '<section class="card account-narrow"><p>관리센터를 준비하고 있어요.</p></section>';
   }
   function carerView(){
-    return `<div class="account-welcome"><h2>${safe(model.profile?.displayName||model.user.displayName||'보호자')}님, 안녕하세요.</h2><p class="label">보호자 본인의 계정</p><a class="account-browse-link" href="${safe(browseHref)}">보호자 홈 둘러보기 →</a></div>${feedback()}<section class="card st-account-entry"><h2>우리 집 플러그 연결</h2><p>삼성 계정으로 허용하고, 내가 쓸 기기를 골라요.</p><a href="${safe(connectHref)}">SmartThings 연결하기 →</a></section><section class="card carer-connection"><span class="pill">가족 연동 준비 중</span><h2>어르신과의 연결은<br>동의부터 시작해요.</h2><p>실제 가족 초대와 다른 계정의 식사 요약은 아직 연결되지 않았어요. 현재 보호자 홈·알림·리포트는 가상 데이터로 둘러볼 수 있어요.</p><a class="quiet-link" href="${safe(familyHref)}">가족 초대 흐름 체험하기 →</a><p class="caption">어르신의 로그인 정보를 공유받지 마세요. 본인 기록과 가족 공유는 별도로 관리해요.</p></section><section class="card account-narrow carer-profile">${profileForm()}<button class="text-button full" data-cloud-action="logout">로그아웃</button>${model.staff?'<a class="quiet-link" href="./manage/">운영자 공간 →</a>':''}</section>`;
+    return `<div class="account-welcome"><h2>${safe(model.profile?.displayName||model.user.displayName||'보호자')}님, 안녕하세요.</h2><p class="label">보호자 본인의 계정</p><a class="account-browse-link" href="${safe(browseHref)}">보호자 홈으로 →</a></div>${feedback()}<section class="card st-account-entry"><h2>우리 집 플러그 연결</h2><p>삼성 계정으로 허용하고, 내가 쓸 기기를 골라요.</p><a href="${safe(connectHref)}">SmartThings 연결하기 →</a></section><section class="card carer-connection"><span class="pill">가족 연동 준비 중</span><h2>어르신과의 연결은<br>동의부터 시작해요.</h2><p>실제 가족 초대와 다른 계정의 식사 요약은 아직 연결되지 않았어요. 연결 전에는 보호자 홈에 준비 상태를 보여드려요. 예시 기록은 체험을 선택한 경우에만 표시돼요.</p><a class="quiet-link" href="${safe(familyHref)}">가족 연결 준비 상태 보기 →</a><p class="caption">어르신의 로그인 정보를 공유받지 마세요. 본인 기록과 가족 공유는 별도로 관리해요.</p></section><section class="card account-narrow carer-profile">${profileForm()}<button class="text-button full" data-cloud-action="logout">로그아웃</button>${model.staff?'<a class="quiet-link" href="./manage/">운영자 공간 →</a>':''}</section>`;
   }
 
   function render(){
@@ -65,17 +65,21 @@ export function mountAccount(element,{admin=false,management,audience='senior',b
     element.innerHTML=!model.user?authForm():!model.user.verified?verifyView():admin?crmView():carer?carerView():recordsView();
   }
   async function loadUser(user,metadata={}){
+    if(!alive)return false;
+    const identityChanged=(model.user?.uid??null)!==(user?.uid??null);
+    if(identityChanged)accountEpoch++;
     const revision=++generation;unwatchMeals?.();unwatchMeals=null;
-    model.user=user;model.profile=null;model.staff=false;model.meals=[];model.loading=true;model.recovery=!!metadata.recovery||model.recovery;if(user?.verified)model.pendingVerificationEmail='';render();
+    model.user=user;model.profile=null;model.staff=false;model.meals=[];model.loading=true;model.recovery=!!metadata.recovery||(!identityChanged&&model.recovery);if(user?.verified)model.pendingVerificationEmail='';render();
     try{
       if(user?.verified&&!model.recovery){
         const [profile,staff]=await Promise.all([provider.getProfile(),provider.isStaff()]);
-        if(!alive||revision!==generation)return;
+        if(!alive||revision!==generation)return false;
         model.profile=profile;model.staff=staff;
         if(!admin&&profile){if(!carer)unwatchMeals=provider.watchMeals(meals=>{if(alive&&revision===generation){model.meals=meals;render();}},error=>{model.problem=authMessage(error);render();});await provider.touchLogin();}
       }
     }catch(error){model.problem=authMessage(error);}
-    if(alive&&revision===generation){model.loading=false;render();}
+    if(alive&&revision===generation){model.loading=false;render();return true;}
+    return false;
   }
   async function run(operation,notice=''){
     if(model.busy)return;
@@ -83,6 +87,12 @@ export function mountAccount(element,{admin=false,management,audience='senior',b
     try{await operation();if(notice)model.notice=notice;}
     catch(error){model.problem=authMessage(error);}
     finally{model.busy=false;render();}
+  }
+  async function refreshSession({leaveRecovery=false}={}){
+    const revision=generation,epoch=accountEpoch,user=await provider.refreshUser();
+    if(!alive||epoch!==accountEpoch||(!leaveRecovery&&revision!==generation))return;
+    if(leaveRecovery)model.recovery=false;
+    if(await loadUser(user))onSessionRefresh(user,{recovery:model.recovery});
   }
   const click=async event=>{
     event.stopPropagation();
@@ -98,7 +108,7 @@ export function mountAccount(element,{admin=false,management,audience='senior',b
     if(name==='retry'){location.reload();return;}
     if(name==='logout'){await run(async()=>{await provider.signOut();model.user=null;model.profile=null;model.recovery=false;});return;}
     if(name==='google'||name==='kakao'){const remember=element.querySelector('[name=remember]')?.checked===true;await run(()=>provider[name](remember));return;}
-    if(name==='refresh-user'){await run(async()=>loadUser(await provider.refreshUser()),'이메일 확인 상태를 갱신했어요.');return;}
+    if(name==='refresh-user'){await run(()=>refreshSession(),'이메일 확인 상태를 갱신했어요.');return;}
     if(name==='resend'){await run(()=>provider.resendVerification(model.pendingVerificationEmail||model.email),'확인 메일을 요청했어요. 메일함과 스팸함을 확인해 주세요.');return;}
   };
   const submit=async event=>{
@@ -118,12 +128,12 @@ export function mountAccount(element,{admin=false,management,audience='senior',b
           if(carer)throw Error('식사 직접 확인은 어르신용의 본인 기록에서 이용해 주세요.');
           await provider.saveMeal(fields.get('meal'),fields.get('kind'));model.notice='내 계정에 실제 식사 직접 확인을 저장했어요.';
         }else if(form.id==='cloud-password-form'){
-          await provider.changePassword(String(fields.get('password')));model.recovery=false;await loadUser(await provider.refreshUser());model.notice='새 비밀번호를 저장했어요.';
+          const epoch=accountEpoch;await provider.changePassword(String(fields.get('password')));if(!alive||epoch!==accountEpoch)return;await refreshSession({leaveRecovery:true});model.notice='새 비밀번호를 저장했어요.';
         }
       });
     }finally{for(const input of form.querySelectorAll('input[type="password"]'))input.value='';}
   };
   element.addEventListener('click',click);element.addEventListener('submit',submit);
-  render();getProvider().then(instance=>{if(!alive)return;provider=instance;unwatchAuth=provider.onUser((user,metadata)=>{loadUser(user,metadata);});}).catch(error=>{if(alive){model.loading=false;model.problem=error.message;render();}});
+  render();connect().then(instance=>{if(!alive)return;provider=instance;unwatchAuth=provider.onUser((user,metadata)=>{loadUser(user,metadata);});}).catch(error=>{if(alive){model.loading=false;model.problem=error.message;render();}});
   return ()=>{alive=false;generation++;unwatchAuth?.();unwatchMeals?.();disposeManagement?.();element.removeEventListener('click',click);element.removeEventListener('submit',submit);};
 }

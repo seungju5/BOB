@@ -55,3 +55,8 @@ assert.ok(existsSync(new URL('../docs/assets/bunny-underlay.webp',import.meta.ur
 assert.match(css,/animation:none!important/,'Reduced motion has a static CSS fallback');
 console.log('PASS welcome animation accessibility contracts');
 await import('./worksheet.test.mjs');
+
+await import('./smartthings-view.test.mjs');
+
+await import('./runtime-mode.test.mjs');
+await import('./account-session.test.mjs');

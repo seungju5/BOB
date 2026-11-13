@@ -1,21 +1,24 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {randomUUID} from 'node:crypto';
 import {initializeApp,deleteApp} from 'firebase-admin/app';
 import {getFirestore} from 'firebase-admin/firestore';
 import {firestoreStore} from '../store.mjs';
 
 test('real Firestore transactions preserve owner isolation, locks, single-use state and signal order',{skip:!process.env.FIRESTORE_EMULATOR_HOST},async()=>{
   if(!process.env.FIRESTORE_EMULATOR_HOST.match(/^(127\.0\.0\.1|localhost):\d+$/))throw Error('Only a local emulator is allowed.');
-  const app=initializeApp({projectId:'demo-bapmunna'},'smartthings-store-test'),store=firestoreStore(getFirestore(app),()=>1000000);
-  const uid='store-test-alice',installId='store-test-install';
+  // Receipts intentionally survive disconnect; each run must use its own installation.
+  const run=randomUUID();
+  const app=initializeApp({projectId:'demo-bapmunna'},'smartthings-store-test-'+run),store=firestoreStore(getFirestore(app),()=>1000000);
+  const uid='store-test-alice-'+run,installId='store-test-install-'+run,state='test-state-'+run;
   try{
     await store.remove(uid,installId);
     await store.saveConnection(uid,{installId,stage:'connected',deviceId:'mine',tokens:{encrypted:true},lastSignalAt:100});
     await assert.rejects(()=>store.saveConnection('store-test-bob',{installId}),{code:'installation_in_use'});
-    await store.saveState('test-state',{nonceHash:'correct',until:1000010,uid});
-    await assert.rejects(()=>store.consumeState('test-state','wrong'),{code:'invalid_state'});
-    assert.equal((await store.consumeState('test-state','correct')).uid,uid);
-    await assert.rejects(()=>store.consumeState('test-state','correct'),{code:'invalid_state'});
+    await store.saveState(state,{nonceHash:'correct',until:1000010,uid});
+    await assert.rejects(()=>store.consumeState(state,'wrong'),{code:'invalid_state'});
+    assert.equal((await store.consumeState(state,'correct')).uid,uid);
+    await assert.rejects(()=>store.consumeState(state,'correct'),{code:'invalid_state'});
     let release;const gate=new Promise(resolve=>{release=resolve;});let entered;
     const started=new Promise(resolve=>{entered=resolve;});
     const first=store.withLease(uid,async()=>{entered();await gate;});

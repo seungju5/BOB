@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ImpactConnectionLinks } from "@/components/ImpactConnectionLinks";
 import { ALERT_PRIORITY, ALERT_TONE, alertCopy, AlertShortcut, fmtDateLong, STATUS_META, StatusIcon, withWa } from "@/components/guardian";
 import { IconArrowRight, IconChart, IconClock, IconPhone, IconSuitcase, IconWifi } from "@/components/icons";
 import { Logo, Mascot } from "@/components/Mascot";
@@ -72,6 +73,8 @@ export default function HomePage() {
           </div>
         </section>
       ) : null}
+
+      <ImpactConnectionLinks />
 
       <Link
         href="/report"

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ImpactConnectionLinks } from "@/components/ImpactConnectionLinks";
 import { Logo, Mascot } from "@/components/Mascot";
 import { IconArrowRight, IconBell, IconChart, IconSettings } from "@/components/icons";
 import { useApp } from "@/lib/data/useApp";
@@ -24,6 +25,7 @@ export default function MorePage() {
         <IconArrowRight className="h-5 w-5 shrink-0 text-muted" />
       </Link>)}
     </div>
+    <ImpactConnectionLinks />
     <Mascot className="mx-auto mt-auto h-32 w-32 pt-6" />
     <p className="text-center text-sm text-muted">밥 한 끼로 전하는 안부</p>
   </main>;

@@ -10,7 +10,7 @@ import {SETUP_STEPS,setupDraft,validateSetup,applySetup,readSetupForm,setupConte
 import {mealEvidence,careHeadline,JOURNEY_SCENARIOS,journeyScene,reportDayAfterKey,awayPresetRange} from './experience.mjs';
 
 // Resolve once against the entry document; role switches change the URL without reloading.
-const ASSETS=Object.fromEntries(Object.entries({logo:'./assets/rice-logo.png',partner:'./assets/partner.png',bunny:'./assets/bunny.png',underlay:'./assets/bunny-underlay.webp',companion:'./assets/bunny.png',full:'./assets/rice-full.png',half:'./assets/rice-half.webp',empty:'./assets/rice-empty.webp',eatout:'./assets/eatout.svg',away:'./assets/away.svg',help:'./assets/help.svg',family:'./assets/family.svg',info:'./assets/info.svg',phone:'./assets/phone.svg',heart:'./assets/heart.svg',history:'./assets/history.svg'}).map(([name,path])=>[name,new URL(path,document.baseURI).href]));
+const ASSETS=Object.fromEntries(Object.entries({logo:'./assets/rice-logo.png',partner:'./assets/partner.png',bunny:'./assets/bunny.png',underlay:'./assets/bunny-underlay.webp',companion:'./assets/bunny.png',cooker:'./assets/rice-cooker-companion.png',full:'./assets/rice-full.png',half:'./assets/rice-half.webp',empty:'./assets/rice-empty.webp',eatout:'./assets/eatout.svg',away:'./assets/away.svg',help:'./assets/help.svg',family:'./assets/family.svg',info:'./assets/info.svg',phone:'./assets/phone.svg',heart:'./assets/heart.svg',history:'./assets/history.svg'}).map(([name,path])=>[name,new URL(path,document.baseURI).href]));
 const root=document.querySelector('#view');
 const viewNames=['welcome','senior','guardian','report','family','settings','devices','about','account','more','alerts','privacy','setup','journey','connect'];
 const CLOUD_AVAILABLE=document.querySelector('meta[name="bapmunna-cloud"]')?.content==='enabled';
@@ -119,11 +119,11 @@ function guardian(){
   const pending=alertEntries(),last=state.devices.cooker.lastActivity;
   const direct=MEALS.filter(id=>record(state,dayOf(state.now),id).manual).map(id=>`${LABELS[id]}${record(state,dayOf(state.now),id).eatOut?' 외식':''}`);
   const connected=state.consent&&deviceOnline(state,'cooker'),showSignal=connected&&!inAway(state)&&last!==null;
-  const evidence=riceState(state,meal()),helpPending=state.help?.status==='pending',headline=careHeadline(state);
+  const helpPending=state.help?.status==='pending',headline=careHeadline(state);
   return heading('오늘의 안부',`${dateLabel(dayOf(state.now))} · 마음은 가까이`)+`
     <div class="home-stack">
     ${pending.length?`<section class="attention-card ${helpPending?'help-priority':''}" aria-label="확인이 필요한 안부"><div class="attention-title"><span class="attention-icon">${uiIcon('bell')}</span><h2>${helpPending?'도움 요청이 도착했어요':'확인할 안부가 있어요'}</h2><span class="alert-total">${pending.length}</span></div><p>${helpPending?'가족의 연락을 기다려요. 직접 안부를 확인해 주세요.':'놓친 소식이 있는지, 가볍게 살펴보세요.'}</p>${helpPending?`<button class="dark care-call" data-action="call-dialog">${icon('phone',23)}전화로 안부 묻기</button><small>가상 요청이에요. 실제 전화는 연결되지 않아요.</small>`:''}<div class="attention-actions">${helpPending?'<button class="text-button" data-ack="help">요청을 읽었어요</button>':''}<button class="text-button" data-view="alerts">알림 ${pending.length}개 보기 <span aria-hidden="true">→</span></button></div></section>`:''}
-    <section class="care-hero ${headline.tone}" aria-labelledby="care-title"><div class="care-hero-top"><span>${bunnyCompanion()}오늘의 안부 한 그릇</span><button data-action="bowl-info" aria-label="밥그릇 표현 안내">${icon('info',21)}</button></div><div class="care-illustration"><span class="window-light" aria-hidden="true"></span>${art(evidence.level,800,534,'','care-rice')}<span class="care-time">${showSignal?`${hhmm(last)} · 밥솥 소식`:!state.consent?'공유 쉬는 중':inAway(state)?'외출 일정 중':!connected?'연결 확인 필요':'새 소식 기다리는 중'}</span></div><h2 id="care-title">${helpPending?'오늘의 밥솥 소식':headline.title}</h2><p>${helpPending?'기록만으로 지금의 상태를 알 수는 없어요.':headline.detail}</p>${!helpPending?`<button class="dark care-call" data-action="call-dialog">${icon('phone',23)}전화로 안부 묻기</button><small class="call-scope">실제 전화는 연결되지 않는 체험이에요.</small>`:''}<div class="care-hero-foot"><span class="connection-dot ${connected?'online':''}" aria-hidden="true"></span><span>${connected?'가상 기기 연결됨':'기기 관찰 중지'}</span><a href="#devices">기기 보기 ${uiIcon('arrow')}</a></div></section>
+    <section class="care-hero ${headline.tone}" aria-labelledby="care-title"><div class="care-hero-top"><span>${bunnyCompanion()}밥솥이가 전하는 안부</span><button data-action="cooker-info" aria-label="밥솥이와 안부 표현 안내">${icon('info',21)}</button></div><div class="care-illustration"><span class="window-light" aria-hidden="true"></span>${art('cooker',1254,1254,'안부를 전하는 귀여운 밥솥이','care-rice care-cooker')}<span class="care-time">${showSignal?`${hhmm(last)} · 밥솥 소식`:!state.consent?'공유 쉬는 중':inAway(state)?'외출 일정 중':!connected?'연결 확인 필요':'새 소식 기다리는 중'}</span></div><h2 id="care-title">${helpPending?'오늘의 밥솥 소식':headline.title}</h2><p>${helpPending?'기록만으로 지금의 상태를 알 수는 없어요.':headline.detail}</p>${!helpPending?`<button class="dark care-call" data-action="call-dialog">${icon('phone',23)}전화로 안부 묻기</button><small class="call-scope">실제 전화는 연결되지 않는 체험이에요.</small>`:''}<div class="care-hero-foot"><span class="connection-dot ${connected?'online':''}" aria-hidden="true"></span><span>${connected?'가상 기기 연결됨':'기기 관찰 중지'}</span><a href="${CLOUD_AVAILABLE?'#connect':'#devices'}">${CLOUD_AVAILABLE?'기기 연결':'기기 보기'} ${uiIcon('arrow')}</a></div></section>
     <section class="card daily-card"><div class="section-line"><h2>오늘의 끼니</h2><a href="#report" aria-label="식사 기록 자세히 보기">기록 보기 ${uiIcon('arrow')}</a></div>${mealStrip()}<p class="caption meal-hint">끼니를 누르면 어떤 소식인지 볼 수 있어요.</p></section>
     <section class="home-contact"><p class="message">${!state.consent?'공유를 쉬는 중이에요.':direct.length?direct.join(' · ')+' 식사 소식을 남기셨어요.':'짧은 통화가 다정한 안부가 돼요.'}</p><details class="quiet-details"><summary>마음 전하기 · 식사 체크 체험</summary><button class="text-button" data-action="warmth">${icon('heart',19)} 마음 보내기</button><button class="text-button" data-view="senior">식사 체크 체험 →</button>${state.social&&!state.social.handled?'<button class="text-button" data-action="social-ack">전해온 마음 확인</button>':''}</details></section>
     ${!state.setup.complete?'<button class="setup-invitation compact-invitation" data-action="setup-start"><span><small>우리 집의 속도로</small><strong>안부 준비하기</strong><span>가상 연결 · 생활 패턴 · 알림 기준</span></span>'+uiIcon('arrow')+'</button>':''}
@@ -252,6 +252,9 @@ function modalMarkup(){
       title=`${dateLabel(detail.day)} · ${detail.label}`;
       body=`<div class="evidence-status ${detail.kind}"><span aria-hidden="true">${statusSymbol(detail.kind)}</span><strong>${STATUS_COPY[detail.kind]}</strong><small>설정한 시간 ${detail.window}</small></div><p>${detail.detail}</p>${detail.sources.length?`<ul class="evidence-sources">${detail.sources.map(source=>`<li><strong>${source.label}</strong><p>${source.detail}</p></li>`).join('')}</ul>`:''}<p class="caption">가상 기록의 근거예요. 실제 섭취량·영양·건강 상태를 판단하지 않아요.</p>`;break;
     }
+    case 'cooker':
+      title='밥솥이가 안부를 전해요.';
+      body='<p>밥솥이는 안부를 함께 살펴보는 캐릭터예요. 실제 소식은 화면의 시간·연결 상태·끼니 기록으로 확인해 주세요.</p><p>캐릭터의 표정은 실제 식사량이나 건강 상태를 뜻하지 않아요.</p>';break;
     case 'bowl':
       title='밥그릇은 소식의 표현이에요.';
       body='<ul class="summary-list"><li>소복한 밥: 취사·열림 또는 직접 확인 소식이 있어요.</li><li>빈 그릇: 기록이 없거나 공유·관찰을 쉬고 있어요.</li></ul><p>그림의 밥 양은 실제 먹은 양·영양·건강 상태와 관계없어요. 외출·연결 장애는 별도 문구로 표시해요.</p>';break;
@@ -377,6 +380,7 @@ function action(name,explicitMeal){
       button.setAttribute('aria-pressed',String(enabled));button.setAttribute('aria-label',enabled?'큰 글씨 끄기':'큰 글씨 켜기');button.textContent=enabled?'가−':'가+';return;
     }
     case 'confirm':confirmMeal(state,explicitMeal||meal());toast(`${LABELS[explicitMeal||meal()]} 식사를 확인했어요. 이 탭의 가상 요약에 반영했어요.`);break;
+    case 'cooker-info':openModal('cooker');break;
     case 'bowl-info':openModal('bowl');break;
     case 'eatout-dialog':openModal('eatout',{meal:meal()});break;
     case 'eatout-save':

@@ -9,20 +9,20 @@ export default function StartPage() {
         <Logo />
       </div>
 
-      <div className="relative flex flex-1 flex-col px-7 pt-10">
+      <div className="relative flex min-h-[414px] flex-1 flex-col px-7 pt-10">
         <h1 className="animate-rise text-[44px] leading-[1.15] font-extrabold tracking-[-0.03em] text-cocoa">
-          오늘도
+          안부가
           <br />
-          밥은
+          폴짝
           <br />
-          드셨을까요?
+          찾아왔어요
         </h1>
         <p className="mt-auto mb-10 text-[19px] leading-relaxed text-cocoa/80">
           매일 쓰는 밥솥이
           <br />
           대신 전하는 안부
         </p>
-        <BunnyGreeting className="absolute right-6 bottom-8 h-48 w-48" />
+        <BunnyGreeting className="absolute right-3 bottom-8 h-40 w-40 min-[360px]:right-6 min-[360px]:h-48 min-[360px]:w-48" />
       </div>
 
       <div className="rounded-t-[2.25rem] bg-paper px-6 pt-8 pb-8">

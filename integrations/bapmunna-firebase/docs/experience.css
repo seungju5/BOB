@@ -43,3 +43,11 @@ body.large-text .care-hero h2{font-size:30px}body.large-text .care-hero>p,body.l
 /* Keep both role choices discoverable on a typical phone, without shrinking them. */
 @media(max-width:760px){.welcome-art{min-height:420px}.welcome-copy{padding-top:17px}}
 @media(max-width:360px){.welcome-art{min-height:390px}.welcome-copy h1{font-size:34px;line-height:1.25}}
+
+/* The guardian's guide is Bapsoti; status remains in the adjacent text. */
+.care-hero .care-illustration{height:236px}
+.care-hero .care-cooker{width:300px;height:300px;margin-top:-18px;max-width:none;flex:none}
+.help-priority+.care-hero .care-illustration{height:168px}
+.help-priority+.care-hero .care-cooker{width:224px;height:224px}
+@media(max-width:760px){.care-hero .care-illustration{height:204px}.care-hero .care-cooker{width:270px;height:270px;margin-top:-22px}}
+@media(max-width:360px){.care-hero .care-illustration{height:192px}.care-hero .care-cooker{width:250px;height:250px}}

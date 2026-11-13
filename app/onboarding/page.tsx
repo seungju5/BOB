@@ -131,7 +131,7 @@ function MealStep({ state, next }: StepProps) {
   );
   const windows = SLOTS_FOR_MEALS[meals].map((s) => times[s]);
   const setWindows = (ws: MealWindow[]) => setTimes({ ...times, ...Object.fromEntries(ws.map((w) => [w.slot, w])) });
-  const [eatOut, setEatOut] = useState(state.mealProfile.eatOutPerWeek);
+  const [eatOut, setEatOut] = useState(Math.max(0, Math.min(20, state.mealProfile.eatOutPerWeek)));
   return (
     <>
       <div className="flex flex-col gap-5">
@@ -149,10 +149,10 @@ function MealStep({ state, next }: StepProps) {
           <Slider
             value={eatOut}
             min={0}
-            max={21}
+            max={20}
             unit="번"
             label="일주일에 외식 횟수"
-            marks={[0, 7, 14, 21]}
+            marks={[0, 7, 14, 20]}
             format={(v) => (v === 0 ? "거의 안 함" : null)}
             onChange={setEatOut}
           />

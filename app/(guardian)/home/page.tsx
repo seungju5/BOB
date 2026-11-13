@@ -153,6 +153,7 @@ export default function HomePage() {
           {relation} 연락처 등록하기
         </Link>
       )}
+      <p className="mt-2 text-center text-[13px] leading-relaxed text-muted">등록한 가구 대표자 한 분의 연락처로 전화해요.</p>
       <Link href="/records" className="mt-3 flex items-center justify-center gap-1.5 py-2 text-[15px] font-semibold text-cocoa/70">
         <IconClock className="h-4 w-4" />
         식사 기록 보기

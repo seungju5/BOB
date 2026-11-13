@@ -61,7 +61,7 @@ function Settings({ app, view, now }: { app: App; view: AppView; now: Date }) {
   const mealSlots: Record<number, MealSlotName[]> = { 1: ["lunch"], 2: ["breakfast", "dinner"], 3: ["breakfast", "lunch", "dinner"] };
   const windows = mealSlots[meals].map((slot) => times[slot]);
   const setWindows = (next: MealWindow[]) => setTimes({ ...times, ...Object.fromEntries(next.map((window) => [window.slot, window])) });
-  const [eatOut, setEatOut] = useState(view.mealProfile.eatOutPerWeek);
+  const [eatOut, setEatOut] = useState(Math.max(0, Math.min(20, view.mealProfile.eatOutPerWeek)));
   const [keepWarm, setKeepWarm] = useState(view.mealProfile.usesKeepWarm);
   const [cooks, setCooks] = useState(view.mealProfile.cooksPerWeek);
   const [lifeBusy, setLifeBusy] = useState(false);
@@ -128,7 +128,7 @@ function Settings({ app, view, now }: { app: App; view: AppView; now: Date }) {
         <MealWindowsEditor windows={windows} onChange={setWindows} />
         {!windowsValid(windows) ? <p className="text-[13px] font-semibold text-blush-deep">시간대가 겹치거나 순서가 맞지 않아요.</p> : null}
         <Field label="일주일에 외식은 몇 번쯤?">
-          <Slider value={eatOut} min={0} max={21} unit="번" label="일주일에 외식 횟수" marks={[0, 7, 14, 21]} onChange={setEatOut} />
+          <Slider value={eatOut} min={0} max={20} unit="번" label="일주일에 외식 횟수" marks={[0, 7, 14, 20]} onChange={setEatOut} />
         </Field>
         <Field label="보온 기능을 쓰시나요?">
           <Choice cols={2} value={keepWarm} options={[{ value: true, label: "켜 둬요" }, { value: false, label: "안 써요" }]} onChange={setKeepWarm} />

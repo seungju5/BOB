@@ -3,9 +3,10 @@ import { appPath } from "@/lib/app-path";
 
 type Mood = "happy" | "wink" | "sleepy" | "worried";
 
-/** The original 3D bunny is a companion, never a meal or health indicator. */
-export function Mascot({ className = "" }: { mood?: Mood; className?: string }) {
-  return <Image src={appPath("/brand/bunny.png")} width={480} height={480} unoptimized loading="eager" alt="초록 가디건을 입은 밥뭇나 토끼" className={`object-contain ${className}`} />;
+/** The cover greets with the bunny; Bapsoti accompanies every following screen. */
+export function Mascot({ className = "", variant = "cooker" }: { mood?: Mood; className?: string; variant?: "cooker" | "bunny" }) {
+  const bunny = variant === "bunny";
+  return <Image src={appPath(`/brand/${bunny ? "bunny.png" : "rice-cooker-companion.png"}`)} width={bunny ? 480 : 1254} height={bunny ? 480 : 1254} unoptimized loading="eager" alt={bunny ? "초록 가디건을 입은 밥뭇나 토끼" : "안부를 전하는 귀여운 밥솥이"} className={`object-contain ${className}`} />;
 }
 
 export function Logo({ className = "" }: { className?: string }) {

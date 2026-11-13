@@ -22,7 +22,7 @@ export function BunnyGreeting({ className = "" }: { className?: string }) {
     <div ref={scene} className={className}>
       <div className="bunny-slot bunny-stage absolute inset-0">
         <span className="bunny-shadow" aria-hidden="true" />
-        <Mascot className="h-full w-full" />
+        <Mascot variant="bunny" className="h-full w-full" />
       </div>
       <button type="button" className="welcome-replay absolute right-0 -bottom-4 min-h-11 rounded-full px-3 text-xs text-cocoa"
         data-action="welcome-replay" aria-label="토끼의 점프와 손 인사 다시 보기" onClick={() => void greeting.current?.play()}>

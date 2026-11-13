@@ -1,6 +1,6 @@
-/* Original 3D bunny companion. Its smile is not a meal-status indicator. */
+/* Bapsoti accompanies every screen after the cover. Its smile is not a meal-status indicator. Legacy portrait selectors preserve layout. */
 .bunny-portrait{display:inline-block;position:relative;width:56px;height:56px;flex:none;overflow:hidden;vertical-align:middle}
-/* Show the complete original bunny, including ears and feet, without editing the PNG. */
+/* Keep the complete Bapsoti artwork and its original proportions. */
 .bunny-portrait>img,.care-hero-top .bunny-portrait>img{position:absolute;width:100%;height:100%;max-width:100%;left:0;top:0;object-fit:contain}
 .senior-quiet-signal .bunny-portrait{width:46px;height:46px}
 .cooker-lab-reading{display:flex;align-items:center;justify-content:space-between;gap:12px}

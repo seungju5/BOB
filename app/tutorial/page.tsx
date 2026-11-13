@@ -80,8 +80,8 @@ function ReadyChecklist() {
             <span className="absolute -top-1 -right-1 grid h-5 w-5 place-items-center rounded-full bg-cocoa text-[11px] leading-none text-paper">{i + 1}</span>
           </span>
           <span className="flex min-w-0 flex-1 flex-col">
-            <span className="text-[19px] leading-snug text-cocoa">{title}</span>
-            <span className="mt-0.5 text-[15px] leading-snug text-cocoa/75">{hint}</span>
+            <span className="text-[18px] leading-[1.5] font-medium tracking-[-0.02em] text-cocoa">{title}</span>
+            <span className="mt-1 text-[15px] leading-[1.6] text-cocoa/75">{hint}</span>
           </span>
           <IconCheckSquare className="h-6 w-6 shrink-0 text-butter-deep" />
         </li>
@@ -97,7 +97,7 @@ export default function TutorialPage() {
   const last = index === SLIDES.length - 1;
 
   return (
-    <main className="font-halmae flex flex-1 flex-col bg-butter">
+    <main className="font-sans flex flex-1 flex-col bg-butter">
       <div className="px-6 pt-7">
         <div className="flex h-9 items-center justify-between">
           <div className="flex items-center gap-2" role="progressbar" aria-valuenow={index + 1} aria-valuemin={1} aria-valuemax={SLIDES.length} aria-label="튜토리얼 진행">
@@ -110,8 +110,8 @@ export default function TutorialPage() {
           </Link>
         </div>
         <div key={index} className="animate-rise pb-8">
-          <h1 className="mt-6 text-[40px] leading-[1.15] whitespace-pre-line text-cocoa">{slide.title}</h1>
-          <p className="mt-4 text-[18px] leading-relaxed whitespace-pre-line text-cocoa/80">{slide.body}</p>
+          <h1 className="mt-6 text-[clamp(1.875rem,8.2vw,2.25rem)] leading-[1.4] font-semibold tracking-[-0.035em] whitespace-pre-line text-cocoa">{slide.title}</h1>
+          <p className="mt-5 text-[18px] leading-[1.75] whitespace-pre-line text-cocoa/80">{slide.body}</p>
         </div>
       </div>
 

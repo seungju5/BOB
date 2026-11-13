@@ -22,14 +22,18 @@
     "bunny-underlay.webp": "910701b6351d1e600e776ed240c1406388b9d73b9c7c8af4284a543454a7d82a",
     "bunny-greeting.webp": "76891f00f8fa4602664abd2881ad346482711e100c0fe6f4ed0cb4efb6093571",
     "rice-logo.png": "feff84d1a626d270bb6e914898bbc3ebb2cdaf5ddff6a57247583893903dee03",
+    "rice-cooker-companion.png": "cde39496d40d85b1c370d895d057d7b288bae3bb5abd0b60c639f0e131995d86",
+    "bapmunna-share-v2.png": "867dee0a907acba2167da5ede323dc8b24fba02ff0adb0017ff19f7c5fc294fe",
     "PretendardVariable.woff2": "9599f12fd42fc0bce1cd50b47a0c022e108d7aa64dd0d1bb0ed44f3282d900b4",
     "NanumPenScript-Regular.ttf": "6f0d1ab29c7894010dc88831fb7a0a51edb79136e450344183de5b1a8b52bd43",
     "OFL-Pretendard.txt": "85fce85e25260b03777bf10373d3bd9363b9da96d9e0ca86a280dd37ed7667a0",
     "OFL-NanumPenScript.txt": "90f6a909ffb2af7f6422ea20042a26180fe5520cba80bbbf75a5e660320d7924"
   },
   "identity": {
-    "mascot": "bunny.png",
-    "symbol": "rice-logo.png"
+    "welcomeMascot": "bunny.png",
+    "mascot": "rice-cooker-companion.png",
+    "symbol": "rice-logo.png",
+    "share": "bapmunna-share-v2.png"
   },
   "navigation": [
     "홈",

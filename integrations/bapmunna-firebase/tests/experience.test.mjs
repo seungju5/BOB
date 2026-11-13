@@ -105,10 +105,10 @@ test('both generated editions and portable bundle include the experience layer',
   for(const entry of ['senior/index.html','carer/index.html']){const html=await readFile(new URL('../docs/'+entry,import.meta.url),'utf8');assert.match(html,/experience.css/);}
   const html=await readFile(new URL('../workshop/bapmunna.html',import.meta.url),'utf8');assert.match(html,/function journeyScene/);assert.doesNotMatch(html,/<link[^>]+href="\.\/experience.css"/);
 });
-test('guardian uses Bapsoti while preserving bunny artwork and other evidence bowls',async()=>{
+test('Bapsoti accompanies app screens while the cover retains its bunny',async()=>{
   const app=await readFile(new URL('../docs/app.mjs',import.meta.url),'utf8');
   const css=await readFile(new URL('../docs/character.css',import.meta.url),'utf8');
-  assert.match(app,/companion:'\.\/assets\/bunny\.png'/);
+  assert.match(app,/companion:'\.\/assets\/rice-cooker-companion\.png'/);
   for(const asset of ['bunny.png','bunny-natural.png','rice-logo.png','rice-companion.svg','rice-cooker-companion.png']){
     assert.ok((await readFile(new URL('../docs/assets/'+asset,import.meta.url))).length>0);
   }
@@ -125,7 +125,7 @@ test('portable version embeds the bunny asset without an external request',async
   const portable=await readFile(new URL('../workshop/bapmunna.html',import.meta.url),'utf8');
   assert.ok(portable.includes(`data:image/png;base64,${png.toString('base64')}`));
 });
-test('cooker brand and bunny companion remain distinct across entry pages and auth',async()=>{
+test('cooker brand stays consistent across entry pages and auth',async()=>{
   for(const path of ['index.html','senior/index.html','carer/index.html','manage/index.html']){
     const source=await readFile(new URL('../docs/'+path,import.meta.url),'utf8');
     assert.match(source,/rice-logo\.png/);assert.match(source,/brand-symbol/);

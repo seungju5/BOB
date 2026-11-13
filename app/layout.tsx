@@ -4,11 +4,27 @@ import { RoleSwitcher } from "@/components/RoleSwitcher";
 import { appPath } from "@/lib/app-path";
 import "./globals.css";
 
+const SHARE_IMAGE_URL = "https://impact-series.web.app/bapmunna/assets/bapmunna-share-v2.png";
+
 export const metadata: Metadata = {
   title: "밥뭇나",
   description: "밥 한 끼로 전하는 안부. 밥솥 사용 패턴으로 부모님의 식사 공백을 알려드려요.",
   appleWebApp: { capable: true, title: "밥뭇나", statusBarStyle: "default" },
   icons: { icon: appPath("/brand/rice-logo.png"), apple: appPath("/brand/rice-logo.png") },
+  openGraph: {
+    type: "website",
+    locale: "ko_KR",
+    siteName: "밥뭇나",
+    title: "밥뭇나 · 밥 한 끼로 전하는 안부",
+    description: "안부가 폴짝 찾아왔어요. 매일 쓰는 밥솥이 대신 전하는 안부를 만나보세요.",
+    images: [{ url: SHARE_IMAGE_URL, width: 1200, height: 630, alt: "밥뭇나 로고 · 밥 한 끼로 전하는 안부" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "밥뭇나 · 밥 한 끼로 전하는 안부",
+    description: "매일 쓰는 밥솥이 대신 전하는 안부",
+    images: [SHARE_IMAGE_URL],
+  },
 };
 
 export const viewport: Viewport = {

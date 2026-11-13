@@ -28,14 +28,23 @@ function must<T>(res: { data: T; error: { message: string } | null }): T {
 
 let inflight: Promise<void> | null = null;
 let epoch = 0;
+let readGeneration = 0;
+let mutationQueue: Promise<unknown> = Promise.resolve();
 
-export function refreshLive(): Promise<void> {
+function invalidateReads() {
+  readGeneration += 1;
+  inflight = null;
+}
+
+export function refreshLive({ force = false }: { force?: boolean } = {}): Promise<void> {
   if (!liveUserId) return Promise.resolve();
+  if (force) invalidateReads();
   if (inflight) return inflight;
   const startedAt = epoch;
-  const request = load(startedAt)
+  const generation = readGeneration;
+  const request = load(startedAt, generation)
     .catch((e) => {
-      if (epoch === startedAt) set({ error: e instanceof Error ? e.message : String(e) });
+      if (epoch === startedAt && readGeneration === generation) set({ error: e instanceof Error ? e.message : String(e) });
     })
     .finally(() => {
       if (inflight === request) inflight = null;
@@ -44,7 +53,7 @@ export function refreshLive(): Promise<void> {
   return request;
 }
 
-async function load(startedAt: number) {
+async function load(startedAt: number, generation: number) {
   const db = supabase();
   const h = must(await db.rpc("ensure_household")) as string;
   const today = kstDate(new Date());
@@ -110,12 +119,13 @@ async function load(startedAt: number) {
       payload: a.payload ?? undefined,
     })),
   };
-  if (epoch === startedAt) set({ view, householdId: h, error: null });
+  if (epoch === startedAt && readGeneration === generation) set({ view, householdId: h, error: null });
 }
 
 export function clearLive() {
   epoch += 1;
-  inflight = null;
+  invalidateReads();
+  mutationQueue = Promise.resolve();
   set({ view: null, householdId: null, error: null });
 }
 
@@ -147,13 +157,37 @@ export function useLive(userId: string | null) {
   return s;
 }
 
-/** 동작 하나를 실행하고 화면 데이터를 새로 고친다. */
-async function act(fn: (h: string) => Promise<unknown>) {
-  if (!state.householdId) await refreshLive();
-  const h = state.householdId;
-  if (!h) throw new Error("가구 정보를 불러오지 못했어요.");
-  await fn(h);
-  await refreshLive();
+/** 같은 계정의 저장을 순서대로 처리하고, 저장 전 조회가 결과를 덮지 못하게 한다. */
+function mutate<T>(fn: (h: string) => Promise<T>, requireConsent = false): Promise<T> {
+  const startedAt = epoch;
+  const userId = liveUserId;
+  const assertOwner = () => {
+    if (!userId || liveUserId !== userId || epoch !== startedAt) throw new Error("로그인 상태가 바뀌었어요. 다시 확인해 주세요.");
+  };
+  const run = async () => {
+    assertOwner();
+    if (!state.householdId || requireConsent || state.error) await refreshLive({ force: true });
+    assertOwner();
+    if (state.error) throw new Error("최신 정보를 확인하지 못했어요. 다시 시도해 주세요.");
+    const h = state.householdId;
+    if (!h) throw new Error("가구 정보를 불러오지 못했어요.");
+    if (requireConsent && !state.view?.seniorConsent) throw new Error("연결하기 전에 어르신의 동의를 확인해 주세요.");
+    invalidateReads();
+    const result = await fn(h);
+    assertOwner();
+    // 진행 중이던 polling Promise를 재사용하지 않고 저장 이후의 새 조회를 기다린다.
+    await refreshLive({ force: true });
+    assertOwner();
+    if (state.error) throw new Error("저장 결과를 다시 확인하지 못했어요. 잠시 후 다시 확인해 주세요.");
+    return result;
+  };
+  const request = mutationQueue.then(run, run);
+  mutationQueue = request.catch(() => undefined);
+  return request;
+}
+
+async function act(fn: (h: string) => Promise<unknown>, requireConsent = false) {
+  await mutate(fn, requireConsent);
 }
 
 const db = () => supabase();
@@ -161,11 +195,12 @@ const db = () => supabase();
 export const liveActions: AppActions = {
   saveOnboarding: (step, patch = {}) =>
     act(async (h) => {
-      const house: Record<string, unknown> = { onboarding_step: step };
+      // 설정 편집이나 늦게 도착한 이전 버튼이 완료 상태를 다시 미완료로 바꾸지 않는다.
+      const house: Record<string, unknown> = { onboarding_step: (state.view?.onboardingStep ?? 0) >= 8 ? 8 : step };
       if (patch.senior) Object.assign(house, { senior_name: patch.senior.name, senior_relation: patch.senior.relation, senior_phone: patch.senior.phone });
       if (patch.household) Object.assign(house, { resident_count: patch.household.residentCount, has_pet: patch.household.hasPet });
-      if (patch.seniorConsent) house.senior_consent_at = new Date().toISOString();
-      const jobs = [db().from("households").update(house).eq("id", h).then(must)];
+      if (patch.seniorConsent !== undefined) house.senior_consent_at = patch.seniorConsent ? new Date().toISOString() : null;
+      const jobs: Array<PromiseLike<unknown>> = [];
       if (patch.mealProfile)
         jobs.push(
           db()
@@ -193,21 +228,25 @@ export const liveActions: AppActions = {
             .then(must),
         );
       await Promise.all(jobs);
+      // 선택 설정 저장이 실패했을 때 완료 단계만 먼저 저장하지 않는다.
+      must(await db().from("households").update(house).eq("id", h));
     }),
 
-  async registerPlug(deviceId, token) {
+  registerPlug: (deviceId, token) => mutate(async () => {
     const { data, error } = await db().functions.invoke("register-plug", { body: { deviceId, token } });
     if (error) {
       const msg = error instanceof FunctionsHttpError ? ((await error.context.json().catch(() => null)) as { error?: string } | null)?.error : null;
       throw new Error(msg ?? "플러그를 연결하지 못했어요.");
     }
-    await refreshLive();
-    return data as { watts: number };
-  },
+    if (data?.connected !== true || typeof data.checkedAt !== "string" || !Number.isFinite(Date.parse(data.checkedAt))) {
+      throw new Error("연결 확인 결과를 받지 못했어요. 다시 시도해 주세요.");
+    }
+    return { connected: true as const, checkedAt: data.checkedAt as string };
+  }, true),
 
   skipPlug: async () => {},
 
-  issuePairingCode: () => act(async (h) => must(await db().rpc("issue_pairing_code", { h }))),
+  issuePairingCode: () => act(async (h) => must(await db().rpc("issue_pairing_code", { h })), true),
 
   ackAlert: (id) => act(async () => must(await db().from("alerts").update({ acknowledged_at: new Date().toISOString() }).eq("id", id))),
 

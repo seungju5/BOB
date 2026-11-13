@@ -1,6 +1,6 @@
 import {initializeApp,getApp,getApps} from 'firebase/app';
 import {getAuth,onAuthStateChanged,signInWithEmailAndPassword,createUserWithEmailAndPassword,sendEmailVerification,sendPasswordResetEmail,updateProfile,signOut,reload,setPersistence,browserLocalPersistence,browserSessionPersistence,GoogleAuthProvider,signInWithPopup,validatePassword} from 'firebase/auth';
-import {getFirestore,doc,getDoc,setDoc,updateDoc,deleteDoc,collection,getDocs,query,orderBy,limit,startAfter,documentId,where,onSnapshot,writeBatch,serverTimestamp,Timestamp} from 'firebase/firestore';
+import {getFirestore,doc,getDoc,getDocFromServer,setDoc,updateDoc,deleteDoc,collection,getDocs,query,orderBy,limit,startAfter,documentId,where,onSnapshot,writeBatch,serverTimestamp,Timestamp} from 'firebase/firestore';
 import {CONSENT_VERSION,koreanDay,checkDisplayName,checkMeal,STAGES} from './auth-utils.mjs';
 
 export function createProvider(config){
@@ -10,9 +10,41 @@ export function createProvider(config){
   const mapUser=user=>user?{uid:user.uid,email:user.email||'',displayName:user.displayName||'',verified:user.emailVerified}:null;
   const requireUser=()=>{const user=auth.currentUser;if(!user?.emailVerified)throw Error('이메일을 확인한 계정으로 로그인해 주세요.');return user;};
   const profileRef=uid=>doc(db,'bapmunnaAccounts',uid);
+  const householdRef=uid=>doc(db,'bapmunnaAccounts',uid,'preferences','household');
   const contactRef=uid=>doc(db,'bapmunnaCRMContacts',uid);
   const remember=value=>setPersistence(auth,value?browserLocalPersistence:browserSessionPersistence);
   const actionSettings={url:'https://impact-series.web.app/bapmunna/#account',handleCodeInApp:false};
+  function householdFields(input){
+    const fields=['relation','alias','residentCount','hasPet'];
+    if(!input||typeof input!=='object'||Object.keys(input).length!==fields.length||!fields.every(key=>Object.hasOwn(input,key))
+      ||!['mother','father','parents','other'].includes(input.relation)||typeof input.alias!=='string'
+      ||!input.alias.trim()||input.alias.trim().length>30||!Number.isInteger(input.residentCount)
+      ||input.residentCount<1||input.residentCount>6||typeof input.hasPet!=='boolean'){
+      throw Object.assign(Error('관계, 1~30자의 호칭, 함께 사는 인원과 반려동물 여부를 확인해 주세요.'),{code:'household/invalid-input'});
+    }
+    return {relation:input.relation,alias:input.alias.trim(),residentCount:input.residentCount,hasPet:input.hasPet};
+  }
+  function storedHousehold(snapshot,uid){
+    if(!snapshot.exists())return null;
+    const data=snapshot.data();
+    const fields=householdFields({relation:data.relation,alias:data.alias,residentCount:data.residentCount,hasPet:data.hasPet});
+    if(data.ownerUid!==uid||data.alias!==fields.alias||!(data.updatedAt instanceof Timestamp))throw Error('저장된 가구 정보를 다시 확인해 주세요.');
+    return {ownerUid:uid,...fields,updatedAt:data.updatedAt};
+  }
+  async function withHouseholdUser(expectedUid,run){
+    const user=requireUser();let changed=false,unsubscribe;
+    const assertCurrent=()=>{
+      if(typeof expectedUid!=='string'||!expectedUid||user.uid!==expectedUid||changed||auth.currentUser!==user||!auth.currentUser?.emailVerified)throw Object.assign(Error('계정이 바뀌었어요. 다시 확인해 주세요.'),{code:'auth/user-changed'});
+    };
+    try{
+      // The UI's last observed identity may lag behind currentUser. Bind the
+      // request to that explicit identity before any observer or database I/O.
+      assertCurrent();
+      // Keep this operation bound to its starting session, including A → B → A.
+      unsubscribe=onAuthStateChanged(auth,current=>{if(current!==user||!current?.emailVerified)changed=true;});
+      assertCurrent();return await run(user,assertCurrent);
+    }finally{unsubscribe?.();}
+  }
   return {
     name:'Firebase',supportsGoogle:true,
     getIdToken:()=>requireUser().getIdToken(),
@@ -30,6 +62,15 @@ export function createProvider(config){
     async refreshUser(){if(auth.currentUser){await reload(auth.currentUser);await auth.currentUser.getIdToken(true);}return mapUser(auth.currentUser);},
     signOut:()=>signOut(auth),
     async getProfile(){const user=requireUser(),snapshot=await getDoc(profileRef(user.uid));return snapshot.exists()?snapshot.data():null;},
+    getHousehold(expectedUid){return withHouseholdUser(expectedUid,async(user,assertCurrent)=>{
+      const snapshot=await getDocFromServer(householdRef(user.uid));assertCurrent();return storedHousehold(snapshot,user.uid);
+    });},
+    saveHousehold(input,expectedUid){return withHouseholdUser(expectedUid,async(user,assertCurrent)=>{
+      const fields=householdFields(input),ref=householdRef(user.uid);assertCurrent();
+      await setDoc(ref,{ownerUid:user.uid,...fields,updatedAt:serverTimestamp()});assertCurrent();
+      const snapshot=await getDocFromServer(ref);assertCurrent();
+      const stored=storedHousehold(snapshot,user.uid);if(!stored)throw Error('저장 결과를 확인하지 못했어요. 다시 시도해 주세요.');return stored;
+    });},
     async saveProfile(name){
       const user=requireUser(),displayName=checkDisplayName(name),existing=await getDoc(profileRef(user.uid)),contact=await getDoc(contactRef(user.uid));
       const fields={ownerUid:user.uid,email:user.email,displayName,consentVersion:CONSENT_VERSION,updatedAt:serverTimestamp()};

@@ -28,15 +28,14 @@ export default function StartPage() {
       <div className="rounded-t-[2.25rem] bg-paper px-6 pt-8 pb-8">
         <p className="mb-5 text-[19px] font-bold text-cocoa">밥 한 끼로 전하는 안부</p>
         <div className="flex flex-col gap-3">
-          <ButtonLink href="/s" className="text-[19px]">
-            어르신으로 시작
-          </ButtonLink>
-          <ButtonLink href="/tutorial" variant="outline" className="text-[19px]">
+          <ButtonLink href="/login" className="text-[19px]">
             보호자로 시작
           </ButtonLink>
+          <ButtonLink href="/s" variant="outline" className="text-[19px]">
+            어르신으로 시작
+          </ButtonLink>
         </div>
-        {/* 약관 페이지가 생기면 링크로 바꾼다 (튜토리얼 첫 장과 같은 문구) */}
-        <p className="mt-5 text-center text-sm text-muted underline underline-offset-4">개인정보 처리방침 · 이용약관</p>
+        <a href="https://app.notion.com/p/4163d756e70080399649fedbb690842f?source=copy_link" target="_blank" rel="noopener noreferrer" className="mt-5 block min-h-12 text-center text-sm text-muted underline underline-offset-4">개인정보 처리방침 (새 창)</a>
       </div>
     </main>
   );

@@ -7,13 +7,19 @@ const nowIso = () => new Date().toISOString();
 const ok = async () => {};
 
 export const demoActions: AppActions = {
-  saveOnboarding: async (step, patch = {}) => updateDemo((s) => ({ ...s, ...patch, onboardingStep: step })),
+  saveOnboarding: async (step, patch = {}) => updateDemo((s) => ({ ...s, ...patch, onboardingStep: s.onboardingStep >= 8 ? 8 : step })),
   registerPlug: async (deviceId) => {
-    updateDemo((s) => ({ ...s, plug: { deviceId, online: true, offlineSince: null } }));
-    return { watts: 45 };
+    updateDemo((s) => {
+      if (!s.seniorConsent) throw new Error("기기를 연결하기 전에 어르신의 동의를 확인해 주세요.");
+      return { ...s, plug: { deviceId, online: true, offlineSince: null } };
+    });
+    return { connected: true, checkedAt: nowIso() };
   },
-  skipPlug: async () => updateDemo((s) => ({ ...s, plug: { deviceId: "demo-plug-01", online: true, offlineSince: null } })),
-  issuePairingCode: ok,
+  skipPlug: ok,
+  issuePairingCode: async () => updateDemo((s) => {
+    if (!s.seniorConsent) throw new Error("연결하기 전에 어르신의 동의를 확인해 주세요.");
+    return s;
+  }),
   ackAlert: async (id) => updateDemo((s) => ({ ...s, alerts: s.alerts.map((a) => (a.id === id ? { ...a, acknowledgedAt: nowIso() } : a)) })),
   ackAll: async () => updateDemo((s) => ({ ...s, alerts: s.alerts.map((a) => (a.acknowledgedAt ? a : { ...a, acknowledgedAt: nowIso() })) })),
   saveAlertSettings: async (alertSettings) => updateDemo((s) => ({ ...s, alertSettings })),

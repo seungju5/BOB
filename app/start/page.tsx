@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { appPath } from "@/lib/app-path";
 import { Button, Skeleton } from "@/components/ui";
 import { useApp } from "@/lib/data/useApp";
+import { guardianStartPath } from "@/lib/data/view";
 
 /** 보호자 진입점. 과거 /start로 보낸 로그인 링크도 콜백으로 넘긴다. */
 export default function GuardianStart() {
@@ -20,7 +21,7 @@ export default function GuardianStart() {
     const query = new URLSearchParams(location.search);
     if (query.has("code") || query.has("error")) return;
     if (needsLogin) router.replace("/login");
-    else if (view) router.replace(view.onboardingStep > 7 ? "/home" : "/onboarding");
+    else if (view) router.replace(guardianStartPath(view.onboardingStep));
   }, [view, needsLogin, router]);
 
   return (

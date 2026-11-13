@@ -30,6 +30,40 @@ test('profile updates preserve the original creation time',async()=>{const db=co
 test('ordinary users cannot promote themselves into staff',async()=>{const db=context('bob');await assertFails(setDoc(doc(db,'bapmunnaStaff','bob'),{role:'owner'}));await assertFails(getDoc(doc(db,'bapmunnaStaff','operator')));});
 test('only staff can list customer contacts',async()=>{await assertFails(getDocs(collection(context('bob'),'bapmunnaCRMContacts')));const snapshot=await assertSucceeds(getDocs(collection(context('operator'),'bapmunnaCRMContacts')));assert.ok(snapshot.size>=2);});
 test('staff can read CRM contacts but not private meal/account data',async()=>{const db=context('operator');await assertSucceeds(getDoc(doc(db,'bapmunnaCRMContacts','alice')));await assertFails(getDoc(doc(db,'bapmunnaAccounts','alice')));await assertFails(getDocs(collection(db,'bapmunnaAccounts','alice','meals')));});
+const householdData=uid=>({ownerUid:uid,relation:'mother',alias:'우리 집',residentCount:1,hasPet:false,updatedAt:serverTimestamp()});
+const householdDoc=(db,uid)=>doc(db,'bapmunnaAccounts',uid,'preferences','household');
+test('verified owner can create, reload, update and delete private household preferences without creating a shared household',async()=>{
+  const uid='household-owner',db=context(uid),ref=householdDoc(db,uid);
+  assert.equal((await assertSucceeds(getDoc(ref))).exists(),false);
+  await assertSucceeds(setDoc(ref,householdData(uid)));
+  assert.equal((await getDoc(ref)).data().alias,'우리 집');
+  for(const relation of ['father','parents','other'])await assertSucceeds(updateDoc(ref,{relation,residentCount:6,hasPet:true,updatedAt:serverTimestamp()}));
+  assert.equal((await getDoc(ref)).data().hasPet,true);
+  await environment.withSecurityRulesDisabled(async admin=>{
+    assert.equal((await getDoc(doc(admin.firestore(),'bapmunnaHouseholds',uid))).exists(),false);
+    assert.equal((await getDoc(doc(admin.firestore(),'bapmunnaCRMContacts',uid))).exists(),false);
+  });
+  await assertSucceeds(deleteDoc(ref));
+});
+test('household preferences deny anonymous, unverified, other-account and CRM staff reads and writes',async()=>{
+  const uid='private-household',ref=householdDoc(context(uid),uid);await assertSucceeds(setDoc(ref,householdData(uid)));
+  for(const db of [environment.unauthenticatedContext().firestore(),context(uid,false),context('bob'),context('operator')]){
+    const other=householdDoc(db,uid);await assertFails(getDoc(other));await assertFails(setDoc(other,householdData(uid)));await assertFails(deleteDoc(other));
+  }
+});
+test('household preferences reject forged ownership, consent/sharing fields and non-server timestamps',async()=>{
+  const uid='household-forgery',ref=householdDoc(context(uid),uid),data=householdData(uid);
+  for(const changed of [{ownerUid:'alice'},{consent:true},{sharingEnabled:true},{seniorConsentAt:Timestamp.now()},{updatedAt:Timestamp.fromMillis(0)}])await assertFails(setDoc(ref,{...data,...changed}));
+  const {hasPet,...missing}=data;await assertFails(setDoc(ref,missing));
+  await assertFails(setDoc(doc(context(uid),'bapmunnaAccounts',uid,'preferences','unknown'),data));
+});
+test('household preferences validate names, relation, integer counts and pet booleans on create and update',async()=>{
+  const uid='household-validation',ref=householdDoc(context(uid),uid),data=householdData(uid);
+  const invalid=[{alias:''},{alias:' '},{alias:' 앞 공백'},{alias:'뒤 공백 '},{alias:'가'.repeat(31)},{alias:123},{relation:'grandparent'},{residentCount:0},{residentCount:7},{residentCount:1.5},{residentCount:'2'},{hasPet:'false'}];
+  for(const changed of invalid)await assertFails(setDoc(ref,{...data,...changed}));
+  await assertSucceeds(setDoc(ref,{...data,alias:'가'.repeat(30)}));
+  for(const changed of invalid)await assertFails(updateDoc(ref,{...changed,updatedAt:serverTimestamp()}));
+});
 test('staff can write only validated CRM notes under their own identity',async()=>{const db=context('operator'),ref=doc(db,'bapmunnaCRMNotes','alice');const fields={ownerUid:'alice',stage:'contacted',note:'워크숍 안내 완료',updatedBy:'operator',updatedAt:serverTimestamp()};await assertSucceeds(setDoc(ref,fields));await assertFails(setDoc(ref,{...fields,updatedBy:'another-admin'}));await assertFails(setDoc(ref,{...fields,stage:'superuser'}));await assertFails(setDoc(ref,{...fields,note:'x'.repeat(1001)}));});
 test('customers cannot read or alter staff notes',async()=>{const ref=doc(context('alice'),'bapmunnaCRMNotes','alice');await assertFails(getDoc(ref));await assertFails(setDoc(ref,{ownerUid:'alice',stage:'active',note:'change',updatedBy:'alice',updatedAt:serverTimestamp()}));});
 test('verified owner records one current-day meal and updates its kind',async()=>{const db=context('alice'),day=koreanDay(),ref=doc(db,'bapmunnaAccounts','alice','meals',`${day}_lunch`);await assertSucceeds(setDoc(ref,{ownerUid:'alice',day,meal:'lunch',kind:'home',dayStart:Timestamp.fromDate(new Date(`${day}T00:00:00+09:00`)),createdAt:serverTimestamp(),updatedAt:serverTimestamp()}));await assertSucceeds(updateDoc(ref,{kind:'outside',updatedAt:serverTimestamp()}));assert.equal((await getDoc(ref)).data().kind,'outside');});

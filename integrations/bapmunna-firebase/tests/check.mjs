@@ -60,3 +60,5 @@ await import('./smartthings-view.test.mjs');
 
 await import('./runtime-mode.test.mjs');
 await import('./account-session.test.mjs');
+await import('./supabase-provider-session.test.mjs');
+await import('./household-view.test.mjs');

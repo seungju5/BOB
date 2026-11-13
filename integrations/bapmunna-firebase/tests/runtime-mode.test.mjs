@@ -79,5 +79,5 @@ test('connection entry and tutorial use fixed home flow, without forced API step
   const home=livePage({view:'guardian',edition:'carer',session:{status:'signed-in'},href:v=>'#'+v,companion:'cooker.png'});
   assert.match(home,/href="#connect"/);
   const last=liveTutorialPage({index:4,companion:'cooker.png'});
-  assert.match(last,/홈으로 시작하기/);assert.doesNotMatch(last,/href="#connect"/);
+  assert.match(last,/우리 집 알려주기/);assert.doesNotMatch(last,/href="#connect"/);
 });

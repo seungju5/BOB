@@ -87,6 +87,16 @@ test('verified account proceeds into the existing consent/API UI',async t=>{
   assert.deepEqual(requests.map(x=>x.path),['/api/smartthings/config','/api/smartthings/status']);
   assert.equal(requests[1].options.headers.Authorization,'Bearer test-only-token');
   assert.doesNotMatch(el.innerHTML,/test-only-token|test-member/);
+  const policyAt=el.innerHTML.indexOf('개인정보 처리방침 바로가기');
+  assert.ok(policyAt>0&&policyAt<el.innerHTML.indexOf('name="st-consent"'));
+  assert.match(el.innerHTML,/target="_blank" rel="noopener noreferrer"/);
+});
+test('reconnection explains the Samsung permission steps before asking for consent',async t=>{
+  const {el}=fixture(t,{fetcher:async path=>json(path.endsWith('/config')?{enabled:true,consentVersion:'test-v1'}:{stage:'reconnect_required'})});
+  await eventually(()=>el.innerHTML.includes('삼성 계정 다시 연결'));
+  assert.match(el.innerHTML,/삼성 화면에서 연결할 기기와 읽기 허용 내용을 확인/);
+  assert.match(el.innerHTML,/밥뭇나로 돌아와 플러그를 골라/);
+  assert.doesNotMatch(el.innerHTML,/허용 기간이 끝났거나 권한이 바뀌었을/);
 });
 test('anonymous account only sees login and cannot request device status',async t=>{
   const {el,requests}=fixture(t,{auth:provider(null)});

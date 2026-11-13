@@ -3,6 +3,20 @@
 // 가족 화면에 필요한 요약만 담는다: 끼니 상태, 날짜별 횟수, 마지막 시각. (취사 시각 목록은 없음)
 import { resolveMealSlots } from "../judge/resolveMealSlots.mjs";
 import { addDays, kstDate } from "../judge/time.mjs";
+/** 기존 저장 번호를 유지한다. 1·2번 기기 단계는 이제 홈 이후의 선택 기능이다. */
+export const ONBOARDING_COMPLETE = 8;
+export const HOUSEHOLD_STEP = 3;
+export function visibleOnboardingStep(savedStep) {
+    return Number.isInteger(savedStep) && savedStep >= HOUSEHOLD_STEP ? Math.min(savedStep, ONBOARDING_COMPLETE) : HOUSEHOLD_STEP;
+}
+export function guardianStartPath(savedStep) {
+    if (savedStep >= ONBOARDING_COMPLETE)
+        return "/home";
+    return savedStep >= HOUSEHOLD_STEP ? "/onboarding" : "/tutorial";
+}
+export function tutorialExitPath(savedStep) {
+    return savedStep >= ONBOARDING_COMPLETE ? "/home" : "/onboarding";
+}
 export const DEFAULT_WINDOWS = [
     { slot: "breakfast", start: "06:00", end: "10:00" },
     { slot: "lunch", start: "11:00", end: "14:30" },

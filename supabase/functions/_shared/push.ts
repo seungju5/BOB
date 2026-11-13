@@ -16,13 +16,18 @@ if (ready) webpush.setVapidDetails(SUBJECT!, PUBLIC!, PRIVATE!);
 
 export type SentAlert = { id: string; type: AlertType; payload: AlertPayload | null };
 
+function consentRecorded(house: { senior_consent_at: string | null } | null): boolean {
+  return typeof house?.senior_consent_at === "string" && Number.isFinite(Date.parse(house.senior_consent_at));
+}
+
 /** 한 가구의 보호자 전원에게 새 알림들을 보낸다. 알림 id를 tag로 써서 앱 안 알림과 겹쳐 뜨지 않는다. */
 export async function pushAlerts(householdId: string, alerts: SentAlert[]) {
   if (!ready || alerts.length === 0) return;
   try {
-    const [guardians, house, settings, plug] = await Promise.all([
+    const house = must(await db.from("households").select("senior_relation, senior_consent_at").eq("id", householdId).maybeSingle()) as { senior_relation: string; senior_consent_at: string | null } | null;
+    if (!consentRecorded(house)) return;
+    const [guardians, settings, plug] = await Promise.all([
       db.from("household_guardians").select("user_id").eq("household_id", householdId).then(must),
-      db.from("households").select("senior_relation").eq("id", householdId).single().then(must),
       db.from("alert_settings").select("missed_meals_threshold, fasting_hours, emergency_hours").eq("household_id", householdId).single().then(must),
       db.from("smart_plugs").select("id").eq("household_id", householdId).maybeSingle().then(must),
     ]);
@@ -33,7 +38,7 @@ export async function pushAlerts(householdId: string, alerts: SentAlert[]) {
       endpoint: string;
       keys: { p256dh: string; auth: string };
     }[];
-    const relation = (house as { senior_relation: string }).senior_relation;
+    const relation = house!.senior_relation;
     const s = settings as { missed_meals_threshold: number; fasting_hours: number; emergency_hours: number };
     for (const a of alerts) {
       const copy = alertCopy(a.type, relation, {
@@ -45,17 +50,20 @@ export async function pushAlerts(householdId: string, alerts: SentAlert[]) {
       });
       const message = JSON.stringify({ title: copy.title, body: copy.body, tag: a.id, url: alertUrl(a.type) });
       for (const sub of subs) {
+        // Check again after database/previous network waits, immediately before sending.
+        const current = must(await db.from("households").select("senior_consent_at").eq("id", householdId).maybeSingle()) as { senior_consent_at: string | null } | null;
+        if (!consentRecorded(current)) return;
         try {
           await webpush.sendNotification({ endpoint: sub.endpoint, keys: sub.keys }, message, { TTL: 60 * 60 * 12 });
         } catch (e) {
           const status = (e as { statusCode?: number }).statusCode;
           // 구독이 만료·해지됐으면 지운다
           if (status === 404 || status === 410) await db.from("push_subscriptions").delete().eq("id", sub.id);
-          else console.error("push", sub.id, status ?? e);
+          else console.error("push", sub.id, status ?? "delivery_failed");
         }
       }
     }
-  } catch (e) {
-    console.error("pushAlerts", householdId, e);
+  } catch {
+    console.error("pushAlerts stopped", householdId);
   }
 }

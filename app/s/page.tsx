@@ -1,14 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { IconArrowRight, IconCheck, IconHeart, IconInfo, IconSuitcase, IconUtensils } from "@/components/icons";
 import { Logo, Mascot } from "@/components/Mascot";
-import { Button, Sheet, Skeleton } from "@/components/ui";
+import { Button, Skeleton } from "@/components/ui";
+import { SeniorSheet as Sheet } from "@/components/senior/SeniorSheet";
+import { seniorActionMessage } from "@/components/senior/messages";
 import { addDays, kstDate, kstTime } from "@/lib/judge/time";
 import type { Absence } from "@/lib/judge/types";
 import { useSenior, type SeniorOp, type SeniorStatus } from "@/lib/data/senior";
-import { useDemo, useNow } from "@/lib/demo/store";
+import { useNow } from "@/lib/demo/store";
 
 const CHEERS = [
   "천천히 꼭꼭\n씹어 드세요",
@@ -22,9 +24,16 @@ export default function SeniorPage() {
   const senior = useSenior();
   const now = useNow();
   if (senior.token === undefined || !now) return <Loading />;
-  if (!senior.paired) return <Pairing pair={senior.pair} />;
-  if (!senior.status) return <Loading />;
-  return <SeniorHome status={senior.status} now={now} act={senior.act} />;
+  if (!senior.paired) return <Pairing pair={senior.pair} startDemo={senior.startDemo} canPair={senior.canPair} />;
+  if (!senior.status) return senior.error ? (
+    <main className="flex flex-1 flex-col gap-5 p-6">
+      <Logo />
+      <p role="alert" className="text-2xl font-bold text-cocoa">{senior.error}</p>
+      <Button className="min-h-16 text-2xl" onClick={() => void senior.refresh()}>다시 시도</Button>
+      <Button variant="outline" className="min-h-16 text-2xl" onClick={senior.disconnect}>다시 연결하기</Button>
+    </main>
+  ) : <Loading />;
+  return <SeniorHome key={senior.token} status={senior.status} now={now} act={senior.act} isDemo={senior.isDemo} endDemo={senior.disconnect} />;
 }
 
 function Loading() {
@@ -37,13 +46,13 @@ function Loading() {
   );
 }
 
-function Pairing({ pair }: { pair: (code: string) => Promise<void> }) {
-  const demo = useDemo();
+function Pairing({ pair, startDemo, canPair }: { pair: (code: string) => Promise<void>; startDemo: () => void; canPair: boolean }) {
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const submit = async () => {
     setBusy(true);
+    setError("");
     try {
       await pair(code);
     } catch (e) {
@@ -56,13 +65,10 @@ function Pairing({ pair }: { pair: (code: string) => Promise<void> }) {
     <main className="flex flex-1 flex-col px-6 pt-8 pb-8">
       <Logo />
       <h1 className="mt-10 text-[30px] leading-snug font-extrabold text-cocoa">
-        가족에게 받은
-        <br />
-        숫자 여섯 개를
-        <br />
-        눌러 주세요
+        {canPair ? <>가족에게 받은<br />숫자 여섯 개를<br />눌러 주세요</> : <>어르신 화면을<br />체험해 보세요</>}
       </h1>
-      <input
+      {canPair ? <>
+        <input
         inputMode="numeric"
         autoComplete="one-time-code"
         maxLength={6}
@@ -73,14 +79,16 @@ function Pairing({ pair }: { pair: (code: string) => Promise<void> }) {
         }}
         aria-label="연결 숫자 6자리"
         className="mt-8 h-20 rounded-3xl border-2 border-line bg-paper text-center text-[40px] font-bold tracking-[0.4em] text-cocoa outline-none focus:border-butter-deep"
-      />
-      {error ? <p className="mt-3 text-[22px] font-bold text-blush-deep">{error}</p> : null}
-      <p className="mt-4 text-[18px] text-muted">숫자는 자녀분 휴대폰의 밥뭇나 &gt; 설정에 있어요.</p>
-      {demo ? <p className="mt-2 text-sm text-muted">(데모) 데모 코드: {demo.pairingCode}</p> : null}
-      <div className="mt-auto">
-        <Button onClick={submit} disabled={busy || code.length !== 6} className="min-h-16 text-[22px]">
+        />
+        {error ? <p role="alert" className="mt-3 text-2xl font-bold text-blush-deep">{error}</p> : null}
+        <p className="mt-4 text-2xl text-muted">숫자는 자녀분 휴대폰의 밥뭇나 &gt; 설정에 있어요.</p>
+        <Button onClick={submit} disabled={busy || code.length !== 6} className="mt-6 min-h-16 text-2xl">
           {busy ? "연결하는 중…" : "연결하기"}
         </Button>
+      </> : <p className="mt-6 text-2xl text-muted">실제 가족 연결은 아직 준비 중이에요.</p>}
+      <div className="mt-auto pt-8">
+        <p className="mb-3 text-2xl text-muted">예시 체험은 가족에게 소식을 보내지 않아요.</p>
+        <Button variant="outline" onClick={startDemo} disabled={busy} className="min-h-16 text-2xl">예시로 체험하기</Button>
       </div>
     </main>
   );
@@ -89,31 +97,35 @@ function Pairing({ pair }: { pair: (code: string) => Promise<void> }) {
 type SheetKind = "eat_out" | "away" | "help" | null;
 type Act = (op: SeniorOp, days?: number) => Promise<void>;
 
-function SeniorHome({ status, now, act }: { status: SeniorStatus; now: Date; act: Act }) {
+function SeniorHome({ status, now, act, isDemo, endDemo }: { status: SeniorStatus; now: Date; act: Act; isDemo: boolean; endDemo: () => void }) {
   const [sheet, setSheet] = useState<SheetKind>(null);
   const [done, setDone] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const request = useRef(0);
   const today = kstDate(now);
   const cheer = CHEERS[Number(today.slice(-2)) % CHEERS.length];
   const lastCook = status.lastCookerAt ? new Date(status.lastCookerAt) : null;
   const away = status.absence;
   const close = () => {
+    request.current += 1;
     setSheet(null);
     setDone(null);
     setError("");
+    setBusy(false);
   };
 
-  const run = async (op: SeniorOp, message: string, days?: number) => {
+  const run = async (op: SeniorOp, days?: number) => {
+    const id = ++request.current;
     setBusy(true);
     setError("");
     try {
       await act(op, days);
-      setDone(message);
+      if (id === request.current) setDone(seniorActionMessage(op, isDemo));
     } catch (e) {
-      setError(e instanceof Error ? e.message : "잠시 후 다시 시도해 주세요.");
+      if (id === request.current) setError(e instanceof Error ? e.message : "잠시 후 다시 시도해 주세요.");
     } finally {
-      setBusy(false);
+      if (id === request.current) setBusy(false);
     }
   };
 
@@ -125,6 +137,13 @@ function SeniorHome({ status, now, act }: { status: SeniorStatus; now: Date; act
           <IconInfo className="h-6 w-6" />
         </Link>
       </header>
+
+      {isDemo ? (
+        <aside className="mt-4 rounded-3xl border-2 border-butter-deep bg-butter-soft p-4">
+          <DemoNotice />
+          <Button variant="outline" className="mt-3 min-h-16 text-2xl" onClick={endDemo}>체험 끝내기</Button>
+        </aside>
+      ) : null}
 
       <h1 className="mt-4 text-[30px] leading-tight font-extrabold text-cocoa">
         {status.seniorName ? `${status.seniorName}님,` : "안녕하세요,"}
@@ -141,44 +160,45 @@ function SeniorHome({ status, now, act }: { status: SeniorStatus; now: Date; act
         <div className="flex items-center gap-3 rounded-3xl bg-sky px-5 py-4">
           <IconSuitcase className="h-8 w-8 shrink-0 text-sky-deep" />
           <div className="flex-1">
-            <p className="text-[20px] font-bold text-cocoa">{fmtDate(away.endDate)}까지 다녀오세요</p>
-            <p className="text-[16px] text-muted">그동안은 가족에게 알림이 가지 않아요.</p>
+            <p className="text-2xl font-bold text-cocoa">{fmtDate(away.endDate)}까지 {isDemo ? "예시 외출 기간이에요" : "다녀오세요"}</p>
+            <p className="text-2xl text-muted">{isDemo ? "실제 가족에게 알리지 않아요." : "그동안은 끼니 알림을 쉬어요."}</p>
           </div>
         </div>
       ) : (
         <div className="flex items-center gap-3 rounded-3xl bg-butter px-5 py-4">
           <Mascot className="h-11 w-11 shrink-0" mood="wink" />
           <div className="flex-1">
-            <p className="text-[20px] font-bold text-cocoa">밥솥 소식 도착했어요</p>
-            <p className="text-[16px] text-cocoa/70">
-              {lastCook && kstDate(lastCook) === today ? `오늘 ${kstTime(lastCook)} 사용 움직임` : "오늘은 아직 소식이 없어요"}
+            <p className="text-2xl font-bold text-cocoa">{isDemo ? "밥솥 소식 예시예요" : lastCook && kstDate(lastCook) === today ? "밥솥 소식이 도착했어요" : "밥솥 소식을 기다리고 있어요"}</p>
+            <p className="text-2xl text-cocoa/70">
+              {lastCook && kstDate(lastCook) === today ? `${isDemo ? "예시 · " : ""}오늘 ${kstTime(lastCook)} 사용 움직임` : "오늘은 아직 소식이 없어요"}
             </p>
           </div>
           <IconArrowRight className="h-5 w-5 text-cocoa" />
         </div>
       )}
 
-      <p className="mt-4 mb-3 text-[18px] text-muted">필요한 소식만 가볍게 남겨요.</p>
+      <p className="mt-4 mb-3 text-2xl text-muted">{isDemo ? "세 가지 버튼을 체험해 보세요." : "필요한 소식만 가볍게 남겨요."}</p>
       <div className="grid gap-2.5">
         <BigButton label="외식했어요" icon={<IconUtensils className="h-9 w-9" />} onClick={() => setSheet("eat_out")} />
         <BigButton label="놀러가요" icon={<IconSuitcase className="h-9 w-9" />} onClick={() => setSheet("away")} />
         <BigButton label="도와줘요" icon={<IconHeart className="h-9 w-9" />} onClick={() => setSheet("help")} tone="help" />
       </div>
-      <p className="mt-auto pt-6 text-center text-[16px] text-muted">평소의 하루는 그대로 보내세요.</p>
+      <p className="mt-auto pt-6 text-center text-2xl text-muted">평소의 하루는 그대로 보내세요.</p>
 
       <Sheet open={sheet === "eat_out"} onClose={close} label="외식했어요">
         {done ? (
           <Done text={done} onClose={close} />
         ) : (
           <>
+            {isDemo ? <DemoNotice /> : null}
             <h2 className="text-[28px] font-extrabold text-cocoa">밖에서 드셨나요?</h2>
-            <p className="mt-2 text-[19px] text-muted">밥솥을 쓰지 않은 식사도 가족에게 전해 드려요.</p>
+            <p className="mt-2 text-2xl text-muted">{isDemo ? "외식 소식을 남기는 방법을 체험해요." : "밥솥을 쓰지 않은 식사 소식을 남겨요."}</p>
             <ErrorLine text={error} />
             <div className="mt-7 flex flex-col gap-3">
-              <Button className="min-h-16 text-[22px]" disabled={busy} onClick={() => run("eat_out", "잘 드셨어요!\n가족에게 전할게요.")}>
-                네, 먹었어요
+              <Button className="min-h-16 text-2xl" disabled={busy} onClick={() => run("eat_out")}>
+                {isDemo ? "외식 소식 체험하기" : "네, 먹었어요"}
               </Button>
-              <Button variant="outline" className="min-h-16 text-[22px]" onClick={close}>
+              <Button variant="outline" className="min-h-16 text-2xl" onClick={close}>
                 아니요
               </Button>
             </div>
@@ -190,7 +210,7 @@ function SeniorHome({ status, now, act }: { status: SeniorStatus; now: Date; act
         {done ? (
           <Done text={done} onClose={close} />
         ) : (
-          <AwaySheet today={today} current={away} busy={busy} error={error} onClose={close} run={run} />
+          <AwaySheet today={today} current={away} busy={busy} error={error} isDemo={isDemo} onClose={close} run={run} />
         )}
       </Sheet>
 
@@ -199,14 +219,15 @@ function SeniorHome({ status, now, act }: { status: SeniorStatus; now: Date; act
           <Done text={done} onClose={close} />
         ) : (
           <>
+            {isDemo ? <DemoNotice /> : null}
             <h2 className="text-[28px] font-extrabold text-cocoa">도움을 요청할까요?</h2>
-            <p className="mt-2 text-[19px] text-muted">가족에게 바로 알림이 가요.</p>
+            <p className="mt-2 text-2xl text-muted">{isDemo ? "도움 요청 방법을 체험해요." : "도움이 필요하다는 요청을 남겨요. 급하면 가족에게 직접 전화해 주세요."}</p>
             <ErrorLine text={error} />
             <div className="mt-7 flex flex-col gap-3">
-              <Button variant="danger" className="min-h-16 text-[22px]" disabled={busy} onClick={() => run("help", "가족에게 알렸어요.\n곧 연락이 올 거예요.")}>
-                도움 요청하기
+              <Button variant="danger" className="min-h-16 text-2xl" disabled={busy} onClick={() => run("help")}>
+                {isDemo ? "도움 요청 체험하기" : "도움 요청하기"}
               </Button>
-              <Button variant="outline" className="min-h-16 text-[22px]" onClick={close}>
+              <Button variant="outline" className="min-h-16 text-2xl" onClick={close}>
                 취소
               </Button>
             </div>
@@ -218,7 +239,11 @@ function SeniorHome({ status, now, act }: { status: SeniorStatus; now: Date; act
 }
 
 function ErrorLine({ text }: { text: string }) {
-  return text ? <p className="mt-3 text-[19px] font-bold text-blush-deep">{text}</p> : null;
+  return text ? <p role="alert" className="mt-3 text-2xl font-bold text-blush-deep">{text}</p> : null;
+}
+
+function DemoNotice() {
+  return <p className="mb-3 text-2xl font-bold text-cocoa">예시 체험 중이에요.<br />실제 가족에게 보내지 않아요.</p>;
 }
 
 function BigButton({ label, icon, onClick, tone }: { label: string; icon: ReactNode; onClick: () => void; tone?: "help" }) {
@@ -241,8 +266,8 @@ function Done({ text, onClose }: { text: string; onClose: () => void }) {
       <span className="grid h-16 w-16 place-items-center rounded-full bg-sage text-sage-deep">
         <IconCheck className="h-9 w-9" />
       </span>
-      <p className="mt-4 text-[26px] leading-snug font-extrabold whitespace-pre-line text-cocoa">{text}</p>
-      <Button className="mt-7 min-h-16 text-[22px]" onClick={onClose}>
+      <p role="status" className="mt-4 text-[26px] leading-snug font-extrabold whitespace-pre-line text-cocoa">{text}</p>
+      <Button className="mt-7 min-h-16 text-2xl" onClick={onClose}>
         확인
       </Button>
     </div>
@@ -256,6 +281,7 @@ function AwaySheet({
   current,
   busy,
   error,
+  isDemo,
   onClose,
   run,
 }: {
@@ -263,8 +289,9 @@ function AwaySheet({
   current: Absence | null;
   busy: boolean;
   error: string;
+  isDemo: boolean;
   onClose: () => void;
-  run: (op: SeniorOp, message: string, days?: number) => Promise<void>;
+  run: (op: SeniorOp, days?: number) => Promise<void>;
 }) {
   const [days, setDays] = useState(1);
   const end = addDays(today, days - 1);
@@ -272,14 +299,15 @@ function AwaySheet({
   if (current) {
     return (
       <>
+        {isDemo ? <DemoNotice /> : null}
         <h2 className="text-[28px] font-extrabold text-cocoa">일찍 돌아오셨나요?</h2>
-        <p className="mt-2 text-[19px] text-muted">{fmtDate(current.endDate)}까지 다녀오신다고 전해 두었어요.</p>
+        <p className="mt-2 text-2xl text-muted">{fmtDate(current.endDate)}까지 {isDemo ? "예시 외출 기간이에요." : "외출 기간으로 저장했어요."}</p>
         <ErrorLine text={error} />
         <div className="mt-7 flex flex-col gap-3">
-          <Button className="min-h-16 text-[22px]" disabled={busy} onClick={() => run("back", "어서 오세요!\n가족에게 전할게요.")}>
-            네, 집에 왔어요
+          <Button className="min-h-16 text-2xl" disabled={busy} onClick={() => run("back")}>
+            {isDemo ? "귀가 소식 체험하기" : "네, 집에 왔어요"}
           </Button>
-          <Button variant="outline" className="min-h-16 text-[22px]" onClick={onClose}>
+          <Button variant="outline" className="min-h-16 text-2xl" onClick={onClose}>
             아직이요
           </Button>
         </div>
@@ -289,26 +317,27 @@ function AwaySheet({
 
   return (
     <>
+      {isDemo ? <DemoNotice /> : null}
       <h2 className="text-[28px] font-extrabold text-cocoa">며칠 다녀오세요?</h2>
-      <p className="mt-2 text-[19px] text-muted">그동안은 끼니 알림을 쉬어요.</p>
+      <p className="mt-2 text-2xl text-muted">{isDemo ? "외출 기간을 정하는 예시예요." : "그동안은 끼니 알림을 쉬어요."}</p>
       <div className="mt-6 grid grid-cols-2 gap-2.5">
         {[1, 2, 3, 7].map((d) => (
           <button
             key={d}
             onClick={() => setDays(d)}
             aria-pressed={days === d}
-            className={`h-16 rounded-2xl text-[22px] font-bold ${days === d ? "bg-butter text-cocoa" : "bg-butter-soft/60 text-cocoa/70"}`}
+            className={`h-16 rounded-2xl text-2xl font-bold ${days === d ? "bg-butter text-cocoa" : "bg-butter-soft/60 text-cocoa/70"}`}
           >
             {d === 1 ? "오늘만" : d === 7 ? "일주일" : `${d}일`}
           </button>
         ))}
       </div>
-      <p className="mt-4 text-center text-[20px] font-bold text-cocoa">
+      <p className="mt-4 text-center text-2xl font-bold text-cocoa">
         {fmtDate(today)} ~ {fmtDate(end)}
       </p>
       <ErrorLine text={error} />
-      <Button className="mt-5 min-h-16 text-[22px]" disabled={busy} onClick={() => run("away", `${fmtDate(end)}까지\n잘 다녀오세요!`, days)}>
-        가족에게 알리기
+      <Button className="mt-5 min-h-16 text-2xl" disabled={busy} onClick={() => run("away", days)}>
+        {isDemo ? "외출 소식 체험하기" : "외출 기간 남기기"}
       </Button>
     </>
   );

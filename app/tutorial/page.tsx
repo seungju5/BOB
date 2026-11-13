@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, type ComponentType, type ReactNode, type SVGProps } from "react";
+import { useEffect, useRef, useState, type ComponentType, type ReactNode, type SVGProps } from "react";
 import {
   IconArrowRight,
   IconBell,
@@ -11,28 +11,29 @@ import {
   IconFile,
   IconHeart,
   IconSmartphone,
-  IconPlay,
   IconPlug,
   IconSuitcase,
   IconUtensils,
 } from "@/components/icons";
 import { Mascot } from "@/components/Mascot";
-import { Button } from "@/components/ui";
+import { Button, Skeleton } from "@/components/ui";
+import { useApp } from "@/lib/data/useApp";
+import { tutorialExitPath } from "@/lib/data/view";
 
-/** 보호자 첫 사용 튜토리얼 (Figma T-01~T-05). 끝나면 /start가 로그인·온보딩으로 보낸다. */
-const NEXT = "/start";
+/** 가입 후의 소개. 명시적으로 선택한 데모도 같은 소개를 별도로 체험한다. */
+const POLICY_URL = "https://app.notion.com/p/4163d756e70080399649fedbb690842f?source=copy_link";
 
 type Slide = { title: string; body: string; content: ReactNode };
 
 const SLIDES: Slide[] = [
   {
     title: "밥솥이 안부를\n전해 드려요",
-    body: "어르신이 밥솥을 쓰시면\n플러그가 알아채고\n보호자님께 알려 드려요.",
+    body: "동의하고 기기를 연결하면\n밥솥 사용 신호로\n안부를 살펴볼 수 있어요.",
     content: <IntroFlow />,
   },
   {
-    title: "평소와 다르면\n바로 알려 드려요",
-    body: "끼니를 거르시거나\n식사 시간이 바뀌면\n알림이 와요.",
+    title: "소식이 뜸하면\n안부를 물어봐요",
+    body: "설정한 시간에 소식이 없으면\n안부를 물을 계기가 돼요.\n실제 식사 여부를 단정하지 않아요.",
     content: (
       <div className="flex w-full flex-col gap-3">
         <InfoCard icon={IconBell} text={"점심시간이 지났는데\n아직 식사 소식이 없어요"} />
@@ -47,20 +48,20 @@ const SLIDES: Slide[] = [
   },
   {
     title: "어르신도\n버튼 하나로\n소식을 보내요",
-    body: "어르신 화면에서 누르시면\n보호자님께 바로 전해져요.",
+    body: "가족 연결을 마친 뒤\n필요할 때 소식을 남겨요.\n매일 누르지 않아도 괜찮아요.",
     content: <SeniorButtons />,
   },
   {
-    title: "시작하기 전에\n준비해 주세요",
-    body: "찾기 어려운 건\n다음 단계에서 영상으로\n알려 드려요.",
+    title: "우리 집 안부를\n함께 살펴봐요",
+    body: "먼저 어떤 댁인지 알려 주세요.\n기기 연결과 생활 설정은\n홈에서 이어갈 수 있어요.",
     content: <ReadyChecklist />,
   },
 ];
 
 const READY: { icon: Icon; title: string; hint: string }[] = [
-  { icon: IconSmartphone, title: "SmartThings 계정", hint: "삼성 계정으로 가입해 두세요" },
-  { icon: IconPlug, title: "밥솥에 꽂을 스마트 플러그", hint: "전력을 재는 삼성 스마트플러그예요" },
-  { icon: IconPlay, title: "연결 코드와 플러그 번호", hint: "SmartThings에서 확인해요" },
+  { icon: IconHeart, title: "어떤 댁인지 알려 주세요", hint: "부르는 이름과 함께 사는 분을 알려 주세요" },
+  { icon: IconCheckSquare, title: "홈부터 둘러봐요", hint: "기기가 없어도 시작할 수 있어요" },
+  { icon: IconPlug, title: "기기는 나중에 연결해요", hint: "동의를 확인한 뒤 홈의 안내를 눌러 주세요" },
 ];
 
 /** T-05 준비물: 번호가 이어지는 체크리스트 카드 */
@@ -72,7 +73,7 @@ function ReadyChecklist() {
       {READY.map(({ icon: Icon, title, hint }, i) => (
         <li
           key={title}
-          className="animate-rise relative flex items-center gap-4 rounded-[1.25rem] bg-butter-soft py-3.5 pr-4 pl-4"
+          className="animate-rise motion-reduce:animate-none relative flex items-center gap-4 rounded-[1.25rem] bg-butter-soft py-3.5 pr-4 pl-4"
           style={{ animationDelay: `${120 + i * 90}ms` }}
         >
           <span className="relative grid h-11 w-11 shrink-0 place-items-center rounded-full bg-butter text-cocoa shadow-[0_0_0_4px_var(--color-butter-soft)]">
@@ -92,40 +93,47 @@ function ReadyChecklist() {
 
 export default function TutorialPage() {
   const router = useRouter();
+  const { view, needsLogin, error } = useApp();
   const [index, setIndex] = useState(0);
+  const heading = useRef<HTMLHeadingElement>(null);
+  useEffect(() => { if (needsLogin) router.replace("/login"); }, [needsLogin, router]);
+  useEffect(() => { heading.current?.focus(); }, [index, Boolean(view)]);
+  if (needsLogin || !view) return <main className="flex flex-1 flex-col gap-4 p-6">{error ? <><p role="alert" className="text-[18px] text-blush-deep">로그인 정보를 확인하지 못했어요.</p><Button onClick={() => location.reload()}>다시 시도</Button></> : <><Skeleton className="h-12" /><Skeleton className="h-48" /></>}</main>;
+  const destination = tutorialExitPath(view.onboardingStep);
+  const returning = destination === "/home";
   const slide = SLIDES[index];
   const last = index === SLIDES.length - 1;
 
   return (
     <main className="font-sans flex flex-1 flex-col bg-butter">
       <div className="px-6 pt-7">
+        {view.mode === "demo" ? <p className="mb-4 rounded-2xl bg-paper p-3 text-[16px] font-semibold text-cocoa">예시 체험이에요. 실제 계정이나 기기에 연결되지 않아요.</p> : null}
         <div className="flex h-9 items-center justify-between">
           <div className="flex items-center gap-2" role="progressbar" aria-valuenow={index + 1} aria-valuemin={1} aria-valuemax={SLIDES.length} aria-label="튜토리얼 진행">
             {SLIDES.map((_, i) => (
               <span key={i} className={`h-2.5 rounded-full transition-all ${i === index ? "w-7 bg-cocoa" : "w-2.5 bg-cocoa/20"}`} />
             ))}
           </div>
-          <Link href={NEXT} className={`-mr-2 rounded-full px-3 py-1.5 text-[15px] font-semibold text-cocoa/70 hover:text-cocoa ${last ? "invisible" : ""}`}>
+          <Link href={destination} className={`-mr-2 rounded-full px-3 py-1.5 text-[15px] font-semibold text-cocoa/70 hover:text-cocoa ${last ? "invisible" : ""}`}>
             건너뛰기
           </Link>
         </div>
-        <div key={index} className="animate-rise pb-8">
-          <h1 className="mt-6 text-[clamp(1.875rem,8.2vw,2.25rem)] leading-[1.4] font-semibold tracking-[-0.035em] whitespace-pre-line text-cocoa">{slide.title}</h1>
+        <div key={index} className="animate-rise motion-reduce:animate-none pb-8">
+          <h1 ref={heading} tabIndex={-1} className="mt-6 text-[clamp(1.875rem,8.2vw,2.25rem)] leading-[1.4] font-semibold tracking-[-0.035em] whitespace-pre-line text-cocoa outline-none">{slide.title}</h1>
           <p className="mt-5 text-[18px] leading-[1.75] whitespace-pre-line text-cocoa/80">{slide.body}</p>
         </div>
       </div>
 
       {/* 시작 화면처럼 아래쪽은 흰 시트 */}
       <div className="flex flex-1 flex-col rounded-t-[2.25rem] bg-paper px-6 pt-8 pb-8">
-        <div key={index} className="animate-rise flex flex-1 items-center justify-center pb-8">
+        <div key={index} className="animate-rise motion-reduce:animate-none flex flex-1 items-center justify-center pb-8">
           {slide.content}
         </div>
-        <Button variant="dark" className="min-h-16 text-[19px]" onClick={() => (last ? router.push(NEXT) : setIndex(index + 1))}>
-          {last ? "시작하기" : "다음"}
+        <Button variant="dark" className="min-h-16 text-[19px]" onClick={() => (last ? router.push(destination) : setIndex(index + 1))}>
+          {last ? returning ? "홈으로 돌아가기" : "우리 집 알려주기" : "다음"}
         </Button>
-        {/* 약관 페이지가 생기면 링크로 바꾼다 */}
         {index === 0 ? (
-          <p className="mt-4 text-center text-[14px] text-cocoa/70 underline underline-offset-4">개인정보 처리방침 · 이용약관</p>
+          <a href={POLICY_URL} target="_blank" rel="noreferrer" className="mt-4 min-h-12 text-center text-[15px] text-cocoa/70 underline underline-offset-4">개인정보 이용·제공 안내 문서 (새 창·Notion 로그인 필요)</a>
         ) : (
           <Button variant="ghost" className="mt-1 text-cocoa/70" onClick={() => setIndex(index - 1)}>
             이전
@@ -151,7 +159,7 @@ function IntroFlow() {
   const steps: Icon[] = [IconCooker, IconPlug, IconSmartphone];
   return (
     <div className="flex flex-col items-center gap-5">
-      <Mascot className="animate-bob h-40 w-40" mood="happy" />
+      <Mascot className="animate-bob motion-reduce:animate-none h-40 w-40" mood="happy" />
       <div className="flex items-center gap-3 text-cocoa" aria-label="밥솥, 플러그, 휴대폰 순서로 소식이 전해져요">
         {steps.map((Step, i) => (
           <span key={i} className="flex items-center gap-3">

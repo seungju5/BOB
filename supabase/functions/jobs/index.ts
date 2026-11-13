@@ -20,10 +20,20 @@ const NEWS_ALERTS: AlertType[] = ["help_request", "eat_out", "away", "weekly_rep
 const JUDGE_WINDOW_MIN = 90;
 
 type Plug = { id: string; household_id: string; st_device_id: string };
+type ConsentedHousehold = { id: string; senior_consent_at: string | null };
+
+function consentRecorded(house: { senior_consent_at: string | null } | null): boolean {
+  return typeof house?.senior_consent_at === "string" && Number.isFinite(Date.parse(house.senior_consent_at));
+}
+
+async function hasSeniorConsent(householdId: string): Promise<boolean> {
+  const house = must(await db.from("households").select("senior_consent_at").eq("id", householdId).maybeSingle()) as ConsentedHousehold | null;
+  return consentRecorded(house);
+}
 
 async function activeHouseholds(): Promise<string[]> {
-  const rows = must(await db.from("households").select("id").gt("onboarding_step", 7)) as { id: string }[];
-  return rows.map((r) => r.id);
+  const rows = must(await db.from("households").select("id, senior_consent_at").gt("onboarding_step", 7).not("senior_consent_at", "is", null)) as ConsentedHousehold[];
+  return rows.filter(consentRecorded).map((r) => r.id);
 }
 
 async function ingest() {
@@ -32,17 +42,22 @@ async function ingest() {
   const minute = new Date(Math.floor(now.getTime() / MINUTE_MS) * MINUTE_MS).toISOString();
   let ok = 0;
   for (const p of plugs) {
+    if (!await hasSeniorConsent(p.household_id)) continue;
+    let watts: number;
     try {
       const token = must(await db.rpc("get_plug_token", { plug: p.id })) as string | null;
       if (!token) throw new Error("no token");
-      const watts = await readPower(p.st_device_id, token);
-      must(await db.from("power_readings_raw").upsert({ plug_id: p.id, measured_at: minute, watts }, { onConflict: "plug_id,measured_at" }));
-      must(await db.from("smart_plugs").update({ status: "online", last_reading_at: now.toISOString() }).eq("id", p.id));
-      ok++;
-    } catch (e) {
-      console.error("ingest", p.id, e instanceof Error ? e.message : e);
+      watts = await readPower(p.st_device_id, token);
+    } catch {
+      console.error("ingest device read failed", p.id);
       must(await db.from("smart_plugs").update({ status: "offline" }).eq("id", p.id));
+      continue;
     }
+    // A withdrawal while awaiting SmartThings must not persist the returned sample.
+    if (!await hasSeniorConsent(p.household_id)) continue;
+    must(await db.from("power_readings_raw").upsert({ plug_id: p.id, measured_at: minute, watts }, { onConflict: "plug_id,measured_at" }));
+    must(await db.from("smart_plugs").update({ status: "online", last_reading_at: now.toISOString() }).eq("id", p.id));
+    ok++;
   }
   return { plugs: plugs.length, ok };
 }
@@ -51,6 +66,7 @@ async function judge() {
   const now = new Date();
   const plugs = must(await db.from("smart_plugs").select("id, household_id, st_device_id")) as Plug[];
   for (const p of plugs) {
+    if (!await hasSeniorConsent(p.household_id)) continue;
     const rows = must(
       await db.from("power_readings_raw").select("measured_at, watts").eq("plug_id", p.id).order("measured_at"),
     ) as { measured_at: string; watts: number }[];
@@ -64,6 +80,7 @@ async function judge() {
         e.startedAt.getTime() > first + DETECTION.READING_INTERVAL_MIN * MINUTE_MS &&
         e.endedAt.getTime() <= last - DETECTION.COOK_MERGE_GAP_MIN * MINUTE_MS,
     );
+    if (!await hasSeniorConsent(p.household_id)) continue;
     if (closed.length) {
       must(
         await db.from("cooker_events").upsert(
@@ -77,7 +94,7 @@ async function judge() {
     must(await db.from("power_readings_raw").delete().eq("plug_id", p.id).lt("measured_at", new Date(now.getTime() - JUDGE_WINDOW_MIN * MINUTE_MS).toISOString()));
   }
   const households = await activeHouseholds();
-  for (const h of households) await recomputeDay(h, kstDate(now), now);
+  for (const h of households) if (await hasSeniorConsent(h)) await recomputeDay(h, kstDate(now), now);
   return { plugs: plugs.length, households: households.length };
 }
 
@@ -96,6 +113,7 @@ async function alerts() {
       db.from("alerts").select("type").eq("household_id", h).is("resolved_at", null).not("type", "in", `(${NEWS_ALERTS.join(",")})`).then(must),
       getAbsences(h),
     ]);
+    if (!await hasSeniorConsent(h)) continue;
     const order = { breakfast: 0, lunch: 1, dinner: 2 } as const;
     const sorted = ((slots ?? []) as MealSlot[]).sort((a, b) => a.date.localeCompare(b.date) || order[a.slot] - order[b.slot]);
     const s = settings as { missed_meals_threshold: number; fasting_hours: number; emergency_hours: number };
@@ -116,6 +134,7 @@ async function alerts() {
       created += result.create.length;
     }
     if (result.resolve.length) {
+      if (!await hasSeniorConsent(h)) continue;
       must(await db.from("alerts").update({ resolved_at: now.toISOString() }).eq("household_id", h).is("resolved_at", null).in("type", result.resolve));
     }
   }
@@ -128,7 +147,9 @@ async function daily() {
   const yesterday = addDays(today, -1);
   const households = await activeHouseholds();
   for (const h of households) {
+    if (!await hasSeniorConsent(h)) continue;
     await recomputeDay(h, yesterday, now); // 어제 확정 (집계 포함)
+    if (!await hasSeniorConsent(h)) continue;
     await recomputeDay(h, today, now); // 오늘 pending 슬롯 생성
   }
   // 집계가 끝난 이벤트 삭제: 취사·열림 시각은 하루만 둔다
@@ -151,6 +172,7 @@ async function weekly() {
     const slots = must(
       await db.from("meal_slots").select("status").eq("household_id", h).gte("date", addDays(today, -7)).lte("date", addDays(today, -1)),
     ) as { status: MealSlot["status"] }[];
+    if (!await hasSeniorConsent(h)) continue;
     const counted = slots.filter((s) => s.status !== "away" && s.status !== "pending");
     if (!counted.length) continue; // 기록이 없는 주는 보내지 않는다
     const rate = Math.round((counted.filter((s) => s.status === "confirmed" || s.status === "eat_out").length / counted.length) * 100);

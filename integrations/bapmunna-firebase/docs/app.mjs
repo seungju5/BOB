@@ -8,6 +8,7 @@ import {STATUS_COPY,riceState} from './presentation.mjs';
 import {runChecks} from './checks.mjs';
 import {mountAccount} from './account-view.mjs';
 import {mountSmartThings} from './smartthings-view.mjs';
+import {mountHousehold} from './household-view.mjs';
 import {EDITIONS,editionFromLocation,editionView,initialEditionView,editionLink,rememberEdition,recalledEdition} from './editions.mjs';
 import {SETUP_STEPS,setupDraft,validateSetup,applySetup,readSetupForm,setupContent,dateInput,parseDateInput,patternComparison} from './worksheet.mjs';
 import {mealEvidence,careHeadline,JOURNEY_SCENARIOS,journeyScene,reportDayAfterKey,awayPresetRange} from './experience.mjs';
@@ -368,6 +369,7 @@ function render(focus=false){
   }
   if(view==='account'&&CLOUD_AVAILABLE)accountCleanup=mountAccount(document.querySelector('#account-surface'),{audience:edition,browseHref:routeHref(EDITIONS[edition].home),demoHref:`${location.pathname}?demo=1#${EDITIONS[edition].home}`,familyHref:routeHref('family'),connectHref:routeHref('connect'),onSessionRefresh:(user,metadata)=>applyRuntimeSession(runtimeSession(user,metadata))});
   if(view==='connect'&&CLOUD_AVAILABLE)accountCleanup=mountSmartThings(document.querySelector('#smartthings-surface'),{accountHref:routeHref('account'),homeHref:routeHref(EDITIONS[edition].home)});
+  if(view==='setup'&&surface==='live'&&runtime.status==='signed-in')accountCleanup=mountHousehold(document.querySelector('#household-surface'),{homeHref:routeHref(EDITIONS[edition].home)});
   if(modal){const dialog=root.querySelector('dialog');dialog.showModal();dialog.addEventListener('cancel',event=>{event.preventDefault();closeModal();});}
   else if(focus)root.querySelector('h1')?.focus({preventScroll:true});
   else if(wasModal&&focusReturn)root.querySelector(focusReturn)?.focus({preventScroll:true});
@@ -398,7 +400,7 @@ function action(name,explicitMeal){
   if(name==='retry-session'){runtimeControl?.start();return;}
   if(['next-live-tutorial','previous-live-tutorial','finish-tutorial'].includes(name)){
     if(runtime.status!=='signed-in'||view!=='tutorial')return;
-    if(name==='finish-tutorial'){tutorialSeenUid=runtime.uid;rememberBrowserTutorial(appBase,runtime.uid);go(EDITIONS[edition].home);return;}
+    if(name==='finish-tutorial'){tutorialSeenUid=runtime.uid;rememberBrowserTutorial(appBase,runtime.uid);go('setup');return;}
     tutorialIndex=Math.max(0,Math.min(4,tutorialIndex+(name==='next-live-tutorial'?1:-1)));render(true);window.scrollTo({top:0,behavior:'instant'});return;
   }
   if(!isDemoSurface()&&!['journey-start','welcome-replay','text-size'].includes(name))return;

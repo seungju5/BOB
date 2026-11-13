@@ -9,6 +9,7 @@ export const CHECKS = {
   'domain-sync': {title: 'Canonical domain matches Firebase', args: ['scripts/sync-firebase.mjs', '--check'], prerequisites: ['node_modules/typescript/package.json']},
   'design-sync': {title: 'Approved bunny and design match', args: ['scripts/sync-design.mjs', '--check']},
   'root-tests': {title: 'Root unit tests', args: ['node_modules/vitest/vitest.mjs', 'run', '--reporter=json', '--outputFile', '{reportFile}'], format: 'vitest', prerequisites: ['node_modules/vitest/vitest.mjs']},
+  'backend-privacy-tests': {title: 'Server consent and private response boundaries', args: ['--test', '--test-reporter=tap', 'tests/privacy-consent-boundary.test.mjs'], format: 'tap', prerequisites: ['node_modules/typescript/package.json']},
   'types': {title: 'TypeScript', args: ['node_modules/typescript/bin/tsc', '--noEmit'], prerequisites: ['node_modules/typescript/bin/tsc']},
   'firebase-contracts': {title: 'Firebase scenarios and worksheet', args: ['tests/check.mjs'], cwd: 'integrations/bapmunna-firebase'},
   'firebase-tests': {title: 'Firebase roles, management, parity and experience', args: ['--test', '--test-reporter=tap', 'tests/editions.test.mjs', 'tests/manage.test.mjs', 'tests/parity.test.mjs', 'tests/experience.test.mjs'], cwd: 'integrations/bapmunna-firebase', format: 'tap'},
@@ -24,10 +25,10 @@ export const PROFILES = {
   baseline: BASE,
   domain: [...BASE, ...FIREBASE],
   experience: [...BASE, ...FIREBASE, 'next-build'],
-  data: [...BASE, ...FIREBASE],
-  smartthings: [...BASE, ...FIREBASE, 'smartthings-tests'],
+  data: [...BASE, ...FIREBASE, 'backend-privacy-tests'],
+  smartthings: [...BASE, ...FIREBASE, 'backend-privacy-tests', 'smartthings-tests'],
   harness: ['harness-tests'],
-  full: [...BASE, ...FIREBASE, 'smartthings-tests', 'next-build', 'harness-tests'],
+  full: [...BASE, ...FIREBASE, 'backend-privacy-tests', 'smartthings-tests', 'next-build', 'harness-tests'],
 };
 
 const PROFILE_MEMBERS = {

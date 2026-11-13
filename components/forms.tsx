@@ -134,63 +134,20 @@ export function Slider({
   );
 }
 
-const RELATIONS =["어머니", "아버지", "부모님"];
-const RELATION_SEP = "·";
+const RELATIONS = ["어머니", "아버지", "부모님"];
 
-/**
- * 어르신 호칭: 여러 개 고를 수 있고, 기타는 직접 입력한다.
- * 저장은 한 문자열로 ("어머니·아버지", "어머니·이모"). DB 칼럼(senior_relation text)은 그대로다.
- */
+/** 한 가구의 호칭은 한 가지를 고른다. 기존 복합 호칭은 기타에 보존한다. */
 export function RelationPicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  const parts = value.split(RELATION_SEP).map((p) => p.trim()).filter(Boolean);
-  const [picked, setPicked] = useState(() => RELATIONS.filter((r) => parts.includes(r)));
-  const initialOther = parts.filter((p) => !RELATIONS.includes(p)).join(" ");
-  const [otherOn, setOtherOn] = useState(initialOther !== "");
-  const [other, setOther] = useState(initialOther);
-
-  const emit = (p: string[], on: boolean, text: string) =>
-    onChange([...RELATIONS.filter((r) => p.includes(r)), on ? text.trim() : ""].filter(Boolean).join(RELATION_SEP));
-  const toggle = (r: string) => {
-    const next = picked.includes(r) ? picked.filter((x) => x !== r) : [...picked, r];
-    setPicked(next);
-    emit(next, otherOn, other);
-  };
-  const chip = (on: boolean) =>
-    `h-12 rounded-full border-2 text-[15px] font-bold transition-colors ${on ? "border-butter bg-butter text-cocoa" : "border-line bg-paper text-cocoa/70 hover:border-butter-deep"}`;
-
+  const [otherOn, setOtherOn] = useState(Boolean(value && !RELATIONS.includes(value)));
+  const [other, setOther] = useState(RELATIONS.includes(value) ? "" : value);
+  const chip = (on: boolean) => `h-12 rounded-full border-2 text-[15px] font-bold transition-colors ${on ? "border-butter bg-butter text-cocoa" : "border-line bg-paper text-cocoa/70 hover:border-butter-deep"}`;
   return (
     <div className="flex flex-col gap-2">
-      <div className="grid grid-cols-4 gap-2">
-        {RELATIONS.map((r) => (
-          <button key={r} type="button" aria-pressed={picked.includes(r)} onClick={() => toggle(r)} className={chip(picked.includes(r))}>
-            {r}
-          </button>
-        ))}
-        <button
-          type="button"
-          aria-pressed={otherOn}
-          onClick={() => {
-            setOtherOn(!otherOn);
-            emit(picked, !otherOn, other);
-          }}
-          className={chip(otherOn)}
-        >
-          기타
-        </button>
+      <div className="grid grid-cols-4 gap-2" role="group" aria-label="호칭 한 가지 선택">
+        {RELATIONS.map((relation) => <button key={relation} type="button" aria-pressed={!otherOn && value === relation} onClick={() => { setOtherOn(false); onChange(relation); }} className={chip(!otherOn && value === relation)}>{relation}</button>)}
+        <button type="button" aria-pressed={otherOn} onClick={() => { setOtherOn(true); onChange(other.trim()); }} className={chip(otherOn)}>기타</button>
       </div>
-      {otherOn ? (
-        <TextInput
-          autoFocus
-          aria-label="부르는 호칭 직접 입력"
-          placeholder="예: 할머니, 이모"
-          maxLength={10}
-          value={other}
-          onChange={(e) => {
-            setOther(e.target.value);
-            emit(picked, true, e.target.value);
-          }}
-        />
-      ) : null}
+      {otherOn ? <TextInput autoFocus aria-label="부르는 호칭 직접 입력" placeholder="예: 할머니" maxLength={30} value={other} onChange={(e) => { setOther(e.target.value); onChange(e.target.value.trim()); }} /> : null}
     </div>
   );
 }

@@ -40,10 +40,27 @@ export type AppView = {
 
 export type OnboardingPatch = Partial<Pick<AppView, "senior" | "household" | "mealProfile" | "alertSettings" | "seniorConsent">>;
 
+/** 기존 저장 번호를 유지한다. 1·2번 기기 단계는 이제 홈 이후의 선택 기능이다. */
+export const ONBOARDING_COMPLETE = 8;
+export const HOUSEHOLD_STEP = 3;
+export function visibleOnboardingStep(savedStep: number): number {
+  return Number.isInteger(savedStep) && savedStep >= HOUSEHOLD_STEP ? Math.min(savedStep, ONBOARDING_COMPLETE) : HOUSEHOLD_STEP;
+}
+export function guardianStartPath(savedStep: number): "/home" | "/tutorial" | "/onboarding" {
+  if (savedStep >= ONBOARDING_COMPLETE) return "/home";
+  return savedStep >= HOUSEHOLD_STEP ? "/onboarding" : "/tutorial";
+}
+export function tutorialExitPath(savedStep: number): "/home" | "/onboarding" {
+  return savedStep >= ONBOARDING_COMPLETE ? "/home" : "/onboarding";
+}
+
+/** 기기 접근 확인 시각만 전달한다. 원시 전력값은 클라이언트 계약에 없다. */
+export type RegisterPlugResult = { connected: true; checkedAt: string };
+
 /** 화면에서 쓰는 동작. 데모와 실서비스가 각각 구현한다. */
 export type AppActions = {
   saveOnboarding(step: number, patch?: OnboardingPatch): Promise<void>;
-  registerPlug(deviceId: string, token: string): Promise<{ watts: number }>;
+  registerPlug(deviceId: string, token: string): Promise<RegisterPlugResult>;
   skipPlug(): Promise<void>;
   issuePairingCode(): Promise<void>;
   ackAlert(id: string): Promise<void>;

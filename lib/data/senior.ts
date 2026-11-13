@@ -53,18 +53,84 @@ async function call<T>(body: Record<string, unknown>): Promise<T> {
   return data as T;
 }
 
+/** 실제 연결은 서버 성공만 인정한다. 예시 코드로 실패를 대신하지 않는다. */
+export async function pairSenior(code: string) {
+  if (!/^\d{6}$/.test(code)) throw new Error("숫자 여섯 개를 다시 확인해 주세요.");
+  if (!supabaseConfigured) throw new Error("실제 가족 연결은 아직 준비 중이에요.");
+  const previousToken = readToken();
+  const result = await call<{ token?: unknown }>({ op: "pair", code });
+  if (typeof result?.token !== "string" || result.token.length < 32 || result.token === DEMO) {
+    throw new Error("연결을 확인하지 못했어요. 다시 시도해 주세요.");
+  }
+  if (readToken() !== previousToken) throw new Error("연결이 바뀌었어요. 화면을 다시 확인해 주세요.");
+  writeToken(result.token);
+}
+
+/** 사용자가 명시적으로 예시 체험을 선택했을 때만 호출한다. */
+export function startSeniorDemo() {
+  updateDemo((s) => ({ ...s, seniorPaired: true }));
+  writeToken(DEMO);
+}
+
+export function disconnectSenior() {
+  writeToken(null);
+}
+
+/** 화면을 열 때의 기기와 현재 기기가 같을 때만 행동을 보낸다. */
+export async function performSeniorAction(token: string | null | undefined, op: SeniorOp, days?: number) {
+  if (!token || token !== readToken()) throw new Error("연결이 바뀌었어요. 화면을 다시 확인해 주세요.");
+  if (token === DEMO) {
+    const iso = new Date().toISOString();
+    const today = kstDate(new Date());
+    updateDemo((s) => {
+      const actions = [...s.seniorActions, { type: op === "back" ? ("away" as const) : op, at: iso }];
+      if (op === "help")
+        return { ...s, seniorActions: actions, alerts: [...s.alerts, { id: `help-${iso}`, type: "help_request", triggeredAt: iso, acknowledgedAt: null, resolvedAt: null }] };
+      if (op === "away") {
+        const endDate = addDays(today, (days ?? 1) - 1);
+        return {
+          ...s,
+          seniorActions: actions,
+          absences: [...s.absences.filter((a) => !(a.startDate <= today && today <= a.endDate)), { startDate: today, endDate }],
+          alerts: [...s.alerts, { id: `away-${iso}`, type: "away", triggeredAt: iso, acknowledgedAt: null, resolvedAt: null, payload: { endDate } }],
+        };
+      }
+      if (op === "back")
+        return {
+          ...s,
+          seniorActions: actions,
+          absences: s.absences
+            .map((a) => (a.startDate <= today && today <= a.endDate ? { ...a, endDate: addDays(today, -1) } : a))
+            .filter((a) => a.endDate >= a.startDate),
+        };
+      return { ...s, seniorActions: actions, alerts: [...s.alerts, { id: `eat_out-${iso}`, type: "eat_out", triggeredAt: iso, acknowledgedAt: null, resolvedAt: null }] };
+    });
+    return;
+  }
+  if (!supabaseConfigured) throw new Error("실제 가족 연결은 아직 준비 중이에요.");
+  const result = await call<{ ok?: boolean }>({ op, token, days });
+  if (result?.ok !== true) throw new Error("요청 접수를 확인하지 못했어요. 다시 시도해 주세요.");
+  if (token !== readToken()) throw new Error("연결이 바뀌었어요. 화면을 다시 확인해 주세요.");
+}
+
 export function useSenior() {
   const token = useSyncExternalStore(subscribe, readToken, () => undefined);
   const demo = useDemo();
-  const [live, setLive] = useState<SeniorStatus | null>(null);
+  const [live, setLive] = useState<{ token: string; status: SeniorStatus } | null>(null);
+  const [error, setError] = useState<{ token: string; message: string } | null>(null);
   const isDemo = token === DEMO;
 
   const refresh = useCallback(async () => {
     const t = readToken();
     if (!t || t === DEMO) return;
     try {
-      setLive(await call<SeniorStatus>({ op: "status", token: t }));
+      const status = await call<SeniorStatus>({ op: "status", token: t });
+      if (readToken() !== t) return;
+      setLive({ token: t, status });
+      setError(null);
     } catch (e) {
+      if (readToken() !== t) return;
+      setError({ token: t, message: "소식을 불러오지 못했어요. 다시 시도해 주세요." });
       if ((e as { status?: number }).status === 401) writeToken(null); // 연결이 끊김 → 다시 연결
     }
   }, []);
@@ -87,61 +153,12 @@ export function useSenior() {
           absence: demo.absences.find((a) => a.startDate <= kstDate(new Date()) && kstDate(new Date()) <= a.endDate) ?? null,
         }
       : null
-    : live;
-
-  /** 연결 숫자로 기기 연결. 실서비스 숫자가 아니면 데모 숫자인지 확인한다. */
-  const pair = async (code: string) => {
-    if (supabaseConfigured) {
-      try {
-        const { token } = await call<{ token: string }>({ op: "pair", code });
-        writeToken(token);
-        return;
-      } catch (e) {
-        if (demo?.pairingCode !== code) throw e;
-      }
-    }
-    if (demo?.pairingCode === code) {
-      updateDemo((s) => ({ ...s, seniorPaired: true }));
-      writeToken(DEMO);
-      return;
-    }
-    throw new Error("숫자가 맞지 않아요. 다시 확인해 주세요.");
-  };
+    : live && live.token === token ? live.status : null;
 
   const act = async (op: SeniorOp, days?: number) => {
-    if (isDemo) {
-      const iso = new Date().toISOString();
-      const today = kstDate(new Date());
-      updateDemo((s) => {
-        const actions = [...s.seniorActions, { type: op === "back" ? ("away" as const) : op === "help" ? ("help" as const) : op === "away" ? ("away" as const) : ("eat_out" as const), at: iso }];
-        if (op === "help")
-          return { ...s, seniorActions: actions, alerts: [...s.alerts, { id: `help-${iso}`, type: "help_request", triggeredAt: iso, acknowledgedAt: null, resolvedAt: null }] };
-        if (op === "away") {
-          const endDate = addDays(today, (days ?? 1) - 1);
-          return {
-            ...s,
-            seniorActions: actions,
-            absences: [...s.absences.filter((a) => !(a.startDate <= today && today <= a.endDate)), { startDate: today, endDate }],
-            // 가족에게 '자리 비워요' 소식 (senior 함수의 away와 같다)
-            alerts: [...s.alerts, { id: `away-${iso}`, type: "away", triggeredAt: iso, acknowledgedAt: null, resolvedAt: null, payload: { endDate } }],
-          };
-        }
-        if (op === "back")
-          return {
-            ...s,
-            seniorActions: actions,
-            absences: s.absences
-              .map((a) => (a.startDate <= today && today <= a.endDate ? { ...a, endDate: addDays(today, -1) } : a))
-              .filter((a) => a.endDate >= a.startDate),
-          };
-        // eat_out: 가족에게 '외식했어요' 소식
-        return { ...s, seniorActions: actions, alerts: [...s.alerts, { id: `eat_out-${iso}`, type: "eat_out", triggeredAt: iso, acknowledgedAt: null, resolvedAt: null }] };
-      });
-      return;
-    }
-    await call({ op, token: readToken(), days });
-    await refresh();
+    await performSeniorAction(token, op, days);
+    if (!isDemo) await refresh();
   };
 
-  return { token, paired: !!token, isDemo, status, pair, act };
+  return { token, paired: !!token, isDemo, status, error: error && error.token === token ? error.message : null, pair: pairSenior, startDemo: startSeniorDemo, disconnect: disconnectSenior, canPair: supabaseConfigured, refresh, act };
 }

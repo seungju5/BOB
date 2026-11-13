@@ -53,3 +53,12 @@
 - 보고서: `.harness/runs/2026-11-13T01-45-49-732Z-77072/report.md`. 공개 배포 검증은 이어 기록한다.
 - 공개 SmartThings 서버는 기존 무료 유지 결정상 미배포다. UI 수정이 삼성 계정 OAuth 또는 실기기 자동 수신 성공을 뜻하지 않는다.
 - 운영 DB·서버·요금제·기기 제어·실제 동의 상태를 변경하지 않았다.
+
+## 공개 반영 완료
+
+- 코드 커밋 `21ccabe`, `codex/google-kakao-login` 푸시 완료.
+- Firebase 버전 `sites/impact-series/versions/ba77c944182e5d1b`. 이전 `4e797660f901e693`.
+- 변경 파일12개 공개 바이트 확인, 기존 경로 누락0. 2,580개 기존 파일·Next export·브랜드·Hosting 설정·무료 요금제 보존.
+- 실제 공개 주소에서 로그인 폼, #connect 준비 상태 종료, 준비 상태 재조회, 홈 복귀 링크를 확인했다. 비로그인 복귀는 로그인 화면으로 보호된다. 실제 Google/Samsung OAuth를 새로 수행한 것은 아니다.
+- 공개 화면에서 JavaScript 오류 로그 없음. 실제 확인 폭583px에서 가로 넘침 없음. 모바일320/390px은 앞의 로컬/모의 화면 검증을 근거로 구분한다.
+- 공개 증거 `output/bapmunna-smartthings-fix-20261113/public-connect.png`. 실제 삼성 API 서버는 계속 미배포 상태이며 UI 수정과 실기기 연결 성공을 구분한다.

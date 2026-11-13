@@ -1,0 +1,25 @@
+{
+  "release": {
+    "at": "2026-11-13T01:49:46.360Z",
+    "site": "impact-series",
+    "url": "https://impact-series.web.app/bapmunna/final/",
+    "version": "sites/impact-series/versions/ba77c944182e5d1b",
+    "previous": "sites/impact-series/versions/4e797660f901e693",
+    "release": "sites/impact-series/releases/1794534585450000",
+    "source": "21ccabeb23d7f384a6fc1a2484bff534b2293f47",
+    "changed": 12,
+    "preserved": 2580,
+    "totalFiles": 2592,
+    "uploads": 6,
+    "hostingConfig": "unchanged",
+    "billingEnabled": false
+  },
+  "verification": {
+    "at": "2026-11-13T01:50:14.439Z",
+    "version": "sites/impact-series/versions/ba77c944182e5d1b",
+    "publicFilesVerified": 12,
+    "existingPathsMissing": 0,
+    "project": "impact-series",
+    "billingEnabled": false
+  }
+}

@@ -264,3 +264,13 @@ Vercel Node 24 별도 서버 패키지와 정확한 origin/source/channel로 Fir
 22:09 KST에 기존 공식 CLI로 powerMeter 지원 기기1대 조회 및 상태 읽기에 성공했다. 전력·누적 전력량·전력 시각의 존재만 확인하고 원시 값과 기기식별자는 로그·소스에 보관하지 않았다. 이 결과는 웹앱 OAuth나 자동 웹훅 증거가 아니다. 실제 서버 게시와 기존 Vercel 계정 확인은 여전히 남았다. 권한·키·앱 등록·요금제·Hosting은 변경하지 않았다.
 
 documentation/smartthings-console-support-20261114.md에 사실·제약·삼성 문의 초안을 작성했다. 외부 문의는 아직 보내지 않았다. 이번 변경은 문서만이며 이미 검증된 실행 코드를 수정하지 않아 전체 회귀 검사를 반복하지 않았다. 하네스 doctor/plan과 문서 차이 검사를 수행하고 기존 전체 검사 보고서를 현재 실연동 성공으로 승격하지 않았다. 독립 읽기 검토에서 중대한 사실 과장·비밀 포함·과금 원인 단정은 발견되지 않았으며, 로컬 Emulator 트랜잭션과 운영 검증의 구분 문구를 명확히 했다.
+
+## 2026-11-14 무료 Vercel 계정·전용 서버 IAM 준비와 첫 배포 인증
+
+사용자가 새 Google 계정의 무료 Vercel 가입·약관 동의, 공식 CLI 접근, 정확한 전용 서버 계정·8개 권한·키 발급·Vercel 비밀 보관을 명시 승인했다. 새 Hobby 팀 생성과 로그인을 확인했고 업로드 전에 모델 학습 데이터 공유를 끄고 저장했다. CLI 접근 승인과 실제 인증 완료는 구분한다. CLI 인증은 네트워크 실패와 비활성 버튼이 남아 공식 Drop 배포로 전환했다.
+
+provision-smartthings-identity.mjs apply가 성공했다. KU GPA에 bapmunna-smartthings 전용 계정과 기존 검토한 8개 권한의 custom role을 적용했고, IAM 이전 정책 복구본을 보존했다. 활성 원격 키와 로컬0600 비밀 파일을 확인했다. IAM은 프로젝트 Firestore 범위이며 컬렉션별 제한은 서버가 검사한다. Owner/Editor·브라우저 규칙·결제 설정은 변경하지 않았고 KU GPA와 Impact Series의 결제 미연결을 확인했다. 이전 자동 승인 검토 차단은 이번 명시 승인 후 해소됐다.
+
+정확한 allowlist의 15개 파일만 ZIP으로 만들었으며 비밀·로컬 CLI 자격증명은 제외했다. SHA-256 70756220953219fd8acebe8558a0db07762f38a2a72d00488d6dd10bbe97202b. Vercel Drop 업로드 목록15개와 Hobby 팀을 확인한 후 프로젝트 이름 bapmunna-smartthings로 Deploy를 눌렀다. 첫 배포 추가 이메일 인증 화면이 나와 새 코드를 요청했고 입력을 기다린다. 아직 프로젝트 고정 주소·성공한 함수 배포·production 비밀 주입은 미검증/미실행이다.
+
+이번에는 앱 실행 코드를 바꾸지 않았으며 기존 전체 검사 결과를 배포 성공으로 승격하지 않는다. 삼성 등록 URL과 frontend origin은 그대로다. 삼성 OAuth·실기기 자동 웹훅·2~3가구 격리 검증은 공개 서버와 기존 삼성 앱 등록을 확정한 뒤 진행한다. 안전한 운영 요약은 documentation/smartthings-live-20261114.md, 비공개 상세 진단은 Git 제외 tmp/smartthings-live-20261114에 보관했다.

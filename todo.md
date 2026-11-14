@@ -25,11 +25,14 @@
 - [x] 표시 UID와 token 발급 세션 바인딩, 취소 기록·callback 원자성, 계정 폐기 재확인, 뒤늦은 취소 응답 후 실제 상태 재조회
 - [x] 웹훅 원문·서명 보존 어댑터, TTL 없는 제한된 일일 정리, 전용 서비스 계정 계획과 배포 파일 allowlist
 - [x] 전체 하네스·로컬 Firestore·실제 localhost HTTP 검사 통과. 320px 연결 오류/복귀 화면 확인. 새 코드·실제 외부 계정 검증을 구분
-- [ ] 소유자 Vercel 로그인, 삼성 문자 인증/콘솔 이용 플랜 확인 (질문을 열어둠)
-- [ ] Vercel 무료 이용 자격·고정 운영 주소 확인 → 전용 서버 권한·비밀 주입 → 공개 배포
+- [x] 사용자 승인 후 새 Vercel Hobby 가입·로그인, 모델 학습 데이터 공유 해제·저장
+- [x] 명시 승인한 전용 서버 계정·정확한 8개 권한·키 발급, 두 Firebase 프로젝트 결제 미연결 확인
+- [x] 비밀 없는 서버 파일 15개를 공식 Vercel Drop에 업로드, 별도 프로젝트 이름 설정
+- [ ] Vercel 첫 배포의 추가 이메일 인증 → 고정 운영 주소·함수 빌드 확인 → production 비밀 주입·공개 응답 검사
+- [ ] 삼성 Console 접근 복구와 현재 이용 플랜 확인 (인증 후 오류 재현, 플랜 미확인)
 - [ ] 기존 삼성 앱 callback·webhook 주소 변경 → Target `CONFIRMED` → 실제 OAuth·기기 선택·자동 수신·갱신·해제·2~3가구 격리
 
-현재 공개 Hosting은 아래 11/13 버전 그대로다. 구현·배포 절차는 `workspaces/smartthings-vercel/README.md`, 당일 사실과 남은 작업은 `documentation/smartthings-live-20261114.md`에 기록한다.
+SmartThings frontend API origin은 빈 값이며 아직 실제 연결 준비 완료로 표시하지 않는다. 다른 채팅의 공개 Hosting 배포는 각 릴리스 영수증을 따른다. 구현·배포 절차는 `workspaces/smartthings-vercel/README.md`, 당일 사실과 남은 작업은 `documentation/smartthings-live-20261114.md`에 기록한다.
 
 ## 최신 검증 상태 — 2026-11-13 최종 감사
 

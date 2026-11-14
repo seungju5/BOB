@@ -114,7 +114,7 @@ async function alerts() {
       getAbsences(h),
     ]);
     if (!await hasSeniorConsent(h)) continue;
-    const order = { breakfast: 0, lunch: 1, dinner: 2 } as const;
+    const order = { breakfast: 0, lunch: 1, dinner: 2, fourth: 3 } as const;
     const sorted = ((slots ?? []) as MealSlot[]).sort((a, b) => a.date.localeCompare(b.date) || order[a.slot] - order[b.slot]);
     const s = settings as { missed_meals_threshold: number; fasting_hours: number; emergency_hours: number };
     const last = (house as { last_activity_at: string | null }).last_activity_at;

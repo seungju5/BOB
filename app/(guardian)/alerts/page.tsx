@@ -25,7 +25,7 @@ export default function AlertsPage() {
         }
       />
       <div className="flex flex-col gap-3 px-6">
-        <PushCard mode={mode} alertIds={alerts.map((a) => a.id)} />
+        {view?.careAvailable === false ? <p className="rounded-2xl bg-butter-soft p-4 text-[16px]">가족과 기기를 연결하면 실제 알림을 받을 수 있어요. 지금은 설정한 기준만 저장돼요.</p> : <PushCard mode={mode} alertIds={alerts.map((a) => a.id)} />}
         {!view ? (
           <Skeleton className="h-24" />
         ) : alerts.length === 0 ? (
@@ -34,7 +34,7 @@ export default function AlertsPage() {
               <IconBell className="h-7 w-7" />
             </span>
             <p className="mt-4 text-[17px] font-bold text-cocoa">아직 받은 알림이 없어요</p>
-            <p className="mt-1 text-[14px]">끼니 소식이 끊기면 여기로 알려 드릴게요.</p>
+            <p className="mt-1 text-[14px]">{view.careAvailable === false ? "연결 전에는 식사 여부를 판단하지 않아요." : "끼니 소식이 끊기면 여기로 알려 드릴게요."}</p>
           </div>
         ) : (
           alerts.map((a) => {

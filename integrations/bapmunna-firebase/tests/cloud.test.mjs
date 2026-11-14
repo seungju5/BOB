@@ -2,11 +2,12 @@ import {before,after,test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {initializeTestEnvironment,assertFails,assertSucceeds} from '@firebase/rules-unit-testing';
-import {doc,getDoc,setDoc,updateDoc,deleteDoc,collection,getDocs,serverTimestamp,Timestamp,writeBatch,getFirestore,connectFirestoreEmulator} from 'firebase/firestore';
+import {doc,getDoc,getDocFromServer,setDoc,updateDoc,deleteDoc,collection,getDocs,serverTimestamp,Timestamp,writeBatch,getFirestore,connectFirestoreEmulator} from 'firebase/firestore';
 import {initializeApp,deleteApp,getApp} from 'firebase/app';
 import {getAuth,connectAuthEmulator,createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut,sendEmailVerification,sendPasswordResetEmail,reload} from 'firebase/auth';
 import {koreanDay} from '../cloud/auth-utils.mjs';
 import {createProvider} from '../cloud/firebase-provider.src.mjs';
+import {preferenceFields} from '../cloud/app-preferences.mjs';
 
 const projectId='demo-bapmunna';
 if(!process.env.FIRESTORE_EMULATOR_HOST||!process.env.FIREBASE_AUTH_EMULATOR_HOST)throw Error('Run only inside the isolated demo Firebase emulators.');
@@ -63,6 +64,100 @@ test('household preferences validate names, relation, integer counts and pet boo
   for(const changed of invalid)await assertFails(setDoc(ref,{...data,...changed}));
   await assertSucceeds(setDoc(ref,{...data,alias:'가'.repeat(30)}));
   for(const changed of invalid)await assertFails(updateDoc(ref,{...changed,updatedAt:serverTimestamp()}));
+});
+
+// Synthetic account-owned preparation settings, never production care or sensor data.
+const appPreferenceInput=()=>({
+  schemaVersion:1,relationLabel:'',onboardingStep:8,phone:'010-1234-5678',
+  windows:[{slot:'breakfast',start:'06:00',end:'10:00'},{slot:'lunch',start:'11:00',end:'14:30'},{slot:'dinner',start:'17:00',end:'21:00'}],
+  eatOutPerWeek:1,usesKeepWarm:true,cooksPerWeek:7,missedMealsThreshold:2,fastingHours:48,emergencyHours:72,preparationAcknowledged:true,
+});
+const fourMealInput=()=>({...appPreferenceInput(),windows:[...appPreferenceInput().windows,{slot:'fourth',start:'21:00',end:'23:00'}]});
+const appSettingsDoc=(db,uid)=>doc(db,'bapmunnaAccounts',uid,'preferences','settings');
+const appSettingsData=(uid,input=appPreferenceInput())=>({ownerUid:uid,...input,updatedAt:serverTimestamp()});
+const invalidPreferenceChanges=()=>[
+  ['unknown schema',{schemaVersion:2}],['step below bound',{onboardingStep:0}],['step above bound',{onboardingStep:9}],['fractional step',{onboardingStep:3.5}],
+  ['phone type',{phone:123}],['phone text',{phone:'전화해 주세요'}],['phone too long',{phone:'1'.repeat(25)}],
+  ['embedded plus',{phone:'010+1234'}],['multiple plus signs',{phone:'++82'}],['plus included in 24-character maximum',{phone:'+'+'1'.repeat(24)}],
+  ['relation label type',{relationLabel:123}],['null relation label',{relationLabel:null}],['relation label too long',{relationLabel:'가'.repeat(31)}],
+  ['relation label leading whitespace',{relationLabel:' 할머니'}],['relation label trailing whitespace',{relationLabel:'할머니 '}],['blank relation label with whitespace',{relationLabel:' '}],
+  ['eat-out below bound',{eatOutPerWeek:-1}],['eat-out above bound',{eatOutPerWeek:21}],['fractional eat-out count',{eatOutPerWeek:1.5}],
+  ['cook count below bound',{cooksPerWeek:0}],['cook count above bound',{cooksPerWeek:22}],['string cook count',{cooksPerWeek:'7'}],
+  ['missed count below bound',{missedMealsThreshold:0}],['missed count above bound',{missedMealsThreshold:7}],
+  ['fasting below bound',{fastingHours:6}],['fasting above bound',{fastingHours:114}],['fasting not six-hour step',{fastingHours:49}],
+  ['emergency below bound',{emergencyHours:18}],['emergency above bound',{emergencyHours:126}],['emergency not six-hour step',{emergencyHours:73}],
+  ['emergency too close to fasting',{fastingHours:48,emergencyHours:54}],['string keep-warm flag',{usesKeepWarm:'true'}],['numeric preparation flag',{preparationAcknowledged:1}],
+  ['empty windows',{windows:[]}],['too many windows',{windows:[...fourMealInput().windows,{slot:'fourth',start:'23:10',end:'23:50'}]}],
+  ['unknown slot',{windows:[{slot:'snack',start:'06:00',end:'10:00'}]}],
+  ['duplicate non-overlapping slots',{windows:[{slot:'breakfast',start:'06:00',end:'10:00'},{slot:'breakfast',start:'11:00',end:'14:30'}]}],
+  ['duplicate fourth slot',{windows:[{slot:'fourth',start:'01:00',end:'02:00'},...appPreferenceInput().windows.slice(1),{slot:'fourth',start:'21:00',end:'23:00'}]}],
+  ['time missing zero',{windows:[{slot:'lunch',start:'6:00',end:'10:00'}]}],['hour out of range',{windows:[{slot:'lunch',start:'23:00',end:'24:00'}]}],
+  ['minute out of range',{windows:[{slot:'lunch',start:'11:60',end:'14:30'}]}],['equal start and end',{windows:[{slot:'lunch',start:'11:00',end:'11:00'}]}],
+  ['end before start',{windows:[{slot:'lunch',start:'14:00',end:'11:00'}]}],
+  ['overlapping windows',{windows:[{slot:'breakfast',start:'06:00',end:'12:00'},{slot:'lunch',start:'11:00',end:'14:30'}]}],
+  ['out-of-order windows',{windows:[appPreferenceInput().windows[2],appPreferenceInput().windows[0]]}],
+  ['extra window field',{windows:[{slot:'lunch',start:'11:00',end:'14:30',source:'sensor'}]}],
+  ['missing window field',{windows:[{slot:'lunch',start:'11:00'}]}],
+];
+
+test('verified owner can round-trip and update one-to-four meal app preferences without granting care access',async()=>{
+  const uid='app-settings-owner',db=context(uid),ref=appSettingsDoc(db,uid);
+  assert.equal((await assertSucceeds(getDoc(ref))).exists(),false);
+  for(const windows of [[appPreferenceInput().windows[1]],[appPreferenceInput().windows[0],appPreferenceInput().windows[2]],appPreferenceInput().windows,fourMealInput().windows]){
+    const input={...appPreferenceInput(),onboardingStep:1,relationLabel:'할머니',windows};
+    await assertSucceeds(setDoc(ref,appSettingsData(uid,input)));
+    const stored=(await assertSucceeds(getDoc(ref))).data();
+    assert.equal(stored.ownerUid,uid);assert.deepEqual(stored.windows,windows);assert.ok(stored.updatedAt instanceof Timestamp);
+    const {ownerUid,updatedAt,...actual}=stored;assert.deepEqual(actual,preferenceFields(input));
+  }
+  await assertSucceeds(updateDoc(ref,{phone:'',relationLabel:'',onboardingStep:1,eatOutPerWeek:0,cooksPerWeek:1,missedMealsThreshold:1,fastingHours:12,emergencyHours:24,usesKeepWarm:false,preparationAcknowledged:false,updatedAt:serverTimestamp()}));
+  await assertSucceeds(updateDoc(ref,{phone:'+'+'1'.repeat(23),relationLabel:'가'.repeat(30),onboardingStep:8,eatOutPerWeek:20,cooksPerWeek:21,missedMealsThreshold:6,fastingHours:108,emergencyHours:120,updatedAt:serverTimestamp()}));
+  await assertFails(updateDoc(ref,{onboardingStep:3,updatedAt:serverTimestamp()}));
+  assert.equal((await getDoc(ref)).data().onboardingStep,8);
+  assert.equal((await getDoc(ref)).data().windows.length,4);
+  assert.equal((await getDoc(ref)).data().relationLabel,'가'.repeat(30));
+  await environment.withSecurityRulesDisabled(async admin=>{
+    const db=admin.firestore();
+    assert.equal((await getDoc(doc(db,'bapmunnaHouseholds',uid))).exists(),false);
+    assert.equal((await getDoc(doc(db,'bapmunnaCRMContacts',uid))).exists(),false);
+    assert.equal((await getDoc(householdDoc(db,uid))).exists(),false);
+  });
+  await assertSucceeds(deleteDoc(ref));
+});
+
+test('app preferences deny anonymous, unverified, other-account and CRM staff reads, writes, deletes and lists',async()=>{
+  const uid='app-settings-private';await assertSucceeds(setDoc(appSettingsDoc(context(uid),uid),appSettingsData(uid)));
+  for(const db of [environment.unauthenticatedContext().firestore(),context(uid,false),context('bob'),context('operator')]){
+    const ref=appSettingsDoc(db,uid);
+    await assertFails(getDoc(ref));await assertFails(setDoc(ref,appSettingsData(uid)));
+    await assertFails(updateDoc(ref,{phone:'',updatedAt:serverTimestamp()}));await assertFails(deleteDoc(ref));
+    await assertFails(getDocs(collection(db,'bapmunnaAccounts',uid,'preferences')));
+  }
+});
+
+test('app preferences reject extra or missing fields, forged owner identity and client timestamps on create and update',async()=>{
+  const uid='app-settings-forgery',db=context(uid),ref=appSettingsDoc(db,uid),data=appSettingsData(uid);
+  const invalid=[{ownerUid:'alice'},{seniorConsent:true},{sharingEnabled:true},{role:'owner'},{household:{residentCount:2}},{updatedAt:Timestamp.fromMillis(0)},{updatedAt:'2026-11-14'}];
+  for(const changed of invalid)await assertFails(setDoc(ref,{...data,...changed}));
+  for(const field of ['schemaVersion','phone','relationLabel','windows','preparationAcknowledged','updatedAt']){
+    const missing={...data};delete missing[field];await assertFails(setDoc(ref,missing));
+  }
+  await assertSucceeds(setDoc(ref,data));
+  for(const changed of invalid)await assertFails(updateDoc(ref,{updatedAt:serverTimestamp(),...changed}));
+  assert.equal((await getDoc(ref)).data().ownerUid,uid);
+});
+
+test('app preference validation and Firestore rules agree on bounds, time format, overlap and duplicate slots',async()=>{
+  const uid='app-settings-validation',ref=appSettingsDoc(context(uid),uid);
+  for(const [label,change] of invalidPreferenceChanges()){
+    assert.throws(()=>preferenceFields({...appPreferenceInput(),...change}),{code:'preferences/invalid-input'},label);
+    await assertFails(setDoc(ref,appSettingsData(uid,{...appPreferenceInput(),...change})));
+  }
+  await assertSucceeds(setDoc(ref,appSettingsData(uid,fourMealInput())));
+  for(const [label,change] of invalidPreferenceChanges()){
+    await assertFails(updateDoc(ref,{...change,updatedAt:serverTimestamp()}));
+    assert.equal((await getDoc(ref)).data().windows.length,4,`${label} cannot replace the valid saved settings`);
+  }
 });
 test('staff can write only validated CRM notes under their own identity',async()=>{const db=context('operator'),ref=doc(db,'bapmunnaCRMNotes','alice');const fields={ownerUid:'alice',stage:'contacted',note:'워크숍 안내 완료',updatedBy:'operator',updatedAt:serverTimestamp()};await assertSucceeds(setDoc(ref,fields));await assertFails(setDoc(ref,{...fields,updatedBy:'another-admin'}));await assertFails(setDoc(ref,{...fields,stage:'superuser'}));await assertFails(setDoc(ref,{...fields,note:'x'.repeat(1001)}));});
 test('customers cannot read or alter staff notes',async()=>{const ref=doc(context('alice'),'bapmunnaCRMNotes','alice');await assertFails(getDoc(ref));await assertFails(setDoc(ref,{ownerUid:'alice',stage:'active',note:'change',updatedBy:'alice',updatedAt:serverTimestamp()}));});
@@ -123,6 +218,146 @@ test('real Firebase adapter pages tied timestamps, batches notes and returns a s
   }finally{await deleteApp(app);}
 });
 
+test('real Firebase settings adapter binds verified identity, preserves the latest household and rejects signout or wrong expected uid',async()=>{
+  const provider=createProvider({projectId,apiKey:'demo-api-key',appId:'demo-preferences'}),app=getApp('bapmunna-accounts-v3'),auth=getAuth(app),db=getFirestore(app);
+  const authBase=`http://${process.env.FIREBASE_AUTH_EMULATOR_HOST}`;
+  connectAuthEmulator(auth,authBase,{disableWarnings:true});
+  const [host,port]=process.env.FIRESTORE_EMULATOR_HOST.split(':');connectFirestoreEmulator(db,host,Number(port));
+  try{
+    const result=await createUserWithEmailAndPassword(auth,'preferences-adapter@example.test','Synthetic-only-Preference-936!'),uid=result.user.uid;
+    const initialHousehold={relation:'mother',alias:'가상 어머니',residentCount:1,hasPet:false};
+    await assert.rejects(provider.getAppPreferences(uid),/이메일을 확인한 계정/);
+    await assert.rejects(provider.saveAppPreferences(appPreferenceInput(),initialHousehold,uid),/이메일을 확인한 계정/);
+    const verified=await fetch(`${authBase}/identitytoolkit.googleapis.com/v1/accounts:update?key=demo-api-key`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer owner'},body:JSON.stringify({localId:uid,emailVerified:true})});
+    assert.equal(verified.ok,true);await reload(result.user);await result.user.getIdToken(true);
+    assert.deepEqual(await provider.getAppPreferences(uid),{settings:null,household:null,revision:{settings:null,household:null}});
+    for(const expectedUid of [undefined,'','another-settings-owner']){
+      await assert.rejects(provider.getAppPreferences(expectedUid),{code:'auth/user-changed'});
+      await assert.rejects(provider.saveAppPreferences(appPreferenceInput(),initialHousehold,expectedUid),{code:'auth/user-changed'});
+    }
+    assert.equal((await getDocFromServer(appSettingsDoc(db,uid))).exists(),false);
+    assert.equal((await getDocFromServer(householdDoc(db,uid))).exists(),false);
+
+    const input=fourMealInput(),saved=await provider.saveAppPreferences(input,initialHousehold,uid);
+    assert.deepEqual(saved.settings,input);assert.equal(saved.household.ownerUid,uid);assert.equal(saved.household.alias,initialHousehold.alias);
+    assert.ok(saved.household.updatedAt instanceof Timestamp);assert.deepEqual(await provider.getAppPreferences(uid),saved);
+    const settingsSnapshot=await getDocFromServer(appSettingsDoc(db,uid));
+    assert.equal(settingsSnapshot.metadata.hasPendingWrites,false);assert.ok(settingsSnapshot.data().updatedAt instanceof Timestamp);
+    assert.equal(settingsSnapshot.data().windows.length,4);
+    assert.match(saved.revision.settings,/^\d+:\d+$/);assert.match(saved.revision.household,/^\d+:\d+$/);
+
+    // A different settings screen updates the single household document after
+    // this form opened. Saving meal settings alone must preserve that new value.
+    const latestHousehold={relation:'parents',alias:'새로 바꾼 가상 부모님',residentCount:2,hasPet:true};
+    const latest=await provider.saveHousehold(latestHousehold,uid);
+    const changed={...input,phone:'010-9999-0000',eatOutPerWeek:3};
+    const updated=await provider.saveAppPreferences(changed,null,uid);
+    assert.deepEqual(updated.settings,changed);
+    assert.deepEqual(updated.household,latest);
+    assert.ok(updated.household.updatedAt.isEqual(latest.updatedAt));
+    assert.deepEqual(await provider.getHousehold(uid),latest);
+    assert.deepEqual(await provider.getAppPreferences(uid),updated);
+    const storedSettings=(await getDocFromServer(appSettingsDoc(db,uid))).data();
+    for(const field of ['household','alias','relation','residentCount','hasPet','seniorConsent'])assert.equal(Object.hasOwn(storedSettings,field),false,`${field} is not duplicated or granted by preparation settings`);
+
+    for(const forged of [{ownerUid:'alice'},{updatedAt:Timestamp.fromMillis(0)},{sharingEnabled:true}]){
+      await assert.rejects(provider.saveAppPreferences({...changed,...forged},null,uid),{code:'preferences/invalid-input'});
+    }
+    for(const [,invalid] of invalidPreferenceChanges())await assert.rejects(provider.saveAppPreferences({...changed,...invalid},null,uid),{code:'preferences/invalid-input'});
+    await assert.rejects(provider.saveAppPreferences({...changed,eatOutPerWeek:4},{...latestHousehold,residentCount:7},uid),{code:'household/invalid-input'});
+    assert.deepEqual(await provider.getAppPreferences(uid),updated);
+
+    // Rules also reject an invalid atomic batch when a caller bypasses the
+    // provider's JS validation; neither settings nor household may half-save.
+    const batch=writeBatch(db);
+    batch.set(appSettingsDoc(db,uid),appSettingsData(uid,{...changed,eatOutPerWeek:5}));
+    batch.set(householdDoc(db,uid),{ownerUid:uid,...latestHousehold,residentCount:7,updatedAt:serverTimestamp()});
+    await assertFails(batch.commit());
+    assert.deepEqual(await provider.getAppPreferences(uid),updated);
+
+    await provider.signOut();assert.equal(auth.currentUser,null);
+    await assert.rejects(provider.getAppPreferences(uid),/이메일을 확인한 계정/);
+    await assert.rejects(provider.saveAppPreferences({...changed,eatOutPerWeek:6},initialHousehold,uid),/이메일을 확인한 계정/);
+    await environment.withSecurityRulesDisabled(async admin=>{
+      const stored=(await getDoc(appSettingsDoc(admin.firestore(),uid))).data();
+      assert.equal(stored.eatOutPerWeek,3);assert.equal(stored.phone,changed.phone);
+      const household=(await getDoc(householdDoc(admin.firestore(),uid))).data();
+      assert.equal(household.alias,latestHousehold.alias);assert.equal(household.residentCount,2);
+      assert.equal((await getDoc(doc(admin.firestore(),'bapmunnaHouseholds',uid))).exists(),false);
+      assert.equal((await getDoc(doc(admin.firestore(),'bapmunnaCRMContacts',uid))).exists(),false);
+    });
+  }finally{await deleteApp(app);}
+});
+
+
+test('real settings transactions reject stale tab and household revisions while preserving custom relationship labels',async t=>{
+  const config={projectId,apiKey:'demo-api-key',appId:'demo-preferences-conflict'};
+  const tabA=createProvider(config),app=getApp('bapmunna-accounts-v3'),auth=getAuth(app),db=getFirestore(app);
+  const authBase=`http://${process.env.FIREBASE_AUTH_EMULATOR_HOST}`;
+  connectAuthEmulator(auth,authBase,{disableWarnings:true});
+  const [host,port]=process.env.FIRESTORE_EMULATOR_HOST.split(':');connectFirestoreEmulator(db,host,Number(port));
+  try{
+    const result=await createUserWithEmailAndPassword(auth,'preferences-conflict@example.test','Synthetic-only-Conflict-936!'),uid=result.user.uid;
+    const verified=await fetch(`${authBase}/identitytoolkit.googleapis.com/v1/accounts:update?key=demo-api-key`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer owner'},body:JSON.stringify({localId:uid,emailVerified:true})});
+    assert.equal(verified.ok,true);await reload(result.user);await result.user.getIdToken(true);
+    // Two independent caller snapshots use the real adapter and Firestore
+    // transaction API. This simulates stale tabs; it is not a browser UI test.
+    const tabB=createProvider(config),household={relation:'other',alias:'우리 할머니',residentCount:1,hasPet:false};
+    const empty=await tabA.getAppPreferences(uid);
+    const initial={...fourMealInput(),onboardingStep:3,relationLabel:'할머니'};
+    await tabA.saveAppPreferences(initial,household,uid,empty.revision);
+    const aOpened=await tabA.getAppPreferences(uid),bOpened=await tabB.getAppPreferences(uid);
+    assert.deepEqual(aOpened.revision,bOpened.revision);
+    assert.equal(aOpened.settings.relationLabel,'할머니');assert.equal(aOpened.household.relation,'other');
+    const changedWindows=aOpened.settings.windows.map(window=>window.slot==='breakfast'?{...window,start:'06:30'}:window);
+    const aSaved=await tabA.saveAppPreferences({...aOpened.settings,windows:changedWindows,onboardingStep:8},null,uid,aOpened.revision);
+    assert.notEqual(aSaved.revision.settings,aOpened.revision.settings);
+    assert.equal(aSaved.revision.household,aOpened.revision.household);
+
+    await t.test('stale alert form cannot overwrite another tab meal windows; refreshed retry preserves them',async()=>{
+      const staleAlertInput={...bOpened.settings,onboardingStep:8,missedMealsThreshold:3,fastingHours:54,emergencyHours:78};
+      await assert.rejects(tabB.saveAppPreferences(staleAlertInput,null,uid,bOpened.revision),{code:'preferences/conflict'});
+      const afterRejected=await tabB.getAppPreferences(uid);
+      assert.deepEqual(afterRejected,aSaved);
+      const retry=await tabB.saveAppPreferences({...afterRejected.settings,missedMealsThreshold:3,fastingHours:54,emergencyHours:78},null,uid,afterRejected.revision);
+      assert.deepEqual(retry.settings.windows,changedWindows);
+      assert.equal(retry.settings.missedMealsThreshold,3);assert.equal(retry.settings.fastingHours,54);assert.equal(retry.settings.emergencyHours,78);
+      assert.equal(retry.settings.onboardingStep,8);assert.equal(retry.settings.relationLabel,'할머니');
+      assert.deepEqual(retry.household,aSaved.household);
+      assert.deepEqual(await tabA.getAppPreferences(uid),retry);
+    });
+
+    await t.test('stale tutorial step three cannot lower completed onboarding step eight',async()=>{
+      const completed=await tabA.getAppPreferences(uid);assert.equal(completed.settings.onboardingStep,8);
+      await assert.rejects(tabB.saveAppPreferences({...bOpened.settings,onboardingStep:3},null,uid,bOpened.revision),{code:'preferences/conflict'});
+      assert.deepEqual(await tabA.getAppPreferences(uid),completed);
+      assert.equal((await getDocFromServer(appSettingsDoc(db,uid))).data().onboardingStep,8);
+    });
+
+    await t.test('legacy household edit rejects stale household write atomically but allows settings-only save',async()=>{
+      const beforeLegacy=await tabB.getAppPreferences(uid);
+      const latestHousehold={relation:'other',alias:'최근에 바꾼 할머니 호칭',residentCount:2,hasPet:true};
+      const legacySaved=await tabA.saveHousehold(latestHousehold,uid);
+      const afterLegacy=await tabA.getAppPreferences(uid);
+      assert.equal(afterLegacy.revision.settings,beforeLegacy.revision.settings);
+      assert.notEqual(afterLegacy.revision.household,beforeLegacy.revision.household);
+      await assert.rejects(tabB.saveAppPreferences({...beforeLegacy.settings,phone:'010-1111-2222'},household,uid,beforeLegacy.revision),{code:'preferences/conflict'});
+      assert.deepEqual(await tabA.getAppPreferences(uid),afterLegacy);
+      assert.deepEqual(afterLegacy.household,legacySaved);
+      // The stale household revision is intentionally irrelevant when this
+      // operation does not write household; it must keep the latest source.
+      const saved=await tabB.saveAppPreferences({...beforeLegacy.settings,phone:'010-3333-4444'},null,uid,beforeLegacy.revision);
+      assert.deepEqual(saved.household,legacySaved);
+      assert.equal(saved.revision.household,afterLegacy.revision.household);
+      assert.equal(saved.settings.phone,'010-3333-4444');assert.equal(saved.settings.relationLabel,'할머니');
+      assert.deepEqual(saved.settings.windows,changedWindows);
+      const fresh=await tabB.getAppPreferences(uid);
+      const retried=await tabB.saveAppPreferences({...fresh.settings,phone:'010-5555-6666'},latestHousehold,uid,fresh.revision);
+      assert.equal(retried.household.alias,latestHousehold.alias);assert.equal(retried.settings.relationLabel,'할머니');
+      assert.deepEqual(await tabA.getAppPreferences(uid),retried);
+    });
+  }finally{await deleteApp(app);}
+});
 
 test('SmartThings secrets and metadata are denied to all browser roles',async()=>{
   const collections=['Connections','Installations','States','Locks','Receipts'].map(kind=>'bapmunnaSmartThings'+kind);

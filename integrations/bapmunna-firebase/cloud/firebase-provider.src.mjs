@@ -1,6 +1,7 @@
 import {initializeApp,getApp,getApps} from 'firebase/app';
 import {getAuth,onAuthStateChanged,signInWithEmailAndPassword,createUserWithEmailAndPassword,sendEmailVerification,sendPasswordResetEmail,updateProfile,signOut,reload,setPersistence,browserLocalPersistence,browserSessionPersistence,GoogleAuthProvider,signInWithPopup,validatePassword} from 'firebase/auth';
-import {getFirestore,doc,getDoc,getDocFromServer,setDoc,updateDoc,deleteDoc,collection,getDocs,query,orderBy,limit,startAfter,documentId,where,onSnapshot,writeBatch,serverTimestamp,Timestamp} from 'firebase/firestore';
+import {getFirestore,doc,getDoc,getDocFromServer,setDoc,updateDoc,deleteDoc,collection,getDocs,query,orderBy,limit,startAfter,documentId,where,onSnapshot,writeBatch,runTransaction,serverTimestamp,Timestamp} from 'firebase/firestore';
+import {preferenceFields} from './app-preferences.mjs';
 import {CONSENT_VERSION,koreanDay,checkDisplayName,checkMeal,STAGES} from './auth-utils.mjs';
 
 export function createProvider(config){
@@ -11,6 +12,13 @@ export function createProvider(config){
   const requireUser=()=>{const user=auth.currentUser;if(!user?.emailVerified)throw Error('이메일을 확인한 계정으로 로그인해 주세요.');return user;};
   const profileRef=uid=>doc(db,'bapmunnaAccounts',uid);
   const householdRef=uid=>doc(db,'bapmunnaAccounts',uid,'preferences','household');
+  const settingsRef=uid=>doc(db,'bapmunnaAccounts',uid,'preferences','settings');
+  function storedPreferences(snapshot,uid){
+    if(!snapshot.exists())return null;
+    const {ownerUid,updatedAt,...fields}=snapshot.data();
+    if(ownerUid!==uid||!(updatedAt instanceof Timestamp)||snapshot.metadata.hasPendingWrites)throw Error('서버 저장 결과를 다시 확인해 주세요.');
+    return preferenceFields(fields);
+  }
   const contactRef=uid=>doc(db,'bapmunnaCRMContacts',uid);
   const remember=value=>setPersistence(auth,value?browserLocalPersistence:browserSessionPersistence);
   const actionSettings={url:'https://impact-series.web.app/bapmunna/#account',handleCodeInApp:false};
@@ -31,6 +39,8 @@ export function createProvider(config){
     if(data.ownerUid!==uid||data.alias!==fields.alias||!(data.updatedAt instanceof Timestamp))throw Error('저장된 가구 정보를 다시 확인해 주세요.');
     return {ownerUid:uid,...fields,updatedAt:data.updatedAt};
   }
+  const revisionOf=snapshot=>snapshot.exists()?`${snapshot.data().updatedAt?.seconds}:${snapshot.data().updatedAt?.nanoseconds}`:null;
+  const preferencesResult=(settings,household,uid)=>({settings:storedPreferences(settings,uid),household:storedHousehold(household,uid),revision:{settings:revisionOf(settings),household:revisionOf(household)}});
   async function withHouseholdUser(expectedUid,run){
     const user=requireUser();let changed=false,unsubscribe;
     const assertCurrent=()=>{
@@ -49,19 +59,37 @@ export function createProvider(config){
     name:'Firebase',supportsGoogle:true,
     getIdToken(expectedUid){return withHouseholdUser(expectedUid,async(user,assertCurrent)=>{const token=await user.getIdToken();assertCurrent();return token;});},
     onUser(callback){return onAuthStateChanged(auth,user=>callback(mapUser(user)));},
-    async signIn(email,password,keep){await remember(keep);await signInWithEmailAndPassword(auth,email.trim(),password);},
+    async signIn(email,password,keep){await remember(keep);const result=await signInWithEmailAndPassword(auth,email.trim(),password);return mapUser(result.user);},
     async signUp(email,password,name,keep){
       const displayName=checkDisplayName(name);if(password.length<8)throw Object.assign(Error(),{code:'auth/weak-password'});
       const policy=await validatePassword(auth,password);if(!policy.isValid)throw Object.assign(Error(),{code:'auth/weak-password'});
       await remember(keep);const result=await createUserWithEmailAndPassword(auth,email.trim(),password);
-      await updateProfile(result.user,{displayName});await sendEmailVerification(result.user,actionSettings);
+      await updateProfile(result.user,{displayName});await sendEmailVerification(result.user,actionSettings);return mapUser(result.user);
     },
-    async google(keep){await remember(keep);const provider=new GoogleAuthProvider();provider.setCustomParameters({prompt:'select_account'});await signInWithPopup(auth,provider);},
+    async google(keep){await remember(keep);const provider=new GoogleAuthProvider();provider.setCustomParameters({prompt:'select_account'});const result=await signInWithPopup(auth,provider);return mapUser(result.user);},
     async resetPassword(email){try{await sendPasswordResetEmail(auth,email.trim(),actionSettings);}catch(error){if(!['auth/user-not-found','auth/invalid-email'].includes(error.code))throw error;}},
     async resendVerification(){if(auth.currentUser&&!auth.currentUser.emailVerified)await sendEmailVerification(auth.currentUser,actionSettings);},
     async refreshUser(){if(auth.currentUser){await reload(auth.currentUser);await auth.currentUser.getIdToken(true);}return mapUser(auth.currentUser);},
     signOut:()=>signOut(auth),
     async getProfile(){const user=requireUser(),snapshot=await getDoc(profileRef(user.uid));return snapshot.exists()?snapshot.data():null;},
+    getAppProfile(expectedUid){return withHouseholdUser(expectedUid,async(user,assertCurrent)=>{const snapshot=await getDocFromServer(profileRef(user.uid));assertCurrent();return snapshot.exists()?snapshot.data():null;});},
+    getAppPreferences(expectedUid){return withHouseholdUser(expectedUid,async(user,assertCurrent)=>{
+      const [settings,household]=await Promise.all([getDocFromServer(settingsRef(user.uid)),getDocFromServer(householdRef(user.uid))]);assertCurrent();
+      return preferencesResult(settings,household,user.uid);
+    });},
+    saveAppPreferences(input,householdInput,expectedUid,expectedRevision){return withHouseholdUser(expectedUid,async(user,assertCurrent)=>{
+      const fields=preferenceFields(input),household=householdInput?householdFields(householdInput):null;
+      await runTransaction(db,async transaction=>{
+        const existingSettings=await transaction.get(settingsRef(user.uid));
+        const existingHousehold=household?await transaction.get(householdRef(user.uid)):null;assertCurrent();
+        if(expectedRevision&&(revisionOf(existingSettings)!==expectedRevision.settings||(existingHousehold&&revisionOf(existingHousehold)!==expectedRevision.household)))throw Object.assign(Error('다른 화면에서 설정이 바뀌었어요.'),{code:'preferences/conflict'});
+        transaction.set(settingsRef(user.uid),{ownerUid:user.uid,...fields,onboardingStep:existingSettings.exists()&&existingSettings.data().onboardingStep===8?8:fields.onboardingStep,updatedAt:serverTimestamp()});
+        if(household)transaction.set(householdRef(user.uid),{ownerUid:user.uid,...household,updatedAt:serverTimestamp()});
+      });assertCurrent();
+      const [settings,storedHome]=await Promise.all([getDocFromServer(settingsRef(user.uid)),getDocFromServer(householdRef(user.uid))]);assertCurrent();
+      const stored=storedPreferences(settings,user.uid);if(!stored)throw Error('저장 결과를 확인하지 못했어요.');
+      return preferencesResult(settings,storedHome,user.uid);
+    });},
     getHousehold(expectedUid){return withHouseholdUser(expectedUid,async(user,assertCurrent)=>{
       const snapshot=await getDocFromServer(householdRef(user.uid));assertCurrent();return storedHousehold(snapshot,user.uid);
     });},
@@ -71,14 +99,17 @@ export function createProvider(config){
       const snapshot=await getDocFromServer(ref);assertCurrent();
       const stored=storedHousehold(snapshot,user.uid);if(!stored)throw Error('저장 결과를 확인하지 못했어요. 다시 시도해 주세요.');return stored;
     });},
-    async saveProfile(name){
-      const user=requireUser(),displayName=checkDisplayName(name),existing=await getDoc(profileRef(user.uid)),contact=await getDoc(contactRef(user.uid));
+    async saveProfile(name,expectedUid){
+      const boundUid=expectedUid??requireUser().uid;
+      return withHouseholdUser(boundUid,async(user,assertCurrent)=>{
+      const displayName=checkDisplayName(name),existing=await getDoc(profileRef(user.uid)),contact=await getDoc(contactRef(user.uid));
       const fields={ownerUid:user.uid,email:user.email,displayName,consentVersion:CONSENT_VERSION,updatedAt:serverTimestamp()};
-      const batch=writeBatch(db);
+      assertCurrent();const batch=writeBatch(db);
       if(existing.exists())batch.update(profileRef(user.uid),fields);else batch.set(profileRef(user.uid),{...fields,createdAt:serverTimestamp()});
       const contactFields={...fields,source:'bapmunna',lastLoginAt:serverTimestamp()};
       if(contact.exists())batch.update(contactRef(user.uid),contactFields);else batch.set(contactRef(user.uid),{...contactFields,createdAt:serverTimestamp()});
-      await batch.commit();
+      await batch.commit();assertCurrent();
+      });
     },
     async touchLogin(){const user=requireUser();const ref=contactRef(user.uid),snapshot=await getDoc(ref);if(snapshot.exists())await updateDoc(ref,{lastLoginAt:serverTimestamp(),updatedAt:serverTimestamp()});},
     watchMeals(callback,onError){const user=requireUser();return onSnapshot(query(collection(db,'bapmunnaAccounts',user.uid,'meals'),orderBy('day','desc'),limit(90)),snapshot=>callback(snapshot.docs.map(item=>({id:item.id,...item.data()}))),onError);},

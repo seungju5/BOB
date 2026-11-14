@@ -1,15 +1,15 @@
 "use client";
 
-import { useState, type ComponentProps, type ReactNode } from "react";
-import { SLOT_LABEL } from "@/lib/data/view";
+import { useId, useState, type ComponentProps, type ReactNode } from "react";
+import { mealSlotLabel } from "@/lib/data/view";
 import type { MealWindow } from "@/lib/judge/types";
 
-export function Field({ label, hint, children }: { label: string; hint?: ReactNode; children: ReactNode }) {
+export function Field({ label, hint, children, htmlFor }: { label: string; hint?: ReactNode; children: ReactNode; htmlFor?: string }) {
   return (
     <div className="flex flex-col gap-2">
-      <span className="text-[15px] font-bold text-cocoa">{label}</span>
+      {htmlFor ? <label htmlFor={htmlFor} className="text-[16px] font-bold text-cocoa">{label}</label> : <span className="text-[16px] font-bold text-cocoa">{label}</span>}
       {children}
-      {hint ? <span className="text-[13px] leading-relaxed text-muted">{hint}</span> : null}
+      {hint ? <span className="text-[16px] leading-relaxed text-muted">{hint}</span> : null}
     </div>
   );
 }
@@ -42,7 +42,7 @@ export function Choice<T extends string | number | boolean>({
           type="button"
           aria-pressed={value === o.value}
           onClick={() => onChange(o.value)}
-          className={`h-12 rounded-full border-2 text-[15px] font-bold transition-colors ${
+          className={`h-12 rounded-full border-2 text-[16px] font-bold transition-colors ${
             value === o.value ? "border-butter bg-butter text-cocoa" : "border-line bg-paper text-cocoa/70 hover:border-butter-deep"
           }`}
         >
@@ -90,7 +90,7 @@ export function Slider({
         {format?.(value) ?? (
           <>
             {value}
-            <span className="ml-0.5 text-[15px] font-bold">{unit}</span>
+            <span className="ml-0.5 text-[16px] font-bold">{unit}</span>
           </>
         )}
       </p>
@@ -105,11 +105,11 @@ export function Slider({
         onChange={(e) => onChange(Number(e.target.value))}
         onPointerUp={(e) => onCommit?.(Number(e.currentTarget.value))}
         onKeyUp={(e) => onCommit?.(Number(e.currentTarget.value))}
-        className="mt-2 h-3 w-full cursor-pointer appearance-none rounded-full accent-[var(--color-butter-deep)]"
-        style={{ background: `linear-gradient(to right, var(--color-butter-deep) ${pct}%, var(--color-line) ${pct}%)` }}
+        className="mt-1 h-12 w-full cursor-pointer appearance-none rounded-full accent-[var(--color-butter-deep)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cocoa"
+        style={{ backgroundImage: `linear-gradient(to right, var(--color-butter-deep) ${pct}%, var(--color-line) ${pct}%)`, backgroundSize: "100% 0.75rem", backgroundPosition: "center", backgroundRepeat: "no-repeat" }}
       />
       {/* 눈금 라벨은 실제 위치에 둔다 (양 끝은 넘치지 않게 안쪽 정렬) */}
-      <div className="relative mx-1.5 mt-1 h-7">
+      <div className="relative mx-1.5 h-12">
         {ticks.map((t, i) => {
           const at = ((t - min) / (max - min)) * 100;
           const align = i === 0 && at === 0 ? "" : i === ticks.length - 1 && at === 100 ? "-translate-x-full" : "-translate-x-1/2";
@@ -123,7 +123,7 @@ export function Slider({
                 onCommit?.(t);
               }}
               style={{ left: `${at}%` }}
-              className={`absolute top-0 py-1 text-[13px] font-bold whitespace-nowrap ${align} ${t === value ? "text-cocoa" : "text-muted"}`}
+              className={`absolute top-0 min-h-12 py-1 text-[16px] font-bold whitespace-nowrap ${align} ${t === value ? "text-cocoa" : "text-muted"}`}
             >
               {text(t)}
             </button>
@@ -140,7 +140,7 @@ const RELATIONS = ["어머니", "아버지", "부모님"];
 export function RelationPicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const [otherOn, setOtherOn] = useState(Boolean(value && !RELATIONS.includes(value)));
   const [other, setOther] = useState(RELATIONS.includes(value) ? "" : value);
-  const chip = (on: boolean) => `h-12 rounded-full border-2 text-[15px] font-bold transition-colors ${on ? "border-butter bg-butter text-cocoa" : "border-line bg-paper text-cocoa/70 hover:border-butter-deep"}`;
+  const chip = (on: boolean) => `h-12 rounded-full border-2 text-[16px] font-bold transition-colors ${on ? "border-butter bg-butter text-cocoa" : "border-line bg-paper text-cocoa/70 hover:border-butter-deep"}`;
   return (
     <div className="flex flex-col gap-2">
       <div className="grid grid-cols-4 gap-2" role="group" aria-label="호칭 한 가지 선택">
@@ -162,7 +162,7 @@ export const ALERT_RANGE = {
 
 type AlertHours = { missedMealsThreshold: number; fastingHours: number; emergencyHours: number };
 
-/** 한쪽 시간을 바꾸면 다른 쪽을 밀어 GAP을 지킨다 (끼니 시간대의 fitWindows와 같은 방식) */
+/** 한쪽 알림 시간을 바꾸면 다른 쪽을 밀어 기존 GAP을 지킨다. */
 export function fitAlertHours<T extends AlertHours>(s: T, changed: "fastingHours" | "emergencyHours"): T {
   const { gap } = ALERT_RANGE;
   if (changed === "fastingHours" && s.emergencyHours - s.fastingHours < gap) return { ...s, emergencyHours: Math.min(s.fastingHours + gap, ALERT_RANGE.emergency.max) };
@@ -227,7 +227,7 @@ export function AlertThresholdFields<T extends AlertHours>({
 }
 
 export function Stepper({ value, min, max, step = 1, unit, onChange }: { value: number; min: number; max: number; step?: number; unit: string; onChange: (v: number) => void }) {
-  const btn = "grid h-11 w-11 place-items-center rounded-full bg-butter-soft text-[22px] font-bold text-cocoa disabled:opacity-30";
+  const btn = "grid h-12 w-12 place-items-center rounded-full bg-butter-soft text-[22px] font-bold text-cocoa disabled:opacity-30";
   return (
     <div className="flex items-center justify-between rounded-2xl border-2 border-line px-3 py-2">
       <button type="button" className={btn} disabled={value <= min} onClick={() => onChange(Math.max(min, value - step))} aria-label="줄이기">
@@ -235,7 +235,7 @@ export function Stepper({ value, min, max, step = 1, unit, onChange }: { value: 
       </button>
       <span className="text-[20px] font-extrabold text-cocoa" aria-live="polite">
         {value}
-        <span className="ml-0.5 text-[15px] font-bold">{unit}</span>
+        <span className="ml-0.5 text-[16px] font-bold">{unit}</span>
       </span>
       <button type="button" className={btn} disabled={value >= max} onClick={() => onChange(Math.min(max, value + step))} aria-label="늘리기">
         +
@@ -244,69 +244,57 @@ export function Stepper({ value, min, max, step = 1, unit, onChange }: { value: 
   );
 }
 
-const toMin = (t: string) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5));
-const toTime = (m: number) => {
-  const c = Math.min(Math.max(m, 0), 23 * 60 + 59);
-  return `${String(Math.floor(c / 60)).padStart(2, "0")}:${String(c % 60).padStart(2, "0")}`;
-};
+const validTime = (value: string) => /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
 
-/**
- * 끼니 시간대가 서로 겹치지 않게 맞춘다.
- * - 시작은 앞 끼니가 끝난 뒤로만 (앞보다 이르면 앞 끼니 끝으로 당긴다)
- * - 앞 끼니를 늦추면 뒤 끼니들을 그만큼 밀어 준다 (길이는 유지, 하루 끝 23:59까지)
- */
-export function fitWindows(windows: MealWindow[], changed: number): MealWindow[] {
-  const out = windows.map((w) => ({ ...w }));
-  const prevEnd = changed > 0 ? out[changed - 1].end : null;
-  if (prevEnd && out[changed].start < prevEnd) out[changed].start = prevEnd;
-  for (let j = changed + 1; j < out.length; j++) {
-    const before = out[j - 1].end;
-    if (out[j].start >= before) break;
-    const length = Math.max(toMin(windows[j].end) - toMin(windows[j].start), 30);
-    out[j].start = before;
-    out[j].end = toTime(toMin(before) + length);
-  }
-  return out;
+/** 고른 시간만 바꾼다. 다른 끼니를 자동으로 옮기거나 입력 중인 초안을 버리지 않는다. */
+export function changeMealWindow(windows: MealWindow[], index: number, key: "start" | "end", value: string): MealWindow[] {
+  return windows.map((window, i) => i === index ? { ...window, [key]: value } : { ...window });
 }
 
-/** 시간대마다 문제가 있는지: 끝이 시작보다 빠르거나, 앞 끼니와 겹치면 true */
-function windowProblems(windows: MealWindow[]) {
-  return windows.map((w, i) => w.start >= w.end || (i > 0 && w.start < windows[i - 1].end));
+/** 시간대별로 수정할 항목을 알려 준다. 판정 규칙이나 기존 알림 기준은 바꾸지 않는다. */
+export function mealWindowProblems(windows: MealWindow[]): Array<string | null> {
+  return windows.map((window, i) => {
+    if (!validTime(window.start) || !validTime(window.end)) return "시작과 끝 시간을 모두 입력해 주세요.";
+    if (window.start >= window.end) return "같은 날 안에서 끝 시간을 시작 시간보다 늦게 정해 주세요.";
+    const previous = windows[i - 1];
+    if (previous && validTime(previous.end) && window.start < previous.end) {
+      return `${mealSlotLabel(previous.slot, windows)} 끝(${previous.end})과 겹쳐요. ${mealSlotLabel(window.slot, windows)} 시작을 ${previous.end} 이후로 정하거나 앞 끼니의 끝을 바꿔 주세요.`;
+    }
+    return null;
+  });
 }
 
 export function MealWindowsEditor({ windows, onChange }: { windows: MealWindow[]; onChange: (w: MealWindow[]) => void }) {
-  const set = (i: number, key: "start" | "end", v: string) => {
-    if (!v) return; // 입력을 지우는 중에는 그대로 둔다
-    onChange(fitWindows(windows.map((w, j) => (j === i ? { ...w, [key]: v } : w)), i));
-  };
-  const bad = windowProblems(windows);
+  const id = useId();
+  const problems = mealWindowProblems(windows);
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-3">
+      <p id={`${id}-hint`} className="text-[16px] leading-relaxed text-muted">시간은 한국 시간(KST)이에요. 한 끼를 고쳐도 다른 끼니 시간은 바뀌지 않아요.</p>
       {windows.map((w, i) => (
-        <div
+        <fieldset
           key={w.slot}
-          aria-invalid={bad[i] || undefined}
-          className={`flex items-center gap-2 rounded-2xl border-2 px-4 py-2 transition-colors ${bad[i] ? "border-blush-deep bg-blush" : "border-line"}`}
+          className={`min-w-0 rounded-2xl border-2 px-4 pb-4 transition-colors ${problems[i] ? "border-blush-deep bg-blush" : "border-line"}`}
         >
-          <span className={`w-10 text-[15px] font-bold ${bad[i] ? "text-blush-deep" : "text-cocoa"}`}>{SLOT_LABEL[w.slot]}</span>
-          <input
-            type="time"
-            value={w.start}
-            min={i > 0 ? windows[i - 1].end : undefined}
-            onChange={(e) => set(i, "start", e.target.value)}
-            aria-label={`${SLOT_LABEL[w.slot]} 시작`}
-            className={`min-w-0 flex-1 bg-transparent text-[16px] outline-none ${bad[i] ? "text-blush-deep" : "text-cocoa"}`}
-          />
-          <span className="text-muted">~</span>
-          <input
-            type="time"
-            value={w.end}
-            min={w.start}
-            onChange={(e) => set(i, "end", e.target.value)}
-            aria-label={`${SLOT_LABEL[w.slot]} 끝`}
-            className={`min-w-0 flex-1 bg-transparent text-[16px] outline-none ${bad[i] ? "text-blush-deep" : "text-cocoa"}`}
-          />
-        </div>
+          <legend className="px-1 text-[16px] font-bold text-cocoa">{mealSlotLabel(w.slot, windows)}</legend>
+          <div className="mt-2 grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 8.5rem), 1fr))" }}>
+            {(["start", "end"] as const).map((key) => (
+              <label key={key} className="flex min-w-0 flex-col gap-1.5 text-[16px] font-semibold text-cocoa">
+                {key === "start" ? "시작" : "끝"}
+                <input
+                  type="time"
+                  value={w[key]}
+                  step={60}
+                  onChange={(event) => onChange(changeMealWindow(windows, i, key, event.target.value))}
+                  aria-label={`${mealSlotLabel(w.slot, windows)} ${key === "start" ? "시작" : "끝"} 시간`}
+                  aria-invalid={!!problems[i] || undefined}
+                  aria-describedby={`${id}-hint${problems[i] ? ` ${id}-${w.slot}-error` : ""}`}
+                  className="min-h-12 min-w-0 w-full rounded-xl border border-line bg-paper px-3 text-[17px] text-cocoa outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cocoa"
+                />
+              </label>
+            ))}
+          </div>
+          {problems[i] ? <p id={`${id}-${w.slot}-error`} role="status" className="mt-3 text-[16px] leading-relaxed font-semibold text-blush-deep">{problems[i]}</p> : null}
+        </fieldset>
       ))}
     </div>
   );
@@ -320,14 +308,14 @@ export function Toggle({ checked, onChange, label }: { checked: boolean; onChang
       aria-checked={checked}
       aria-label={label}
       onClick={() => onChange(!checked)}
-      className={`relative h-8 w-14 shrink-0 rounded-full transition-colors ${checked ? "bg-sage-deep" : "bg-line"}`}
+      className="grid h-12 w-16 shrink-0 place-items-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cocoa"
     >
-      <span className={`absolute top-1 h-6 w-6 rounded-full bg-paper shadow transition-[left] ${checked ? "left-7" : "left-1"}`} />
+      <span aria-hidden className={`relative h-8 w-14 rounded-full transition-colors ${checked ? "bg-sage-deep" : "bg-line"}`}><span className={`absolute top-1 h-6 w-6 rounded-full bg-paper shadow transition-[left] ${checked ? "left-7" : "left-1"}`} /></span>
     </button>
   );
 }
 
 /** 시간대가 올바른지: 시작 < 끝, 겹치지 않음 */
 export function windowsValid(windows: MealWindow[]) {
-  return windows.every((w, i) => w.start < w.end && (i === 0 || windows[i - 1].end <= w.start));
+  return windows.length > 0 && mealWindowProblems(windows).every((problem) => problem === null);
 }

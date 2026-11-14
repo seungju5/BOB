@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ShareApp } from "@/components/ShareApp";
 import { ImpactConnectionLinks } from "@/components/ImpactConnectionLinks";
 import { Logo, Mascot } from "@/components/Mascot";
 import { IconArrowRight, IconBell, IconChart, IconSettings } from "@/components/icons";
@@ -21,12 +22,13 @@ export default function MorePage() {
         { href: "/settings", label: "생활·알림 설정", detail: "식사 시간, 가족 연결과 계정", Icon: IconSettings },
       ].map(({ href, label, detail, Icon }) => <Link key={href} href={href} className="flex min-h-24 items-center gap-4 border-b border-line px-5 py-5 last:border-0 hover:bg-butter-soft">
         <Icon className="h-6 w-6 shrink-0 text-cocoa" />
-        <span className="flex-1"><strong className="block text-[18px] text-cocoa">{label}</strong><span className="mt-1 block text-[14px] text-muted">{detail}</span></span>
+        <span className="flex-1"><strong className="block text-[18px] text-cocoa">{label}</strong><span className="mt-1 block text-[16px] text-muted">{detail}</span></span>
         <IconArrowRight className="h-5 w-5 shrink-0 text-muted" />
       </Link>)}
     </div>
     <ImpactConnectionLinks />
+    <ShareApp />
     <Mascot className="mx-auto mt-auto h-32 w-32 pt-6" />
-    <p className="text-center text-sm text-muted">밥 한 끼로 전하는 안부</p>
+    <p className="text-center text-[16px] text-muted">밥 한 끼로 전하는 안부</p>
   </main>;
 }

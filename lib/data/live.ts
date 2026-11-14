@@ -81,6 +81,7 @@ async function load(startedAt: number, generation: number) {
 
   const view: AppView = {
     mode: "live",
+    dataSource: "supabase",
     onboardingStep: H.onboarding_step,
     plug: {
       deviceId: plugRow?.st_device_id ?? "",

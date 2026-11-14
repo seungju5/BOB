@@ -73,7 +73,7 @@ describe("compatible signup, tutorial, household, home routing", () => {
     mocks.useApp.mockReturnValue({ view, actions: { ...liveActions, saveOnboarding: save }, mode: "live", needsLogin: false, error: null });
     const html = renderToStaticMarkup(createElement(OnboardingPage));
     expect(html).toContain("누구의 안부가");
-    expect(html).toContain("저장하고 홈으로");
+    expect(html).toContain("저장하고 내용 확인");
     expect(html).not.toContain("SmartThings 테스트 토큰");
     expect(html).not.toContain("전력 신호를");
     expect(save).not.toHaveBeenCalled();
@@ -241,7 +241,7 @@ describe("optional device registration requires consent and exposes no raw watts
     view.onboardingStep = 8;
     house.onboarding_step = 8;
     const html = renderToStaticMarkup(createElement(SettingsPage));
-    for (const label of ["생활 기준", "하루 식사 시간대 수", "일주일에 외식은 몇 번쯤?", "보온 기능을 쓰시나요?", "일주일에 밥은 몇 번 지으세요?", "생활 기준 저장하고 홈으로", "취소하고 홈으로"]) expect(html).toContain(label);
+    for (const label of ["생활 기준", "하루 식사 시간대 수", "일주일에 외식은 몇 번쯤?", "보온 기능을 쓰시나요?", "일주일에 밥은 몇 번 지으세요?", "생활 기준 저장", "저장하지 않고 홈으로"]) expect(html).toContain(label);
     await liveActions.saveOnboarding(8, { mealProfile: { ...view.mealProfile, windows: [view.mealProfile.windows[0]], eatOutPerWeek: 5, usesKeepWarm: false, cooksPerWeek: 4 } });
     expect(house.onboarding_step).toBe(8);
     expect(mutations.find((entry) => entry.table === "meal_profiles")?.patch).toMatchObject({ meals_per_day: 1, eat_out_per_week: 5, uses_keep_warm: false, cooks_per_week: 4 });

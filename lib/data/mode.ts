@@ -45,10 +45,10 @@ export function useMode(): Mode | null | undefined {
 }
 
 /** Supabase 로그인 세션. 확인 전 undefined, 없으면 null. */
-export function useSession(): Session | null | undefined {
+export function useSession(enabled = true): Session | null | undefined {
   const [session, setSession] = useState<Session | null | undefined>(supabaseConfigured ? undefined : null);
   useEffect(() => {
-    if (!supabaseConfigured) return;
+    if (!enabled || !supabaseConfigured) return;
     const auth = supabase().auth;
     let active = true, receivedEvent = false;
     const update = (next: Session | null) => {
@@ -64,6 +64,6 @@ export function useSession(): Session | null | undefined {
       if (!receivedEvent) update(data.session);
     });
     return () => { active = false; data.subscription.unsubscribe(); };
-  }, []);
+  }, [enabled]);
   return session;
 }

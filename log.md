@@ -300,3 +300,15 @@ provision-smartthings-identity.mjs apply가 성공했다. KU GPA에 bapmunna-sma
 - 사용자에게 SDK 약관/프로젝트내 설치 승인받아 공식 SHA256 검증한 SDK 설치. 첫 Android 전체 컴파일의 AppCompat 누락을 수정한 뒤 APK 생성. iOS는 Xcode 미설치로 소스·설정 검증에 한정. 사용자 현재 실기기 연결 불가 확인.
 - TypeScript·변경파일 lint·기존164개/대상62개 검사 통과. 실제 브라우저 320/390px, 200% 글씨의 줄바꿈 수정과 왕복 확인. 최초 Turbopack 정체는 중단했고 Webpack 정적 export는 성공.
 - 자세한 도구/API/권한/산출물 증거: documentation/phone-steps-release-20261115.md 및 workspaces/bapmunna-mobile. 이 시점의 웹후속게시·실제건강기록·스토어게시를 완료로 주장하지 않는다.
+
+### 2026-11-15 최종 건강 소스와 설치 산출물 확인
+
+최종 공개 UI b4b43af/bc86c92를 병합한 c2195aa에서 전체 하네스 `.harness/runs/2026-11-14T15-22-09-142Z-94488/report.md`를 실행했다. 하네스25·앱246·개인정보48·Firebase59·SmartThings49, 실패0/skip0이며 타입·원본 동기화·Firebase 두 빌드·Next Webpack과 시작/종료 소스 지문이 일치한다. 로컬 Firestore는 검사 후 종료했다. native 플러그인3·셸11과 독립 건강 검토도 통과했다.
+
+같은 소스에서 다시 생성한 debug APK 24,085,871bytes, 미서명 AAB 13,358,330bytes, iPhone 소스 tgz 17,762,213bytes를 `output/bapmunna-health-release-20261115/`에 전달용으로 정리했다. APK v2 서명과 세 묶음의 72개 웹 자산 바이트·소스/산출물 SHA256을 독립 검토에서 직접 대조했다. 오래된 플랫폼 복사본으로 빌드되지 않도록 빌드 전후 전체 digest 검사를 추가했고, 건강 서비스 미지원 상태에서도 앱 동의를 끌 수 있게 보완했다. 전체 해시·설치 순서·검증 한계는 기술 기록과 출력 README/independent-review에 보관한다.
+
+실기기 연결 불가와 iOS Xcode 미설치 제약은 남아 있다. Android SDK 기본 약관은 승인받았으나 별도 ARM 에뮬레이터 약관은 추가 답변을 기다리며 수락하지 않았다. APK 생성은 실기기 건강 조회·스토어 출시 증거가 아니며, iPhone 전달본은 IPA가 아니다. 공개 웹 후속 게시를 다른 작업 채팅과 조율 중이며 실제 영수증·브라우저 확인을 받은 후 별도로 기록한다.
+
+2026-11-15 공개 웹 후속 완료: 배포 담당 채팅에서 같은 건강 소스70개를 확인한 d9e7a8c를 origin/codex/health-web-20261115에 푸시하고 Hosting8135bed18869753c에 게시했다. 변경103파일 공개 해시 일치·기존2595파일 보존·기존경로누락0·총2698개, 기존 설정·Rules·API origin·과금 false 유지. APK/AAB/IPA는 게시하지 않았다. 배포 작업본의 전체 하네스도 실패0·skip0이며 15route/147파일 export를 검증했다.
+
+부모 채팅의 실제 공개 IAB에서 health→privacy→health→s→health 왕복과 갤럭시 고정 실행 URL을 확인했다. 390px 가로 넘침0·콘솔 오류/경고0, public-health 화면을 output/bapmunna-health-release-20261115/health-public-390.png에 저장했다. OS 앱 실행과 본인 걸음수는 실기기 검사로 남긴다. 로컬 3022/3023 서버를 종료하고 viewport를 복원했다. 배포 영수증을 workspaces/bapmunna-final/releases/20261115-health-web.json에 옮겼고, 동일한 export 경로 검증 한 줄만 통합했다. 런타임은 c2195aa와 동일하므로 설치 산출물 소스 기준을 새 문서 커밋으로 바꾸지 않는다.

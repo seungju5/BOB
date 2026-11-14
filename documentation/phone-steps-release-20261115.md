@@ -49,3 +49,30 @@
 - [SDK Manager](https://developer.android.com/tools/sdkmanager)
 
 앞선 설계와 개인정보 경계는 [11월14일 기술 기록](phone-steps-20261114.md)에 남아 있다. 이후에는 이 문서와 최종 산출물의 확인 날짜·소스 버전을 함께 읽는다.
+
+## 최종 소스·산출물 검증 (c2195aa)
+
+- 최종 기능 소스: `c2195aa4b4cb1684cbd38a1d58c13cc87b84a371`. `b4b43af`/`bc86c92` 공개 최종 UI·Firebase 설정·영수증을 함께 통합했다. 병합 과정의 RoleSwitcher 문법 오류는 TypeScript가 검출했고 전체 컴포넌트를 보존해 수정한 뒤 재검증했다.
+- 전체 하네스: `.harness/runs/2026-11-14T15-22-09-142Z-94488/report.md`. 하네스25·앱246·개인정보48·Firebase59·SmartThings49, 실패0/skip0. 타입·원본 동기화·두 웹 빌드·Next Webpack 성공. 시작/종료 소스 지문 일치. 로컬 Firestore는 운영 데이터와 분리했고 검사 후 종료했다.
+- 별도 native 플러그인3·설치 셸11 검사 모두 통과. 독립 검토의 stale copied-assets 문제를 전체 해시 비교로 차단했고, 건강 기능 미지원 상태에서도 연결 동의를 해제하도록 수정했다.
+- 같은 최종 소스에서 다시 static export → allowlist 포장 → cap sync → APK/AAB/iOS소스 생성. 세 묶음의 웹72파일이 동일하고, APK/AAB 내부 파일과 실제 www를 byte-for-byte 비교했다.
+
+| 산출물 | 최종 파일 SHA256 | 검증 범위 |
+|---|---|---|
+| Android 테스트 APK | `8117a12793bd42644ba4b2ff7f102fc38f69dc019ef77d7165f41509b481921f` | Kotlin/Java 실제 컴파일, v2 debug 서명, 내부 자산 일치 |
+| Android 미서명 AAB | `4225b008b8faeddbaafe0c22cce1b62a94639672580524484633b2554dc13739` | 실제 bundle 빌드, 미서명 확인, 내부 자산 일치 |
+| iPhone 소스 tgz | `6d5dde0f7b2ad43db72d5ad4dcf187c29aea05f853e17734fb47ce4ae06daf86` | 설정·로컬 번들 일치, 비밀키·빌드캐시 제외. IPA 아님 |
+
+전달본은 workspace의 `output/bapmunna-health-release-20261115/`에 복사하고 해시를 다시 확인했다. APK는 약24MB, AAB 약13MB, iPhone 소스는 약18MB다. 공개 다운로드·스토어 업로드는 수행하지 않았다. 추가 ARM 에뮬레이터 약관은 별도로 사용자에게 확인 요청했으며, 답변 없이 수락하지 않았다. 실제 휴대폰·iOS 전체 빌드와 설치/건강 기록 대조는 여전히 미검증이다.
+
+## 공개 웹 게시와 왕복 확인
+
+2026-11-15 00:34 KST에 후속 웹 소스 `d9e7a8cc9c84f71609f822c3652a0ace3c95723a`를 Hosting `8135bed18869753c`에 게시했다. c2195aa의 지정 소스 70개와 바이트가 일치하며, 별도 배포 검증 스크립트에는 `health`·`health/privacy` 경로 확인을 추가했다. 웹 배포 작업본에서도 전체 하네스 25/246/48/59/49, 실패0·skip0을 확인했다.
+
+- [공개 건강 연결](https://impact-series.web.app/bapmunna/app/health/), [개인정보 안내](https://impact-series.web.app/bapmunna/app/health/privacy/), [어르신 화면](https://impact-series.web.app/bapmunna/app/s/).
+- 공개 변경103파일 해시 일치, 기존2595파일 보존, 누락0·총2698파일. Hosting 설정·결제 비활성·기존 API origin·Firebase Rules 변경 없음. 설치 파일은 공개하지 않았다.
+- 부모 채팅에서도 실제 공개 브라우저에서 건강→개인정보→건강→어르신→건강 왕복을 확인했다. 390px 갤럭시 안내의 가로 넘침0, 콘솔 오류·경고0, 고정 intent와 HTTPS fallback 일치. 앱 열기 링크 자체의 OS 실행은 검사하지 않았다.
+- 공개 화면: workspace `output/bapmunna-health-release-20261115/health-public-390.png`. 임시 QA 서버를 종료하고 브라우저 화면 크기를 복원했다.
+- 영수증: `workspaces/bapmunna-final/releases/20261115-health-web.json`. 이전 Hosting은 `9ea0c97d5e9613ec`이며 다음 게시 기준은 배포 담당 worktree의 `tmp/impact-final/site/bapmunna`다.
+
+SmartThings는 이 건강 모듈과 별도다. 담당 채팅에서 무료 Vercel 서버 게시와 API 응답을 확인했으나, 삼성의 등록 URL 변경이 HTTP403 및 유료 플랜 요구로 거절되어 웹 OAuth·자동 수신 완료로 표시하지 않는다. 현재 무료 유지 결정을 바꾸지 않았다.

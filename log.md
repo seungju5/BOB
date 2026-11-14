@@ -228,3 +228,15 @@ Next의 동의 전 홈 진입, 생활 설정 재편집·저장 순서, 페어링
 ### 2026-11-13 카카오 후속 결정
 
 별도 카카오 작업 채팅에서 사용자가 ‘보류하고 가자 우선’으로 결정했다. 해당 채팅의 인계에 따르면 Identity Platform 전환·카카오 공급자 활성화·공개 배포는 실행하지 않았다. 준비 코드는 공유 저장소 밖에 보관하며 현재 공개 Hosting66beb76f7bf738fd, Google·이메일, 본인 가구정보 expectedUid 계약과 무료 상태를 유지한다. 이번 변경은 진행 상태 문서만 정정하며 앱 소스·검사 결과·운영 설정은 바꾸지 않는다.
+
+## 2026-11-14 SmartThings 실사용 재개와 별도 무료 서버 구현
+
+사용자가 실제 사용할 수 있는 단계까지 진행하도록 요청했다. 공개 서버 보류는 해제하되 기존 Spark·새 과금 금지와 카카오 보류를 유지했다. 공식 CLI 3.0.1의 새 /v1/smartapps로 기존 app/OAuth 읽기가 성공했다. 기존 CLI 2.1.3의 /apps 403만으로 계정 권한 또는 요금제 원인을 단정했던 판단을 정정한다. 현재 등록값은 읽기 r:devices:*, 기존 Impact callback/webhook, target PENDING이다.
+
+Vercel Node 24 별도 서버 패키지와 정확한 origin/source/channel로 Firebase ID token을 메모리에서만 전달하는 연결 창을 구현했다. 삼성 state/nonce 쿠키는 서버 원점에서만 발급하며, 기존 Firebase 화면은 bearer+credentials omit으로 본인 상태를 확인한다. 삼성 토큰은 서버 암호화, 원시 W값 미보관·미노출을 유지했다. Cloud Run 실행을 보존하는 원문 HTTP 어댑터와 고정 파일 allowlist, TTL 없는 인증된 일일 정리도 추가했다.
+
+독립 검토가 표시 UID와 auth.currentUser 관찰 지연, 취소 이후 callback 저장 문제를 재현했다. getIdToken(expectedUid)에 기존 사용자 객체 전후 검사를 적용하고, 취소 tombstone·일회 state 소비·최종 연결 commit을 Firestore transaction에 묶었다. callback에서 사용자 폐기·이메일 확인·토큰 무효 시각을 재확인한다. 취소가 서버에서 끝난 뒤 상태를 다시 읽으며, COOP로 거부 메시지가 오지 않는 경우 명시적인 대기 종료·복귀 경로를 제공한다.
+
+최종 전체 하네스 `.harness/runs/2026-11-14T00-47-16-956Z-31108/report.md`: 25/121/48/58/49개 통과, 실패0·skip0, 실제 로컬 Firestore와 localhost HTTP 포함. Firebase 계약·타입·동기화·두 앱 빌드·Next 정적 빌드 통과. 320px 오류/복귀 화면과 승인 자산·가로 넘침 없음 확인. 새 readback 스크립트도 삼성 읽기 전용 호출로 성공했다.
+
+운영은 아직 미변경이다. Vercel 소유자 로그인과 삼성 문자 인증/현재 플랜 확인이 필요해 질문을 열어두었다. 전용 서비스 계정은 8개 권한 계획만 검토·출력했으며 IAM·키 생성·비밀 주입·새 배포·삼성 URL 변경은 하지 않았다. Vercel CLI 로그인 요청은 사용자 로그인 없이 만료됐다. 삼성의 유료 Developer/Business 선행조건은 무료 서버와 별개이며 자동 결제를 시작하지 않는다. 현재 frontend API origin은 빈 값이고 공개 Hosting66beb76f7bf738fd를 보존한다. 세부 사실과 다음 순서는 documentation/smartthings-live-20261114.md에 기록한다. 실제 삼성 OAuth·실기기 자동 수신을 완료라고 표시하지 않는다.

@@ -1,5 +1,7 @@
 # 무료 유지와 향후 유료 전환 준비
 
+**2026-11-14 최신 결정:** 사용자가 실제 가동을 다시 요청했다. 공개 서버 보류는 해제됐으나 과금 승인은 없으므로 Vercel 무료 서버 경로를 구현했다. 기존 Firebase 계정·DB는 유지한다. [새 배포 패키지](../../../workspaces/smartthings-vercel/README.md)와 [당일 상태](../../../documentation/smartthings-live-20261114.md)를 우선한다. 공식 CLI 3.0.1 `/v1/smartapps` 조회가 성공했고 기존 target은 아직 `PENDING`이다. Vercel·삼성 소유자 로그인 및 플랜 확인, 실제 게시·URL 변경·OAuth·실수신은 남아 있다. 아래 Cloud Run·Blaze 계획은 유료 경로를 선택할 때만 적용한다.
+
 **2026-11-13 재개 요청과 정정:** [최신 점검](deployment-readiness-20261113.md)의 두 프로젝트 배포안을 보관한다. 서버·Hosting은 `impact-series`, 기존 Firebase 데이터는 `ku-gpa`다. 기존 서버 테스트에 배포 경계 검사 4개를 추가했고, Java 환경을 복구한 검증 채팅이 로컬 Firestore 트랜잭션 테스트도 통과했다. 사용자는 배포 조건 확인 후 **무료 유지·공개 서버 배포 보류**를 최종 선택했다. 공개 서버와 실제 사용자 OAuth는 여전히 미완료이며 별도 재개 요청 전 결제 승인을 반복 요청하지 않는다.
 
 2026-11-03 사용자 결정: **지금은 무료 상태를 유지하고, 나중에 유료 전환을 결정하면 이어서 배포한다.** 결제 연결·자동 과금·서버 활성화는 실행하지 않았다.
@@ -48,7 +50,7 @@ npm run check:smartthings -- --offline
 3. **공개 서버를 배포한다.** `deployment-config.json`의 서울 `asia-northeast3`, 최소 0·최대 1 인스턴스, 1 vCPU·512 MiB·60초 제한을 적용한다. Secret Manager에 기존 키를 저장하고 실행 계정에 필요한 권한만 부여한다. Docker 빌드에는 비밀 파일을 포함하지 않는다.
 4. **저장·로그 설정을 검증한다.** 기존 Firestore 규칙 전체를 보존하면서 서버 전용 collection의 브라우저 접근 금지와 만료 데이터 TTL을 적용한다. callback 인증 코드·토큰·웹훅 본문은 로그에 남기지 않는다. 로컬 emulator와 운영 설정 검증은 별개다.
 5. **기존 주소 뒤에 연결한다.** 현재 Impact Series 릴리스와 파일 지도를 먼저 저장한다. `/api/smartthings/**`의 Cloud Run rewrite만 기존 SPA fallback 앞에 병합하고 다른 경로는 보존한다. `hosting-rewrite.example.json`으로 전체 Hosting 설정을 덮어쓰지 않는다.
-6. **삼성 웹훅 확인을 완료한다.** `/config`의 `enabled:true`와 callback의 state 검증 응답을 확인한 뒤 공식 CLI `apps:register`를 실행한다. Target 재조회 결과가 `CONFIRMED`일 때만 웹훅 준비 완료로 표시한다.
+6. **삼성 웹훅 확인을 완료한다.** `/config`의 `enabled:true`와 callback의 state 검증 응답을 확인한 뒤 최신 공식 CLI 3.x의 `smartapps:confirm`을 실행한다. Target 재조회 결과가 `CONFIRMED`일 때만 웹훅 준비 완료로 표시한다.
 7. **실제 사용자 연결을 확인한다.** 밥뭇나 로그인 → 본인 삼성 계정 동의 → 전력 측정 플러그 선택 → 실제 새 신호 수신 → 해제·재연결 순서로 검증한다. 자동 수신 시각과 수동 조회 시각을 구분한다. 장기 토큰 갱신과 2–3가구 격리는 별도 검증한다.
 
 배포를 재개할 때는 “유료 전환을 승인하니, 준비한 설정으로 밥뭇나 SmartThings 실제 연결을 마무리해 줘”라고 요청하면 이 문서와 비공개 재개 메모에서 이어갈 수 있다. 지금 준비된 파일은 자동 실행되지 않는다.

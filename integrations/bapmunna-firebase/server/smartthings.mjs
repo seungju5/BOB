@@ -52,7 +52,7 @@ export function smartThingsClient(config,fetcher=fetch){
     unsubscribe:(token,installId)=>request(subscriptions(installId),{token,method:'DELETE'}),
     async confirm(url){
       const target=new URL(url);
-      if(target.origin!=='https://api.smartthings.com'||target.username||target.password||target.hash||![`/v1/apps/${config.appId}/confirm-registration`,`/apps/${config.appId}/confirm-registration`].includes(target.pathname)||!target.searchParams.get('token'))throw new ApiError(400,'invalid_confirmation');
+      if(target.origin!=='https://api.smartthings.com'||target.username||target.password||target.hash||![`/v1/apps/${config.appId}/confirm-registration`,`/apps/${config.appId}/confirm-registration`,`/v1/smartapps/${config.appId}/confirm-registration`].includes(target.pathname)||!target.searchParams.get('token'))throw new ApiError(400,'invalid_confirmation');
       const response=await fetcher(target,{redirect:'error',signal:AbortSignal.timeout(8000)});
       if(!response.ok)throw new ApiError(502,'confirmation_failed');
     },

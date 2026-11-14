@@ -1,0 +1,12 @@
+{
+  "name": "bapmunna-smartthings-vercel",
+  "private": true,
+  "type": "module",
+  "version": "0.1.0",
+  "engines": { "node": "24.x" },
+  "scripts": {
+    "stage": "node scripts/stage.mjs",
+    "test": "node --test ../../integrations/bapmunna-firebase/server/test/http-adapter.test.mjs ../../integrations/bapmunna-firebase/server/test/retention.test.mjs ../../integrations/bapmunna-firebase/server/test/state-lifecycle.test.mjs ../../integrations/bapmunna-firebase/server/test/vercel-runtime.test.mjs"
+  },
+  "dependencies": { "firebase-admin": "14.5.0" }
+}

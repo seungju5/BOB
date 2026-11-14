@@ -13,7 +13,7 @@ export const CHECKS = {
   'types': {title: 'TypeScript', args: ['node_modules/typescript/bin/tsc', '--noEmit'], prerequisites: ['node_modules/typescript/bin/tsc']},
   'firebase-contracts': {title: 'Firebase scenarios and worksheet', args: ['tests/check.mjs'], cwd: 'integrations/bapmunna-firebase'},
   'firebase-tests': {title: 'Firebase roles, management, parity and experience', args: ['--test', '--test-reporter=tap', 'tests/editions.test.mjs', 'tests/manage.test.mjs', 'tests/parity.test.mjs', 'tests/experience.test.mjs'], cwd: 'integrations/bapmunna-firebase', format: 'tap'},
-  'smartthings-tests': {title: 'SmartThings unit tests; store test needs emulator', args: ['--test', '--test-reporter=tap', 'test/service.test.mjs', 'test/store.test.mjs', 'test/deployment.test.mjs'], cwd: 'integrations/bapmunna-firebase/server', format: 'tap', emulator: true, prerequisites: ['integrations/bapmunna-firebase/server/node_modules/firebase-admin/package.json']},
+  'smartthings-tests': {title: 'SmartThings unit tests; store test needs emulator', args: ['--test', '--test-reporter=tap', 'test/service.test.mjs', 'test/store.test.mjs', 'test/deployment.test.mjs', 'test/http-adapter.test.mjs', 'test/retention.test.mjs', 'test/cors.test.mjs', 'test/vercel-runtime.test.mjs', 'test/state-lifecycle.test.mjs'], cwd: 'integrations/bapmunna-firebase/server', format: 'tap', emulator: true, prerequisites: ['integrations/bapmunna-firebase/server/node_modules/firebase-admin/package.json']},
   'firebase-editions': {title: 'Build Firebase editions', args: ['scripts/build-editions.mjs'], cwd: 'integrations/bapmunna-firebase', requires: ['domain-sync', 'design-sync']},
   'firebase-portable': {title: 'Build Firebase portable artifact', args: ['scripts/build-portable.mjs'], cwd: 'integrations/bapmunna-firebase', requires: ['firebase-editions']},
   'next-build': {title: 'Build Next.js with Webpack', args: ['node_modules/next/dist/bin/next', 'build', '--webpack'], requires: ['domain-sync', 'design-sync'], prerequisites: ['node_modules/next/dist/bin/next'], timeoutMs: 600000},
@@ -93,7 +93,7 @@ export function buildPlan({files = [], task = null, profile = null} = {}) {
   }
   if (expanded.includes('smartthings')) {
     add('smartthings-store', '로컬 Firestore emulator에서 state 일회 사용·소유자·갱신 잠금·중복/역순 수신 검증', 'wm_iot', 'integration');
-    add('live-oauth-events', '무료 유지 결정이 변경된 뒤 실제 OAuth 동의·구독·웹훅 수신·갱신·해제·2–3가구 격리를 각각 확인', 'wm_iot', 'live');
+    add('live-oauth-events', '공개 서버·소유자 계정·삼성 이용 조건 확인 뒤 실제 OAuth 동의·구독·웹훅 수신·갱신·해제·2–3가구 격리를 각각 확인', 'wm_iot', 'live');
   }
   for (const item of task?.manualEvidence || []) {
     if (!evidence.some(existing => existing.id === item.id)) add(item.id, item.label, 'wm_verifier');

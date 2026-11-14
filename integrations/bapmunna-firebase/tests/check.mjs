@@ -57,6 +57,7 @@ console.log('PASS welcome animation accessibility contracts');
 await import('./worksheet.test.mjs');
 
 await import('./smartthings-view.test.mjs');
+await import('./smartthings-popup.test.mjs');
 
 await import('./runtime-mode.test.mjs');
 await import('./account-session.test.mjs');

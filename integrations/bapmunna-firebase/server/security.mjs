@@ -64,5 +64,12 @@ export function readConfig(env){
   const local=['127.0.0.1','localhost'].includes(origin.hostname);
   if(app.origin!==origin.origin||(!local&&origin.protocol!=='https:')||app.username||app.password)throw Error('APP_URL must use the same HTTPS origin as PUBLIC_ORIGIN.');
   if(!['/v1/oauth','/oauth'].includes(env.SMARTTHINGS_OAUTH_PREFIX||'/oauth'))throw Error('Unsupported OAuth prefix.');
-  return {appUrl:app.href,origin:origin.origin,secure:!local,appId:env.SMARTTHINGS_APP_ID||'',clientId:env.SMARTTHINGS_CLIENT_ID||'',secret:env.SMARTTHINGS_CLIENT_SECRET||'',key:env.SMARTTHINGS_ENCRYPTION_KEY||'',oauth:env.SMARTTHINGS_OAUTH_PREFIX||'/oauth',redirect:`${origin.origin}/api/smartthings/callback`,projectId:env.FIREBASE_PROJECT_ID||''};
+  const appOrigins=[...new Set((env.BAPMUNNA_APP_ORIGINS||'').split(',').map(x=>x.trim()).filter(Boolean))];
+  for(const value of appOrigins){
+    const parsed=new URL(value);
+    if(parsed.origin!==value||parsed.protocol!=='https:'||parsed.username||parsed.password)throw Error('BAPMUNNA_APP_ORIGINS must contain exact HTTPS origins.');
+  }
+  const returnUrl=new URL(env.BAPMUNNA_RETURN_URL||app.href);
+  if(![origin.origin,...appOrigins].includes(returnUrl.origin)||returnUrl.username||returnUrl.password)throw Error('BAPMUNNA_RETURN_URL must use an explicitly allowed app origin.');
+  return {appUrl:app.href,origin:origin.origin,appOrigins,returnUrl:returnUrl.href,secure:!local,appId:env.SMARTTHINGS_APP_ID||'',clientId:env.SMARTTHINGS_CLIENT_ID||'',secret:env.SMARTTHINGS_CLIENT_SECRET||'',key:env.SMARTTHINGS_ENCRYPTION_KEY||'',oauth:env.SMARTTHINGS_OAUTH_PREFIX||'/oauth',redirect:`${origin.origin}/api/smartthings/callback`,projectId:env.FIREBASE_PROJECT_ID||''};
 }

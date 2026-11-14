@@ -1,5 +1,20 @@
 # todo.md — Task List & Progress
 
+## 최신 SmartThings 진행 — 2026-11-14 실사용 재개
+
+사용자가 실제 가동까지 다시 요청했다. Firebase Spark·새 과금 금지는 유지하되 무료 공개 서버 배포 작업은 재개했다. 카카오는 계속 보류다. **아래 구현은 아직 운영 배포·삼성 실사용 검증을 마치지 않았다.**
+
+- [x] 공식 CLI 3.0.1의 `/v1/smartapps`로 기존 앱·OAuth 현재 조회 성공. 읽기 권한 유지, 기존 Target `PENDING` 확인. 이전 CLI 2.1.3의 403을 유료 플랜 차단으로 단정하지 않도록 정정
+- [x] 별도 Vercel Node 서버 패키지, Firebase 로그인 유지 연결 창, 정확한 origin·창·채널 검증, 쿠키와 bearer 인증 분리
+- [x] 표시 UID와 token 발급 세션 바인딩, 취소 기록·callback 원자성, 계정 폐기 재확인, 뒤늦은 취소 응답 후 실제 상태 재조회
+- [x] 웹훅 원문·서명 보존 어댑터, TTL 없는 제한된 일일 정리, 전용 서비스 계정 계획과 배포 파일 allowlist
+- [x] 전체 하네스·로컬 Firestore·실제 localhost HTTP 검사 통과. 320px 연결 오류/복귀 화면 확인. 새 코드·실제 외부 계정 검증을 구분
+- [ ] 소유자 Vercel 로그인, 삼성 문자 인증/콘솔 이용 플랜 확인 (질문을 열어둠)
+- [ ] Vercel 무료 이용 자격·고정 운영 주소 확인 → 전용 서버 권한·비밀 주입 → 공개 배포
+- [ ] 기존 삼성 앱 callback·webhook 주소 변경 → Target `CONFIRMED` → 실제 OAuth·기기 선택·자동 수신·갱신·해제·2~3가구 격리
+
+현재 공개 Hosting은 아래 11/13 버전 그대로다. 구현·배포 절차는 `workspaces/smartthings-vercel/README.md`, 당일 사실과 남은 작업은 `documentation/smartthings-live-20261114.md`에 기록한다.
+
 ## 최신 검증 상태 — 2026-11-13 최종 감사
 
 아래 예전 Phase의 체크는 당시 소스 구현 기록이며 현재 운영 연동 완료의 증거가 아니다. 최신 배포는 `6c07408` → Impact Series `66beb76f7bf738fd`, 영수증은 `workspaces/bapmunna-final/releases/20261113-final-audit.json`이다.

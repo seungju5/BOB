@@ -1,7 +1,7 @@
 // Pure deployment checks. This module never calls an API or enables billing.
 export const serverBuildFiles=Object.freeze([
   'Dockerfile','.dockerignore','package.json','package-lock.json',
-  'index.mjs','security.mjs','service.mjs','smartthings.mjs','store.mjs',
+  'index.mjs','http-adapter.mjs','security.mjs','service.mjs','smartthings.mjs','store.mjs',
 ]);
 
 export function validateDeploymentTargets(plan,{firebaseProjectId,hostingSiteName}={}){

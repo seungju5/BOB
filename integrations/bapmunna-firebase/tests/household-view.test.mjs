@@ -172,6 +172,24 @@ function firebaseFixture(){
 }
 const plain=value=>JSON.parse(JSON.stringify(value));
 
+test('Firebase API token requires the displayed UID before starting token retrieval',async()=>{
+  const f=firebaseFixture();let calls=0;f.auth.currentUser.getIdToken=async()=>{calls++;return 'only-a-token';};
+  for(const expected of [undefined,'b'])await assert.rejects(f.provider.getIdToken(expected),{code:'auth/user-changed'});
+  assert.equal(calls,0);assert.equal(await f.provider.getIdToken('a'),'only-a-token');assert.equal(f.listeners.size,0);
+});
+
+test('Firebase API token is discarded if currentUser changes before auth observers run',async()=>{
+  const f=firebaseFixture(),pending=deferred();f.auth.currentUser.getIdToken=()=>pending.promise;
+  const token=f.provider.getIdToken('a');f.auth.currentUser={uid:'b',emailVerified:true};pending.resolve('a-private-token');
+  await assert.rejects(token,{code:'auth/user-changed'});assert.equal(f.listeners.size,0);
+});
+
+test('Firebase API token does not cross an A to B to A session transition',async()=>{
+  const f=firebaseFixture(),pending=deferred(),original=f.auth.currentUser;original.getIdToken=()=>pending.promise;
+  const token=f.provider.getIdToken('a');f.emit({uid:'b',emailVerified:true});f.emit(original);pending.resolve('a-private-token');
+  await assert.rejects(token,{code:'auth/user-changed'});assert.equal(f.listeners.size,0);
+});
+
 test('Firebase household adapter writes only the owner-private path and returns server-stamped stored values',async()=>{
   const f=firebaseFixture();assert.equal(await f.provider.getHousehold('a'),null);const actual=await f.provider.saveHousehold(fields('  내 호칭  '),'a');
   assert.equal(actual.alias,'내 호칭');assert.ok(actual.updatedAt.toDate() instanceof Date);assert.equal(f.writes[0].path,'bapmunnaAccounts/a/preferences/household');

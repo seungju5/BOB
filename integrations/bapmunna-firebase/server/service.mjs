@@ -9,7 +9,7 @@ const publicConnection=current=>!current?{stage:'disconnected'}:{stage:current.s
 
 // Dependencies are injected so authorization and OAuth can be tested without
 // contacting a real household, sending email, or changing a production database.
-export function createService({config,store,verifyUser,smartthings,verifyWebhook,now=()=>Date.now()}){
+export function createService({config,store,verifyUser,verifyAccount=async()=>{},smartthings,verifyWebhook,now=()=>Date.now()}){
   const ready=configured(config),secrets=ready?vault(config.key):null;
   // Firebase Hosting forwards only __session to Cloud Run. Restrict this nonce
   // cookie to the integration path so it does not replace an app-wide session.
@@ -21,7 +21,7 @@ export function createService({config,store,verifyUser,smartthings,verifyWebhook
     if(!match)throw new ApiError(401,'login_required');
     let claims;try{claims=await verifyUser(match[1]);}catch{throw new ApiError(401,'login_required');}
     if(!claims?.uid||claims.email_verified!==true)throw new ApiError(403,'verified_email_required');
-    return claims.uid;
+    return {uid:claims.uid,authTime:claims.auth_time};
   }
   async function json(request){
     if(!request.headers.get('content-type')?.startsWith('application/json'))throw new ApiError(415,'invalid_request');
@@ -85,11 +85,11 @@ export function createService({config,store,verifyUser,smartthings,verifyWebhook
     }
     return response({ok:true});
   }
-  return async request=>{
+  const handle=async request=>{
     const url=new URL(request.url),path=url.pathname.slice(PREFIX.length);
     try{
       if(!url.pathname.startsWith(PREFIX+'/'))throw new ApiError(404,'not_found');
-      if(path==='/config'&&request.method==='GET')return response({enabled:ready,consentVersion:CONSENT});
+      if(path==='/config'&&request.method==='GET')return response({enabled:ready,consentVersion:CONSENT,appOrigins:config.appOrigins||[],returnUrl:config.returnUrl||config.appUrl});
       if(!ready)throw new ApiError(503,'setup_required');
       if(path==='/events'&&request.method==='POST')return await webhook(request,url);
       if(path==='/callback'&&request.method==='GET'){
@@ -102,24 +102,37 @@ export function createService({config,store,verifyUser,smartthings,verifyWebhook
         else try{
           if(!code||code.length>2048)throw new ApiError(400,'invalid_request');
           await store.withLease(pending.uid,async()=>{
+            await verifyAccount(pending.uid,pending.authTime);
             const data=await smartthings.exchange(code),installId=data.installed_app_id;
             if(!identifier(installId))throw new ApiError(502,'reconnect_required');
             const old=await store.get(pending.uid);
             // Reauthorization may replace an expired grant, but must not silently
             // orphan an active subscription from a different installation.
             if(old&&old.installId!==installId)throw new ApiError(409,'disconnect_first');
-            await store.saveConnection(pending.uid,{installId,tokens:secrets.seal(tokenBundle(data),`${pending.uid}:${installId}`),stage:old?.deviceId?'subscribing':'choose_device',connectedAt:old?.connectedAt||now(),consentVersion:CONSENT,consentedAt:pending.consentedAt,...(old?.deviceId?{deviceId:old.deviceId,deviceLabel:old.deviceLabel}: {})});
+            await verifyAccount(pending.uid,pending.authTime);
+            await store.saveConnection(pending.uid,{installId,tokens:secrets.seal(tokenBundle(data),`${pending.uid}:${installId}`),stage:old?.deviceId?'subscribing':'choose_device',connectedAt:old?.connectedAt||now(),consentVersion:CONSENT,consentedAt:pending.consentedAt,...(old?.deviceId?{deviceId:old.deviceId,deviceLabel:old.deviceLabel}: {})},{state,nonceHash:hash(browserNonce)});
           });
         }catch(error){outcome=error.code==='disconnect_first'?'disconnect_first':'failed';}
+        if(outcome!=='connected')await store.cancelState(state,pending.uid);
         return new Response(null,{status:303,headers:{Location:landing(outcome),'Set-Cookie':cookie('',0),'Cache-Control':'no-store','Referrer-Policy':'no-referrer'}});
       }
-      if(request.method!=='GET'&&!equal(request.headers.get('origin')||'',config.origin))throw new ApiError(403,'invalid_origin');
-      const uid=await user(request);
+      const requestOrigin=request.headers.get('origin')||'';
+      // The OAuth nonce cookie is minted only in the API's own top-level popup.
+      // Other app calls use Firebase bearer authentication, never cross-site cookies.
+      if(request.method!=='GET'&&!equal(requestOrigin,config.origin)&&!(path!=='/start'&&(config.appOrigins||[]).includes(requestOrigin)))throw new ApiError(403,'invalid_origin');
+      const account=await user(request),uid=account.uid;
       if(path==='/status'&&request.method==='GET')return response(publicConnection(await store.get(uid)));
+      if(path==='/cancel-start'&&request.method==='POST'){
+        const body=await json(request);
+        if(!identifier(body.attemptId)||body.attemptId.length<32)throw new ApiError(400,'invalid_request');
+        await store.cancelState(body.attemptId,uid);return response({ok:true});
+      }
       if(path==='/start'&&request.method==='POST'){
+        if(!Number.isInteger(account.authTime)||account.authTime<0)throw new ApiError(401,'login_required');
         const body=await json(request);if(body.consentVersion!==CONSENT)throw new ApiError(400,'consent_required');
+        if(body.attemptId!==undefined&&(!identifier(body.attemptId)||body.attemptId.length<32))throw new ApiError(400,'invalid_request');
         const current=await store.get(uid);if(current&&current.stage!=='reconnect_required')throw new ApiError(409,'already_connected');
-        const state=random(),nonce=random();await store.saveState(state,{uid,nonceHash:hash(nonce),until:now()+600000,consentedAt:now()});
+        const state=body.attemptId||random(),nonce=random();await store.saveState(state,{uid,authTime:account.authTime,nonceHash:hash(nonce),until:now()+600000,consentedAt:now()});
         const target=new URL(`https://api.smartthings.com${config.oauth}/authorize`);
         target.search=new URLSearchParams({client_id:config.clientId,response_type:'code',redirect_uri:config.redirect,scope:'r:devices:*',state}).toString();
         return response({url:target.href},200,{'Set-Cookie':cookie(nonce,600)});
@@ -167,5 +180,25 @@ export function createService({config,store,verifyUser,smartthings,verifyWebhook
       // Never serialize exception messages, upstream bodies, credentials, or IDs.
       return response({error:error instanceof ApiError?error.code:'temporarily_unavailable'},error instanceof ApiError?error.status:503);
     }
+  };
+  return async request=>{
+    const path=new URL(request.url).pathname.slice(PREFIX.length),origin=request.headers.get('origin');
+    const remote=origin&&origin!==config.origin;
+    const methods={ '/config':['GET'], '/status':['GET'], '/devices':['GET'], '/device':['POST'], '/check':['POST'], '/connection':['DELETE'], '/cancel-start':['POST'] };
+    if(remote&&methods[path]){
+      if(!(config.appOrigins||[]).includes(origin))return response({error:'invalid_origin'},403);
+      const headers={'Access-Control-Allow-Origin':origin,Vary:'Origin'};
+      if(request.method==='OPTIONS'){
+        const method=request.headers.get('access-control-request-method');
+        const requested=(request.headers.get('access-control-request-headers')||'').toLowerCase().split(',').map(x=>x.trim()).filter(Boolean);
+        if(!methods[path].includes(method)||requested.some(x=>!['authorization','content-type'].includes(x)))return response({error:'invalid_origin'},403);
+        return new Response(null,{status:204,headers:{...headers,'Access-Control-Allow-Methods':methods[path].join(', '),'Access-Control-Allow-Headers':'Authorization, Content-Type','Access-Control-Max-Age':'600','Cache-Control':'no-store'}});
+      }
+      if(!methods[path].includes(request.method))return response({error:'invalid_request'},405,headers);
+      const result=await handle(request);
+      for(const [key,value] of Object.entries(headers))result.headers.set(key,value);
+      return result;
+    }
+    return handle(request);
   };
 }

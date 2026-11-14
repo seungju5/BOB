@@ -1,24 +1,45 @@
 import {createServer} from 'node:http';
-import {initializeApp,applicationDefault} from 'firebase-admin/app';
+import {pathToFileURL} from 'node:url';
+import {initializeApp,applicationDefault,cert} from 'firebase-admin/app';
 import {getAuth} from 'firebase-admin/auth';
 import {getFirestore} from 'firebase-admin/firestore';
-import {readConfig,webhookVerifier} from './security.mjs';
+import {readConfig,webhookVerifier,ApiError} from './security.mjs';
 import {firestoreStore} from './store.mjs';
 import {smartThingsClient} from './smartthings.mjs';
 import {createService,configured} from './service.mjs';
+import {createNodeHandler} from './http-adapter.mjs';
 
-const config=readConfig(process.env),ready=configured(config);
-const app=ready?initializeApp({credential:applicationDefault(),projectId:config.projectId}):null;
-const handle=createService({config,store:app?firestoreStore(getFirestore(app)):null,verifyUser:token=>getAuth(app).verifyIdToken(token,true),smartthings:smartThingsClient(config),verifyWebhook:webhookVerifier()});
-createServer(async(req,res)=>{
+export function firebaseCredential(env,projectId,{certificate=cert,defaultCredential=applicationDefault}={}){
+  const encoded=env.FIREBASE_SERVICE_ACCOUNT_JSON;
+  if(!encoded)return defaultCredential();
   try{
-    let length=0;const chunks=[];
-    for await(const chunk of req){length+=chunk.length;if(length>1048576){res.writeHead(413);res.end();req.destroy();return;}chunks.push(chunk);}
-    // The public origin comes from trusted configuration, never Host/X-Forwarded-*.
-    const url=new URL(req.url,config.origin);
-    if(url.origin!==config.origin){res.writeHead(400);res.end();return;}
-    const request=new Request(url,{method:req.method,headers:req.headers,body:['GET','HEAD'].includes(req.method)?undefined:Buffer.concat(chunks)});
-    const result=await handle(request);
-    res.writeHead(result.status,Object.fromEntries(result.headers));res.end(Buffer.from(await result.arrayBuffer()));
-  }catch{res.writeHead(503,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end('{"error":"temporarily_unavailable"}');}
-}).listen(Number(process.env.PORT||8080),'0.0.0.0',()=>console.log(`SmartThings API listening; integration ${ready?'configured':'awaiting configuration'}.`));
+    if(typeof encoded!=='string'||encoded.length>32768)throw Error();
+    const value=JSON.parse(encoded);
+    if(value?.type!=='service_account'||value.project_id!==projectId||typeof value.client_email!=='string'||!value.client_email.endsWith(`@${projectId}.iam.gserviceaccount.com`)||typeof value.private_key!=='string'||!value.private_key.startsWith('-----BEGIN PRIVATE KEY-----'))throw Error();
+    // Ignore credential-file URLs; only the expected Firebase project identity
+    // and its signing key are accepted. This value stays in server memory.
+    return certificate({projectId:value.project_id,clientEmail:value.client_email,privateKey:value.private_key});
+  }catch{throw Error('FIREBASE_SERVICE_ACCOUNT_JSON is invalid or belongs to a different Firebase project.');}
+}
+
+export function createRuntime(env=process.env){
+  const config=readConfig(env),ready=configured(config);
+  if(env.VERCEL&&ready&&!env.FIREBASE_SERVICE_ACCOUNT_JSON)throw Error('A dedicated Firebase server credential is required on Vercel.');
+  const app=ready?initializeApp({credential:firebaseCredential(env,config.projectId),projectId:config.projectId}):null;
+  const store=app?firestoreStore(getFirestore(app)):null;
+  const handle=createService({config,store,verifyUser:token=>getAuth(app).verifyIdToken(token,true),verifyAccount:async(uid,authTime)=>{
+    const user=await getAuth(app).getUser(uid),validAfter=Date.parse(user.tokensValidAfterTime||'1970-01-01T00:00:00Z');
+    if(user.disabled||!user.emailVerified||!Number.isInteger(authTime)||!Number.isFinite(validAfter)||authTime*1000<validAfter)throw new ApiError(401,'login_required');
+  },smartthings:smartThingsClient(config),verifyWebhook:webhookVerifier()});
+  return {config,ready,store,handle};
+}
+
+// Importing the runtime in a serverless function must not open a listening port.
+if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
+  try{
+    const runtime=createRuntime();
+    createServer(createNodeHandler({origin:runtime.config.origin,handle:runtime.handle})).listen(Number(process.env.PORT||8080),'0.0.0.0',()=>console.log(`SmartThings API listening; integration ${runtime.ready?'configured':'awaiting configuration'}.`));
+  }catch{
+    console.error('SmartThings API configuration is invalid.');process.exitCode=1;
+  }
+}

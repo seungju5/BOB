@@ -19,6 +19,16 @@ test('real Firestore transactions preserve owner isolation, locks, single-use st
     await assert.rejects(()=>store.consumeState(state,'wrong'),{code:'invalid_state'});
     assert.equal((await store.consumeState(state,'correct')).uid,uid);
     await assert.rejects(()=>store.consumeState(state,'correct'),{code:'invalid_state'});
+    assert.equal(await store.cancelState(state,'different-owner'),false);
+    assert.equal(await store.cancelState(state,uid),true);
+    await assert.rejects(()=>store.saveState(state,{nonceHash:'correct',until:1000010,uid}),{code:'invalid_state'});
+    await assert.rejects(()=>store.saveConnection(uid,{installId,stage:'choose_device'},{state,nonceHash:'correct'}),{code:'invalid_state'});
+    assert.equal((await store.get(uid)).stage,'connected');
+    const activeState=state+'-active';
+    await store.saveState(activeState,{nonceHash:'correct',until:1000010,uid});
+    await store.consumeState(activeState,'correct');
+    await store.saveConnection(uid,await store.get(uid),{state:activeState,nonceHash:'correct'});
+    await assert.rejects(()=>store.saveConnection(uid,{installId},{state:activeState,nonceHash:'correct'}),{code:'invalid_state'});
     let release;const gate=new Promise(resolve=>{release=resolve;});let entered;
     const started=new Promise(resolve=>{entered=resolve;});
     const first=store.withLease(uid,async()=>{entered();await gate;});

@@ -28,17 +28,47 @@ function surface(){
     click(action){return listeners.get('click')?.({stopPropagation(){},target:{closest:()=>({dataset:{stAction:action}})}});},
   };
 }
-function fixture(t,{connect,fetcher,requestTimeoutMs=25,auth=provider(),homeHref=''}={}){
+function fixture(t,{connect,fetcher,requestTimeoutMs=25,auth=provider(),homeHref='',apiOrigin='',popupConnect}={}){
   const previousLocation=Object.getOwnPropertyDescriptor(globalThis,'location');
   const navigations=[];
   Object.defineProperty(globalThis,'location',{configurable:true,value:{href:'https://example.test/carer/#connect',assign:url=>navigations.push(url)}});
   const el=surface(),requests=[];
-  const dispose=mountSmartThings(el,{accountHref:'/carer/#account',homeHref,requestTimeoutMs,connect:connect||(()=>Promise.resolve(auth)),fetcher:async(path,options)=>{
+  const dispose=mountSmartThings(el,{accountHref:'/carer/#account',homeHref,requestTimeoutMs,apiOrigin,...(popupConnect?{popupConnect}:{}),connect:connect||(()=>Promise.resolve(auth)),fetcher:async(path,options)=>{
     requests.push({path,options});return fetcher?fetcher(path,options):json(path.endsWith('/config')?{enabled:true,consentVersion:'test-v1'}:{stage:'disconnected'});
   }});
   t.after(()=>{dispose();if(previousLocation)Object.defineProperty(globalThis,'location',previousLocation);else delete globalThis.location;});
   return {el,requests,auth,dispose,navigations};
 }
+test('remote backend requests omit cookies and bind the displayed Firebase UID',async t=>{
+  const expected=[],auth=provider();auth.getIdToken=async uid=>{expected.push(uid);return 'test-only-token';};
+  const {el,requests}=fixture(t,{auth,apiOrigin:'https://backend.test'});
+  await eventually(()=>el.innerHTML.includes('name="st-consent"'));
+  assert.deepEqual(expected,[member.uid]);assert.ok(requests.every(x=>x.path.startsWith('https://backend.test/api/smartthings/')));
+  assert.ok(requests.every(x=>x.options.credentials==='omit'));
+});
+test('remote popup uses the displayed UID even before Firebase auth observers report a switch',async t=>{
+  const auth=provider();let actualUid=member.uid,sent=0;
+  auth.getIdToken=async expected=>{if(expected!==actualUid)throw Object.assign(Error(),{code:'auth/user-changed'});return 'only-matching-user';};
+  const {el}=fixture(t,{auth,apiOrigin:'https://backend.test',popupConnect:async options=>{await options.getIdToken();sent++;return {stage:'choose_device'};}});
+  await eventually(()=>el.innerHTML.includes('name="st-consent"'));actualUid='another-user';await el.click('start');
+  assert.equal(sent,0);assert.match(el.innerHTML,/계정이 바뀌었어요/);assert.doesNotMatch(el.innerHTML,/삼성 계정 확인 완료/);
+});
+test('remote popup completion cannot overwrite a later signed-out screen',async t=>{
+  const pending=deferred();let signal;
+  const {el,auth}=fixture(t,{apiOrigin:'https://backend.test',popupConnect:options=>{signal=options.signal;return pending.promise;}});
+  await eventually(()=>el.innerHTML.includes('name="st-consent"'));const run=el.click('start');assert.match(el.innerHTML,/삼성 연결 창에서/);
+  auth.emit(null);await eventually(()=>el.innerHTML.includes('로그인하러 가기'));assert.equal(signal.aborted,true);
+  pending.resolve({stage:'choose_device'});await run;assert.match(el.innerHTML,/로그인하러 가기/);assert.doesNotMatch(el.innerHTML,/삼성 계정 확인 완료/);
+});
+test('remote popup cancellation returns to live status and ignores a late completion',async t=>{
+  const pending=deferred();let signal;
+  const {el,requests}=fixture(t,{apiOrigin:'https://backend.test',popupConnect:options=>{signal=options.signal;return pending.promise;}});
+  await eventually(()=>el.innerHTML.includes('name="st-consent"'));const run=el.click('start');
+  const stopping=el.click('cancel-start');assert.equal(signal.aborted,true);
+  assert.equal(requests.filter(x=>x.path.endsWith('/status')).length,1);
+  pending.resolve({stage:'choose_device'});await stopping;await run;await eventually(()=>el.innerHTML.includes('name="st-consent"'));assert.doesNotMatch(el.innerHTML,/삼성 계정 확인 완료/);
+  assert.equal(requests.filter(x=>x.path.endsWith('/status')).length,2);
+});
 const failed=el=>el.innerHTML.includes('연결 상태 다시 확인')&&el.innerHTML.includes('aria-busy="false"');
 
 for(const response of [html(404),html(200),json({enabled:false})]){

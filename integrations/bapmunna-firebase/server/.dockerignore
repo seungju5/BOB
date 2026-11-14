@@ -5,6 +5,7 @@
 !package.json
 !package-lock.json
 !index.mjs
+!http-adapter.mjs
 !security.mjs
 !service.mjs
 !smartthings.mjs

@@ -47,7 +47,7 @@ export function createProvider(config){
   }
   return {
     name:'Firebase',supportsGoogle:true,
-    getIdToken:()=>requireUser().getIdToken(),
+    getIdToken(expectedUid){return withHouseholdUser(expectedUid,async(user,assertCurrent)=>{const token=await user.getIdToken();assertCurrent();return token;});},
     onUser(callback){return onAuthStateChanged(auth,user=>callback(mapUser(user)));},
     async signIn(email,password,keep){await remember(keep);await signInWithEmailAndPassword(auth,email.trim(),password);},
     async signUp(email,password,name,keep){

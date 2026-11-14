@@ -1,10 +1,17 @@
 import {connectCloud} from './cloud-api.mjs';
+import {smartThingsApiOrigin} from './smartthings-config.mjs';
+import {connectInPopup} from './smartthings-popup.mjs';
 
 const escape=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const asset=new URL('./assets/rice-cooker-companion.png',import.meta.url).href;
 const messages={login_required:'다시 로그인해 주세요.',verified_email_required:'먼저 이메일을 확인해 주세요.',setup_required:'연결 기능을 준비하고 있어요. 준비가 끝나면 이곳에서 시작할 수 있어요.',consent_required:'정보 이용 안내를 확인해 주세요.',reconnect_required:'삼성 계정 연결이 만료됐어요. 다시 연결해 주세요.',permission_required:'SmartThings에서 이 기기를 읽을 권한을 허용해 주세요.',plan_required:'삼성 API 이용 계획을 확인해야 해요. 운영팀에 알려 주세요.',rate_limited:'요청이 많아요. 잠시 후 다시 눌러 주세요.',check_later:'방금 확인했어요. 30초 뒤 다시 확인할 수 있어요.',busy:'앞선 작업을 마치는 중이에요. 잠시 후 다시 눌러 주세요.',subscription_conflict:'기존 기기 연결 정보를 확인해야 해요. 연결을 해제한 뒤 다시 연결해 주세요.',device_missing:'이 기기를 찾을 수 없어요. SmartThings 앱에서 먼저 확인해 주세요.',power_not_supported:'전력을 읽을 수 있는 플러그를 선택해 주세요.',disconnect_first:'다른 기기를 연결하려면 현재 연결을 먼저 해제해 주세요.',already_connected:'이미 연결되어 있어요. 연결 상태를 다시 확인해 주세요.',revoke_in_smartthings:'SmartThings 앱에서 밥뭇나 권한을 해제한 뒤 아래 연결을 지워 주세요.'};
 messages.timeout='응답이 늦어지고 있어요. 인터넷 연결을 확인한 뒤 다시 시도해 주세요.';
 messages.invalid_response='연결 정보를 읽지 못했어요. 잠시 후 다시 확인해 주세요.';
+messages.popup_blocked='연결 창이 열리지 않았어요. 이 사이트의 팝업을 허용하고 다시 눌러 주세요.';
+messages.connection_cancelled='연결을 취소했어요. 원할 때 다시 시작할 수 있어요.';
+messages.connection_timeout='연결 시간이 지났어요. 연결 상태를 다시 확인하거나 다시 시작해 주세요.';
+messages.connection_failed='삼성 계정 연결을 마치지 못했어요. 연결 창의 안내를 확인하고 다시 시도해 주세요.';
+messages['auth/user-changed']='계정이 바뀌었어요. 연결 상태를 다시 확인해 주세요.';
 export const smartThingsMessage=code=>messages[code]||'연결을 확인하지 못했어요. 잠시 후 다시 시도해 주세요.';
 const validTime=value=>typeof value==='number'&&Number.isFinite(value)&&value>=0&&Number.isFinite(new Date(value).getTime());
 export function signalLabel(connection,now=Date.now()){
@@ -35,15 +42,19 @@ function connectionData(value){
   return value;
 }
 
-export function mountSmartThings(element,{accountHref='#account',homeHref='',connect=connectCloud,fetcher=fetch,requestTimeoutMs=12000}={}){
-  let alive=true,provider,unsubscribe,revision=0,loadController;
-  const model={loading:true,failed:false,busy:false,user:null,enabled:false,consentVersion:'',connection:{stage:'disconnected'},devices:null,error:'',notice:'',confirm:false};
+export function mountSmartThings(element,{accountHref='#account',homeHref='',connect=connectCloud,fetcher=fetch,requestTimeoutMs=12000,apiOrigin=smartThingsApiOrigin,popupConnect=connectInPopup}={}){
+  let alive=true,provider,unsubscribe,revision=0,loadController,popupOperation;
+  const apiBase=apiOrigin?new URL(apiOrigin).origin:'';
+  if(apiBase&&(apiBase!==apiOrigin||!apiBase.startsWith('https://')))throw Error('Invalid SmartThings backend origin.');
+  const remote=Boolean(apiBase&&apiBase!==new URL(location.href).origin);
+  const model={loading:true,failed:false,busy:false,waiting:false,user:null,enabled:false,consentVersion:'',connection:{stage:'disconnected'},devices:null,error:'',notice:'',confirm:false};
   const query=new URL(location.href),outcome=query.searchParams.get('smartthings');
   if(outcome){model.notice=({connected:'삼성 계정을 확인했어요. 연결할 플러그를 골라 주세요.',cancelled:'연결을 취소했어요. 원할 때 다시 시작할 수 있어요.',disconnect_first:'기존 연결을 먼저 해제한 뒤 다시 시작해 주세요.',failed:'삼성 계정 연결을 마치지 못했어요. 다시 시도해 주세요.'})[outcome]||'';query.searchParams.delete('smartthings');history.replaceState(null,'',query);}
   async function api(signal,path,method='GET',body){
-    const token=await provider.getIdToken();
+    const expectedUid=model.user?.uid;
+    const token=await provider.getIdToken(expectedUid);
     ensureActive(signal);
-    const result=await fetcher(`/api/smartthings/${path}`,{method,cache:'no-store',credentials:'same-origin',signal,headers:{Authorization:`Bearer ${token}`,...(body?{'Content-Type':'application/json'}:{})},body:body?JSON.stringify(body):undefined});
+    const result=await fetcher(`${apiBase}/api/smartthings/${path}`,{method,cache:'no-store',credentials:remote?'omit':'same-origin',signal,headers:{Authorization:`Bearer ${token}`,...(body?{'Content-Type':'application/json'}:{})},body:body?JSON.stringify(body):undefined});
     if(!hasJSON(result))throw Object.assign(Error(),{code:result.status===404?'setup_required':'invalid_response'});
     const data=await result.json();ensureActive(signal);
     if(!result.ok)throw Object.assign(Error(),{code:data?.error});
@@ -67,6 +78,7 @@ export function mountSmartThings(element,{accountHref='#account',homeHref='',con
     else if(model.failed)content=`<h2>연결 상태를<br>확인하지 못했어요.</h2><p>잠시 후 다시 확인할 수 있어요.<br>내 계정과 다른 화면은 계속 이용해 주세요.</p>${action('reload','연결 상태 다시 확인',true)}${returnLink()}`;
     else if(!model.enabled)content=`<div class="st-intro"><span class="bunny-portrait st-mascot" aria-hidden="true"><img src="${asset}" alt=""></span><span class="st-small-label">준비 중</span><h2>우리 집 기기와<br>만날 준비를 해요.</h2><p>연결 기능을 준비하고 있어요.<br>준비가 끝나면 여기서 시작할 수 있어요.</p></div><div class="st-note">먼저 SmartThings 앱에 플러그를 등록해 주세요.</div>${returnLink(true)}${action('reload','준비 상태 다시 확인')}`;
     else if(!model.user?.verified)content=`<span class="st-small-label">1 / 3</span><h2>내 계정부터<br>확인해 주세요.</h2><p>로그인하고 이메일을 확인한 뒤 내 기기를 연결할 수 있어요.</p><a class="primary full st-link" href="${escape(accountHref)}">로그인하러 가기</a>`;
+    else if(model.waiting)content=`<h2>삼성 연결 창에서<br>허용을 마쳐 주세요.</h2><p>밥뭇나 로그인은 그대로예요.<br>삼성에서 확인을 마치면 이 화면이 바뀌어요.</p><p role="status">연결을 기다리고 있어요…</p><p class="caption">삼성 창을 닫았거나 연결을 거부했다면 아래 버튼을 눌러 주세요. 이미 연결이 완료됐다면 현재 연결 상태를 보여 드려요.</p><button type="button" data-st-action="cancel-start" class="st-secondary full">연결 대기 끝내고 상태 확인</button>`;
     else if(model.connection.stage==='disconnected')content=disconnected();
     else if(model.connection.stage==='choose_device')content=choose();
     else if(model.connection.stage==='reconnect_required')content=`<span class="st-small-label">다시 연결 필요</span><h2>삼성 계정 연결을<br>한 번 확인해 주세요.</h2><p>밥뭇나가 기기 소식을 읽을 수 있도록 삼성에서 다시 허용해 주세요. 비밀번호를 바꾸라는 뜻은 아니에요.</p><ol class="st-steps"><li><b>1</b><span>아래에서 삼성 계정 다시 연결을 눌러요.</span></li><li><b>2</b><span>삼성 화면에서 연결할 기기와 읽기 허용 내용을 확인해요.</span></li><li><b>3</b><span>밥뭇나로 돌아와 플러그를 골라요.</span></li></ol><p class="caption">SmartThings 앱에서도 연결된 서비스의 밥뭇나 허용 내용을 확인할 수 있어요. 메뉴 이름은 앱 버전에 따라 다를 수 있어요.</p>${consent()}${action('start','삼성 계정 다시 연결',true)}${action('disconnect','기존 연결 지우기')}`;
@@ -78,11 +90,11 @@ export function mountSmartThings(element,{accountHref='#account',homeHref='',con
   async function load(){
     const current=++revision;loadController?.abort();unsubscribe?.();unsubscribe=null;
     loadController=new AbortController();
-    model.loading=true;model.failed=false;model.busy=false;model.enabled=false;model.user=null;model.connection={stage:'disconnected'};model.devices=null;model.confirm=false;model.error='';render();
+    model.loading=true;model.failed=false;model.busy=false;model.waiting=false;model.enabled=false;model.user=null;model.connection={stage:'disconnected'};model.devices=null;model.confirm=false;model.error='';render();
     try{
       await withinDeadline(async signal=>{
         // An undeployed API must not wait for the auth SDK or its first event.
-        const result=await fetcher('/api/smartthings/config',{cache:'no-store',signal});
+        const result=await fetcher(`${apiBase}/api/smartthings/config`,{cache:'no-store',credentials:remote?'omit':'same-origin',signal});
         ensureActive(signal);
         if(result.status===404||result.ok&&!hasJSON(result))return;
         if(!result.ok||!hasJSON(result))throw Error();
@@ -108,17 +120,33 @@ export function mountSmartThings(element,{accountHref='#account',homeHref='',con
     finally{if(alive&&current===revision){model.loading=false;render();}}
   }
   async function click(event){
-    event.stopPropagation();const target=event.target.closest('[data-st-action],[data-st-device]');if(!target||model.busy)return;
+    event.stopPropagation();const target=event.target.closest('[data-st-action],[data-st-device]');if(!target)return;
     const name=target.dataset.stAction;
+    if(name==='cancel-start'){
+      if(loadController.signal.aborted)return;
+      const observed=revision,pending=popupOperation;loadController.abort();
+      try{await pending;}catch{}
+      if(alive&&revision===observed)void load();
+      return;
+    }
+    if(model.busy)return;
     if(name==='reload'){void load();return;}
     if(name==='disconnect'||name==='cancel'){model.confirm=name==='disconnect';model.error='';render();element.querySelector('h2')?.scrollIntoView({block:'nearest'});return;}
     if(name==='start'&&!element.querySelector('[name="st-consent"]')?.checked){model.error=smartThingsMessage('consent_required');render();element.querySelector('[name="st-consent"]')?.focus();return;}
     const current=revision;model.busy=true;model.error='';model.notice='';render();
     try{
       if(name==='start'){
+        if(remote){
+          model.waiting=true;render();
+          const expectedUid=model.user?.uid;
+          popupOperation=popupConnect({origin:apiBase,consentVersion:model.consentVersion,getIdToken:()=>provider.getIdToken(expectedUid),signal:loadController.signal,readStatus:()=>withinDeadline(signal=>api(signal,'status'),loadController.signal,requestTimeoutMs),cancelAttempt:(token,attemptId)=>fetcher(`${apiBase}/api/smartthings/cancel-start`,{method:'POST',credentials:'omit',cache:'no-store',keepalive:true,signal:AbortSignal.timeout(10000),headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({attemptId})})});
+          const connection=await popupOperation;
+          if(alive&&current===revision){model.connection=connectionData(connection);model.notice='삼성 계정을 확인했어요. 연결할 플러그를 골라 주세요.';}
+        }else{
         const result=await withinDeadline(signal=>api(signal,'start','POST',{consentVersion:model.consentVersion}),loadController.signal,requestTimeoutMs),url=new URL(result.url);
         if(url.origin!=='https://api.smartthings.com'||!['/v1/oauth/authorize','/oauth/authorize'].includes(url.pathname))throw Error();
         if(alive&&current===revision)location.assign(url.href);
+        }
       }else if(name==='devices'){
         const result=await withinDeadline(signal=>api(signal,'devices'),loadController.signal,requestTimeoutMs);
         if(!Array.isArray(result.devices)||result.devices.some(device=>typeof device?.id!=='string'||typeof device?.label!=='string'))throw Object.assign(Error(),{code:'invalid_response'});
@@ -128,7 +156,7 @@ export function mountSmartThings(element,{accountHref='#account',homeHref='',con
         if(alive&&current===revision){model.connection=connectionData(connection);model.confirm=false;model.notice=name==='remove'?'밥뭇나의 기기 연결을 해제했어요.':name==='check'?'기기의 최근 상태를 확인했어요.':'기기를 연결했어요.';}
       }
     }catch(error){if(alive&&current===revision){model.error=smartThingsMessage(error.code);if(error.code==='reconnect_required')model.connection.stage='reconnect_required';}}
-    finally{if(alive&&current===revision){model.busy=false;render();}}
+    finally{if(alive&&current===revision){model.busy=false;model.waiting=false;render();}}
   }
   element.addEventListener('click',click);render();
   void load();

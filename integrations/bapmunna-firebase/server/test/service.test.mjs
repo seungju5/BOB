@@ -13,11 +13,12 @@ function fixture(){
   const store={
     get:async uid=>structuredClone(connections.get(uid)||null),
     patch:async(uid,value)=>{if(!connections.has(uid))throw new ApiError(409,'reconnect_required');const next={...connections.get(uid),...value};connections.set(uid,next);return structuredClone(next);},
-    saveConnection:async(uid,value)=>{for(const [other,current]of connections)if(other!==uid&&current.installId===value.installId)throw new ApiError(409,'installation_in_use');connections.set(uid,value);},
+    saveConnection:async(uid,value,attempt)=>{if(attempt){const pending=states.get(attempt.state);if(!pending||pending.uid!==uid||pending.nonceHash!==attempt.nonceHash||!pending.used||pending.cancelled||pending.until<=time)throw new ApiError(400,'invalid_state');}for(const [other,current]of connections)if(other!==uid&&current.installId===value.installId)throw new ApiError(409,'installation_in_use');connections.set(uid,value);if(attempt)states.delete(attempt.state);},
     remove:async(uid,id)=>{if(connections.get(uid)?.installId===id)connections.delete(uid);},
     installation:async id=>{for(const [uid,c]of connections)if(c.installId===id)return {uid};return null;},
-    saveState:async(state,value)=>states.set(state,value),
-    consumeState:async(state,nonceHash)=>{const pending=states.get(state);if(!pending||pending.until<time||pending.nonceHash!==nonceHash)throw new ApiError(400,'invalid_state');states.delete(state);return pending;},
+    saveState:async(state,value)=>{if(states.has(state))throw new ApiError(400,'invalid_state');states.set(state,value);},
+    consumeState:async(state,nonceHash)=>{const pending=states.get(state);if(!pending||pending.until<=time||pending.used||pending.cancelled||pending.nonceHash!==nonceHash)throw new ApiError(400,'invalid_state');pending.used=true;return pending;},
+    cancelState:async(state,uid)=>{const current=states.get(state);if(current&&current.uid!==uid)return false;states.set(state,{uid,cancelled:true,until:time+600000});return true;},
     withLease:async(uid,fn)=>{if(locks.has(uid))throw new ApiError(409,'busy');locks.add(uid);try{return await fn();}finally{locks.delete(uid);}},
     receive:async(uid,installId,event)=>{const c=connections.get(uid);if(!c||c.installId!==installId||c.deviceId!==event.deviceId||seen.has(event.id))return false;seen.add(event.id);if(event.time>=(c.lastSignalAt||0))Object.assign(c,{lastSignalAt:event.time,lastReceivedAt:time,lastKind:event.kind});return true;},
   };
@@ -30,13 +31,14 @@ function fixture(){
     status:async()=>({components:{main:{powerMeter:{power:{value:54,unit:'W',timestamp:new Date(time).toISOString()}}}}}),
     subscribe:async()=>{subscriptions++;},unsubscribe:async()=>{},confirm:async()=>{},
   };
-  const handle=createService({config,store,smartthings,now:()=>time,verifyUser:async token=>{if(token==='revoked')throw Error();return {uid:token,email_verified:token!=='unverified'};},verifyWebhook:async request=>{if(request.headers.get('authorization')!=='test-signed')throw new ApiError(401,'invalid_webhook');}});
+  let validAccount=true;
+  const handle=createService({config,store,smartthings,now:()=>time,verifyUser:async token=>{if(token==='revoked')throw Error();return {uid:token,email_verified:token!=='unverified',auth_time:Math.floor(instant/1000)};},verifyAccount:async()=>{if(!validAccount)throw new ApiError(401,'login_required');},verifyWebhook:async request=>{if(request.headers.get('authorization')!=='test-signed')throw new ApiError(401,'invalid_webhook');}});
   const call=(path,{method='GET',user='alice',body,headers={}}={})=>handle(new Request(config.origin+'/api/smartthings'+path,{method,headers:{Authorization:`Bearer ${user}`,Origin:config.origin,'Content-Type':'application/json',...headers},body:body===undefined?undefined:JSON.stringify(body)}));
   async function link(){
     const start=await call('/start',{method:'POST',body:{consentVersion:CONSENT}}),payload=await start.json(),state=new URL(payload.url).searchParams.get('state'),cookie=start.headers.get('set-cookie').split(';')[0];
     const callback=await call(`/callback?state=${state}&code=test-code`,{headers:{cookie}});assert.equal(callback.status,303);return {state,cookie};
   }
-  return {call,link,store,connections,states,smartthings,advance:ms=>{time+=ms;},stats:()=>({refreshes,subscriptions})};
+  return {call,link,store,connections,states,smartthings,revokeAccount:()=>{validAccount=false;},advance:ms=>{time+=ms;},stats:()=>({refreshes,subscriptions})};
 }
 test('OAuth binds state to user and browser, encrypts credentials, and consumes state once',async()=>{
   const f=fixture(),{state,cookie}=await f.link();
@@ -47,6 +49,20 @@ test('OAuth binds state to user and browser, encrypts credentials, and consumes 
   assert.throws(()=>vault(config.key).open(saved.tokens,'bob:install1'));
   assert.equal((await f.call(`/callback?state=${state}&code=replay`,{headers:{cookie}})).status,400);
   assert.deepEqual(await (await f.call('/status',{user:'bob'})).json(),{stage:'disconnected'});
+});
+test('revoked Firebase account cannot finish an earlier Samsung grant',async()=>{
+  const f=fixture();const start=await f.call('/start',{method:'POST',body:{consentVersion:CONSENT}}),{url}=await start.json();
+  const state=new URL(url).searchParams.get('state'),cookie=start.headers.get('set-cookie').split(';')[0];
+  f.revokeAccount();const result=await f.call(`/callback?state=${state}&code=test`,{headers:{cookie}});
+  assert.equal(new URL(result.headers.get('location')).searchParams.get('smartthings'),'failed');assert.equal(f.connections.size,0);
+});
+test('cancellation during Samsung token exchange prevents the final connection commit',async()=>{
+  const f=fixture(),attemptId='this-attempt-has-at-least-thirty-two-characters';
+  const start=await f.call('/start',{method:'POST',body:{consentVersion:CONSENT,attemptId}}),{url}=await start.json();
+  const state=new URL(url).searchParams.get('state'),cookie=start.headers.get('set-cookie').split(';')[0],exchange=f.smartthings.exchange;
+  f.smartthings.exchange=async()=>{await f.call('/cancel-start',{method:'POST',body:{attemptId}});return exchange();};
+  const result=await f.call(`/callback?state=${state}&code=test`,{headers:{cookie}});
+  assert.equal(new URL(result.headers.get('location')).searchParams.get('smartthings'),'failed');assert.equal(f.connections.size,0);
 });
 test('rejects forged, cross-browser, expired state, denied consent and cross-origin mutation',async()=>{
   const f=fixture();
@@ -120,10 +136,10 @@ test('SmartThings API budget errors are surfaced without automatic retry',async(
 
 test('webhook registration only follows the exact old or new Samsung confirmation endpoint',async()=>{
   const seen=[];const client=smartThingsClient(config,async url=>{seen.push(String(url));return new Response('{}');});
-  for(const prefix of ['/apps','/v1/apps'])await client.confirm(`https://api.smartthings.com${prefix}/app1/confirm-registration?token=example`);
-  assert.equal(seen.length,2);
+  for(const prefix of ['/apps','/v1/apps','/v1/smartapps'])await client.confirm(`https://api.smartthings.com${prefix}/app1/confirm-registration?token=example`);
+  assert.equal(seen.length,3);
   for(const url of ['https://attacker.test/apps/app1/confirm-registration?token=a','https://api.smartthings.com/v1/apps/other/confirm-registration?token=a','https://api.smartthings.com/v1/apps/app1/confirm-registration','https://api.smartthings.com/v1/apps/app1/confirm-registration?token=a#hidden'])await assert.rejects(()=>client.confirm(url),{code:'invalid_confirmation'});
-  assert.equal(seen.length,2);
+  assert.equal(seen.length,3);
 });
 test('reauthorization rechecks an existing device subscription before reporting connected',async()=>{
   const f=fixture();await f.link();await f.call('/device',{method:'POST',body:{deviceId:'mine'}});

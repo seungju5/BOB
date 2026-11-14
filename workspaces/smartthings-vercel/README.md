@@ -1,0 +1,52 @@
+# 밥뭇나 SmartThings 무료 서버 배포 패키지
+
+기존 Firebase Auth·Firestore를 그대로 사용하는 별도 Node.js 서버입니다. 루트 Next.js/Supabase 앱을 배포하거나 계정·DB를 이전하지 않습니다. 이 폴더의 명령은 로컬 패키지만 만들며 Vercel 게시·삼성 앱 수정·IAM·결제 설정을 실행하지 않습니다.
+
+## 만들기
+
+저장소 루트에서 `npm --prefix workspaces/smartthings-vercel run stage`를 실행합니다. `.stage/`에 검토된 서버 6개, 명시된 연결 화면 3개와 승인 자산 1개, 고정 의존성 잠금파일만 복사합니다. 이 디렉터리가 독립 Vercel 프로젝트의 배포 루트입니다. 새 프로젝트 연결이나 게시 명령은 자동 실행하지 않습니다. 기존 Vercel 프로젝트를 쓸 때는 루트 Next.js 서비스와 충돌하지 않는 배포 대상을 먼저 확인합니다.
+
+Vercel Node.js 24, 서울 `icn1`, API catch-all 원래 경로, 최대 요청 300초를 사용합니다. `NODEJS_HELPERS=0`으로 플랫폼 본문 파싱을 끄며, 서버는 최대 1MiB 원문을 보존합니다. `Host`·`X-Forwarded-*`로 공개 주소를 정하지 않습니다. 로그에는 요청 본문·OAuth 코드·인증 토큰·서비스 계정 오류를 출력하지 않습니다. 실제 Vercel edge 접근 로그의 쿼리 문자열 보관 설정은 게시 전에 별도로 확인해야 합니다.
+
+## 운영 환경변수
+
+비밀값은 운영 환경의 서버 비밀 설정에만 넣습니다. 브라우저 번들, Git, `.stage/`, 문서나 로그에 복사하지 않습니다. 이 저장소에는 실제 키를 추가하지 않습니다.
+
+| 이름 | 값 또는 목적 |
+| --- | --- |
+| `PUBLIC_ORIGIN` | 삼성에 등록할 고정 HTTPS 서버 원점. Preview 주소로 바꾸지 않음 |
+| `APP_URL` | 같은 서버 원점의 `/connect/` |
+| `BAPMUNNA_APP_ORIGINS` | `https://impact-series.web.app` |
+| `BAPMUNNA_RETURN_URL` | `https://impact-series.web.app/bapmunna/carer/#connect` |
+| `FIREBASE_PROJECT_ID` | 기존 계정·DB 프로젝트 `ku-gpa` |
+| `FIREBASE_SERVICE_ACCOUNT_JSON` | 위 프로젝트 전용 최소권한 서비스 계정 JSON. 서버에만 보관 |
+| `SMARTTHINGS_APP_ID` / `SMARTTHINGS_CLIENT_ID` | 기존 삼성 OAuth 앱 식별자 |
+| `SMARTTHINGS_CLIENT_SECRET` | 삼성 OAuth 앱 비밀값 |
+| `SMARTTHINGS_ENCRYPTION_KEY` | 서버 토큰 저장용 32바이트 base64 키. 기존 암호화 데이터가 있으면 키 유지 |
+| `SMARTTHINGS_OAUTH_PREFIX` | 기존 등록 앱과 일치하는 `/oauth` 또는 `/v1/oauth` |
+| `CRON_SECRET` | 32~256자의 공백 없는 무작위 비밀값. 청소 요청 인증에만 사용 |
+| `NODEJS_HELPERS` | `0` — `vercel.json`에도 명시 |
+
+서비스 계정 JSON이 없으면 로컬/Google 서버에서만 기존 ADC 방식을 사용합니다. Vercel에서는 준비 완료를 표시하지 않고 초기화를 거부합니다. Vercel에 로컬 CLI 토큰을 가져오지 않습니다. 서비스 계정에는 사용자 취소/정지 확인을 포함한 Firebase Auth 조회와 프로젝트 Firestore 문서 접근 8개 권한만 부여하며 Owner/Editor를 주지 않습니다. IAM은 SmartThings 컬렉션만으로 제한되지 않습니다. Admin SDK는 브라우저 규칙을 우회하므로 컬렉션·소유권 경계는 서버 코드가 지킵니다. 실제 IAM 부여·키 생성·비밀 설정은 별도 운영 단계입니다.
+
+`node integrations/bapmunna-firebase/scripts/provision-smartthings-identity.mjs plan`은 정확한 서비스 계정·권한만 출력합니다. `apply`는 실제 운영 변경이며, 두 프로젝트 Spark 확인, 기존 추가/조건부 역할 거부, IAM etag와 복구본 보존, 기존 원격 키 활성 여부 확인을 수행합니다. 키 생성 후 로컬 저장에 실패하면 `tmp/smartthings-live-20261114/generated-key-*.json`의 공개 키 이름으로 해당 새 키만 폐기한 뒤 재시도해야 합니다. 비밀키는 재다운로드할 수 없습니다. 스크립트는 이 복구 작업을 자동 수행하지 않습니다.
+
+삼성 Redirect URI는 `<PUBLIC_ORIGIN>/api/smartthings/callback`, 웹훅은 `<PUBLIC_ORIGIN>/api/smartthings/events`여야 합니다. 고정 운영 배포의 웹훅·콜백은 Vercel 로그인 보호 없이 접근되어야 합니다. Firebase Spark의 301/302 리다이렉트를 웹훅 프록시로 사용하지 않습니다.
+
+## TTL 없이 만료 정보 정리
+
+`GET /api/smartthings/cleanup`은 `Authorization: Bearer <CRON_SECRET>`로만 실행합니다. 일반 로그인 토큰이나 브라우저 Origin으로는 허용하지 않습니다. 하루 한 번 `18:00 UTC`(다음 날 한국 03시)에 실행하도록 설정했습니다. Hobby는 해당 시각으로부터 59분 늦게 실행될 수 있고 실행 실패·지연이 가능합니다.
+
+정리 대상은 서버의 `States`, `Locks`, `Receipts` 컬렉션 중 만료된 문서뿐입니다. 한 번에 전체 최대 5,000개, 트랜잭션당 100개를 처리하며 갱신된 잠금·유효한 상태를 재확인해 보존합니다. 연결·설치·가구·암호화 토큰 문서는 정리 대상이 아닙니다. 결과는 `scanned`, `deleted`, `limitReached`와 컬렉션별 집계만 반환합니다.
+
+Firestore TTL을 활성화하지 않고 일반 조회·삭제 무료 할당량을 사용합니다. 5,000개 정리 시 후보 조회와 재확인으로 최대 약 10,000회 읽기와 5,000회 삭제(재시도·빈 쿼리 별도)가 발생할 수 있습니다. 3가구가 각 1분마다 1회 전송하면 하루 4,320개 수신증이 생기므로 이 예시 빈도에서는 일일 상한 안이지만, 여러 기기·속성·빠른 이벤트는 상한을 넘길 수 있습니다.
+
+매 API 요청마다 자동 삭제하는 방식은 공격·반복 요청에 DB 작업이 따라오고 조용한 날에는 정리되지 않아 채택하지 않았습니다. 하루 cron도 엄격한 물리 삭제 시각을 보장하지 않습니다. `limitReached=true`, 실패, 누락 실행을 운영자가 확인하고 필요한 경우 동일 인증 경로를 다시 실행해야 합니다. 수신증의 논리적 만료는 24시간이며 물리 삭제는 다음 성공한 정리 때 이뤄집니다. 원시 전력값은 애초에 저장하지 않습니다.
+
+## 비용·실제 검증 경계
+
+Vercel Hobby는 개인·비상업적 이용 자격과 무료 한도를 확인해야 합니다. Firebase Spark를 유지하며 유료 기능을 활성화하지 않습니다. 무료 서버가 삼성 API 이용료·정책까지 면제한다는 뜻은 아닙니다. Google WIF 구성 문서는 결제 활성화를 선행조건으로 요구하므로 무과금 환경에서 새 WIF가 가능하다고 가정하지 않습니다.
+
+소스 검사와 로컬 합성 테스트는 실제 연결 증거가 아닙니다. 게시 후 원문 서명 웹훅, OAuth 동의→복귀, 기기 선택, 실제 자동 수신, 갱신·해제, 서로 다른 2~3가구 소유권, 청소 cron 실행을 각각 확인해야 합니다.
+
+공식 자료: [Vercel Node 원문 요청](https://vercel.com/docs/functions/runtimes/node-js/advanced-node-configuration), [Hobby](https://vercel.com/docs/plans/hobby), [이용 조건](https://vercel.com/legal/terms), [cron 제한](https://vercel.com/docs/schedules/cron-jobs/usage-and-pricing), [Firestore 무료 한도·TTL](https://firebase.google.com/docs/firestore/pricing), [외부 서버 Firebase 인증](https://firebase.google.com/docs/admin/setup), [WIF 선행조건](https://docs.cloud.google.com/iam/docs/workload-identity-federation-with-other-providers).

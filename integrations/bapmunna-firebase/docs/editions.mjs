@@ -5,8 +5,8 @@ export const EDITIONS=Object.freeze({
 });
 const common=['account','report','more','about','privacy','journey','connect','tutorial'];
 export function editionFromLocation(location,declared='',remembered=null){
-  const match=location.pathname.match(/\/(senior|carer)(?:\/index\.html|\.html|\/)?$/);
-  if(match)return match[1];
+  const match=location.pathname.match(/\/(senior|carer|share)(?:\/index\.html|\.html|\/)?$/);
+  if(match)return match[1]==='share'?'carer':match[1];
   if(location.hash==='#welcome')return null;
   const portable=location.hash.match(/^#(senior|carer)\//);
   if(portable)return portable[1];

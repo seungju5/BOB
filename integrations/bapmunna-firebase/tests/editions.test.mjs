@@ -16,6 +16,17 @@ test('deep links keep the selected edition and its navigation',()=>{
   assert.equal(editionView('senior','settings'),'privacy');assert.equal(editionView('senior','family'),'privacy');
   assert.equal(editionView('senior','guardian'),'senior');assert.equal(editionView('carer','senior'),'guardian');
 });
+test('shared app links stay in Carer after login, reload and a remembered Senior visit',()=>{
+  for(const base of ['/bapmunna/','/bapmunna/supabase/'])for(const tail of ['', '/', '/index.html']){
+    for(const fragment of ['', '#account', '#tutorial', '#guardian'])for(const remembered of [null,'senior','carer']){
+      const url=at(base+'share'+tail+fragment);
+      const edition=editionFromLocation(url,'carer',remembered);
+      assert.equal(edition,'carer');
+      assert.equal(initialEditionView(url,edition),fragment.slice(1)||'guardian');
+    }
+  }
+  assert.equal(editionFromLocation(at('/bapmunna/not-share/')),null);
+});
 test('legacy links, chooser and unknown paths have safe defaults',()=>{
   assert.equal(editionFromLocation(at('/bapmunna/')),null);
   assert.equal(editionFromLocation(at('/bapmunna/#senior')),'senior');

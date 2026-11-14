@@ -240,3 +240,7 @@ Vercel Node 24 별도 서버 패키지와 정확한 origin/source/channel로 Fir
 최종 전체 하네스 `.harness/runs/2026-11-14T00-47-16-956Z-31108/report.md`: 25/121/48/58/49개 통과, 실패0·skip0, 실제 로컬 Firestore와 localhost HTTP 포함. Firebase 계약·타입·동기화·두 앱 빌드·Next 정적 빌드 통과. 320px 오류/복귀 화면과 승인 자산·가로 넘침 없음 확인. 새 readback 스크립트도 삼성 읽기 전용 호출로 성공했다.
 
 운영은 아직 미변경이다. Vercel 소유자 로그인과 삼성 문자 인증/현재 플랜 확인이 필요해 질문을 열어두었다. 전용 서비스 계정은 8개 권한 계획만 검토·출력했으며 IAM·키 생성·비밀 주입·새 배포·삼성 URL 변경은 하지 않았다. Vercel CLI 로그인 요청은 사용자 로그인 없이 만료됐다. 삼성의 유료 Developer/Business 선행조건은 무료 서버와 별개이며 자동 결제를 시작하지 않는다. 현재 frontend API origin은 빈 값이고 공개 Hosting66beb76f7bf738fd를 보존한다. 세부 사실과 다음 순서는 documentation/smartthings-live-20261114.md에 기록한다. 실제 삼성 OAuth·실기기 자동 수신을 완료라고 표시하지 않는다.
+
+## 2026-11-14 모바일 공유 로고 보강
+
+기존 밥뭇나 로고와 OG/Twitter 정보를 보완하고 예전 메시지 캐시와 구분되는 /bapmunna/share 주소를 추가했다. 같은 보호자 앱이며 별도 로그인·저장소를 만들지 않는다. 독립 검토에서 share#account 역할 복귀와 일반 Next판 OG URL 문제를 찾아 수정했다. 24개 HTML metadata, 역할10개/독립864입력조합, Firebase 검사·타입·두 앱 빌드·320/390px 진입을 확인했다. 최초 하네스의 localhost 제한 실패는 정상 권한 재실행에서 해소했고 기존 Firestore emulator1개 skip은 남긴다. 상세 범위와 카카오 실제 카드 확인 한계는 documentation/share-preview-20261114.md.

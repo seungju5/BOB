@@ -11,9 +11,18 @@ async function variant(target,provider,base){
   const main=path.join(target,'index.html'),crm=path.join(target,'manage/index.html');
   await writeFile(main,(await readFile(main,'utf8')).replace('<head>',`<head>\n  <base href="${base}">`));
   await writeFile(crm,(await readFile(crm,'utf8')).replace('<head>',`<head><base href="${base}manage/">`));
-  for(const edition of ['senior','carer']){
+  for(const edition of ['senior','carer','share']){
     const entry=path.join(target,edition,'index.html');
     await writeFile(entry,(await readFile(entry,'utf8')).replace('<base href="../">',`<base href="${base}">`));
+  }
+  // Each edition keeps its own share identity, including the separate Supabase app.
+  for(const entry of ['index.html','senior/index.html','carer/index.html','share/index.html']){
+    const file=path.join(target,entry),html=await readFile(file,'utf8');
+    const prefix='https://impact-series.web.app/bapmunna';
+    const shareBase='https://impact-series.web.app'+base.replace(/\/$/,'');
+    await writeFile(file,html
+      .replace(/(<link rel="canonical" href=")([^"]+)(")/g,(_,start,url,end)=>start+url.replace(prefix,shareBase)+end)
+      .replace(/(<meta property="og:url" content=")([^"]+)(")/g,(_,start,url,end)=>start+url.replace(prefix,shareBase)+end));
   }
   await writeFile(path.join(target,'cloud-config.mjs'),`export const cloudConfig = {provider: '${provider}'};\n`);
 }

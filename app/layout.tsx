@@ -1,10 +1,11 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { RoleSwitcher } from "@/components/RoleSwitcher";
-import { appPath } from "@/lib/app-path";
+import { APP_BASE_PATH, appPath } from "@/lib/app-path";
 import "./globals.css";
 
-const SHARE_IMAGE_URL = "https://impact-series.web.app/bapmunna/assets/bapmunna-share-v2.png";
+const SHARE_IMAGE_URL = "https://impact-series.web.app/bapmunna/assets/bapmunna-share-v2.png?v=20261114";
+const SHARE_IMAGE_ALT = "밥뭇나 로고 · 밥 한 끼로 전하는 안부";
 
 export const metadata: Metadata = {
   title: "밥뭇나",
@@ -13,17 +14,18 @@ export const metadata: Metadata = {
   icons: { icon: appPath("/brand/rice-logo.png"), apple: appPath("/brand/rice-logo.png") },
   openGraph: {
     type: "website",
+    ...(APP_BASE_PATH === "/bapmunna/app" ? { url: "https://impact-series.web.app/bapmunna/app" } : {}),
     locale: "ko_KR",
     siteName: "밥뭇나",
     title: "밥뭇나 · 밥 한 끼로 전하는 안부",
     description: "안부가 폴짝 찾아왔어요. 매일 쓰는 밥솥이 대신 전하는 안부를 만나보세요.",
-    images: [{ url: SHARE_IMAGE_URL, width: 1200, height: 630, alt: "밥뭇나 로고 · 밥 한 끼로 전하는 안부" }],
+    images: [{ url: SHARE_IMAGE_URL, secureUrl: SHARE_IMAGE_URL, type: "image/png", width: 1200, height: 630, alt: SHARE_IMAGE_ALT }],
   },
   twitter: {
     card: "summary_large_image",
     title: "밥뭇나 · 밥 한 끼로 전하는 안부",
     description: "매일 쓰는 밥솥이 대신 전하는 안부",
-    images: [SHARE_IMAGE_URL],
+    images: [{ url: SHARE_IMAGE_URL, alt: SHARE_IMAGE_ALT }],
   },
 };
 

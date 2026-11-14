@@ -6,23 +6,26 @@ Supabase CLI·플러그인 설치 없이 기존 GitHub 인증으로 소스를 �
 
 - 모음: https://impact-series.web.app/bapmunna/final/
 - 최신 전체 앱: https://impact-series.web.app/bapmunna/app/
-- 실제 Google·이메일 계정: https://impact-series.web.app/bapmunna/carer/#account
+- 실제 Google·이메일 계정: https://impact-series.web.app/bapmunna/app/login/
+- QR 이미지: https://impact-series.web.app/bapmunna/app/bapmunna-app-qr.png
 - 기존 어르신 화면: https://impact-series.web.app/bapmunna/senior/
 - 기존 AI 작업실: https://impact-series.web.app/super-members/
 
 ## 포함 범위와 계정 경계
 
-`origin/main`의 튜토리얼, 7단계 온보딩, 홈, 일·주·월 기록, 리포트, 알림, 설정, 가전 확장, 어르신 화면을 포함한다. `origin/codex/bapmunna-development-harness`의 Firebase 통합판, 승인된 원본 3D 토끼, 디자인 동기화, 개발 하네스, 7개 역할과 공개 AI 작업실 소스도 함께 병합한다. 이전 문서·설계 산출물을 삭제하지 않는다.
+최종 통합 소스 `b4b43af`는 첫 번째 Figma의 구성, 두 번째 Figma의 디자인, 최신 표지 토끼/이후 밥솥이 결정을 반영한다. Firebase 로그인 → 소개 → 우리 집 입력·확인 → 선택 생활 설정 → 홈 흐름과 일·주·월 기록, 리포트, 알림, 세 그룹 설정, QR 공유, 어르신 화면을 포함한다. 이전 문서·설계 산출물과 공개 AI 작업실을 삭제하지 않는다. 상세 매핑은 `documentation/final-feedback-20261114.md`를 본다.
 
 | 기능 | 이번 릴리스 상태 |
 | --- | --- |
-| 전체 Next.js 화면 | `/bapmunna/app/` 정적 배포, 브라우저 데모로 전체 흐름 체험 |
-| 실제 계정 | 기존 `ku-gpa` Firebase Auth/DB 유지; Google·이메일 화면에 직접 연결 |
+| 전체 Next.js 화면 | `/bapmunna/app/`에 Firebase 실제 계정 흐름과 명시적 데모 함께 제공 |
+| 실제 계정 | 기존 `ku-gpa` Firebase Auth/DB; 본인 가구 정보와 생활·알림 설정 저장 |
 | Google·카카오 Supabase OAuth | PKCE 콜백·서버 사용자 확인·실패 복구 구현; 서비스별 설정은 별도 필요 |
-| 카카오 실제 로그인 | 등록 앱·Provider 설정 미확인으로 준비 중 표시; 성공으로 주장하지 않음 |
+| 카카오 실제 로그인 | 사용자 결정으로 보류; Identity Platform 전환 미실행 |
 | 인증 격리 | 다른 탭의 사용자 변경 즉시 이전 가구 캐시 무효화; 늦은 응답 차단 |
 | OAuth 지속 선택 | 리다이렉트 후 로그인 유지 선택 복원; 미선택 시 세션 저장소 사용 |
-| 가족·기기 체험 | 합성 데이터. 실제 SmartThings 공개 서버·자동 수신·신고 배포와 구분 |
+| 가족·기기 체험 | 합성 데이터. 실제 SmartThings·가족 페어링·자동 수신은 준비 상태 |
+| 공유 | 로고 metadata, QR 보기·저장·공유, 기존 `/carer` 일반 진입도 전체 앱으로 연결 |
+| 네이티브 셸 | HealthKit/Health Connect 소스·웹 포장 검증; 실기기·설치 파일 배포는 별도 |
 | AI 작업실 | 기존 공개 `/super-members/` 및 소스 보존; 이번 배포는 해당 파일을 변경하지 않음 |
 
 Hosting 프로젝트 `impact-series`, 실제 계정 프로젝트 `ku-gpa`, 루트 BOB Supabase와 선택형 구형 Supabase는 서로 다른 계정·데이터 경계다. 공개 Supabase 설정을 찾았다는 이유로 루트 앱에 연결하거나 데이터를 자동 이전하지 않는다. 결제 미연결 Spark 상태를 유지한다.
@@ -42,7 +45,7 @@ Next 일반 빌드와 정적 export는 `.next` 중간 결과를 공유하므로 
 
 ## 게시와 복구
 
-기존 Firebase CLI 로그인으로 게시한다. `BAPMUNNA_PREVIOUS_STAGE` 환경 변수에는 수정 전 Firebase 통합판의 `stage:firebase` 결과 경로를 지정한다. 이번 기준 소스는 `ed9c8d9`다. 서로 다른 채팅의 배포를 동시에 실행하지 않는다.
+기존 Firebase CLI 로그인으로 게시한다. `BAPMUNNA_PREVIOUS_STAGE` 환경 변수에는 현재 운영 버전과 일치하는 이전 전체 `site/bapmunna` 결과 경로를 지정한다. 최종 배포의 기준 운영 버전은 `c1cce9b7ad044033`이며 이후 작업은 이번 릴리스 영수증과 staging 결과를 새 기준으로 사용한다. 서로 다른 채팅의 배포를 동시에 실행하지 않는다.
 
 ```sh
 node workspaces/bapmunna-final/scripts/publish.mjs plan
@@ -58,9 +61,9 @@ node workspaces/bapmunna-final/scripts/publish.mjs rollback
 
 ## 검증
 
-2026-11-12 작업본: 전체 하네스의 루트 73개, 하네스 24개, Firebase 시나리오 58개, SmartThings 단위 14개 통과. Firebase 전체 검사(워크시트 31개, 역할 9개, 관리 8개, 동등성/경험/지속 선택 43개), AI 작업실 13개, 타입·변경 파일 lint·일반 Next 빌드·정적 export 통과. 실제 Firestore emulator 1개는 환경이 준비되지 않아 skip이며 전체 하네스 결과는 `incomplete`로 유지한다.
+2026-11-14 최종 구현 하네스: 하네스25·루트216·개인정보48·Firebase59·SmartThings49개, 타입·동기화·두 앱 빌드·소스 안정성이 실패/skip 없이 통과했다. 로그인 회귀8개 추가 후 루트224개와 타입을 다시 통과했다. 같은 운영 규칙 병합본의 실제 로컬 Auth/Firestore46개, 모바일 셸/걸음수 계약11개와 iOS 메타데이터4개도 별도 통과했다.
 
-독립 검토자는 배포/복구를 합성 API로 재현했고 기존 파일·설정 보존을 확인했다. 계정 전환·진행 중 응답·로그아웃 3개 및 OAuth 지속 선택 2개 회귀도 통과했다. 실제 서비스 로그인 완료, DB/RLS·실기기 격리, OS 모션 줄이기 설정을 바꾼 실기기 검증은 이 로컬 검사에 포함되지 않는다. 공개 배포와 모바일 확인은 별도 기록으로 남긴다.
+독립 검토와 320/390px 브라우저에서 입력 검증·저장 복원·계정 전환·키보드·QR을 확인했다. 실제 신규 Google OAuth·삼성 자동 수신·실기기 건강 권한·OS 큰 글꼴/모션 설정 변경·메신저 수신 카드 검증은 포함하지 않는다. 실제 계정 화면은 연결되지 않은 기록을 미확인 식사로 만들지 않는다. 공개 배포 증거는 `releases/20261114-final-feedback.json`에 별도 기록한다.
 
 ## 2026-11-13 화면 보완
 

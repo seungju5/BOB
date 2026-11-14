@@ -277,6 +277,8 @@ documentation/smartthings-console-support-20261114.md에 사실·제약·삼성 
 
 최종 구현 하네스 `.harness/runs/2026-11-14T14-52-28-639Z-83296/report.md`에서 25/216/48/59/49개, 타입·동기화·두 앱 빌드·Next가 실패/skip 없이 통과했다. 실제 운영 규칙을 기준으로 병합한 로컬 Auth/Firestore 검사 46개도 통과했고 기존 규칙 namespace 보존을 확인했다. 마지막 회귀 테스트 파일 추가와 설치 셸 포장·운영 배포 결과는 아래에 이어 기록한다. 카카오/Identity Platform 보류·과금 미활성화는 유지한다.
 
-로그인 TSX 실행 회귀 8개를 저장소에 보존하고 루트224개·타입·모바일셸8개를 재검사해 통과했다. 별도 네이티브 포장은133자산/16HTML, Android/iOS sync·verify, 걸음수 포함11계약과iOS메타데이터4개 통과. prepare-web에서 누락된 생성 manifest와 참조이미지 검증을 보완했다. 빈basePath 기본판 포장이므로 Firebase 네이티브 로그인·APK/IPA·실기기 완료를 주장하지 않는다.
+로그인 TSX 실행 회귀 8개를 저장소에 보존하고 루트 224개·타입·모바일 셸 8개를 재검사해 통과했다. 별도 네이티브 포장은 133개 자산/16개 HTML, Android/iOS sync·verify, 걸음수 포함 11개 계약과 iOS 메타데이터 4개를 통과했다. prepare-web에서 누락된 생성 manifest와 참조 이미지 검증을 보완했다. 빈 basePath 기본판 포장이므로 Firebase 네이티브 로그인·APK/IPA·실기기 완료를 주장하지 않는다.
 
 본인 설정 Rules를 c629135d-03e8-4d1b-8426-4cbda27cc01e로 게시한 뒤 검증한 병합본과 운영 바이트가 일치함을 다시 읽어 확인했다. 이전 e0d9c16c-84a1-4eac-aa9b-3932de857e53와 나머지 namespace를 보존했다. Hosting 공개 릴리스는 소스 커밋·푸시 이후 아래 영수증으로 기록한다.
+
+2026-11-15 00:01 KST: 통합 b4b43af를 codex/final-feedback-20261114에 푸시하고 Hosting 9ea0c97d5e9613ec에 게시했다. 변경 135개 공개 바이트 일치·기존 2,532개 보존·누락 0·총 2,667개·Hosting 설정/과금 false 유지를 확인했다. 일반/공유 수집기 6개 응답에 로고가 있고, 공개 QR은 로컬에서 해독한 이미지와 일치한다. 실제 공개 표지/로그인/데모 소개·이전 carer 주소 이동과 390px 스크린샷·JS 오류 0을 확인했다. 임시 QA 서버·본인 emulator를 종료하고 브라우저 크기를 복원했으며, 최종 튜토리얼 탭을 사용자용으로 남겼다. 영수증은 workspaces/bapmunna-final/releases/20261114-final-feedback.json. 다음 게시 기준은 이 worktree의 tmp/impact-final/site/bapmunna. 별도 채팅의 Vercel·건강 연결 후속은 미완료로 구분하고 이번 공개 코드를 인계했다.

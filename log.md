@@ -244,3 +244,5 @@ Vercel Node 24 별도 서버 패키지와 정확한 origin/source/channel로 Fir
 ## 2026-11-14 모바일 공유 로고 보강
 
 기존 밥뭇나 로고와 OG/Twitter 정보를 보완하고 예전 메시지 캐시와 구분되는 /bapmunna/share 주소를 추가했다. 같은 보호자 앱이며 별도 로그인·저장소를 만들지 않는다. 독립 검토에서 share#account 역할 복귀와 일반 Next판 OG URL 문제를 찾아 수정했다. 24개 HTML metadata, 역할10개/독립864입력조합, Firebase 검사·타입·두 앱 빌드·320/390px 진입을 확인했다. 최초 하네스의 localhost 제한 실패는 정상 권한 재실행에서 해소했고 기존 Firestore emulator1개 skip은 남긴다. 상세 범위와 카카오 실제 카드 확인 한계는 documentation/share-preview-20261114.md.
+
+공유 수정 f4c43af를 GitHub에 푸시하고 Hosting c1cce9b7ad044033에 게시했다. 변경85개 공개 바이트 일치, 기존 경로 누락0/보존2532개, 총2617개와 Hosting 설정·무료 상태 유지. 카카오/일반 공유 UA의 공개6주소와 로고PNG 1200×630·89,605bytes를 확인했다. 공개 /share가 보호자 로그인으로 진입하고 390px 가로 넘침·JS오류가 없었다. 실제 메신저 수신 카드는 미검증이며 캐시 초기화 없이 새 공유 주소를 제공한다. 영수증: workspaces/bapmunna-final/releases/20261114-share-preview.json. 다음 게시 기준은 tmp/share-preview-20261114/site/bapmunna.

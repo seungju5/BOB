@@ -28,3 +28,7 @@
 배포 계획·보존 검사·공개 응답 검증은 로컬 `tmp/share-preview-20261114/`에 기록하고, 게시 결과는 `workspaces/bapmunna-final/releases/20261114-share-preview.json`에 남긴다.
 
 참고: [Open Graph 규격](https://ogp.me/), [카카오 공유 도구](https://developers.kakao.com/docs/en/tool/common), [이미지 URL 캐시 안내](https://devtalk.kakao.com/t/topic/146695).
+
+## 게시 결과
+
+커밋 `f4c43af` 푸시 완료. Hosting `c1cce9b7ad044033` 게시 후 85개 변경 파일의 공개 바이트 일치와 기존 경로 누락 0을 확인했다. 공개 공유 URL 6개와 실제 PNG 응답, 390px 보호자 로그인 진입·오류 로그 없음을 확인했다. 이전 버전은 `66beb76f7bf738fd`이며 무료 상태·Hosting 설정은 유지했다.

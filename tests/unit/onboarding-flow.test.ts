@@ -72,7 +72,7 @@ describe("compatible signup, tutorial, household, home routing", () => {
     const save = vi.fn();
     mocks.useApp.mockReturnValue({ view, actions: { ...liveActions, saveOnboarding: save }, mode: "live", needsLogin: false, error: null });
     const html = renderToStaticMarkup(createElement(OnboardingPage));
-    expect(html).toContain("어떤 댁인지");
+    expect(html).toContain("누구의 안부가");
     expect(html).toContain("저장하고 홈으로");
     expect(html).not.toContain("SmartThings 테스트 토큰");
     expect(html).not.toContain("전력 신호를");

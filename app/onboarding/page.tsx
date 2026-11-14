@@ -14,7 +14,7 @@ import type { MealSlotName, MealWindow } from "@/lib/judge/types";
 
 const POLICY_URL = "https://app.notion.com/p/4163d756e70080399649fedbb690842f?source=copy_link";
 const TITLES: Record<number, string> = {
-  3: "어떤 댁인지\n알려 주세요",
+  3: "누구의 안부가\n듣고 싶으세요?",
   4: "평소 식사 습관을\n알려 주세요",
   5: "밥솥은 어떻게\n쓰고 계세요?",
   6: "언제 알려 드릴까요?",

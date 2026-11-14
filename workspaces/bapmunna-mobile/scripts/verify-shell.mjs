@@ -1,0 +1,20 @@
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const workspace = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const config = JSON.parse(await readFile(path.join(workspace, 'capacitor.config.json'), 'utf8'));
+assert.equal(config.webDir, 'www');
+assert.equal(config.server.url, undefined, 'Native bridge must not load a remote server');
+assert.equal(config.server.hostname, 'localhost');
+assert.equal(config.server.cleartext, false);
+assert.deepEqual(config.server.allowNavigation, []);
+assert.equal(config.android.allowMixedContent, false);
+const html = await readFile(path.join(workspace, 'www/index.html'), 'utf8');
+assert.match(html, /Content-Security-Policy/);
+assert.match(html, /frame-src 'none'/);
+assert.doesNotMatch(html, /<iframe\b/i);
+const manifest = JSON.parse(await readFile(path.join(workspace, 'www/native-build.json'), 'utf8'));
+assert.equal(manifest.ui, 'existing-root-app');
+console.log('Local app bundle and bridge configuration verified; native compilation/device tests remain separate.');

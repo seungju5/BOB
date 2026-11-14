@@ -246,3 +246,11 @@ Vercel Node 24 별도 서버 패키지와 정확한 origin/source/channel로 Fir
 기존 밥뭇나 로고와 OG/Twitter 정보를 보완하고 예전 메시지 캐시와 구분되는 /bapmunna/share 주소를 추가했다. 같은 보호자 앱이며 별도 로그인·저장소를 만들지 않는다. 독립 검토에서 share#account 역할 복귀와 일반 Next판 OG URL 문제를 찾아 수정했다. 24개 HTML metadata, 역할10개/독립864입력조합, Firebase 검사·타입·두 앱 빌드·320/390px 진입을 확인했다. 최초 하네스의 localhost 제한 실패는 정상 권한 재실행에서 해소했고 기존 Firestore emulator1개 skip은 남긴다. 상세 범위와 카카오 실제 카드 확인 한계는 documentation/share-preview-20261114.md.
 
 공유 수정 f4c43af를 GitHub에 푸시하고 Hosting c1cce9b7ad044033에 게시했다. 변경85개 공개 바이트 일치, 기존 경로 누락0/보존2532개, 총2617개와 Hosting 설정·무료 상태 유지. 카카오/일반 공유 UA의 공개6주소와 로고PNG 1200×630·89,605bytes를 확인했다. 공개 /share가 보호자 로그인으로 진입하고 390px 가로 넘침·JS오류가 없었다. 실제 메신저 수신 카드는 미검증이며 캐시 초기화 없이 새 공유 주소를 제공한다. 영수증: workspaces/bapmunna-final/releases/20261114-share-preview.json. 다음 게시 기준은 tmp/share-preview-20261114/site/bapmunna.
+
+## 2026-11-14 SmartThings Console 인증 재시도·실제 기기 조회
+
+사용자의 재시도 요청에 따라 Chrome 로그인과 별도 앱 내 브라우저 로그인을 수행했다. 별도 세션에서는 새 SMS 코드를 유효시간 약2분에 입력하고 자동 이동을 확인했으나 Console의 denied=true&reason=outage 및 unexpected outage 배너로 돌아갔다. 새 세션의 2단계 인증 건너뛰기는 해제했다. Manage Plans 직접 접근은 다시 로그인으로 이어졌다. 인증번호 실패나 전체 장애로 단정하지 않는다. 공식 상태 페이지는 정상 표시이고 기존 CLI 3.0.1의 앱·OAuth 조회도 성공했다. organizations:current는 HTTP403이며 이 명령에는 유료 판정 처리기가 없다.
+
+22:09 KST에 기존 공식 CLI로 powerMeter 지원 기기1대 조회 및 상태 읽기에 성공했다. 전력·누적 전력량·전력 시각의 존재만 확인하고 원시 값과 기기식별자는 로그·소스에 보관하지 않았다. 이 결과는 웹앱 OAuth나 자동 웹훅 증거가 아니다. 실제 서버 게시와 기존 Vercel 계정 확인은 여전히 남았다. 권한·키·앱 등록·요금제·Hosting은 변경하지 않았다.
+
+documentation/smartthings-console-support-20261114.md에 사실·제약·삼성 문의 초안을 작성했다. 외부 문의는 아직 보내지 않았다. 이번 변경은 문서만이며 이미 검증된 실행 코드를 수정하지 않아 전체 회귀 검사를 반복하지 않았다. 하네스 doctor/plan과 문서 차이 검사를 수행하고 기존 전체 검사 보고서를 현재 실연동 성공으로 승격하지 않았다. 독립 읽기 검토에서 중대한 사실 과장·비밀 포함·과금 원인 단정은 발견되지 않았으며, 로컬 Emulator 트랜잭션과 운영 검증의 구분 문구를 명확히 했다.

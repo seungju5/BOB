@@ -2,7 +2,9 @@
 
 ## 현재 판정
 
-**구현·로컬 검증 완료, 공개 서버와 실제 삼성 OAuth·실기기 검증 미완료.** 사용자는 실제 가동을 요청했으며 기존 Firebase 무료 유지 조건은 바꾸지 않았다. 소유자 Vercel 로그인과 삼성 문자 인증을 기다린다. 새 결제, IAM 권한·키 생성, 삼성 앱 URL 변경, Hosting 배포는 실행하지 않았다. 공개 Hosting은 `66beb76f7bf738fd`다.
+**구현·로컬 검증 완료, 공개 연결 서버와 웹앱의 실제 삼성 OAuth·자동 웹훅 검증 미완료.** 사용자는 실제 가동을 요청했으며 기존 Firebase 무료 유지 조건은 바꾸지 않았다. 후속 진단에서 새 SMS 코드를 유효시간 안에 입력했으나 Console 접근 오류가 두 브라우저에서 재현됐다. 기존 CLI로 실제 전력 측정 기기 1대의 상태 읽기는 성공했다. 소유자 Vercel 계정 확인과 삼성 Console 접근 문제 해결이 남았다. 이 SmartThings 작업은 새 결제, IAM 권한·키 생성, 삼성 앱 URL 변경, Hosting 배포를 실행하지 않았다. 별도 공유 썸네일 작업의 Hosting 게시 기록은 `workspaces/bapmunna-final/releases/20261114-share-preview.json`을 따른다.
+
+후속 진단·발송 전 지원 문의 초안: [smartthings-console-support-20261114.md](smartthings-console-support-20261114.md). 콘솔 오류를 전체 장애 또는 결제 문제로 단정하지 않으며, CLI 기기 조회 성공을 웹앱 연결 완료로 표시하지 않는다.
 
 ## 확인한 사실
 
@@ -35,7 +37,7 @@ Firestore TTL 유료 기능은 사용하지 않는다. 일일 인증 cron이 만
 
 ## 검증과 다음 순서
 
-전체 하네스, 실제 `demo-bapmunna` Firestore 트랜잭션, localhost Node HTTP, 표시 UID/지연 observer, 취소 경합, bearer/CORS, 서명·재전송, 토큰 갱신·삭제 검사를 수행했다. 공개 배포와 삼성 실기기를 대신하는 증거가 아니다. 현재 준비한 frontend API origin은 빈 값이며 기존 같은 원점 동작을 유지한다.
+전체 하네스, 로컬 Firestore Emulator의 `demo-bapmunna` 프로젝트에서 실제 트랜잭션 실행, localhost Node HTTP, 표시 UID/지연 observer, 취소 경합, bearer/CORS, 서명·재전송, 토큰 갱신·삭제 검사를 수행했다. 공개 배포와 삼성 실기기를 대신하는 증거가 아니다. 현재 준비한 frontend API origin은 빈 값이며 기존 같은 원점 동작을 유지한다.
 
 최종 전체 보고서: `.harness/runs/2026-11-14T00-47-16-956Z-31108/report.md`. 하네스25·루트121·서버 동의 경계48·Firebase 역할/관리58·SmartThings49개 통과, 실패/skip 0. Firebase 계약 검사에는 새 popup·remote UI·실제 provider 소스 검사를 포함한다. 타입·도메인/디자인 동기화·Firebase 빌드·Next 정적 빌드도 통과했다. 독립 검토에서 발견한 UID 경합·취소 저장 문제를 수정했고, 마지막 취소 대기 경합은 추가 회귀로 확인했다. 320px에서는 가로 넘침 없이 승인 캐릭터와 오류 복귀 링크가 표시된다.
 

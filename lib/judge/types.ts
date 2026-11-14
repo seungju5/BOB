@@ -3,7 +3,8 @@ export type PowerReading = { measuredAt: Date; watts: number };
 export type CookerEventType = "cook" | "lid_open";
 export type CookerEvent = { type: CookerEventType; startedAt: Date; endedAt: Date };
 
-export type MealSlotName = "breakfast" | "lunch" | "dinner";
+// 기존 세 슬롯 ID는 저장된 기록과 호환을 유지한다. 네 번째 끼니만 추가한다.
+export type MealSlotName = "breakfast" | "lunch" | "dinner" | "fourth";
 export type MealWindow = { slot: MealSlotName; start: string; end: string }; // 'HH:MM' KST
 
 export type MealStatus = "confirmed" | "unconfirmed" | "eat_out" | "away" | "pending";

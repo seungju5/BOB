@@ -15,6 +15,7 @@ if (!(await stat(path.join(source, 'index.html')).catch(() => null))?.isFile()) 
 if ((await realpath(source)) !== source) throw new Error('Export symlinks are not accepted');
 const pending = [];
 const publicFiles = new Set();
+const generatedManifest = 'manifest.webmanifest';
 async function discoverPublic(folder) {
   for (const entry of await readdir(folder, { withFileTypes: true })) {
     const filename = path.join(folder, entry.name);
@@ -24,6 +25,26 @@ async function discoverPublic(folder) {
   }
 }
 await discoverPublic(path.join(repo, 'public'));
+// Next emits this App Router metadata file outside public/. Preserve it only
+// after every referenced image is known to be part of the local web bundle.
+const manifest = JSON.parse(await readFile(path.join(source, generatedManifest), 'utf8'));
+const manifestBase = new URL(generatedManifest, 'https://localhost/');
+const manifestAssets = [
+  ...(manifest.icons ?? []),
+  ...(manifest.screenshots ?? []),
+  ...(manifest.shortcuts ?? []).flatMap(shortcut => shortcut.icons ?? []),
+];
+for (const asset of manifestAssets) {
+  if (typeof asset.src !== 'string' || !asset.src.trim() || asset.src.includes('\\')) throw new Error('Manifest asset needs a local image path');
+  const url = new URL(asset.src, manifestBase);
+  if (url.origin !== manifestBase.origin) throw new Error('Manifest assets must be packaged locally');
+  const relative = decodeURIComponent(url.pathname).replace(/^\//, '');
+  if (relative.split('/').some(part => part === '..' || part === '.') || relative.includes('\\') || relative.includes('\0')) throw new Error('Manifest asset path is invalid');
+  if (!isAllowedWebAsset(relative, publicFiles)) throw new Error(`Manifest asset is not allowlisted: ${relative}`);
+  const filename = path.resolve(source, relative);
+  if (!filename.startsWith(`${source}${path.sep}`) || !(await stat(filename).catch(() => null))?.isFile()) throw new Error(`Manifest asset is missing: ${relative}`);
+  if ((await realpath(filename)) !== filename) throw new Error('Manifest assets cannot be symlinks');
+}
 async function inspect(folder) {
   for (const entry of await readdir(folder, { withFileTypes: true })) {
     const filename = path.join(folder, entry.name);
@@ -31,7 +52,7 @@ async function inspect(folder) {
     if (entry.isDirectory()) await inspect(filename);
     else {
       const relative = path.relative(source, filename).split(path.sep).join('/');
-      if (!isAllowedWebAsset(relative, publicFiles)) continue;
+      if (relative !== generatedManifest && !isAllowedWebAsset(relative, publicFiles)) continue;
       pending.push({ relative, html: entry.name.endsWith('.html') ? protectHtml(await readFile(filename, 'utf8'), relative) : null });
     }
   }

@@ -596,14 +596,56 @@ const DEFAULT_WINDOWS = [
     { slot: "lunch", start: "11:00", end: "14:30" },
     { slot: "dinner", start: "17:00", end: "21:00" },
 ];
-const SLOT_LABEL = { breakfast: "아침", lunch: "점심", dinner: "저녁" };
-const ORDER = { breakfast: 0, lunch: 1, dinner: 2 };
+/** 네 끼를 새로 선택할 때만 쓰는 편집 가능한 초기 시간. 기본값은 여전히 세 끼다. */
+const FOUR_MEAL_WINDOWS = [
+    ...DEFAULT_WINDOWS,
+    { slot: "fourth", start: "21:00", end: "23:00" },
+];
+const SLOT_LABEL = { breakfast: "첫 끼", lunch: "두 끼", dinner: "세 끼", fourth: "네 끼" };
+const ORDINAL_LABELS = ["첫 끼", "두 끼", "세 끼", "네 끼"];
+/** 1·2끼 기존 저장 ID를 유지한다. 표시 순서는 mealSlotLabel로 정한다. */
+function mealSlotsForCount(count) {
+    if (count === 1)
+        return ["lunch"];
+    if (count === 2)
+        return ["breakfast", "dinner"];
+    if (count === 4)
+        return ["breakfast", "lunch", "dinner", "fourth"];
+    return ["breakfast", "lunch", "dinner"];
+}
+function mealSlotLabel(slot, windows) {
+    const index = windows.findIndex((window) => window.slot === slot);
+    return ORDINAL_LABELS[index] ?? SLOT_LABEL[slot];
+}
+/** 실제 가족 데이터가 아직 연결되지 않았다면 미확인을 새로 판정하지 않는다. */
+function careDataAvailable(v) {
+    return v.careAvailable ?? (v.dataSource !== "firebase");
+}
+const ORDER = { breakfast: 0, lunch: 1, dinner: 2, fourth: 3 };
 /** 하루치 끼니. 아직 서버 판정이 없는 오늘은 시간대 기준으로 채운다. */
 function slotsForDate(v, date, now) {
     const found = v.slots.filter((s) => s.date === date).sort((a, b) => ORDER[a.slot] - ORDER[b.slot]);
     if (found.length || date !== kstDate(now))
         return found;
+    if (!careDataAvailable(v))
+        return [];
     return resolveMealSlots({ date, windows: v.mealProfile.windows, events: [], eatOutChecks: [], absences: v.absences, now });
+}
+/** 하루 색은 확인 비율로 정한다. 외식은 확인, 부재는 제외한다. 진행일은 예정된 끼니 수도 보여 준다. */
+function mealDaySummary(v, date, now) {
+    const slots = slotsForDate(v, date, now);
+    const counted = slots.filter((slot) => slot.status !== "away");
+    const ok = counted.filter((slot) => slot.status === "confirmed" || slot.status === "eat_out").length;
+    const total = slots.length && date === kstDate(now) ? Math.max(counted.length, v.mealProfile.windows.length - (slots.length - counted.length)) : counted.length;
+    if (!slots.length)
+        return { tone: "empty", ok, total };
+    if (slots.every((slot) => slot.status === "away"))
+        return { tone: "away", ok: 0, total: 0 };
+    // 오늘 진행 중인 시간대나 아직 수신되지 않은 슬롯이 남으면 완료 비율로 오해하지 않게 한다.
+    if (slots.some((slot) => slot.status === "pending") || (date === kstDate(now) && slots.length < v.mealProfile.windows.length)) {
+        return { tone: "pending", ok, total };
+    }
+    return { tone: !total ? "empty" : ok === total ? "all" : ok / total >= 0.5 ? "half" : "low", ok, total };
 }
 function recentSlots(v, now, days) {
     const today = kstDate(now);
@@ -1944,6 +1986,9 @@ function syncRuntimeChrome(){
   const count=document.querySelector('#nav-alert-count');const total=isDemoSurface()?alertEntries().length:0;count.textContent=String(total);count.hidden=edition!=='carer'||!total;
 }
 function render(focus=false){
+  const latest=guardianAppTarget({basePath:appBase.pathname,edition,view,search:location.search,cloud:CLOUD_AVAILABLE,demo:explicitDemo});
+  if(latest){location.replace(latest);return;}
+
   ensureLiveEntry();
   const active=document.activeElement;
   const preserve=active&&root.contains(active)?['data-action','data-period','data-record-day','data-scenario','data-away-days'].find(name=>active.hasAttribute(name)):null;

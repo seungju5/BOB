@@ -1,13 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { fmtMonthDay, STATUS_META } from "@/components/guardian";
+import Link from "next/link";
+import { fmtMonthDay, StatusIcon } from "@/components/guardian";
 import { Mascot } from "@/components/Mascot";
 import { DEVICE_REPORTS, PLANNED_DEVICES, type DeviceKind } from "@/components/report/devices";
 import { Bar, ReportCard } from "@/components/report/parts";
 import { PageHeader, Skeleton } from "@/components/ui";
 import { useApp } from "@/lib/data/useApp";
-import { reportSummary, SLOT_LABEL, type AppView } from "@/lib/data/view";
+import { careDataAvailable, mealSlotLabel, reportSummary, type AppView } from "@/lib/data/view";
+import { MEAL_STATUS_LABEL, mealStatusClass, useMealPalette } from "@/lib/data/appearance";
+import { MealStatusLegend } from "@/components/MealStatus";
 import { dailyMeals, slotRates } from "@/lib/report/metrics";
 
 /**
@@ -29,8 +32,20 @@ function Report({ view, now }: { view: AppView; now: Date }) {
   const [kind, setKind] = useState<DeviceKind>(devices[0]?.kind ?? "rice_cooker");
   const device = devices.find((d) => d.kind === kind) ?? devices[0];
 
+  if (!careDataAvailable(view) && !view.slots.length && !Object.keys(view.stats).length) {
+    return (
+      <section className="mt-2 rounded-[1.75rem] border border-line bg-paper p-6">
+        <Mascot className="h-24 w-24" mood="sleepy" />
+        <h2 className="mt-3 text-[18px] font-bold text-cocoa">연결된 소식이 쌓이면 비교해 드릴게요</h2>
+        <p className="mt-2 text-[15px] leading-relaxed text-muted">현재 계정에는 가족·기기의 식사 기록이 아직 연결되지 않았어요. 기록이 없다는 이유로 식사 여부를 판단하지 않아요.</p>
+        <Link href="/settings" className="mt-4 inline-flex min-h-11 items-center font-bold text-cocoa underline underline-offset-4">연결 설정 보기</Link>
+      </section>
+    );
+  }
+
   return (
     <div className="mt-2 flex flex-col gap-4">
+      {view.mode === "demo" ? <p className="text-[12px] text-muted">체험용 가상 기록을 비교한 리포트예요.</p> : null}
       <Overview view={view} now={now} />
       <SlotRates view={view} now={now} />
       <WeekStrip view={view} now={now} />
@@ -76,7 +91,7 @@ function Overview({ view, now }: { view: AppView; now: Date }) {
       <div className="flex flex-col items-center rounded-[1.75rem] bg-butter-soft px-6 py-8 text-center">
         <Mascot className="h-24 w-24" mood="sleepy" />
         <p className="mt-3 text-[18px] font-bold text-cocoa">평소와 비교할 기록을 모으는 중이에요</p>
-        <p className="mt-1 text-[14px] text-muted">일주일 넘게 기록이 쌓이면 평소와 비교해 드릴게요.</p>
+        <p className="mt-1 text-[14px] text-muted">최근 기록과 비교할 이전 기록이 더 쌓이면 알려 드릴게요.</p>
       </div>
     );
   }
@@ -93,20 +108,20 @@ function Overview({ view, now }: { view: AppView; now: Date }) {
         <Bar label="최근 7일" pct={r} strong />
         <Bar label="이전 4주" pct={b} />
         <p className="mt-3 text-[12px] text-muted">
-          확인된 끼니 {recent.ok}/{recent.total} · 이전 {before.ok}/{before.total} (부재 기간 제외)
+          확인된 끼니 {recent.ok}/{recent.total} · 이전 {before.ok}/{before.total} (외식 포함, 부재·대기 제외)
         </p>
       </ReportCard>
     </>
   );
 }
 
-/** 끼니별(아침·점심·저녁) 확인율 */
+/** 설정한 1~4끼의 확인율 */
 function SlotRates({ view, now }: { view: AppView; now: Date }) {
   const rows = slotRates(view, now);
   return (
     <ReportCard title="끼니별 확인율" aside="최근 7일">
       {rows.map((s) => (
-        <Bar key={s.slot} label={SLOT_LABEL[s.slot]} pct={s.rate === null ? 0 : Math.round(s.rate * 100)} value={s.rate === null ? "기록 없음" : `${s.ok}/${s.total}일`} />
+        <Bar key={s.slot} label={mealSlotLabel(s.slot, view.mealProfile.windows)} pct={s.rate === null ? 0 : Math.round(s.rate * 100)} value={s.rate === null ? "기록 없음" : `${s.ok}/${s.total}일`} />
       ))}
     </ReportCard>
   );
@@ -114,6 +129,7 @@ function SlotRates({ view, now }: { view: AppView; now: Date }) {
 
 /** 최근 7일 하루별 끼니 상태 */
 function WeekStrip({ view, now }: { view: AppView; now: Date }) {
+  const palette = useMealPalette();
   const days = dailyMeals(view, now);
   const slots = view.mealProfile.windows.map((w) => w.slot);
   return (
@@ -126,24 +142,18 @@ function WeekStrip({ view, now }: { view: AppView; now: Date }) {
               return (
                 <span
                   key={slot}
-                  title={`${fmtMonthDay(d.date)} ${SLOT_LABEL[slot]}: ${s ? STATUS_META[s.status].label : "기록 없음"}`}
-                  className={`h-5 w-full rounded-md ${s ? STATUS_META[s.status].className : "bg-line/40"}`}
-                />
+                  role="img"
+                  aria-label={`${fmtMonthDay(d.date)} ${mealSlotLabel(slot, view.mealProfile.windows)}: ${s ? MEAL_STATUS_LABEL[s.status] : "기록 없음"}`}
+                  className={`grid h-6 w-full place-items-center rounded-md ${s ? mealStatusClass(s.status, palette) : "bg-neutral-100 text-muted"}`}
+                >{s ? <StatusIcon status={s.status} className="h-3.5 w-3.5" /> : <span aria-hidden="true">–</span>}</span>
               );
             })}
             <span className="mt-0.5 text-[11px] text-muted">{fmtMonthDay(d.date)}</span>
           </div>
         ))}
       </div>
-      <ul className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-[12px] text-muted">
-        {(["confirmed", "eat_out", "unconfirmed", "away"] as const).map((st) => (
-          <li key={st} className="flex items-center gap-1">
-            <i className={`h-2.5 w-2.5 rounded-sm ${STATUS_META[st].className}`} />
-            {STATUS_META[st].label}
-          </li>
-        ))}
-      </ul>
-      <p className="mt-2 text-[12px] text-muted">칸은 위에서부터 {slots.map((s) => SLOT_LABEL[s]).join("·")}이에요.</p>
+      <MealStatusLegend />
+      <p className="mt-2 text-[12px] text-muted">칸은 위에서부터 {slots.map((slot) => mealSlotLabel(slot, view.mealProfile.windows)).join("·")}이에요.</p>
     </ReportCard>
   );
 }

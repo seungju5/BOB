@@ -3,7 +3,7 @@
 
 import { resolveMealSlots } from "@/lib/judge/resolveMealSlots";
 import { addDays, kstDate } from "@/lib/judge/time";
-import type { Absence, AlertPayload, AlertType, MealSlot, MealWindow } from "@/lib/judge/types";
+import type { Absence, AlertPayload, AlertType, MealSlot, MealSlotName, MealWindow } from "@/lib/judge/types";
 
 export type ViewAlert = {
   id: string;
@@ -16,6 +16,10 @@ export type ViewAlert = {
 
 export type AppView = {
   mode: "demo" | "live";
+  /** 실제 계정의 저장소. 데모의 가상 기록과 섞지 않는다. */
+  dataSource?: "supabase" | "firebase";
+  /** 가족·기기 기록을 사용할 수 있는지. 계정 로그인 성공과는 별개다. */
+  careAvailable?: boolean;
   onboardingStep: number; // 1~7 진행 중, 8 = 완료
   plug: { deviceId: string; online: boolean; lastReadingAt: string | null };
   senior: { name: string; relation: string; phone: string };
@@ -78,15 +82,57 @@ export const DEFAULT_WINDOWS: MealWindow[] = [
   { slot: "dinner", start: "17:00", end: "21:00" },
 ];
 
-export const SLOT_LABEL = { breakfast: "아침", lunch: "점심", dinner: "저녁" } as const;
+/** 네 끼를 새로 선택할 때만 쓰는 편집 가능한 초기 시간. 기본값은 여전히 세 끼다. */
+export const FOUR_MEAL_WINDOWS: MealWindow[] = [
+  ...DEFAULT_WINDOWS,
+  { slot: "fourth", start: "21:00", end: "23:00" },
+];
 
-const ORDER = { breakfast: 0, lunch: 1, dinner: 2 } as const;
+export const SLOT_LABEL = { breakfast: "첫 끼", lunch: "두 끼", dinner: "세 끼", fourth: "네 끼" } as const;
+const ORDINAL_LABELS = ["첫 끼", "두 끼", "세 끼", "네 끼"] as const;
+
+/** 1·2끼 기존 저장 ID를 유지한다. 표시 순서는 mealSlotLabel로 정한다. */
+export function mealSlotsForCount(count: number): MealSlotName[] {
+  if (count === 1) return ["lunch"];
+  if (count === 2) return ["breakfast", "dinner"];
+  if (count === 4) return ["breakfast", "lunch", "dinner", "fourth"];
+  return ["breakfast", "lunch", "dinner"];
+}
+
+export function mealSlotLabel(slot: MealSlotName, windows: Pick<MealWindow, "slot">[]): string {
+  const index = windows.findIndex((window) => window.slot === slot);
+  return ORDINAL_LABELS[index] ?? SLOT_LABEL[slot];
+}
+
+/** 실제 가족 데이터가 아직 연결되지 않았다면 미확인을 새로 판정하지 않는다. */
+export function careDataAvailable(v: AppView): boolean {
+  return v.careAvailable ?? (v.dataSource !== "firebase");
+}
+
+const ORDER = { breakfast: 0, lunch: 1, dinner: 2, fourth: 3 } as const;
 
 /** 하루치 끼니. 아직 서버 판정이 없는 오늘은 시간대 기준으로 채운다. */
 export function slotsForDate(v: AppView, date: string, now: Date): MealSlot[] {
   const found = v.slots.filter((s) => s.date === date).sort((a, b) => ORDER[a.slot] - ORDER[b.slot]);
   if (found.length || date !== kstDate(now)) return found;
+  if (!careDataAvailable(v)) return [];
   return resolveMealSlots({ date, windows: v.mealProfile.windows, events: [], eatOutChecks: [], absences: v.absences, now });
+}
+
+export type MealDayTone = "all" | "half" | "low" | "pending" | "away" | "empty";
+/** 하루 색은 확인 비율로 정한다. 외식은 확인, 부재는 제외한다. 진행일은 예정된 끼니 수도 보여 준다. */
+export function mealDaySummary(v: AppView, date: string, now: Date): { tone: MealDayTone; ok: number; total: number } {
+  const slots = slotsForDate(v, date, now);
+  const counted = slots.filter((slot) => slot.status !== "away");
+  const ok = counted.filter((slot) => slot.status === "confirmed" || slot.status === "eat_out").length;
+  const total = slots.length && date === kstDate(now) ? Math.max(counted.length, v.mealProfile.windows.length - (slots.length - counted.length)) : counted.length;
+  if (!slots.length) return { tone: "empty", ok, total };
+  if (slots.every((slot) => slot.status === "away")) return { tone: "away", ok: 0, total: 0 };
+  // 오늘 진행 중인 시간대나 아직 수신되지 않은 슬롯이 남으면 완료 비율로 오해하지 않게 한다.
+  if (slots.some((slot) => slot.status === "pending") || (date === kstDate(now) && slots.length < v.mealProfile.windows.length)) {
+    return { tone: "pending", ok, total };
+  }
+  return { tone: !total ? "empty" : ok === total ? "all" : ok / total >= 0.5 ? "half" : "low", ok, total };
 }
 
 export function recentSlots(v: AppView, now: Date, days: number): MealSlot[] {

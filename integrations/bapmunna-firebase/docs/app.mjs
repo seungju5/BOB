@@ -1,3 +1,4 @@
+import {guardianAppTarget} from './guardian-entry.mjs';
 import {connectCloud} from './cloud-api.mjs';
 import {runtimeSurface,runtimeSession,createAccountBoundary,createRuntimeSession,browserTutorialSeen,rememberBrowserTutorial} from './runtime-mode.mjs';
 import {livePage,liveTutorialPage} from './live-view.mjs';
@@ -327,6 +328,9 @@ function syncRuntimeChrome(){
   const count=document.querySelector('#nav-alert-count');const total=isDemoSurface()?alertEntries().length:0;count.textContent=String(total);count.hidden=edition!=='carer'||!total;
 }
 function render(focus=false){
+  const latest=guardianAppTarget({basePath:appBase.pathname,edition,view,search:location.search,cloud:CLOUD_AVAILABLE,demo:explicitDemo});
+  if(latest){location.replace(latest);return;}
+
   ensureLiveEntry();
   const active=document.activeElement;
   const preserve=active&&root.contains(active)?['data-action','data-period','data-record-day','data-scenario','data-away-days'].find(name=>active.hasAttribute(name)):null;

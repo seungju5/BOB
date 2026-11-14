@@ -8,11 +8,13 @@ import { Logo, Mascot } from "@/components/Mascot";
 import { buttonClass, Skeleton } from "@/components/ui";
 import { countMissedMeals } from "@/lib/judge/evaluateAlerts";
 import { kstDate } from "@/lib/judge/time";
+import { mealStatusClass, useMealPalette } from "@/lib/data/appearance";
 import { useApp } from "@/lib/data/useApp";
-import { recentSlots, reportSummary, SLOT_LABEL, slotsForDate, unackedAlerts } from "@/lib/data/view";
+import { recentSlots, reportSummary, mealSlotLabel, slotsForDate, unackedAlerts } from "@/lib/data/view";
 
 export default function HomePage() {
   const { view, now, actions, mode } = useApp();
+  const palette = useMealPalette();
   if (!view || !now) {
     return (
       <main className="flex flex-col gap-4 p-6">
@@ -112,10 +114,11 @@ export default function HomePage() {
 
       <section className="mt-4 rounded-[1.75rem] border border-line p-5">
         <h2 className="text-[16px] font-bold text-cocoa">오늘의 끼니</h2>
+        {!slots.length ? <p className="mt-3 text-[16px] text-muted">아직 연결된 식사 기록이 없어요. 연결 전에는 식사 여부를 판단하지 않아요.</p> : null}
         <ul className="mt-3 grid gap-2" style={{ gridTemplateColumns: `repeat(${Math.max(slots.length, 1)}, minmax(0, 1fr))` }}>
           {slots.map((s) => (
-            <li key={s.slot} className={`flex flex-col items-center gap-1.5 rounded-2xl py-3 ${STATUS_META[s.status].className}`}>
-              <span className="text-[16px] font-semibold opacity-80">{SLOT_LABEL[s.slot]}</span>
+            <li key={s.slot} className={`flex flex-col items-center gap-1.5 rounded-2xl py-3 ${mealStatusClass(s.status, palette)}`}>
+              <span className="text-[16px] font-semibold opacity-80">{mealSlotLabel(s.slot, view.mealProfile.windows)}</span>
               <span className="flex items-center gap-1 text-[16px] font-bold">
                 <StatusIcon status={s.status} />
                 {STATUS_META[s.status].label}
@@ -134,7 +137,7 @@ export default function HomePage() {
       </div>
 
       {view.senior.phone ? (
-        <a href={`tel:${view.senior.phone.replace(/\D/g, "")}`} className={buttonClass("dark", "mt-4 min-h-16 text-[18px]")}>
+        <a href={`tel:${view.senior.phone.replace(/(?!^\+)\D/g, "")}`} className={buttonClass("dark", "mt-4 min-h-16 text-[18px]")}>
           <IconPhone className="h-5 w-5" />
           {relation}께 전화하기
         </a>

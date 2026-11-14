@@ -7,6 +7,7 @@
     "hostname": "localhost",
     "androidScheme": "https",
     "iosScheme": "capacitor",
+    "appStartPath": "/health/",
     "cleartext": false,
     "allowNavigation": []
   },

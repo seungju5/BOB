@@ -24,4 +24,5 @@ export class PhoneStepsWeb extends WebPlugin {
   async readToday() { return unavailable(); }
   async disconnect() { return unavailable(); }
   async openSettings() { throw this.unavailable('휴대폰 앱에서 설정을 열 수 있어요.'); }
+  async openWebApp() { throw this.unavailable('휴대폰 앱에서 웹앱으로 돌아갈 수 있어요.'); }
 }

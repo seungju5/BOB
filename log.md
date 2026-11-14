@@ -274,3 +274,11 @@ provision-smartthings-identity.mjs apply가 성공했다. KU GPA에 bapmunna-sma
 정확한 allowlist의 15개 파일만 ZIP으로 만들었으며 비밀·로컬 CLI 자격증명은 제외했다. SHA-256 70756220953219fd8acebe8558a0db07762f38a2a72d00488d6dd10bbe97202b. Vercel Drop 업로드 목록15개와 Hobby 팀을 확인한 후 프로젝트 이름 bapmunna-smartthings로 Deploy를 눌렀다. 첫 배포 추가 이메일 인증 화면이 나와 새 코드를 요청했고 입력을 기다린다. 아직 프로젝트 고정 주소·성공한 함수 배포·production 비밀 주입은 미검증/미실행이다.
 
 이번에는 앱 실행 코드를 바꾸지 않았으며 기존 전체 검사 결과를 배포 성공으로 승격하지 않는다. 삼성 등록 URL과 frontend origin은 그대로다. 삼성 OAuth·실기기 자동 웹훅·2~3가구 격리 검증은 공개 서버와 기존 삼성 앱 등록을 확정한 뒤 진행한다. 안전한 운영 요약은 documentation/smartthings-live-20261114.md, 비공개 상세 진단은 Git 제외 tmp/smartthings-live-20261114에 보관했다.
+
+## 2026-11-15 — 웹에서 시작하는 건강 연결과 Android 설치 파일
+
+- Apple 건강/삼성 헬스 선택을 기존 앱의 선택 기능으로 연결. /health와 /health/privacy, 어르신 진입 링크 구현. Native는 본인기기 건강 조회 전용이며 기존 Firebase 계정·가족 흐름은 시스템 브라우저의 원래 Impact Series로 돌아간다. 토큰·계정·걸음수를 실행 링크에 보내지 않는다.
+- 건강 조회 동의·빈 기록·권한 회수 경계 유지. 앱 복귀와 화면이 보이는 동안 60초마다 갱신하고, 사용자 동작 전 OS 권한을 요청하지 않는다.
+- 사용자에게 SDK 약관/프로젝트내 설치 승인받아 공식 SHA256 검증한 SDK 설치. 첫 Android 전체 컴파일의 AppCompat 누락을 수정한 뒤 APK 생성. iOS는 Xcode 미설치로 소스·설정 검증에 한정. 사용자 현재 실기기 연결 불가 확인.
+- TypeScript·변경파일 lint·기존164개/대상62개 검사 통과. 실제 브라우저 320/390px, 200% 글씨의 줄바꿈 수정과 왕복 확인. 최초 Turbopack 정체는 중단했고 Webpack 정적 export는 성공.
+- 자세한 도구/API/권한/산출물 증거: documentation/phone-steps-release-20261115.md 및 workspaces/bapmunna-mobile. 이 시점의 웹후속게시·실제건강기록·스토어게시를 완료로 주장하지 않는다.

@@ -34,8 +34,13 @@ export interface PhoneStepsPlugin {
   /** Disable this app's reads. OS health permissions remain managed in Settings. */
   disconnect(): Promise<PhoneStepsSnapshot>;
   openSettings(): Promise<void>;
+  /** System browser only; fixed production URL, no caller URL or account payload. */
+  openWebApp(): Promise<void>;
+  /** Lifecycle signal only. It carries no health data and never requests permission. */
+  addListener(eventName: 'appResumed', listenerFunc: () => void): Promise<PluginListenerHandle>;
 }
 
 export declare const PhoneSteps: PhoneStepsPlugin;
 /** Browser/SSR-safe; a native platform and installed plugin are both required. */
 export declare function isPhoneStepsNativeAvailable(): boolean;
+import type { PluginListenerHandle } from '@capacitor/core';

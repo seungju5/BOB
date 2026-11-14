@@ -13,6 +13,8 @@ test('packaging preserves original UI and permits only its exact inline bootstra
   assert.match(protectedHtml, /script-src 'self' 'sha256-/);
   assert.doesNotMatch(protectedHtml, /script-src[^;]*'unsafe-inline'/);
   assert.match(protectedHtml, /frame-src 'none'/);
+  assert.match(protectedHtml, /connect-src 'self';/);
+  assert.doesNotMatch(protectedHtml, /connect-src[^;]*(?:https:|wss:)/);
 });
 
 test('packaging rejects remote code and framed content before copying', () => {
@@ -26,12 +28,12 @@ test('packaging rejects remote code and framed content before copying', () => {
   assert.throws(() => protectHtml('<html><body>incomplete export</body></html>'));
 });
 
-test('only route exports, compiled static assets, and existing public files are packaged', () => {
+test('only the health route, compiled static assets, and existing public files are packaged', () => {
   const publicFiles = new Set(['brand/bunny.png', 'icon.svg']);
-  for (const valid of ['index.html', 's/index.html', 'auth/callback/index.html', 's/index.txt', '__next._tree.txt', '_next/static/chunks/a.js', 'brand/bunny.png']) {
+  for (const valid of ['health/index.html', 'health/index.txt', 'health/__next._tree.txt', 'manifest.webmanifest', '_next/static/chunks/a.js', 'brand/bunny.png']) {
     assert.equal(isAllowedWebAsset(valid, publicFiles), true, valid);
   }
-  for (const privateFile of ['.env', '.env.local', 'server/app/index.html', 'trace', 'package.json', 'node_modules/secret.js', '_next/server/app.js', '_next/static/a.js.map', 'README.txt', 's/.env', '../index.html']) {
+  for (const privateFile of ['health/privacy/index.html', 'index.html', 's/index.html', 'auth/callback/index.html', '__next._tree.txt', '.env', '.env.local', 'server/app/index.html', 'trace', 'package.json', 'node_modules/secret.js', '_next/server/app.js', '_next/static/a.js.map', 'README.txt', 's/.env', '../index.html']) {
     assert.equal(isAllowedWebAsset(privateFile, publicFiles), false, privateFile);
   }
 });

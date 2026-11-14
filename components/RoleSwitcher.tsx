@@ -7,7 +7,7 @@ import { routePath } from "@/lib/app-path";
 /** Navigation only. Login and family pairing continue to enforce data access. */
 export function RoleSwitcher() {
   const path = routePath(usePathname());
-  if (path === "/" || path === "/onboarding" || path === "/start") return null;
+  if (path === "/" || path === "/onboarding" || path === "/start" || path.startsWith("/health")) return null;
   const senior = path === "/s";
   return (
     <nav aria-label="사용 화면 전환" className="mx-6 mt-4 grid grid-cols-2 rounded-2xl border border-line bg-butter-soft/50 p-1 text-[16px] font-bold">

@@ -162,6 +162,25 @@ class PhoneStepsPlugin : Plugin() {
         }
     }
 
+    @PluginMethod fun openWebApp(call: PluginCall) = launchCall(call) {
+        try {
+            // Never place an external account page inside the privileged WebView.
+            // This path is outside our health-only App Links intent filter.
+            activity.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(WEB_APP_URL)).apply {
+                addCategory(Intent.CATEGORY_BROWSABLE)
+            })
+            call.resolve()
+        } catch (_: RuntimeException) {
+            call.reject("웹앱을 열 수 없어요.", "BROWSER_UNAVAILABLE")
+        }
+    }
+
+    override fun handleOnResume() {
+        super.handleOnResume()
+        // Refresh is the UI's decision. No health read, permission, or payload here.
+        notifyListeners("appResumed", JSObject())
+    }
+
     private fun launchCall(call: PluginCall, block: suspend () -> Unit) {
         scope.launch {
             if (!trusted(call)) return@launch
@@ -238,5 +257,8 @@ class PhoneStepsPlugin : Plugin() {
 
     override fun handleOnDestroy() { generation++; scope.cancel(); super.handleOnDestroy() }
 
-    companion object { private const val SAMSUNG_HEALTH_PACKAGE = "com.sec.android.app.shealth" }
+    companion object {
+        private const val SAMSUNG_HEALTH_PACKAGE = "com.sec.android.app.shealth"
+        private const val WEB_APP_URL = "https://impact-series.web.app/bapmunna/app/"
+    }
 }

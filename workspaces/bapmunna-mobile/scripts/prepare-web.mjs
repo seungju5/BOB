@@ -9,8 +9,8 @@ const repo = path.resolve(workspace, '../..');
 const source = path.resolve(repo, process.argv[2] ?? 'out');
 const destination = path.join(workspace, 'www');
 if (!source.startsWith(`${repo}${path.sep}`) || source.startsWith(workspace)) throw new Error('Use the original app export inside this repository');
-if (!(await stat(path.join(source, 'index.html')).catch(() => null))?.isFile()) {
-  throw new Error('Original app export is missing. Build the root app with BAPMUNNA_STATIC_EXPORT=1 and an empty NEXT_PUBLIC_APP_BASE_PATH first. No substitute UI is generated.');
+if (!(await stat(path.join(source, 'health/index.html')).catch(() => null))?.isFile()) {
+  throw new Error('Original /health/ export is missing. Build the root app with BAPMUNNA_STATIC_EXPORT=1 and an empty NEXT_PUBLIC_APP_BASE_PATH first. No substitute UI or native login is generated.');
 }
 if ((await realpath(source)) !== source) throw new Error('Export symlinks are not accepted');
 const pending = [];
@@ -45,11 +45,15 @@ for (const entry of pending) {
   if (entry.html !== null) await writeFile(output, entry.html);
   else await cp(path.join(source, entry.relative), output, { dereference: false });
 }
-const index = await readFile(path.join(source, 'index.html'));
+// Capacitor serves index.html for extensionless paths on both OSs. The health
+// entry therefore uses the exact health HTML, never the separate Supabase login.
+const index = await readFile(path.join(source, 'health/index.html'));
+await writeFile(path.join(destination, 'index.html'), protectHtml(index.toString('utf8'), 'health/index.html'));
 await writeFile(path.join(destination, 'native-build.json'), `${JSON.stringify({
   source: path.relative(repo, source), preparedAt: new Date().toISOString(),
   sourceIndexSha256: createHash('sha256').update(index).digest('hex'),
   htmlPages: pending.filter(entry => entry.html !== null).length, webFiles: pending.length,
-  ui: 'existing-root-app', healthDataUpload: false,
+  ui: 'existing-health-route', edition: 'local-only-health', entryPath: '/health/',
+  auth: 'external-production-web-only', healthDataUpload: false,
 }, null, 2)}\n`);
 console.log(`Prepared ${pending.length} allowlisted original app files in the local native bundle.`);

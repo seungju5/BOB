@@ -23,6 +23,8 @@ function fixture() {
     readToday: vi.fn().mockResolvedValue(ready()),
     disconnect: vi.fn().mockResolvedValue(emptySteps("not-connected", NOW, ZONE)),
     openSettings: vi.fn().mockResolvedValue(undefined),
+    openWebApp: vi.fn().mockResolvedValue(undefined),
+    addListener: vi.fn().mockResolvedValue({ remove: vi.fn().mockResolvedValue(undefined) }),
   };
   const session = createStepsSession(driver, (view) => records.push(view), { now: () => clock, timeZone: () => ZONE, timeoutMs: 100 });
   return { records, driver, session, setClock: (value: Date) => { clock = value; } };

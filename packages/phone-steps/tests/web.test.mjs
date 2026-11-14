@@ -20,4 +20,5 @@ test('web/SSR never claims native availability or invents today steps', async ()
 
 test('web does not pretend it opened native settings', async () => {
   await assert.rejects(PhoneSteps.openSettings(), /휴대폰 앱/);
+  await assert.rejects(PhoneSteps.openWebApp(), /휴대폰 앱/);
 });

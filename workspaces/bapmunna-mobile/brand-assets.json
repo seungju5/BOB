@@ -1,0 +1,9 @@
+{
+  "sources": {
+    "public/brand/rice-logo.png": "feff84d1a626d270bb6e914898bbc3ebb2cdaf5ddff6a57247583893903dee03",
+    "public/brand/bunny.png": "87d86ce95e85f69168a6720419fd0cc3a22f32a67f13db2dea37e96e626f19f6"
+  },
+  "transformation": "Platform-required resize/padding only; original assets unchanged.",
+  "buildTool": "sharp 0.35.5",
+  "background": "#fffdf7"
+}

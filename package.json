@@ -27,6 +27,8 @@
     "test:office": "npm run build:office && node --test workspaces/super-members/*.test.mjs"
   },
   "dependencies": {
+    "@bapmunna/phone-steps": "file:packages/phone-steps",
+    "@capacitor/core": "8.6.2",
     "@supabase/supabase-js": "^2.118.0",
     "next": "16.4.2",
     "react": "19.3.0",

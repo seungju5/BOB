@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import { useRef, useState, type ReactNode } from "react";
-import { IconArrowRight, IconCheck, IconHeart, IconInfo, IconSuitcase, IconUtensils } from "@/components/icons";
+import { IconCheck, IconHeart, IconInfo, IconSuitcase, IconUtensils } from "@/components/icons";
 import { Logo, Mascot } from "@/components/Mascot";
 import { Button, Skeleton } from "@/components/ui";
 import { SeniorSheet as Sheet } from "@/components/senior/SeniorSheet";
+import { PhoneStepsCard } from "@/components/senior/PhoneStepsCard";
 import { seniorActionMessage } from "@/components/senior/messages";
-import { addDays, kstDate, kstTime } from "@/lib/judge/time";
+import "@/components/senior/senior-home.css";
+import { addDays, kstDate } from "@/lib/judge/time";
 import type { Absence } from "@/lib/judge/types";
 import { useSenior, type SeniorOp, type SeniorStatus } from "@/lib/data/senior";
 import { useNow } from "@/lib/demo/store";
@@ -105,7 +107,6 @@ function SeniorHome({ status, now, act, isDemo, endDemo }: { status: SeniorStatu
   const request = useRef(0);
   const today = kstDate(now);
   const cheer = CHEERS[Number(today.slice(-2)) % CHEERS.length];
-  const lastCook = status.lastCookerAt ? new Date(status.lastCookerAt) : null;
   const away = status.absence;
   const close = () => {
     request.current += 1;
@@ -130,7 +131,7 @@ function SeniorHome({ status, now, act, isDemo, endDemo }: { status: SeniorStatu
   };
 
   return (
-    <main className="flex flex-1 flex-col px-6 pt-6 pb-6">
+    <main className="bapmunna-senior-home flex flex-1 flex-col px-6 pt-6 pb-6">
       <header className="flex items-center justify-between">
         <Logo />
         <Link href="/" aria-label="처음 화면" className="grid h-12 w-12 place-items-center rounded-full border-2 border-line text-cocoa">
@@ -151,39 +152,33 @@ function SeniorHome({ status, now, act, isDemo, endDemo }: { status: SeniorStatu
         오늘도 반가워요.
       </h1>
 
-      <div className="mt-4 flex items-center justify-between gap-3 rounded-[1.75rem] bg-butter-soft px-5 py-3">
-        <p className="font-hand text-[28px] leading-[1.15] whitespace-pre-line text-cocoa">{cheer}</p>
-        <Mascot className="h-24 w-24 shrink-0" />
+      <div className="relative mt-5 rounded-[2rem] bg-butter-soft px-6 py-5">
+        <p className="font-hand text-[34px] leading-[1.15] whitespace-pre-line text-cocoa">{cheer}</p>
+        <span className="absolute -bottom-2 right-16 h-5 w-5 rotate-45 bg-butter-soft" aria-hidden />
       </div>
 
-      {away ? (
-        <div className="flex items-center gap-3 rounded-3xl bg-sky px-5 py-4">
-          <IconSuitcase className="h-8 w-8 shrink-0 text-sky-deep" />
-          <div className="flex-1">
-            <p className="text-2xl font-bold text-cocoa">{fmtDate(away.endDate)}까지 {isDemo ? "예시 외출 기간이에요" : "다녀오세요"}</p>
-            <p className="text-2xl text-muted">{isDemo ? "실제 가족에게 알리지 않아요." : "그동안은 끼니 알림을 쉬어요."}</p>
-          </div>
+      <div className="bapmunna-senior-encouragement mt-3 flex items-end justify-between gap-2">
+        <div className="min-w-0 pb-4">
+          <IconHeart className="h-6 w-6 fill-blush-deep/70 text-blush-deep/70" aria-hidden />
+          <p className="mt-3 text-2xl font-bold text-cocoa">오늘의 작은 응원</p>
+          <p className="mt-1 text-2xl text-muted">당신의 하루를 응원해요.</p>
         </div>
-      ) : (
-        <div className="flex items-center gap-3 rounded-3xl bg-butter px-5 py-4">
-          <Mascot className="h-11 w-11 shrink-0" mood="wink" />
-          <div className="flex-1">
-            <p className="text-2xl font-bold text-cocoa">{isDemo ? "밥솥 소식 예시예요" : lastCook && kstDate(lastCook) === today ? "밥솥 소식이 도착했어요" : "밥솥 소식을 기다리고 있어요"}</p>
-            <p className="text-2xl text-cocoa/70">
-              {lastCook && kstDate(lastCook) === today ? `${isDemo ? "예시 · " : ""}오늘 ${kstTime(lastCook)} 사용 움직임` : "오늘은 아직 소식이 없어요"}
-            </p>
-          </div>
-          <IconArrowRight className="h-5 w-5 text-cocoa" />
-        </div>
-      )}
-
-      <p className="mt-4 mb-3 text-2xl text-muted">{isDemo ? "세 가지 버튼을 체험해 보세요." : "필요한 소식만 가볍게 남겨요."}</p>
-      <div className="grid gap-2.5">
-        <BigButton label="외식했어요" icon={<IconUtensils className="h-9 w-9" />} onClick={() => setSheet("eat_out")} />
-        <BigButton label="놀러가요" icon={<IconSuitcase className="h-9 w-9" />} onClick={() => setSheet("away")} />
-        <BigButton label="도와줘요" icon={<IconHeart className="h-9 w-9" />} onClick={() => setSheet("help")} tone="help" />
+        <Mascot className="h-28 w-28 shrink-0" />
       </div>
-      <p className="mt-auto pt-6 text-center text-2xl text-muted">평소의 하루는 그대로 보내세요.</p>
+
+      <div className="my-auto py-5">
+        <p className="mb-4 text-2xl text-muted">{isDemo ? "세 가지 버튼을 체험해 보세요." : "필요한 소식만 가볍게 남겨요."}</p>
+        {away ? <p className="mb-4 text-2xl text-sky-deep">{fmtDate(away.endDate)}까지 {isDemo ? "예시 외출 기간이에요." : "잘 다녀오세요."}</p> : null}
+        <div className="bapmunna-senior-actions" aria-label="어르신의 세 가지 소식">
+          <BigButton label="외식했어요" lines={["외식", "했어요"]} icon={<IconUtensils className="h-9 w-9" />} onClick={() => setSheet("eat_out")} />
+          <BigButton label="놀러가요" lines={["놀러", "가요"]} icon={<IconSuitcase className="h-9 w-9" />} onClick={() => setSheet("away")} />
+          <BigButton label="도와줘요" lines={["도와", "줘요"]} icon={<IconHeart className="h-9 w-9" />} onClick={() => setSheet("help")} tone="help" />
+        </div>
+      </div>
+      <PhoneStepsCard demo={isDemo} />
+      <a href="https://app.notion.com/p/4163d756e70080399649fedbb690842f?source=copy_link" target="_blank" rel="noopener noreferrer" className="mt-5 block min-h-12 py-3 text-center text-2xl text-muted underline underline-offset-4">
+        개인정보 처리방침 <span className="block">(새 창·Notion 로그인 필요)</span>
+      </a>
 
       <Sheet open={sheet === "eat_out"} onClose={close} label="외식했어요">
         {done ? (
@@ -246,16 +241,17 @@ function DemoNotice() {
   return <p className="mb-3 text-2xl font-bold text-cocoa">예시 체험 중이에요.<br />실제 가족에게 보내지 않아요.</p>;
 }
 
-function BigButton({ label, icon, onClick, tone }: { label: string; icon: ReactNode; onClick: () => void; tone?: "help" }) {
+function BigButton({ label, lines, icon, onClick, tone }: { label: string; lines: [string, string]; icon: ReactNode; onClick: () => void; tone?: "help" }) {
   return (
     <button
       onClick={onClick}
-      className={`flex min-h-18 items-center justify-center gap-4 rounded-[1.75rem] px-4 text-cocoa transition-transform active:scale-95 ${
+      aria-label={label}
+      className={`bapmunna-senior-action rounded-[1.75rem] text-cocoa transition-transform active:scale-95 ${
         tone === "help" ? "bg-blush" : "bg-butter-soft"
       }`}
     >
-      {icon}
-      <span className="text-2xl font-extrabold tracking-[-0.05em]">{label}</span>
+      <span aria-hidden>{icon}</span>
+      <span aria-hidden className="bapmunna-senior-action-label text-2xl font-extrabold tracking-[-0.05em]"><span>{lines[0]}</span><span>{lines[1]}</span></span>
     </button>
   );
 }

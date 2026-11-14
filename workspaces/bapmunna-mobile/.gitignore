@@ -1,0 +1,10 @@
+node_modules/
+www/
+.local/
+android/.gradle/
+android/local.properties
+android/**/build/
+android/.idea/
+ios/**/xcuserdata/
+ios/**/DerivedData/
+.DS_Store

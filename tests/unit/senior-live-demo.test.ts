@@ -149,11 +149,15 @@ describe("senior page propagates demo status", () => {
     expect(html).not.toMatch(/곧 연락|가족에게 알렸어요/);
   });
 
-  it("does not report an arrived cooker message when the live status has no signal", () => {
+  it("follows S-02 by removing the misleading cooker status card while preserving the actions", () => {
     mocks.useSenior.mockReturnValue({ ...mocks.useSenior(), token: LIVE_TOKEN, isDemo: false });
     const html = renderToStaticMarkup(createElement(SeniorPage));
-    expect(html).toContain("밥솥 소식을 기다리고 있어요");
+    expect(html).toContain("필요한 소식만 가볍게 남겨요");
+    expect(html).toContain("오늘의 작은 응원");
+    expect(html).toContain("개인정보 처리방침");
+    for (const label of ["외식했어요", "놀러가요", "도와줘요"]) expect(html).toContain(`aria-label="${label}"`);
     expect(html).not.toContain("밥솥 소식이 도착했어요");
+    expect(html).not.toContain("사용 움직임");
     expect(html).not.toContain("예시 체험 중이에요");
   });
 });

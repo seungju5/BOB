@@ -9,6 +9,7 @@ import type { Absence } from "@/lib/judge/types";
 import { lastCookerAt } from "@/lib/demo/derive";
 import { updateDemo, useDemo } from "@/lib/demo/store";
 import { supabase, supabaseConfigured } from "@/lib/supabase";
+import { resetSeniorStepsConsent } from "@/lib/steps/consent";
 
 const KEY = "bapmutna.senior.token";
 const EVENT = "bapmutna:senior";
@@ -25,6 +26,7 @@ function readToken(): string | null {
   }
 }
 function writeToken(token: string | null) {
+  if (token !== readToken()) resetSeniorStepsConsent();
   try {
     if (token) localStorage.setItem(KEY, token);
     else localStorage.removeItem(KEY);

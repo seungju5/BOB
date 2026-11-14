@@ -1,0 +1,21 @@
+/* S-02: three central actions, reflowing at narrow widths or enlarged text.
+ * Prefixes keep these rules scoped to the senior screen in both build pipelines.
+ */
+.bapmunna-senior-home { container-type: inline-size; background: var(--color-paper); }
+.bapmunna-senior-home button { font-size: 1.5rem; }
+.bapmunna-senior-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .625rem; }
+.bapmunna-senior-action { display: flex; min-width: 0; min-height: 9.5rem; flex-direction: column; align-items: center; justify-content: center; gap: .875rem; padding: .875rem .25rem; }
+.bapmunna-senior-action-label { line-height: 1.35; text-align: center; }
+.bapmunna-senior-action-label span { display: block; }
+@container (max-width: 19rem) {
+  .bapmunna-senior-actions { grid-template-columns: 1fr; }
+  .bapmunna-senior-action { min-height: 4.75rem; flex-direction: row; padding: .875rem; }
+  .bapmunna-senior-action-label span { display: inline; }
+}
+@container (max-width: 14rem) {
+  .bapmunna-senior-home p { overflow-wrap: anywhere; word-break: normal; }
+  .bapmunna-senior-action { flex-direction: column; }
+  .bapmunna-senior-action-label span { display: block; }
+  .bapmunna-senior-encouragement { flex-direction: column; align-items: stretch; }
+  .bapmunna-senior-encouragement img { align-self: flex-end; }
+}

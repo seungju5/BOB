@@ -1,0 +1,15 @@
+{
+  "appId": "com.bapmunna.senior",
+  "appName": "밥뭇나",
+  "webDir": "www",
+  "loggingBehavior": "none",
+  "server": {
+    "hostname": "localhost",
+    "androidScheme": "https",
+    "iosScheme": "capacitor",
+    "cleartext": false,
+    "allowNavigation": []
+  },
+  "android": { "allowMixedContent": false },
+  "includePlugins": ["@bapmunna/phone-steps"]
+}

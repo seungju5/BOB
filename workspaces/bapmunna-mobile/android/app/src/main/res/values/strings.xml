@@ -3,5 +3,5 @@
     <string name="app_name">밥뭇나</string>
     <string name="title_activity_main">밥뭇나</string>
     <string name="package_name">com.bapmunna.senior</string>
-    <string name="custom_url_scheme">com.bapmunna.senior</string>
+    <string name="custom_url_scheme">bapmunna</string>
 </resources>

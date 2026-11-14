@@ -1,3 +1,21 @@
+# 현재 검증 — 2026-11-15
+
+이번 변경은 기존 앱 전체 셸에서 **로컬 /health/ 화면만 제공하는 건강 연결 모듈**로 범위를 정리했다. 아래 2026-11-14 기록은 과거 상태이며, 현재 완료·미완료는 이 절과 산출물 evidence.json을 기준으로 한다.
+
+- Android 실제 Kotlin/Java compile, debug APK, release unsigned AAB 빌드가 성공했다. AppCompatActivity classpath 누락을 실제 compile에서 찾아 AppCompat 1.7.1 직접 의존성으로 수정했다. debug key는 프로젝트 내부의 임시 개발 키다.
+- 플러그인 테스트 3개, 셸 테스트 7개 통과·skip 0. 실제 JDK 날짜/DST, Java 및 macOS Swift로 네 문자열 링크 allowlist·악성 변형 거부, 웹 CSP/패키징, 오래된 copied asset을 배포 증거로 기록하지 못하게 하는 회귀를 포함한다.
+- 최신 건강 전용 export는 루트 담당자가 큰 글씨 200%·320px overflow 0을 확인한 tmp/impact-final/build이다. prepare → sync → build를 순서대로 수행하며 Android/iOS copied public·config가 www와 일치해야 빌드와 소스 묶음이 가능하다. 빌드 뒤에도 같은 digest인지 재확인한다.
+- localhost /health/ 초기 진입, 고정 네 문자열 deep link 수신, 고정 시스템 브라우저 복귀, 빈 appResumed 이벤트를 구현했다. 브라우저/실제 OS 동작 증거와 순수 predicate 검사를 구분한다.
+- 기존 rice-logo의 플랫폼 규격 변환과 원본 bunny의 시작 화면 재사용을 완료했다. 원본 해시는 brand-assets.json에 기록했다. 외부 API 요청은 CSP connect-src self로 차단한다.
+- iOS plist·entitlements·Xcode project 구문 검사를 통과했다. Xcode가 없어 HealthKit iOS 앱 compile·서명·IPA·TestFlight는 미완료이며 소스만 전달한다.
+- 실제 휴대폰은 사용자가 현재 연결할 수 없다고 답했다. 실제 건강 권한 창·Samsung Health 동기화·Apple 건강 합계·0/no-data·권한 철회·설정 복귀·자정 샘플·실제 OS cold/warm 링크를 검증했다고 하지 않는다.
+- 에뮬레이터는 별도 android-sdk-arm-dbt-license가 나타나 미수락 상태다. 원문은 .local/emulator-license.txt에 보관했으며 가상 기기 실행은 아직 하지 않았다.
+- 운영 release signing, App/Universal Links association 호스팅, Play 건강 선언, 스토어 업로드, 공개 배포, SmartThings 실제 연동은 수행하지 않았다.
+
+산출물은 .local/artifacts/android-debug/, android-release-unsigned/, ios-source/에 있다. 각 evidence.json에서 산출물 SHA256·copied bundle digest·원본 파일 해시·Git 기준 커밋·서명 상태를 확인한다. 이후 소스 변경은 재빌드해야 하며 이전 브라우저/하네스 결과를 새 native 앱의 실제 건강 연동 증거로 사용하지 않는다.
+
+---
+
 # 로컬 검증 기록 — 2026-11-14
 
 대상: `@bapmunna/phone-steps@0.1.0`와 Capacitor 8.6.2 로컬 셸. 최종 사용자 결정인 Samsung Health / Apple Health 읽기 경로를 기준으로 합니다.

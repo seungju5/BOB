@@ -7,6 +7,7 @@ import { Logo, Mascot } from "@/components/Mascot";
 import { Button, Skeleton } from "@/components/ui";
 import { SeniorSheet as Sheet } from "@/components/senior/SeniorSheet";
 import { PhoneStepsCard } from "@/components/senior/PhoneStepsCard";
+import { HealthConnectionLink } from "@/components/senior/HealthConnectionLink";
 import { seniorActionMessage } from "@/components/senior/messages";
 import "@/components/senior/senior-home.css";
 import { addDays, kstDate } from "@/lib/judge/time";
@@ -88,6 +89,10 @@ function Pairing({ pair, startDemo, canPair }: { pair: (code: string) => Promise
           {busy ? "연결하는 중…" : "연결하기"}
         </Button>
       </> : <p className="mt-6 text-2xl text-muted">실제 가족 연결은 아직 준비 중이에요.</p>}
+      <div className="mt-6">
+        <p className="text-2xl leading-relaxed text-muted">가족 연결과 별개로 내 휴대폰의 걸음수를 확인할 수 있어요.</p>
+        <HealthConnectionLink />
+      </div>
       <div className="mt-auto pt-8">
         <p className="mb-3 text-2xl text-muted">예시 체험은 가족에게 소식을 보내지 않아요.</p>
         <Button variant="outline" onClick={startDemo} disabled={busy} className="min-h-16 text-2xl">예시로 체험하기</Button>

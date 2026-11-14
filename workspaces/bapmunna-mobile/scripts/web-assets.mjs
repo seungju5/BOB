@@ -1,17 +1,17 @@
 import { createHash } from 'node:crypto';
 
-const routeRoots = new Set(['404', '_not-found', 'alerts', 'auth', 'home', 'login', 'more', 'onboarding', 'records', 'report', 's', 'settings', 'start', 'tutorial']);
+const routeRoots = new Set(['health']);
 
 /** A Next build tree may contain server code; package only reviewed web surfaces. */
 export function isAllowedWebAsset(relative, publicFiles = new Set()) {
   const parts = relative.split('/');
   if (parts.some(part => part.startsWith('.') || part === '..')) return false;
   if (publicFiles.has(relative)) return true;
+  if (relative === 'manifest.webmanifest') return true;
   if (relative.startsWith('_next/static/')) return /\.(?:js|css|woff2?|ttf|otf|png|jpe?g|webp|gif|svg|ico|json)$/.test(relative);
-  if (parts.length > 1 && !routeRoots.has(parts[0])) return false;
+  if (parts.length !== 2 || !routeRoots.has(parts[0])) return false;
   const name = parts.at(-1);
-  return name === 'index.html' || (parts.length === 1 && name === '404.html') ||
-    name === 'index.txt' || /^__next\..+\.txt$/.test(name);
+  return name === 'index.html' || name === 'index.txt' || /^__next\..+\.txt$/.test(name);
 }
 
 export function assertRootAssetPaths(html, documentPath = 'index.html') {
@@ -40,11 +40,12 @@ export function protectHtml(html, documentPath = 'index.html') {
     }
     if (!source && match[2]) hashes.push(`'sha256-${createHash('sha256').update(match[2]).digest('base64')}'`);
   }
-  // Retain the app's existing HTTPS API calls; script execution and navigation stay local.
+  // The standalone health module reads native stores only. Remote API/telemetry,
+  // images, frames and workers are blocked; web return uses the native fixed URL.
   const policy = [
     "default-src 'self'", `script-src 'self' ${[...new Set(hashes)].join(' ')}`,
-    "style-src 'self' 'unsafe-inline'", "img-src 'self' data: blob: https:",
-    "font-src 'self' data:", "connect-src 'self' https: wss:",
+    "style-src 'self' 'unsafe-inline'", "img-src 'self' data: blob:",
+    "font-src 'self' data:", "connect-src 'self'",
     "media-src 'self' blob:", "frame-src 'none'", "object-src 'none'",
     "base-uri 'none'", "form-action 'self'", "worker-src 'none'",
   ].join('; ');

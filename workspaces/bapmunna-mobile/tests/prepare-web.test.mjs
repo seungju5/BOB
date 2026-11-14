@@ -18,9 +18,10 @@ async function fixture(run) {
     await mkdir(path.join(mobile, 'www'), { recursive: true });
     await mkdir(path.join(repo, 'public/brand'), { recursive: true });
     await mkdir(path.join(exported, 'brand'), { recursive: true });
+    await mkdir(path.join(exported, 'health'), { recursive: true });
     await cp(path.join(workspace, 'scripts'), path.join(mobile, 'scripts'), { recursive: true });
     await writeFile(path.join(mobile, 'www/previous.txt'), 'previous validated bundle');
-    await writeFile(path.join(exported, 'index.html'), '<html><head><link rel="manifest" href="/manifest.webmanifest"></head><body>original app</body></html>');
+    await writeFile(path.join(exported, 'health/index.html'), '<html><head><link rel="manifest" href="/manifest.webmanifest"></head><body>original app</body></html>');
     const icon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"><path d="M0 0h1v1H0z"/></svg>';
     await writeFile(path.join(repo, 'public/brand/icon.svg'), icon);
     await writeFile(path.join(exported, 'brand/icon.svg'), icon);

@@ -12,7 +12,8 @@ public final class PhoneStepsPlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "connect", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "readToday", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "disconnect", returnType: CAPPluginReturnPromise),
-        CAPPluginMethod(name: "openSettings", returnType: CAPPluginReturnPromise)
+        CAPPluginMethod(name: "openSettings", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "openWebApp", returnType: CAPPluginReturnPromise)
     ]
 
     private lazy var store = HKHealthStore()
@@ -22,6 +23,20 @@ public final class PhoneStepsPlugin: CAPPlugin, CAPBridgedPlugin {
     private var generation: UInt64 = 0
     private var authorizationPending = false
     private var queries: [UUID: (HKQuery, CAPPluginCall)] = [:]
+    private var resumeObserver: NSObjectProtocol?
+
+    public override func load() {
+        resumeObserver = NotificationCenter.default.addObserver(
+            forName: UIApplication.didBecomeActiveNotification, object: nil, queue: .main
+        ) { [weak self] _ in
+            // Lifecycle only: no health data and no automatic permission request.
+            self?.notifyListeners("appResumed", data: [:])
+        }
+    }
+
+    deinit {
+        if let resumeObserver { NotificationCenter.default.removeObserver(resumeObserver) }
+    }
 
     @objc public func status(_ call: CAPPluginCall) {
         DispatchQueue.main.async {
@@ -152,6 +167,18 @@ public final class PhoneStepsPlugin: CAPPlugin, CAPBridgedPlugin {
             UIApplication.shared.open(url, options: [:]) { opened in
                 if opened { call.resolve() }
                 else { call.reject("설정을 열 수 없어요.", "SETTINGS_UNAVAILABLE") }
+            }
+        }
+    }
+
+    @objc public func openWebApp(_ call: CAPPluginCall) {
+        DispatchQueue.main.async {
+            guard self.trusted(call),
+                  let url = URL(string: "https://impact-series.web.app/bapmunna/app/") else { return }
+            // Fixed URL in the system browser; never forward native tokens or health data.
+            UIApplication.shared.open(url, options: [:]) { opened in
+                if opened { call.resolve() }
+                else { call.reject("웹앱을 열 수 없어요.", "BROWSER_UNAVAILABLE") }
             }
         }
     }

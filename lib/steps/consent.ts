@@ -49,6 +49,8 @@ export function createStepsConsentBoundary(provider: PhoneStepsPlugin, available
       return guarded(() => provider.status());
     },
     openSettings: () => provider.openSettings(),
+    openWebApp: () => provider.openWebApp(),
+    addListener: (event, listener) => provider.addListener(event, listener),
   };
   return { driver, reset };
 }

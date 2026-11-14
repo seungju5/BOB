@@ -1,6 +1,16 @@
 import UIKit
 import Capacitor
 
+enum HealthLaunchLink {
+    static let localURL = URL(string: "capacitor://localhost/health/")!
+    static func accepts(_ value: String) -> Bool {
+        return value == "bapmunna://health"
+            || value == "bapmunna://health/"
+            || value == "https://impact-series.web.app/bapmunna/app/health"
+            || value == "https://impact-series.web.app/bapmunna/app/health/"
+    }
+}
+
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     var window: UIWindow?
 
@@ -11,14 +21,27 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         window?.rootViewController = CAPBridgeViewController()
         window?.makeKeyAndVisible()
 
-        SceneDelegateProxy.shared.scene(scene, willConnectTo: session, options: connectionOptions)
+        // Cold launch always uses the bundled /health/ route. Never forward an
+        // external URL, userActivity metadata, account or token into the bridge.
     }
 
     func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
-        SceneDelegateProxy.shared.scene(scene, openURLContexts: URLContexts)
+        for context in URLContexts where HealthLaunchLink.accepts(context.url.absoluteString) {
+            openHealth()
+            break
+        }
     }
 
     func scene(_ scene: UIScene, continue userActivity: NSUserActivity) {
-        SceneDelegateProxy.shared.scene(scene, continue: userActivity)
+        guard userActivity.activityType == NSUserActivityTypeBrowsingWeb,
+              let url = userActivity.webpageURL,
+              HealthLaunchLink.accepts(url.absoluteString) else { return }
+        openHealth()
+    }
+
+    private func openHealth() {
+        guard let controller = window?.rootViewController as? CAPBridgeViewController,
+              controller.webView?.url != HealthLaunchLink.localURL else { return }
+        controller.webView?.load(URLRequest(url: HealthLaunchLink.localURL))
     }
 }

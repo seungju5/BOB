@@ -56,4 +56,10 @@
 
 배포 작업본 전체 하네스 `.harness/runs/2026-11-14T15-29-11-885Z-99273/report.md`: 하네스 25, 루트 246, 개인정보 48, Firebase 59, SmartThings 49개 및 타입·동기화·빌드·소스 안정성이 실패/skip 없이 통과했다. 320/390px 실제 브라우저에서 진입·기종 변경·개인정보 왕복·24px 본문·가로 넘침 0·콘솔 오류/경고 0을 확인했다. 고정 링크의 실제 OS 실행과 건강 권한은 이 웹 검사로 인증하지 않는다.
 
-이전 공개 기준은 `9ea0c97d5e9613ec`이며, 게시 후 URL·버전·공개 파일 바이트·기존 경로 보존 결과를 별도 릴리스 영수증으로 추가한다.
+2026-11-15 00:34 KST에 `d9e7a8c`를 Hosting `8135bed18869753c`로 게시했다. 이전 버전은 `9ea0c97d5e9613ec`이다. 변경 웹 파일 103개 공개 바이트 일치, 기존 2,595개 파일 보존·누락 0, 총 2,698개, Hosting 설정·과금 미활성화를 확인했다. 모든 변경은 `/bapmunna/app/` 아래이고 기존 Firebase 런타임에는 변경이 없다.
+
+- 연결 안내: https://impact-series.web.app/bapmunna/app/health/
+- 개인정보 안내: https://impact-series.web.app/bapmunna/app/health/privacy/
+- 공개 영수증: `workspaces/bapmunna-final/releases/20261115-health-web.json`
+
+공개 사이트에서 어르신 진입·기종 선택·개인정보 왕복·390px 표시·콘솔 오류/경고 0을 직접 확인했다. 이 게시에는 APK/스토어 업로드나 실기기 권한 승인이 포함되지 않는다.

@@ -1,0 +1,84 @@
+{
+  "release": {
+    "at": "2026-11-14T15:34:03.683Z",
+    "site": "impact-series",
+    "url": "https://impact-series.web.app/bapmunna/final/",
+    "version": "sites/impact-series/versions/8135bed18869753c",
+    "previous": "sites/impact-series/versions/9ea0c97d5e9613ec",
+    "release": "sites/impact-series/releases/1794670442835000",
+    "source": "d9e7a8cc9c84f71609f822c3652a0ace3c95723a",
+    "changed": 103,
+    "preserved": 2595,
+    "totalFiles": 2698,
+    "uploads": 84,
+    "hostingConfig": "unchanged",
+    "billingEnabled": false
+  },
+  "verify": {
+    "at": "2026-11-14T15:35:12.543Z",
+    "version": "sites/impact-series/versions/8135bed18869753c",
+    "publicFilesVerified": 103,
+    "existingPathsMissing": 0,
+    "project": "impact-series",
+    "billingEnabled": false
+  },
+  "scope": {
+    "stageFiles": 316,
+    "changedNextFiles": 103,
+    "legacyFirebaseFilesChanged": 0,
+    "allStagedBytesWillMatch": true,
+    "privateInstallArtifacts": 0
+  },
+  "sourceParity": {
+    "comparedSource": "c2195aa",
+    "filesCompared": 70,
+    "sourceMismatches": [],
+    "privateInstallArtifacts": []
+  },
+  "urls": {
+    "health": "https://impact-series.web.app/bapmunna/app/health/",
+    "privacy": "https://impact-series.web.app/bapmunna/app/health/privacy/",
+    "entry": "https://impact-series.web.app/bapmunna/app/s/"
+  },
+  "checks": {
+    "harness": ".harness/runs/2026-11-14T15-29-11-885Z-99273/report.md",
+    "harnessTests": 25,
+    "rootTests": 246,
+    "privacyTests": 48,
+    "firebaseTests": 59,
+    "smartThingsTests": 49,
+    "skipped": 0,
+    "staticRoutes": 15,
+    "staticFiles": 147
+  },
+  "browser": {
+    "widths": [
+      320,
+      390
+    ],
+    "bodyFontPx": 24,
+    "horizontalOverflow": 0,
+    "publicConsoleErrors": 0,
+    "publicConsoleWarnings": 0,
+    "verified": [
+      "senior entry to health guide",
+      "iPhone/Galaxy choice and fixed launch URL",
+      "privacy navigation and return",
+      "honest web unsupported and installation preparation messages"
+    ],
+    "screenshot": "output/bapmunna-health-web-20261115/public-health-preview-390.png"
+  },
+  "unchanged": [
+    "Firebase authentication and household rules",
+    "existing SmartThings API configuration",
+    "Hosting configuration",
+    "billing disabled"
+  ],
+  "excluded": [
+    "APK/AAB/IPA public upload",
+    "app-store publication",
+    "native OS health permissions or real steps verification",
+    "SmartThings OAuth activation"
+  ],
+  "nextPublishBaseline": "tmp/impact-final/site/bapmunna"
+}

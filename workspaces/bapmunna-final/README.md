@@ -8,12 +8,14 @@ Supabase CLI·플러그인 설치 없이 기존 GitHub 인증으로 소스를 �
 - 최신 전체 앱: https://impact-series.web.app/bapmunna/app/
 - 실제 Google·이메일 계정: https://impact-series.web.app/bapmunna/app/login/
 - QR 이미지: https://impact-series.web.app/bapmunna/app/bapmunna-app-qr.png
+- 걸음수 연결 안내: https://impact-series.web.app/bapmunna/app/health/
+- 걸음수 개인정보 안내: https://impact-series.web.app/bapmunna/app/health/privacy/
 - 기존 어르신 화면: https://impact-series.web.app/bapmunna/senior/
 - 기존 AI 작업실: https://impact-series.web.app/super-members/
 
 ## 포함 범위와 계정 경계
 
-최종 통합 소스 `b4b43af`는 첫 번째 Figma의 구성, 두 번째 Figma의 디자인, 최신 표지 토끼/이후 밥솥이 결정을 반영한다. Firebase 로그인 → 소개 → 우리 집 입력·확인 → 선택 생활 설정 → 홈 흐름과 일·주·월 기록, 리포트, 알림, 세 그룹 설정, QR 공유, 어르신 화면을 포함한다. 이전 문서·설계 산출물과 공개 AI 작업실을 삭제하지 않는다. 상세 매핑은 `documentation/final-feedback-20261114.md`를 본다.
+최종 통합 소스 `b4b43af`는 첫 번째 Figma의 구성, 두 번째 Figma의 디자인, 최신 표지 토끼/이후 밥솥이 결정을 반영한다. Firebase 로그인 → 소개 → 우리 집 입력·확인 → 선택 생활 설정 → 홈 흐름과 일·주·월 기록, 리포트, 알림, 세 그룹 설정, QR 공유, 어르신 화면을 포함한다. 후속 `d9e7a8c`는 어르신 화면에서 시작하는 건강 연결 안내·기종 선택·고정 앱 실행 링크·개인정보 안내를 추가한다. 이전 문서·설계 산출물과 공개 AI 작업실을 삭제하지 않는다. 상세 매핑은 `documentation/final-feedback-20261114.md`, 건강 후속은 `documentation/phone-steps-release-20261115.md`를 본다.
 
 | 기능 | 이번 릴리스 상태 |
 | --- | --- |
@@ -41,7 +43,7 @@ node scripts/build-impact-next.mjs
 node workspaces/bapmunna-final/scripts/stage.mjs
 ```
 
-Next 일반 빌드와 정적 export는 `.next` 중간 결과를 공유하므로 동시에 실행하지 않는다. export는 `/bapmunna/app` basePath, 13개 사용자 경로, 상대 PWA 범위·아이콘, 서비스 워커와 폰트를 검사한다. stage는 숨김 파일·비밀/SQL/source map·심볼릭 링크를 거부한다.
+Next 일반 빌드와 정적 export는 `.next` 중간 결과를 공유하므로 동시에 실행하지 않는다. export는 `/bapmunna/app` basePath, 건강 안내를 포함한 15개 사용자 경로, 상대 PWA 범위·아이콘, 서비스 워커와 폰트를 검사한다. stage는 숨김 파일·비밀/SQL/source map·심볼릭 링크를 거부한다.
 
 ## 게시와 복구
 

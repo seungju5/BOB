@@ -58,3 +58,13 @@
 6. 네 번째 끼니 Supabase SQL·Edge 변경은 소스만 포함하며 BOB 운영 DB/함수에 적용하지 않는다.
 
 운영 Firestore 변경은 새 본인 설정 경로를 추가한 밥뭇나 namespace만 교체하고 기존 KU GPA·다른 앱 규칙을 보존한다. Hosting은 현재 공개 전체 파일맵을 기준으로 `/bapmunna/` 변경분만 겹쳐 게시하며 기존 경로·설정·과금 상태를 검증한다.
+
+## 공개 반영 결과
+
+2026-11-15 00:01 KST에 소스 `b4b43af`를 Hosting `9ea0c97d5e9613ec`로 게시했다. 공개 변경 파일135개 바이트 일치, 기존2532개 보존·누락0, 총2667개, Hosting 설정과 결제 미연결 상태를 확인했다. 실제 공개 표지→로그인→명시적 데모 튜토리얼, 기존 `/carer`→전체 앱 이동, 390px의 다음 버튼·밥솥이·오류 로그0을 확인했다. 일반/공유 수집기 응답6개에 로고가 포함되고 공개 QR은 검증된 PNG와 동일하다.
+
+- 앱: https://impact-series.web.app/bapmunna/app/
+- QR: https://impact-series.web.app/bapmunna/app/bapmunna-app-qr.png
+- 소스: https://github.com/seungju5/-1/tree/codex/final-feedback-20261114
+- 영수증: `workspaces/bapmunna-final/releases/20261114-final-feedback.json`
+- 복구 대상 Hosting: `c1cce9b7ad044033`. 새로운 배포가 있으면 먼저 재검토하며 다른 채팅의 후속 배포를 덮어쓰지 않는다.

@@ -1,0 +1,132 @@
+{
+  "release": {
+    "at": "2026-11-14T15:01:37.594Z",
+    "site": "impact-series",
+    "url": "https://impact-series.web.app/bapmunna/final/",
+    "version": "sites/impact-series/versions/9ea0c97d5e9613ec",
+    "previous": "sites/impact-series/versions/c1cce9b7ad044033",
+    "release": "sites/impact-series/releases/1794668496803000",
+    "source": "b4b43afd1b4bcbcf2c5ef5238b82e7efce7771b1",
+    "changed": 135,
+    "preserved": 2532,
+    "totalFiles": 2667,
+    "uploads": 104,
+    "hostingConfig": "unchanged",
+    "billingEnabled": false
+  },
+  "verify": {
+    "at": "2026-11-14T15:03:50.569Z",
+    "version": "sites/impact-series/versions/9ea0c97d5e9613ec",
+    "publicFilesVerified": 135,
+    "existingPathsMissing": 0,
+    "project": "impact-series",
+    "billingEnabled": false
+  },
+  "firestore": {
+    "previous": "projects/ku-gpa/rulesets/e0d9c16c-84a1-4eac-aa9b-3932de857e53",
+    "ruleset": "projects/ku-gpa/rulesets/c629135d-03e8-4d1b-8426-4cbda27cc01e",
+    "sha": "cdfe1e1c8b351553ec4b0126417613c87d62a632271db454d2c10ec2a5d816f0",
+    "publishedBytesMatch": true,
+    "checkedAt": "2026-11-14T14:55:06.941Z",
+    "emulator": {
+      "tests": 46,
+      "passed": 46,
+      "sourceHash": "cdfe1e1c8b351553ec4b0126417613c87d62a632271db454d2c10ec2a5d816f0",
+      "checkedAt": "2026-11-14T14:26:59.696522+00:00",
+      "ports": {
+        "auth": 9294,
+        "firestore": 8284
+      }
+    }
+  },
+  "sharing": {
+    "checkedAt": "2026-11-14T15:03:46.565Z",
+    "checks": [
+      {
+        "url": "/bapmunna/app/",
+        "status": 200,
+        "crawler": false,
+        "logo": "https://impact-series.web.app/bapmunna/assets/bapmunna-share-v2.png?v=20261114"
+      },
+      {
+        "url": "/bapmunna/app/",
+        "status": 200,
+        "crawler": true,
+        "logo": "https://impact-series.web.app/bapmunna/assets/bapmunna-share-v2.png?v=20261114"
+      },
+      {
+        "url": "/bapmunna/app/login/",
+        "status": 200,
+        "crawler": false,
+        "logo": "https://impact-series.web.app/bapmunna/assets/bapmunna-share-v2.png?v=20261114"
+      },
+      {
+        "url": "/bapmunna/app/login/",
+        "status": 200,
+        "crawler": true,
+        "logo": "https://impact-series.web.app/bapmunna/assets/bapmunna-share-v2.png?v=20261114"
+      },
+      {
+        "url": "/bapmunna/share",
+        "status": 200,
+        "crawler": false,
+        "logo": "https://impact-series.web.app/bapmunna/assets/bapmunna-share-v2.png?v=20261114"
+      },
+      {
+        "url": "/bapmunna/share",
+        "status": 200,
+        "crawler": true,
+        "logo": "https://impact-series.web.app/bapmunna/assets/bapmunna-share-v2.png?v=20261114"
+      }
+    ],
+    "qr": {
+      "status": 200,
+      "contentType": "image/png",
+      "bytes": 20469,
+      "sha256": "5a5b0a2074339a550f1ce3311db046c892ce85f6766470810ca15d76d0e5df46",
+      "decoded": "https://impact-series.web.app/bapmunna/app/"
+    }
+  },
+  "tests": {
+    "harness": ".harness/runs/2026-11-14T14-52-28-639Z-83296/report.md",
+    "rootAfterFinalAuthRegressions": 224,
+    "firestoreEmulator": 46,
+    "nativeContracts": 11,
+    "iosMetadata": 4,
+    "skipped": 0
+  },
+  "browser": {
+    "mobileWidths": [
+      320,
+      390
+    ],
+    "syntheticAccounts": 2,
+    "verified": [
+      "Firebase local sign-in and profile setup",
+      "tutorial, household summary, optional setup, home",
+      "four meal windows and overlap blocking",
+      "settings server save and reload",
+      "account A to B to A isolation",
+      "login session choice and final UID-return sign-in",
+      "QR and records month/bar selection",
+      "senior confirmation Escape and focus restoration",
+      "public cover/login/tutorial and legacy guardian redirect"
+    ],
+    "publicScreenshot": "output/bapmunna-final-feedback-20261114/public-tutorial-390.png",
+    "publicConsoleErrors": 0
+  },
+  "notVerified": [
+    "New real Google OAuth consent completion",
+    "Actual messenger received card/cache refresh",
+    "SmartThings web OAuth and automatic webhook",
+    "Real family pairing and outbound notifications",
+    "OS large font/reduced motion on physical phone",
+    "APK/IPA signing/install, HealthKit/Health Connect real data"
+  ],
+  "decisions": {
+    "kakao": "on hold",
+    "identityPlatform": "not upgraded",
+    "billingEnabled": false
+  },
+  "nextPublishBaseline": "tmp/impact-final/site/bapmunna"
+}

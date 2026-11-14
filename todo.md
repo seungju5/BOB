@@ -339,7 +339,7 @@ SmartThings frontend API origin은 빈 값이며 아직 실제 연결 준비 완
 - [x] 계정 2개 A→B→A, 새로고침 저장 복원, 320/390px·키보드·연결 준비 표시 확인
 - [x] 실제 계정 복원 시 로그인 선택권과 늦은 로그인 결과 UID 결합 수정·독립 재검토
 - [x] 최신 전체 하네스 통과: `.harness/runs/2026-11-14T14-52-28-639Z-83296/report.md`; exact Rules emulator 46개 별도 통과
-- [ ] 최종 소스 푸시·새 본인 설정 Rules·Hosting 게시 및 공개 바이트 확인 (릴리스 영수증으로 갱신)
+- [x] 최종 소스 b4b43af 푸시·새 본인 설정 Rules c629135d·Hosting 9ea0c97d5e9613ec 게시, 공개135파일 일치·기존경로누락0 (releases/20261114-final-feedback.json)
 - [ ] 실제 Google 신규 OAuth·삼성 웹 OAuth/웹훅·가족 연결·실제 푸시 현장 검증
 - [ ] OS 큰 글꼴/모션 설정을 바꾼 실기기 검사, 메신저 수신 썸네일 확인
 - [ ] 카카오·Identity Platform — 사용자 결정으로 보류

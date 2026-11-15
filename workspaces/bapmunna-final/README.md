@@ -70,3 +70,9 @@ node workspaces/bapmunna-final/scripts/publish.mjs rollback
 ## 2026-11-13 화면 보완
 
 공유 주소는 동일하다. 보호자 홈의 실사 밥그릇을 기존 밥솥이 캐릭터로 바꾸고, 시작 문구를 ‘안부가 폴짝 찾아왔어요’로 복원했다. 전체 앱 홈·더보기에서 실제 계정과 기기 연결 준비 화면으로 이동할 수 있다. 기기 API·카카오 준비 상태와 실제/가상 기록의 경계는 그대로 표시한다. Firebase의 끝 슬래시 정규화를 고려해 모음 페이지 CSS는 절대 경로를 사용한다.
+
+## 2026-11-15 Android 설치 공개
+
+건강 안내에서 갤럭시 테스트 APK를 받을 수 있다. Firebase Spark의 APK 제한에 따라 바이너리는 `https://github.com/jooji13/bapmunna-downloads/releases/tag/android-0.1.0-test.1`에, 링크·검증 JSON은 기존 Firebase에 둔다. 소스와 키는 공개하지 않는다. `stage.mjs`는 `downloads/android-test.json`의 검증된 파일을 대조하되 APK를 Firebase staging에 복사하지 않는다. 클린 작업본에서는 같은 공개 GitHub 자산을 해시 검증해 재사용한다.
+
+최신 Hosting은 `9c953108d6155e4d`; 다음 staging 기준은 이 작업본 `tmp/impact-final/site/bapmunna`이다. 상세 영수증은 `releases/20261115-public-install.json`. iPhone 설치본·실기기 검증은 완료되지 않았다.

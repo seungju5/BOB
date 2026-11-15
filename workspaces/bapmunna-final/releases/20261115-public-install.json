@@ -1,0 +1,91 @@
+{
+  "release": {
+    "at": "2026-11-15T05:39:30.990Z",
+    "site": "impact-series",
+    "url": "https://impact-series.web.app/bapmunna/final/",
+    "version": "sites/impact-series/versions/9c953108d6155e4d",
+    "previous": "sites/impact-series/versions/8135bed18869753c",
+    "release": "sites/impact-series/releases/1794721170146000",
+    "source": "80276853285a715a477dce85122bce5721f820e6",
+    "changed": 88,
+    "preserved": 2616,
+    "totalFiles": 2704,
+    "uploads": 68,
+    "hostingConfig": "unchanged",
+    "billingEnabled": false
+  },
+  "verify": {
+    "at": "2026-11-15T05:40:26.354Z",
+    "version": "sites/impact-series/versions/9c953108d6155e4d",
+    "publicFilesVerified": 88,
+    "existingPathsMissing": 0,
+    "project": "impact-series",
+    "billingEnabled": false
+  },
+  "android": {
+    "schemaVersion": 1,
+    "status": "public-test",
+    "applicationId": "com.bapmunna.senior",
+    "versionName": "0.1.0-test.1",
+    "versionCode": 2,
+    "minAndroidVersion": "10",
+    "minSdk": 29,
+    "metadataPath": "/bapmunna/app/downloads/20261115/release.json",
+    "downloadUrl": "https://github.com/jooji13/bapmunna-downloads/releases/download/android-0.1.0-test.1/bapmunna-health-0.1.0-test.1.apk",
+    "bytes": 21040188,
+    "sha256": "5a5b22b1ea799cf0bc586fa348a6176e9e5840336ff7a4cfe26adc130a594257",
+    "certificateSha256": "9db8fa66280f1cb6a29d0b5148a01105904e25e1d15a210cd3a4ea158fdaf1e5",
+    "debuggable": false,
+    "signatureVerified": true,
+    "nativeSourceCommit": "b5512b6e160b75cc1358d0d94f5b05ca0dede7d8",
+    "nativeSourceSnapshot": "20301ddf046f26bde0ada67827f8698c0819f33cf826f2852b225244be94286b",
+    "realDeviceVerified": false,
+    "deviceVerificationStatus": "not-tested-no-device-available",
+    "iosInstallAvailable": false,
+    "healthDataUpload": false,
+    "storeRelease": false,
+    "privacyUrl": "https://impact-series.web.app/bapmunna/app/health/privacy/"
+  },
+  "publicDownload": {
+    "authenticated": false,
+    "httpStatus": 200,
+    "bytes": 21040188,
+    "sha256": "5a5b22b1ea799cf0bc586fa348a6176e9e5840336ff7a4cfe26adc130a594257",
+    "contentType": "application/vnd.android.package-archive",
+    "contentDisposition": "attachment; filename=bapmunna-health-0.1.0-test.1.apk",
+    "releaseMetadataMatches": true,
+    "checksumFileMatches": true
+  },
+  "github": {
+    "repository": "https://github.com/jooji13/bapmunna-downloads",
+    "releaseId": 445835923,
+    "url": "https://github.com/jooji13/bapmunna-downloads/releases/tag/android-0.1.0-test.1",
+    "prerelease": true,
+    "assetCount": 3,
+    "privateSourceRepositoryUnchanged": true
+  },
+  "checks": {
+    "fullHarness": ".harness/runs/2026-11-15T05-28-06-806Z-21737/report.md",
+    "fullHarnessTests": 427,
+    "nativeTests": 11,
+    "phoneStepsTests": 3,
+    "downloadIntegrityTests": 2,
+    "finalHealthLinkTests": 22,
+    "independentReview": "tmp/public-install-review-20261115.json",
+    "mobileWidths": [
+      320,
+      390
+    ],
+    "horizontalOverflow": 0,
+    "publicPageConsoleWarningsOrErrors": 0,
+    "browserFileSave": "not-verified: download event timed out; subsequent browser helper reported ERR_INTERNET_DISCONNECTED",
+    "physicalDevice": "not-tested: none connected; user cannot connect now",
+    "ios": "not-built/not-published: Xcode and signing setup absent"
+  },
+  "scope": {
+    "firebasePaths": "/bapmunna/app/ only",
+    "firebaseApkOrPrivateKeyCount": 0,
+    "authenticationRulesDatabaseOrSmartThingsChanged": false,
+    "billingEnabled": false
+  }
+}

@@ -9,16 +9,21 @@ import { Button } from "@/components/ui";
 import { healthAppLink } from "@/lib/mobile/links";
 import { PhoneStepsCard } from "./PhoneStepsCard";
 import { HealthPrivacyContent } from "./HealthPrivacyContent";
+import { HealthInstallGuide } from "./HealthInstallGuide";
 import "./senior-home.css";
 import "./health-guide.css";
 
 const subscribe = () => () => {};
 const browser = () => false;
 const nativePlatform = () => Capacitor.isNativePlatform();
+const browserPhone = (): "ios" | "android" => /Android/i.test(navigator.userAgent) ? "android" : "ios";
+const serverPhone = () => "ios" as const;
 
 export function HealthConnectionPage() {
   const native = useSyncExternalStore(subscribe, nativePlatform, browser);
-  const [phone, setPhone] = useState<"ios" | "android">("ios");
+  const preferredPhone = useSyncExternalStore(subscribe, browserPhone, serverPhone);
+  const [selectedPhone, setPhone] = useState<"ios" | "android" | null>(null);
+  const phone = selectedPhone ?? preferredPhone;
   const [opening, setOpening] = useState(false);
   const [webError, setWebError] = useState(false);
   return <main className="bapmunna-senior-home bapmunna-health-guide flex flex-1 flex-col px-[24px] py-[24px]">
@@ -38,6 +43,7 @@ export function HealthConnectionPage() {
           </label>)}
         </div>
       </fieldset>
+      <HealthInstallGuide phone={phone} />
       <ol className="mt-6 list-decimal space-y-4 pl-7 text-2xl leading-relaxed text-cocoa">
         <li>걸음수를 잴 휴대폰에서 밥뭇나 앱을 열어요.</li>
         {phone==="android" ? <li>삼성 헬스의 설정에서 Health Connect를 열고, 삼성 헬스의 <strong>걸음수 쓰기</strong>를 켜 주세요.</li> : null}
@@ -46,11 +52,7 @@ export function HealthConnectionPage() {
       </ol>
       <a href={healthAppLink(phone)} onClick={() => setOpening(true)} className="mt-6 flex min-h-16 items-center justify-center rounded-full bg-cocoa px-5 py-4 text-center text-2xl font-bold text-paper">설치한 밥뭇나 열기</a>
       {opening ? <p role="status" className="mt-3 text-2xl leading-relaxed text-muted">앱이 열리지 않으면 설치 여부를 확인해 주세요. 이 버튼만으로 건강 기록이 연결되지는 않아요.</p> : null}
-      <details className="mt-4 rounded-3xl border border-line p-5 text-2xl leading-relaxed text-muted">
-        <summary className="min-h-12 cursor-pointer py-2 font-bold text-cocoa">아직 앱이 없으신가요?</summary>
-        <p className="mt-3">설치 파일을 준비하고 있어요. 배포가 시작되면 이 화면에서 안내해 드릴게요.</p>
-        <p className="mt-3">웹을 홈 화면에 추가하는 것만으로는 건강 앱이 연결되지 않아요.</p>
-      </details>
+      <p className="mt-4 text-2xl leading-relaxed text-muted">웹을 홈 화면에 추가하는 것만으로는 건강 앱이 연결되지 않아요.</p>
     </>}
     <details className="mt-5 text-2xl leading-relaxed text-muted">
       <summary className="min-h-12 cursor-pointer py-2 font-bold text-cocoa">기록이 보이지 않을 때</summary>

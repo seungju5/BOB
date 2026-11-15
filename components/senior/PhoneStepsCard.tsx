@@ -66,6 +66,7 @@ function LivePhoneStepsCard({ localOnly }: { localOnly: boolean }) {
   const canConnect = native && ["not-connected", "permission-required"].includes(snapshot.status);
   const connected = native && ["ready", "no-data", "error"].includes(snapshot.status);
   const canOpenSettings = native && (snapshot.status === "permission-denied" || snapshot.status === "no-data" || snapshot.reason === "health-connect-update-required");
+  const openSettings = () => { setSettingsError(false); void seniorPhoneSteps.openSettings().catch(() => setSettingsError(true)); };
   const checkedTime = snapshot.updatedAt ? new Intl.DateTimeFormat("ko", { hour: "2-digit", minute: "2-digit", timeZone: snapshot.timeZone }).format(new Date(snapshot.updatedAt)) : null;
 
   return <section className="rounded-3xl border border-line bg-paper p-5" aria-labelledby="phone-steps-title">
@@ -83,7 +84,7 @@ function LivePhoneStepsCard({ localOnly }: { localOnly: boolean }) {
     {!nativeShell && !busy ? <HealthConnectionLink /> : null}
     {nativeShell && !native ? <p role="alert" className="mt-3 text-2xl text-muted">앱의 건강 연결 기능을 시작하지 못했어요. 최신 설치 파일인지 확인해 주세요.</p> : null}
     {canConnect ? <Button onClick={() => setConsent(true)} disabled={busy} className="mt-4 min-h-14 text-2xl">걸음수 연결</Button> : null}
-    {canOpenSettings ? <Button variant="outline" onClick={() => { setSettingsError(false); void seniorPhoneSteps.openSettings().catch(() => setSettingsError(true)); }} disabled={busy} className="mt-4 min-h-14 text-2xl">{snapshot.reason === "health-connect-update-required" ? "Health Connect 설치·업데이트" : "휴대폰 설정 열기"}</Button> : null}
+    {canOpenSettings ? <Button variant="outline" onClick={openSettings} disabled={busy} className="mt-4 min-h-14 text-2xl">{snapshot.reason === "health-connect-update-required" ? "Health Connect 설치·업데이트" : "휴대폰 설정 열기"}</Button> : null}
     {connected ? <Button variant="outline" onClick={() => void session.current?.run("readToday")} disabled={busy} className="mt-4 min-h-14 text-2xl">걸음수 다시 확인</Button> : null}
     {settingsError ? <p role="alert" className="mt-3 text-2xl text-blush-deep">설정을 열지 못했어요. 건강 앱에서 밥뭇나의 걸음수 읽기 권한을 확인해 주세요.</p> : null}
     <details className="mt-3 text-2xl text-muted">
@@ -92,6 +93,10 @@ function LivePhoneStepsCard({ localOnly }: { localOnly: boolean }) {
       <p className="mt-3">걷지 않은 날과 기록을 확인할 수 없는 날은 다르게 표시해요.</p>
       {!nativeShell ? <p className="mt-3">웹브라우저에서는 건강 앱을 직접 읽을 수 없어요. ‘내 휴대폰 걸음수 연결’에서 설치한 앱을 열 수 있어요.</p> : null}
       <p className="mt-3">삼성 헬스의 설정에서 Health Connect에 걸음수 공유를 켜 주세요. 아이폰은 건강 앱 → 공유 → 앱에서 밥뭇나의 걸음수 읽기 권한을 확인해 주세요.</p>
+      {native && !canOpenSettings ? <>
+        <p className="mt-3">권한 창이 열리지 않으면 휴대폰 설정에서 밥뭇나의 걸음수 읽기를 확인해 주세요.</p>
+        <Button variant="outline" onClick={openSettings} disabled={busy} className="mt-3 min-h-14 text-2xl">휴대폰 설정 열기</Button>
+      </> : null}
       {native ? <button onClick={() => void session.current?.run("disconnect")} disabled={busy} className="mt-3 min-h-12 py-2 text-2xl text-cocoa underline underline-offset-4">밥뭇나 걸음수 연결 끄기</button> : null}
       <p className="mt-3">건강 앱의 읽기 권한은 설정에서 언제든 바꿀 수 있어요.</p>
       <p className="mt-3">{localOnly ? "이 휴대폰 소유자의 건강 기록을 기준으로 표시해요." : "가족 연결을 바꾸면 걸음수 연결도 다시 동의해 주세요."}</p>

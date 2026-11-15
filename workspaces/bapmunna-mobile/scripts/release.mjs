@@ -38,7 +38,7 @@ async function run(binary, args, options = {}) {
   if (result !== 0) throw new Error(`${path.basename(binary)} failed (${result})`);
 }
 
-async function evidence(files, target, copiedBundle) {
+async function evidence(files, target, copiedBundle, verification = null) {
   const artifacts = [];
   for (const file of files) {
     const bytes = await readFile(file);
@@ -56,13 +56,13 @@ async function evidence(files, target, copiedBundle) {
   const web = JSON.parse(await readFile(path.join(workspace, 'www/native-build.json'), 'utf8'));
   await writeFile(path.join(target, 'evidence.json'), JSON.stringify({
     createdAt: new Date().toISOString(), mode, commit, sourceSnapshot, sourceFiles: source,
-    web, copiedBundle, artifacts, realHealthDataVerified: false, deployed: false,
-    signing: mode === 'android-debug' ? 'disposable-local-debug' : mode === 'android-release-signed' ? 'provided-release-key' : 'unsigned',
+    web, copiedBundle, artifacts, verification, realHealthDataVerified: false, deployed: false,
+    signing: mode === 'android-debug' ? 'disposable-local-debug' : ['android-release-signed', 'android-apk-signed'].includes(mode) ? 'provided-release-key' : 'unsigned',
   }, null, 2) + '\n');
 }
 
 if (mode === 'doctor') { await doctor(); }
-else if (['android-debug', 'android-release-unsigned', 'android-release-signed'].includes(mode)) {
+else if (['android-debug', 'android-release-unsigned', 'android-release-signed', 'android-apk-signed'].includes(mode)) {
   const checks = await doctor();
   if (!checks.java21 || !checks.androidSdk36 || !checks.androidBuildTools36 || !checks.androidBuildTools35 || !checks.androidSdkLicense) {
     throw new Error('Install the approved SDK/JDK locally first. This script never accepts licenses or installs SDK packages.');
@@ -73,10 +73,11 @@ else if (['android-debug', 'android-release-unsigned', 'android-release-signed']
   const env = { ...process.env, JAVA_HOME: java, ANDROID_HOME: sdk, ANDROID_SDK_ROOT: sdk,
     ANDROID_USER_HOME: path.join(sdk, 'user'), GRADLE_USER_HOME: path.join(local, 'gradle') };
   const keys = ['BAPMUNNA_KEYSTORE', 'BAPMUNNA_STORE_PASSWORD', 'BAPMUNNA_KEY_ALIAS', 'BAPMUNNA_KEY_PASSWORD'];
-  if (mode === 'android-release-signed') {
+  if (['android-release-signed', 'android-apk-signed'].includes(mode)) {
     if (keys.some(key => !env[key]) || !await exists(env.BAPMUNNA_KEYSTORE)) throw new Error('Provide your release keystore and all four signing environment variables. Values are never printed.');
   } else for (const key of keys) delete env[key];
   const release = mode !== 'android-debug';
+  const apk = mode === 'android-apk-signed';
   await mkdir(local, { recursive: true });
   if (!release && !await exists(path.join(local, 'debug.keystore'))) {
     // A disposable development key, never a production signing identity.
@@ -84,14 +85,25 @@ else if (['android-debug', 'android-release-unsigned', 'android-release-signed']
       '-storetype', 'JKS', '-storepass', 'android', '-alias', 'androiddebugkey', '-keypass', 'android',
       '-keyalg', 'RSA', '-keysize', '2048', '-validity', '10000', '-dname', 'CN=Android Debug,O=Android,C=US']);
   }
-  await run(path.join(workspace, 'android/gradlew'), ['--no-daemon', '--console=plain', release ? ':app:bundleRelease' : ':app:assembleDebug'], { cwd: path.join(workspace, 'android'), env });
+  await run(path.join(workspace, 'android/gradlew'), [...(env.BAPMUNNA_GRADLE_OFFLINE === '1' ? ['--offline'] : []), '--no-daemon', '--console=plain', apk ? ':app:assembleRelease' : release ? ':app:bundleRelease' : ':app:assembleDebug'], { cwd: path.join(workspace, 'android'), env });
   assert.deepEqual(await verifyCopiedBundle(workspace, 'android'), copiedBefore, 'Web bundle changed during compilation. Rebuild.');
-  const built = path.join(workspace, release ? 'android/app/build/outputs/bundle/release/app-release.aab' : 'android/app/build/outputs/apk/debug/app-debug.apk');
+  const built = path.join(workspace, apk ? 'android/app/build/outputs/apk/release/app-release.apk' : release ? 'android/app/build/outputs/bundle/release/app-release.aab' : 'android/app/build/outputs/apk/debug/app-debug.apk');
   const target = path.join(local, 'artifacts', mode);
   await mkdir(target, { recursive: true });
-  const output = path.join(target, release ? 'bapmunna-health-release.aab' : 'bapmunna-health-debug.apk');
+  const output = path.join(target, apk ? 'bapmunna-health-test.apk' : release ? 'bapmunna-health-release.aab' : 'bapmunna-health-debug.apk');
   await cp(built, output);
-  await evidence([output], target, copiedBefore);
+  let verification = null;
+  if (apk) {
+    const buildTools = path.join(sdk, 'build-tools/36.0.0');
+    const signature = (await execute(path.join(buildTools, 'apksigner'), ['verify', '--verbose', '--print-certs', output], { env })).stdout;
+    const manifest = (await execute(path.join(buildTools, 'aapt2'), ['dump', 'xmltree', output, '--file', 'AndroidManifest.xml'], { env })).stdout;
+    assert.doesNotMatch(manifest, /android:debuggable[^\n]*(?:true|0xffffffff)/i, 'Public test APK must not be debuggable.');
+    assert.match(signature, /Verified using v2 scheme[^\n]*true/, 'APK v2 signature must verify.');
+    const certificateSha256 = signature.match(/Signer #1 certificate SHA-256 digest: ([a-f0-9]+)/i)?.[1];
+    assert.ok(certificateSha256, 'Missing signing certificate fingerprint.');
+    verification = { debuggable: false, signatureVerified: true, certificateSha256 };
+  }
+  await evidence([output], target, copiedBefore, verification);
   console.log(`Prepared ${output}. No upload or installation was performed.`);
 } else if (mode === 'ios-source') {
   await run(process.execPath, ['scripts/verify-shell.mjs']);
@@ -108,4 +120,4 @@ else if (['android-debug', 'android-release-unsigned', 'android-release-signed']
   assert.deepEqual(await verifyCopiedBundle(workspace, 'ios'), copiedBefore, 'Web bundle changed during packaging. Rebuild.');
   await evidence([output], target, copiedBefore);
   console.log(`Prepared ${output}. This is source, NOT a signed or compiled iPhone app.`);
-} else throw new Error('Use doctor, android-debug, android-release-unsigned, android-release-signed, or ios-source.');
+} else throw new Error('Use doctor, android-debug, android-release-unsigned, android-release-signed, android-apk-signed, or ios-source.');

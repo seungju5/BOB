@@ -9,6 +9,7 @@
     "build:android": "node scripts/release.mjs android-debug",
     "build:android:unsigned": "node scripts/release.mjs android-release-unsigned",
     "build:android:signed": "node scripts/release.mjs android-release-signed",
+    "build:android:apk": "node scripts/release.mjs android-apk-signed",
     "bundle:ios-source": "node scripts/release.mjs ios-source",
     "verify": "node scripts/verify-shell.mjs",
     "test": "node --test tests/*.test.mjs",

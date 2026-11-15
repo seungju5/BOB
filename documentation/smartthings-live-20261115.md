@@ -53,7 +53,16 @@ Node 24.22.1과 직접 시작한 `demo-bapmunna` 로컬 Firestore에서 전체 �
 
 기존 앱 `f1b8149d-45c5-4f4b-8136-2ad518faf4ec`의 설정을 다시 읽어 비공개 복구본을 남긴 후 공식 CLI 3.0.1의 `smartapps:update`로 새 웹훅 주소를 요청했다. HTTP 403을 받았고 공식 CLI는 “Creating or modifying a Smart App requires a paid plan” 안내를 반환했다. 실패 후 OAuth 설정 변경은 실행하지 않았다.
 
-공식 CLI가 403을 위 안내로 변환한다는 사실과 계정의 실제 플랜은 구분한다. Console의 Manage Plans는 다시 삼성 로그인을 요구하며 현재 CAPTCHA 확인 단계이므로 정확한 플랜·기존 앱 전환 적용 여부는 미확인이다. 새 앱·새 secret·추가 scope·유료 구독을 생성하지 않았다. 삼성 지원 문의도 아직 발송하지 않았다.
+공식 CLI가 403을 위 안내로 변환한다는 사실과 계정의 실제 플랜은 구분한다. Console의 Manage Plans 로그인에서 승인받은 CAPTCHA와 비밀번호 확인을 통과했으며 새 문자 인증 단계다. 정확한 계정 플랜은 아직 미확인이다. 재발송 중 공식 계정 도메인 접근의 자동 승인 검토 오류가 있었으나, 사용자 재시도 승인 후 새 SMS 발송을 확인했다. 새 앱·새 secret·추가 scope·유료 구독을 생성하지 않았다. 삼성 지원 문의도 아직 발송하지 않았다.
+
+### 공식 공개 요금·전환 정책 추가 확인
+
+2026-11-15 공식 요금 페이지와 펼친 FAQ에서 다음을 확인했다. 이는 현재 삼성 계정의 실제 구독 상태와 구분한다.
+
+- 유료 플랜이 없는 API Access App은 **2026-11-04부터 12-15까지 신규 생성과 기존 앱 수정이 제한**된다. 이미 설치한 연동은 이 기간 계속 동작하지만, 12-15 이후 API 접근 제한·중단 및 활성 API 키 비활성화 가능성이 안내돼 있다. 11-04 이전에 등록했다는 사실만으로 지금의 주소 수정이 허용되지는 않는다.
+- Developer의 공개 표시 가격은 **월 US$4.99**, 월 **합계 100,000 API 호출**, installed app **최대 10개**이며 **본인 가구용 장소만** 대상이다. 여러 개인 장소·허브도 사용량 한도 안에서 하나의 구독으로 관리한다. 한국이 지원 국가에 포함되지만 실제 국내 결제 금액·세금은 계정 결제 화면에서 확인해야 한다.
+- Business는 최종 사용자에게 서비스를 제공하는 경우의 사용량 기반 플랜이며, 공개 페이지는 월 100만 호출부터의 구간과 **별도 가격 문의**를 안내한다. 밥뭇나가 다른 2~3가구에 제공하는 테스트에 Developer 가격을 그대로 적용하거나 가구 수에 US$4.99를 곱해 확정 예산으로 제시하지 않는다.
+- 공개 가격표는 개별 데이터 항목별 단가가 아닌 월 합계 API 호출량을 안내한다. 실제 청구되는 이벤트·호출의 세부 산정과 파일럿 적용 조건은 계약/플랜 확인이 필요하다. 아직 어느 유료 플랜에도 가입하지 않았다.
 
 거부 이후 재조회한 등록값은 그대로다.
 
@@ -82,6 +91,7 @@ Vercel 정상 응답 배포 ID는 위 표에 보존했다. 복구 시 source와 
 
 - [Vercel ESM 호환 설정](https://vercel.com/docs/functions/runtimes/node-js/advanced-node-configuration#experimental-nodejs-require-of-es-module)
 - [삼성 API Access App 등록 조건과 Target 확인](https://developer.smartthings.com/docs/service-integrations/app-setup)
+- [삼성 공식 API 요금 및 기존 앱 수정 제한 FAQ](https://developer.smartthings.com/smartthingsapi)
 - [공식 CLI의 403 처리 소스](https://github.com/SmartThingsCommunity/smartthings-cli/blob/master/packages/cli/src/lib/command/util/smartapps-util.ts)
 
 공유용 2쪽 PDF는 workspace `output/pdf/bapmunna-smartthings-status-20261115.pdf`에 있다. 비밀번호·인증번호·비밀키·기기 ID·원시 전력값은 보고서에 포함하지 않았다.

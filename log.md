@@ -328,3 +328,5 @@ provision-smartthings-identity.mjs apply가 성공했다. KU GPA에 bapmunna-sma
 2026-11-15 09:19 KST 최종 보완 배포 완료: 새 Vercel 이메일 인증 뒤 dpl_22Lwa2Vr6oWA2UE1YWYpeXPqvwxg의 Ready와 운영 도메인을 확인했다. 공개 API7개·연결 화면3개 검사 통과, /connect/를 포함한 CSP/no-store/no-referrer/frame-deny 확인. CSP 실제 값도 템플릿과 일치했다. 비밀 없는 릴리스 영수증을 workspaces/smartthings-vercel/releases/20261115-production.json에 남겼다.
 
 Node24.22.1 및 직접 시작한 demo-bapmunna Firestore로 전체 하네스 427개, 타입·동기화·세 빌드 통과(실패0·skip0), 검사 시작/종료 소스 지문 일치. 보고서 .harness/runs/2026-11-15T00-23-23-580Z-12035/report.md. 독립 설정 검토에 수정 필요 결함 없음. 운영 UI·규칙·과금 변경 없음. 이후 변경은 검증 결과 문서/영수증만이다. 삼성 Manage Plans 로그인에는 CAPTCHA가 나타나 별도 확인을 요청했고, 실제 플랜·OAuth·웹훅 성공은 아직 미확인이다.
+
+2026-11-15 삼성 플랜 확인 후속: 사용자 승인을 받은 CAPTCHA와 비밀번호 확인을 통과했다. 공식 계정 이동의 자동 승인 검토 오류는 명시 재시도 승인 뒤 해소되어 새 문자 발송을 확인했지만, 코드 입력 없이 3분이 지나 만료됐다. 실제 Console 계정 플랜 조회·OAuth 주소 변경은 아직 미완료다. 공개 요금/전환 FAQ에서 11/4부터 미가입 기존 앱도 수정 제한, 개인용 월 US$4.99 및 본인 장소 제한을 확인해 운영 문서에 기록했다. 기존 서버 코드·배포·유료 설정은 변경하지 않았으며 이번에는 문서만 갱신했다.

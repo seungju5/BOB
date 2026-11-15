@@ -292,3 +292,9 @@ documentation/smartthings-console-support-20261114.md에 사실·제약·삼성 
 독립 검토에서 웹 게시 차단 결함이 발견되지 않았으며 링크·걸음수 43개와 웹 fallback 2개가 통과했다. 배포 작업본 전체 하네스는 `.harness/runs/2026-11-14T15-29-11-885Z-99273/report.md`에서 25/246/48/59/49개와 타입·동기화·두 앱 빌드·Next·소스 안정성이 모두 통과했다. 첫 실행은 모든 기능 검사를 통과했지만 저장소 루트에 생성된 emulator 로그로 소스 안정성 검사가 실패했고, 시험 로그를 Git 제외 경로로 옮겨 재실행했다. 정적 export 검증에 health·health/privacy를 추가해 총 15개 경로/147개 파일을 확인했다. 기존 공개 9ea0c97 버전의 staging·복구 증거를 별도로 보존하고 웹 파일만 게시한다.
 
 2026-11-15 00:34 KST에 소스 d9e7a8c를 Hosting 8135bed18869753c로 게시했다. 공개 변경 103개 바이트 일치, 이전 9ea0c97의 2,595개 파일 보존·기존 경로 누락 0, 총 2,698개를 확인했다. 모든 변경 경로가 `/bapmunna/app/` 아래이며 기존 Firebase 정적 런타임·Hosting 설정·결제 미연결 상태는 유지했다. 공개 어르신 진입 → 건강 안내 → 아이폰/갤럭시 → 개인정보 왕복을 직접 확인하고 스크린샷을 저장했다. OS 앱 실행·실제 건강 권한·설치 파일 공개는 이번 증거에 포함하지 않는다. 임시 로컬 서버와 Firestore를 종료하고 화면 크기를 복원했다. 영수증은 workspaces/bapmunna-final/releases/20261115-health-web.json, 다음 게시 기준은 이 worktree의 tmp/impact-final/site/bapmunna.
+
+## 2026-11-15 공개 테스트 APK와 설치 안내
+
+사용자 요청에 따라 개발용 debug APK를 공개용으로 사용하지 않고 별도 서명의 non-debug 테스트 APK를 만들었다. Android 버전2/0.1.0-test.1, nativeSource b5512b6, SHA256 5a5b22b1…a594257이다. 권한 목적의 privacy URL·건강 설정 복구를 보완했다. Firebase Spark의 실행 파일 제한은 확장자 위장·과금으로 우회하지 않고, 현재 인증된 jooji13 계정에 앱 소스 없는 공개 다운로드 전용 GitHub 저장소를 만들었다. 기존 비공개 소스와 계정·기기 API 경계는 보존한다.
+
+Node24 전체 하네스427·네이티브11·플러그인3·파일 무결성2가 통과했다. 첫 Node26 HTTP EPIPE 실패는 별도 기록했다. 독립 APK/패키지/스테이징 검사와 320/390px 안내를 확인했다. 실기기 목록은 비어 있고 사용자가 현재 기기를 연결할 수 없다고 답했으므로 설치·권한·본인 걸음수 대조는 미완료다. Xcode/IPA도 없다. 상세와 검사 목록은 documentation/health-install-release-20261115.md. 공개 결과는 아래 영수증으로 추가한다.

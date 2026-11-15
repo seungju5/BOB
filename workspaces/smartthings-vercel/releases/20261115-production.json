@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "checkedAt": "2026-11-15T00:19:42.780Z",
+  "project": "bapmunna-smartthings",
+  "projectId": "prj_oGTlANnAsT3dLHCWcsCNzOwpyhW3",
+  "environment": "production",
+  "origin": "https://bapmunna-smartthings.vercel.app",
+  "deploymentId": "dpl_22Lwa2Vr6oWA2UE1YWYpeXPqvwxg",
+  "deploymentUrl": "https://bapmunna-smartthings-eitqocnlb-peterjang9296-8249.vercel.app",
+  "readyVerifiedInDashboard": true,
+  "archive": {
+    "fileCount": 15,
+    "bytes": 540627,
+    "sha256": "dfe029a3b812a94e2081386d181caa1d04604a45f1f32ba8de200e24f7112b3b",
+    "credentialsIncluded": false
+  },
+  "previousRespondingDeployment": "dpl_kRFKE6WMV23EGbcHD8AhL158sgyq",
+  "previousDeploymentLimitation": "Missing security headers on /connect/; do not restore without checking configuration.",
+  "publicChecks": {
+    "total": 10,
+    "passed": 10,
+    "config": 200,
+    "unauthenticatedStatus": 401,
+    "unsignedWebhook": 401,
+    "invalidOAuthState": 400,
+    "unauthenticatedCleanup": 401,
+    "approvedOriginPreflight": 204,
+    "foreignOriginPreflight": 403,
+    "connectPaths": [
+      "/connect",
+      "/connect/",
+      "/connect/index.html"
+    ],
+    "allConnectPaths200WithCspNoStoreNoReferrerAndFrameDeny": true
+  },
+  "firebaseCredentialReadVerified": true,
+  "productionSecretCount": 6,
+  "productionConfigCount": 8,
+  "plans": {
+    "firebase": "Spark",
+    "vercel": "Hobby",
+    "billingChanged": false
+  },
+  "smartthings": {
+    "registeredTargetStatus": "PENDING",
+    "webhookUpdateHttpStatus": 403,
+    "cliMessage": "Creating or modifying a Smart App requires a paid plan",
+    "actualAccountPlanVerified": false,
+    "oauthRedirectUpdateAttemptedAfterFailure": false,
+    "realUserOAuthVerified": false,
+    "automaticWebhookVerified": false,
+    "frontendApiOriginEnabled": false
+  },
+  "exactCspComparedWithTemplate": true,
+  "localChecks": {
+    "node": "24.22.1",
+    "report": ".harness/runs/2026-11-15T00-23-23-580Z-12035/report.md",
+    "testsPassed": 427,
+    "failed": 0,
+    "skipped": 0,
+    "sourceFingerprintStable": true,
+    "firestoreEmulatorProject": "demo-bapmunna",
+    "independentConfigurationReview": "no_actionable_findings"
+  }
+}

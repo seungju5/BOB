@@ -8,6 +8,8 @@
 
 Vercel Node.js 24, 서울 `icn1`, API catch-all 원래 경로, 최대 요청 300초를 사용합니다. `NODEJS_HELPERS=0`으로 플랫폼 본문 파싱을 끄며, 서버는 최대 1MiB 원문을 보존합니다. `Host`·`X-Forwarded-*`로 공개 주소를 정하지 않습니다. 로그에는 요청 본문·OAuth 코드·인증 토큰·서비스 계정 오류를 출력하지 않습니다. 실제 Vercel edge 접근 로그의 쿼리 문자열 보관 설정은 게시 전에 별도로 확인해야 합니다.
 
+Vercel은 기본적으로 CommonJS의 ESM 로딩을 끄므로 Firebase Admin 14의 `jwks-rsa` → `jose` 초기화가 실패한다. 공식 지원 설정 `NODE_OPTIONS=--experimental-require-module`을 production 환경과 배포 템플릿에 명시한다. 의존성을 과거 버전으로 낮추지 않는다. 연결 화면의 끝 슬래시(`/connect/`)가 경로별 헤더에서 누락된 실제 응답을 확인했으므로, 이 독립 서버의 모든 경로에 `no-store`·`no-referrer`·CSP·프레임 차단을 적용한다.
+
 ## 운영 환경변수
 
 비밀값은 운영 환경의 서버 비밀 설정에만 넣습니다. 브라우저 번들, Git, `.stage/`, 문서나 로그에 복사하지 않습니다. 이 저장소에는 실제 키를 추가하지 않습니다.
@@ -26,6 +28,7 @@ Vercel Node.js 24, 서울 `icn1`, API catch-all 원래 경로, 최대 요청 300
 | `SMARTTHINGS_OAUTH_PREFIX` | 기존 등록 앱과 일치하는 `/oauth` 또는 `/v1/oauth` |
 | `CRON_SECRET` | 32~256자의 공백 없는 무작위 비밀값. 청소 요청 인증에만 사용 |
 | `NODEJS_HELPERS` | `0` — `vercel.json`에도 명시 |
+| `NODE_OPTIONS` | `--experimental-require-module` — Vercel 기본 ESM 로딩 제한과 Firebase Admin 호환 |
 
 서비스 계정 JSON이 없으면 로컬/Google 서버에서만 기존 ADC 방식을 사용합니다. Vercel에서는 준비 완료를 표시하지 않고 초기화를 거부합니다. Vercel에 로컬 CLI 토큰을 가져오지 않습니다. 서비스 계정에는 사용자 취소/정지 확인을 포함한 Firebase Auth 조회와 프로젝트 Firestore 문서 접근 8개 권한만 부여하며 Owner/Editor를 주지 않습니다. IAM은 SmartThings 컬렉션만으로 제한되지 않습니다. Admin SDK는 브라우저 규칙을 우회하므로 컬렉션·소유권 경계는 서버 코드가 지킵니다. 실제 IAM 부여·키 생성·비밀 설정은 별도 운영 단계입니다.
 

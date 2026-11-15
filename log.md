@@ -312,3 +312,19 @@ provision-smartthings-identity.mjs apply가 성공했다. KU GPA에 bapmunna-sma
 2026-11-15 공개 웹 후속 완료: 배포 담당 채팅에서 같은 건강 소스70개를 확인한 d9e7a8c를 origin/codex/health-web-20261115에 푸시하고 Hosting8135bed18869753c에 게시했다. 변경103파일 공개 해시 일치·기존2595파일 보존·기존경로누락0·총2698개, 기존 설정·Rules·API origin·과금 false 유지. APK/AAB/IPA는 게시하지 않았다. 배포 작업본의 전체 하네스도 실패0·skip0이며 15route/147파일 export를 검증했다.
 
 부모 채팅의 실제 공개 IAB에서 health→privacy→health→s→health 왕복과 갤럭시 고정 실행 URL을 확인했다. 390px 가로 넘침0·콘솔 오류/경고0, public-health 화면을 output/bapmunna-health-release-20261115/health-public-390.png에 저장했다. OS 앱 실행과 본인 걸음수는 실기기 검사로 남긴다. 로컬 3022/3023 서버를 종료하고 viewport를 복원했다. 배포 영수증을 workspaces/bapmunna-final/releases/20261115-health-web.json에 옮겼고, 동일한 export 경로 검증 한 줄만 통합했다. 런타임은 c2195aa와 동일하므로 설치 산출물 소스 기준을 새 문서 커밋으로 바꾸지 않는다.
+
+## 2026-11-15 SmartThings 공개 서버 가동·삼성 등록 변경 거부
+
+사용자가 제공한 새 Vercel 인증번호로 첫 배포를 마쳤다. bapmunna-smartthings.vercel.app production과 전용 프로젝트를 확인하고, production 전용 비밀값6개·설정8개를 UI로 저장했다. 비밀은 로그·화면 증거·소스에 출력하지 않았다. 전용 서버 계정으로 실사용자 데이터가 아닌 무작위 미존재 문서/UID를 조회하여 Firestore·Auth 읽기 권한을 확인했다.
+
+최초 Vercel 배포의 Firebase Admin 초기화는 jwks-rsa/jose ERR_REQUIRE_ESM으로 실패했다. 공식 NODE_OPTIONS=--experimental-require-module 설정 뒤 재배포 dpl_kRFKE6WMV23EGbcHD8AhL158sgyq에서 config200·무인증401·서명없는웹훅401·임의state400·청소비밀없음401·정확한CORS204/403을 확인했다. 13개 로컬 HTTP/어댑터 검사도 실패0·skip0으로 통과했다.
+
+/ connect 끝 슬래시 경로의 보안 헤더 누락을 공개 응답으로 확인해 전체 독립 서버 경로에 헤더를 적용하도록 템플릿을 보완했다. 수정 ZIP15개 업로드 호출이 장시간 반환되지 않았고, 완료 후 기존 프로젝트 업데이트를 선택했으나 Vercel 추가 이메일 인증이 요구됐다. 새 코드 요청 상태로 보완 배포를 유지한다. 아직 보완본의 공개 헤더 재검사는 미완료다.
+
+삼성 앱 현재 설정 복구본을 남기고 공식CLI3.0.1 smartapps:update로 새 webhook URL을 요청했지만 HTTP403과 유료플랜필요 안내로 거부됐다. 다음 oauth:update는 실행하지 않았고 재조회에서 기존 Impact callback/webhook·r:devices:*·Target PENDING 유지 확인. 실제 계정 플랜은 Console 재로그인이 필요해 미확인이고 새 결제·secret 회전·권한 확대·지원 문의 발송을 하지 않았다. frontend origin을 빈 값으로 유지했으며 다른 채팅의 최신 Hosting/건강 안내를 보존했다.
+
+최신 운영 사실은 documentation/smartthings-live-20261115.md, 팀 공유용 2쪽 그림 PDF는 workspace output/pdf/bapmunna-smartthings-status-20261115.pdf에 기록했다. PDF 두 페이지를 렌더링하여 원본3D토끼·한글·배치·출처 링크를 확인했다. 실제 사용자OAuth·자동웹훅·다중가구실기기 성공을 서버 가동 증거로 대체하지 않는다.
+
+2026-11-15 09:19 KST 최종 보완 배포 완료: 새 Vercel 이메일 인증 뒤 dpl_22Lwa2Vr6oWA2UE1YWYpeXPqvwxg의 Ready와 운영 도메인을 확인했다. 공개 API7개·연결 화면3개 검사 통과, /connect/를 포함한 CSP/no-store/no-referrer/frame-deny 확인. CSP 실제 값도 템플릿과 일치했다. 비밀 없는 릴리스 영수증을 workspaces/smartthings-vercel/releases/20261115-production.json에 남겼다.
+
+Node24.22.1 및 직접 시작한 demo-bapmunna Firestore로 전체 하네스 427개, 타입·동기화·세 빌드 통과(실패0·skip0), 검사 시작/종료 소스 지문 일치. 보고서 .harness/runs/2026-11-15T00-23-23-580Z-12035/report.md. 독립 설정 검토에 수정 필요 결함 없음. 운영 UI·규칙·과금 변경 없음. 이후 변경은 검증 결과 문서/영수증만이다. 삼성 Manage Plans 로그인에는 CAPTCHA가 나타나 별도 확인을 요청했고, 실제 플랜·OAuth·웹훅 성공은 아직 미확인이다.

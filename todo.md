@@ -16,9 +16,9 @@
 
 기술/API/검증 메모: `documentation/phone-steps-20261114.md`. 실제 SmartThings API 작업은 아래 별도 상태를 따른다.
 
-## 최신 SmartThings 진행 — 2026-11-14 실사용 재개
+## 최신 SmartThings 진행 — 2026-11-15 공개 서버 가동
 
-사용자가 실제 가동까지 다시 요청했다. Firebase Spark·새 과금 금지는 유지하되 무료 공개 서버 배포 작업은 재개했다. 카카오는 계속 보류다. **아래 구현은 아직 운영 배포·삼성 실사용 검증을 마치지 않았다.**
+사용자가 실제 가동까지 다시 요청했다. Firebase Spark·새 과금 금지는 유지하며 무료 공개 서버를 게시했다. 카카오는 계속 보류다. **전용 서버 배포와 공개 경계 검사는 완료했지만 삼성 실사용 검증은 미완료다.**
 
 - [x] 공식 CLI 3.0.1의 `/v1/smartapps`로 기존 앱·OAuth 현재 조회 성공. 읽기 권한 유지, 기존 Target `PENDING` 확인. 이전 CLI 2.1.3의 403을 유료 플랜 차단으로 단정하지 않도록 정정
 - [x] 별도 Vercel Node 서버 패키지, Firebase 로그인 유지 연결 창, 정확한 origin·창·채널 검증, 쿠키와 bearer 인증 분리
@@ -28,11 +28,14 @@
 - [x] 사용자 승인 후 새 Vercel Hobby 가입·로그인, 모델 학습 데이터 공유 해제·저장
 - [x] 명시 승인한 전용 서버 계정·정확한 8개 권한·키 발급, 두 Firebase 프로젝트 결제 미연결 확인
 - [x] 비밀 없는 서버 파일 15개를 공식 Vercel Drop에 업로드, 별도 프로젝트 이름 설정
-- [ ] Vercel 첫 배포의 추가 이메일 인증 → 고정 운영 주소·함수 빌드 확인 → production 비밀 주입·공개 응답 검사
+- [x] Vercel 첫 배포 인증·고정 운영 주소, production 비밀값 6개·설정 8개, ESM 초기 오류 해소와 API 200 확인
+- [x] 전용 키로 실제 Firestore/Auth 읽기 권한 확인, 공개 API 인증·서명·state·CORS 경계 및 로컬 HTTP/어댑터 13개 검사 통과
+- [x] `/connect/` 보안 헤더 보완본 최종 게시: 새 Vercel 이메일 인증·Ready 확인, 공개 API 7개와 화면 URL 3개 검사 통과
 - [ ] 삼성 Console 접근 복구와 현재 이용 플랜 확인 (인증 후 오류 재현, 플랜 미확인)
+- [ ] 삼성 이용 플랜·앱 수정 권한 확인: webhook 변경이 403과 공식 CLI의 유료 플랜 필요 안내로 거부됨. 별도 결제 미실행
 - [ ] 기존 삼성 앱 callback·webhook 주소 변경 → Target `CONFIRMED` → 실제 OAuth·기기 선택·자동 수신·갱신·해제·2~3가구 격리
 
-SmartThings frontend API origin은 빈 값이며 아직 실제 연결 준비 완료로 표시하지 않는다. 다른 채팅의 공개 Hosting 배포는 각 릴리스 영수증을 따른다. 구현·배포 절차는 `workspaces/smartthings-vercel/README.md`, 당일 사실과 남은 작업은 `documentation/smartthings-live-20261114.md`에 기록한다.
+SmartThings frontend API origin은 빈 값이며 아직 실제 연결 준비 완료로 표시하지 않는다. 다른 채팅의 공개 Hosting 배포는 각 릴리스 영수증을 따른다. 구현·배포 절차는 `workspaces/smartthings-vercel/README.md`, 최신 사실과 남은 작업은 `documentation/smartthings-live-20261115.md`에 기록한다.
 
 ## 최신 검증 상태 — 2026-11-13 최종 감사
 

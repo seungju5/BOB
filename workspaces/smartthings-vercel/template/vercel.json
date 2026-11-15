@@ -8,7 +8,8 @@
     "icn1"
   ],
   "env": {
-    "NODEJS_HELPERS": "0"
+    "NODEJS_HELPERS": "0",
+    "NODE_OPTIONS": "--experimental-require-module"
   },
   "functions": {
     "api/smartthings/*.mjs": {
@@ -23,7 +24,7 @@
   ],
   "headers": [
     {
-      "source": "/connect/:path*",
+      "source": "/(.*)",
       "headers": [
         {
           "key": "Cache-Control",

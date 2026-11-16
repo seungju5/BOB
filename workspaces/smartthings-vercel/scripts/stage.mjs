@@ -4,7 +4,9 @@ import {join} from 'node:path';
 
 const workspace=fileURLToPath(new URL('../',import.meta.url));
 const repository=fileURLToPath(new URL('../../../',import.meta.url));
-export const runtimeFiles=Object.freeze(['index.mjs','http-adapter.mjs','security.mjs','service.mjs','smartthings.mjs','store.mjs','kakao-security.mjs','kakao-store.mjs','kakao-service.mjs','kakao-runtime.mjs']);
+const sourceRuntimeFiles=Object.freeze(['index.mjs','http-adapter.mjs','security.mjs','service.mjs','smartthings.mjs','store.mjs','kakao-security.mjs','kakao-store.mjs','kakao-service.mjs','kakao-runtime.mjs']);
+export const runtimeFiles=Object.freeze([...sourceRuntimeFiles,'kakao-handler.mjs']);
+export const kakaoRoutes=Object.freeze(['config','start','callback','exchange']);
 export const portalFiles=Object.freeze(['connect/index.html','connect/connect.mjs','connect/style.css']);
 
 export async function stage({destination=join(workspace,'.stage')}={}){
@@ -13,11 +15,13 @@ export async function stage({destination=join(workspace,'.stage')}={}){
   try{
     for(const folder of ['api/smartthings','api/kakao','runtime','public/connect'])await mkdir(join(temporary,folder),{recursive:true});
     const server=join(repository,'integrations/bapmunna-firebase/server');
-    for(const name of runtimeFiles)await copyFile(join(server,name),join(temporary,'runtime',name));
+    for(const name of sourceRuntimeFiles)await copyFile(join(server,name),join(temporary,'runtime',name));
+    await copyFile(join(workspace,'template/runtime/kakao-handler.mjs'),join(temporary,'runtime/kakao-handler.mjs'));
     for(const name of portalFiles)await copyFile(join(workspace,'public',name),join(temporary,'public',name));
     await copyFile(join(repository,'integrations/bapmunna-firebase/docs/assets/rice-cooker-companion.png'),join(temporary,'public/connect/bunny.png'));
     await copyFile(join(workspace,'template/api/smartthings/[...path].mjs'),join(temporary,'api/smartthings/[...path].mjs'));
-    await copyFile(join(workspace,'template/api/kakao/[...path].mjs'),join(temporary,'api/kakao/[...path].mjs'));
+    // Fixed routes keep Vercel's dynamic "...path" metadata out of OAuth query input.
+    for(const route of kakaoRoutes)await copyFile(join(workspace,'template/api/kakao',route+'.mjs'),join(temporary,'api/kakao',route+'.mjs'));
     await copyFile(join(workspace,'template/vercel.json'),join(temporary,'vercel.json'));
     const source=JSON.parse(await readFile(join(workspace,'package.json'),'utf8'));
     const manifest={name:source.name,private:true,type:source.type,version:source.version,engines:source.engines,dependencies:source.dependencies};

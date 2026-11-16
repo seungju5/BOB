@@ -6,7 +6,7 @@
 
 저장소 루트에서 `npm --prefix workspaces/smartthings-vercel run stage`를 실행합니다. `.stage/`에 검토된 SmartThings 서버 6개·카카오 서버 4개, 각 API 어댑터, 명시된 연결 화면 3개와 승인 자산 1개, 고정 의존성 잠금파일만 복사합니다. 이 디렉터리가 독립 Vercel 프로젝트의 배포 루트입니다. 새 프로젝트 연결이나 게시 명령은 자동 실행하지 않습니다. 기존 Vercel 프로젝트를 쓸 때는 루트 Next.js 서비스와 충돌하지 않는 배포 대상을 먼저 확인합니다.
 
-Vercel Node.js 24, 서울 `icn1`, API catch-all 원래 경로, 최대 요청 300초를 사용합니다. `NODEJS_HELPERS=0`으로 플랫폼 본문 파싱을 끄며, 서버는 최대 1MiB 원문을 보존합니다. `Host`·`X-Forwarded-*`로 공개 주소를 정하지 않습니다. 로그에는 요청 본문·OAuth 코드·인증 토큰·서비스 계정 오류를 출력하지 않습니다. 실제 Vercel edge 접근 로그의 쿼리 문자열 보관 설정은 게시 전에 별도로 확인해야 합니다.
+Vercel Node.js 24, 서울 `icn1`, SmartThings API catch-all 원래 경로, 최대 요청 300초를 사용합니다. 카카오는 `config`·`start`·`callback`·`exchange`의 고정 파일 경로와 공통 핸들러를 사용합니다. Vercel catch-all이 `...path`를 쿼리에 추가해 정상 OAuth 시작을 거부하던 운영 오류를 해결하며, 임의 쿼리·중복 값 거부는 유지합니다. `NODEJS_HELPERS=0`으로 플랫폼 본문 파싱을 끄며, 서버는 최대 1MiB 원문을 보존합니다. `Host`·`X-Forwarded-*`로 공개 주소를 정하지 않습니다. 로그에는 요청 본문·OAuth 코드·인증 토큰·서비스 계정 오류를 출력하지 않습니다. 실제 Vercel edge 접근 로그의 쿼리 문자열 보관 설정은 게시 전에 별도로 확인해야 합니다.
 
 Vercel은 기본적으로 CommonJS의 ESM 로딩을 끄므로 Firebase Admin 14의 `jwks-rsa` → `jose` 초기화가 실패한다. 공식 지원 설정 `NODE_OPTIONS=--experimental-require-module`을 production 환경과 배포 템플릿에 명시한다. 의존성을 과거 버전으로 낮추지 않는다. 연결 화면의 끝 슬래시(`/connect/`)가 경로별 헤더에서 누락된 실제 응답을 확인했으므로, 이 독립 서버의 모든 경로에 `no-store`·`no-referrer`·CSP·프레임 차단을 적용한다.
 

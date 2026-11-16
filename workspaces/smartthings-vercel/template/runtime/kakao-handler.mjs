@@ -1,5 +1,5 @@
-import {createKakaoRuntime} from '../../runtime/kakao-runtime.mjs';
-import {createNodeHandler,sendUnavailable} from '../../runtime/http-adapter.mjs';
+import {createKakaoRuntime} from './kakao-runtime.mjs';
+import {createNodeHandler,sendUnavailable} from './http-adapter.mjs';
 
 export function createKakaoVercelHandler({env=process.env,runtimeFactory=createKakaoRuntime}={}){
   let handler;

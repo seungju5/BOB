@@ -21,7 +21,6 @@ import { PlugForm } from "@/components/PlugForm";
 import SettingsPage from "@/app/(guardian)/settings/page";
 
 const NOW = new Date("2026-11-13T03:00:00Z");
-const POLICY_URL = "https://app.notion.com/p/4163d756e70080399649fedbb690842f?source=copy_link";
 let demo: DemoState;
 let view: AppView;
 let house: Record<string, unknown>;
@@ -98,23 +97,41 @@ describe("compatible signup, tutorial, household, home routing", () => {
     expect(mocks.invoke).not.toHaveBeenCalled();
   });
 
-  it("shows a configured document link before the consent checkbox and makes consent optional for home", () => {
+  it("requires consent and opens the internal reader without an external login", () => {
     const html = renderToStaticMarkup(createElement(OnboardingPage));
-    expect(html.indexOf(POLICY_URL)).toBeLessThan(html.indexOf('type="checkbox"'));
-    expect(html).toContain("Notion 로그인 필요");
-    expect(html).toContain("동의 확인 전에도 홈은 이용할 수 있어요");
+    expect(html).toContain('aria-haspopup="dialog"');
+    expect(html).toContain("어르신 정보 이용 동의 · 필수");
+    expect(html).toMatch(/<input[^>]+type="checkbox"[^>]+required/);
+    expect(html).toMatch(/<button[^>]+disabled=""[^>]*>저장하고 내용 확인/);
+    expect(html).not.toMatch(/Notion|notion\.com|동의 안내 \(선택\)/);
   });
 
-  it("saves household completion without a device or consent and explicitly clears a false consent value", async () => {
-    house.senior_consent_at = "2026-11-01T00:00:00Z";
-    await liveActions.saveOnboarding(8, { senior: { name: "예시 어르신", relation: "어머니", phone: "" }, household: { residentCount: 1, hasPet: false }, seniorConsent: false });
-    expect(house.onboarding_step).toBe(8);
+  it.each([4, 5, 6, 7])("returns unconsented saved step %s to the mandatory household form", step => {
+    view.onboardingStep = step;
+    const html = renderToStaticMarkup(createElement(OnboardingPage));
+    expect(html).toContain("어르신 정보 이용 동의 · 필수");
+    expect(html).toContain("저장하고 내용 확인");
+    expect(html).not.toContain("홈에서 나중에 설정하기");
+  });
+
+  it("rejects household saving and completion without consent before any writes", async () => {
+    await expect(liveActions.saveOnboarding(8, { senior: { name: "예시 어르신", relation: "어머니", phone: "" }, household: { residentCount: 1, hasPet: false }, seniorConsent: false })).rejects.toThrow("동의를 확인");
+    expect(house.onboarding_step).toBe(1);
     expect(house.senior_consent_at).toBeNull();
+    expect(mutations).toEqual([]);
+    expect(mocks.invoke).not.toHaveBeenCalled();
+  });
+
+  it("saves explicit consent without claiming a connected device", async () => {
+    await liveActions.saveOnboarding(4, { senior: { name: "예시 어르신", relation: "어머니", phone: "" }, seniorConsent: true });
+    expect(house.onboarding_step).toBe(4);
+    expect(house.senior_consent_at).toEqual(expect.any(String));
     expect(readLiveForUser("synthetic-user").view?.plug.deviceId).toBe("");
     expect(mocks.invoke).not.toHaveBeenCalled();
   });
 
   it("does not mark onboarding complete if a selected settings write fails", async () => {
+    house.senior_consent_at = NOW.toISOString();
     failTable = "meal_profiles";
     await expect(liveActions.saveOnboarding(8, { mealProfile: view.mealProfile })).rejects.toThrow("synthetic write failure");
     expect(house.onboarding_step).toBe(1);
@@ -123,6 +140,7 @@ describe("compatible signup, tutorial, household, home routing", () => {
 
   it.each([false, true])("awaits a fresh post-save read and ignores an old polling result (old error=%s)", async (oldError) => {
     house.onboarding_step = 7;
+    house.senior_consent_at = NOW.toISOString();
     await refreshLive();
     const originalFrom = mocks.from.getMockImplementation()!;
     let hold = true;
@@ -148,6 +166,7 @@ describe("compatible signup, tutorial, household, home routing", () => {
 
   it("serializes overlapping saves and prevents a late step-4 action from undoing completed step 8", async () => {
     house.onboarding_step = 3;
+    house.senior_consent_at = NOW.toISOString();
     await refreshLive();
     await Promise.all([liveActions.saveOnboarding(8), liveActions.saveOnboarding(4, { mealProfile: view.mealProfile })]);
     expect(house.onboarding_step).toBe(8);
@@ -156,6 +175,7 @@ describe("compatible signup, tutorial, household, home routing", () => {
   });
 
   it("preserves completion in demo when a stale earlier-step save follows completion", async () => {
+    demo.seniorConsent = true;
     await demoActions.saveOnboarding(8);
     await demoActions.saveOnboarding(4, { mealProfile: view.mealProfile });
     expect(demo.onboardingStep).toBe(8);
@@ -240,6 +260,8 @@ describe("optional device registration requires consent and exposes no raw watts
   it("keeps the completed user's meal and cooker settings editable from settings", async () => {
     view.onboardingStep = 8;
     house.onboarding_step = 8;
+    house.senior_consent_at = NOW.toISOString();
+    view.seniorConsent = true;
     const html = renderToStaticMarkup(createElement(SettingsPage));
     for (const label of ["생활 기준", "하루 식사 시간대 수", "일주일에 외식은 몇 번쯤?", "보온 기능을 쓰시나요?", "일주일에 밥은 몇 번 지으세요?", "생활 기준 저장", "저장하지 않고 홈으로"]) expect(html).toContain(label);
     await liveActions.saveOnboarding(8, { mealProfile: { ...view.mealProfile, windows: [view.mealProfile.windows[0]], eatOutPerWeek: 5, usesKeepWarm: false, cooksPerWeek: 4 } });

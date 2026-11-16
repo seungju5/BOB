@@ -34,7 +34,7 @@ export function HealthConnectionPage() {
     </div>
     <p className="mt-4 text-2xl leading-relaxed text-muted">내 휴대폰의 걸음수만 확인해요.<br />가족에게 전송하지 않아요.</p>
     {native ? <div className="mt-6"><PhoneStepsCard demo={false} localOnly /></div> : <>
-      <p className="mt-6 rounded-3xl bg-butter-soft p-5 text-2xl leading-relaxed text-cocoa">웹에서는 건강 기록을 읽을 수 없어요. 설치한 밥뭇나 앱에서 연결해 주세요.</p>
+      <p className="mt-6 rounded-3xl bg-butter-soft p-5 text-2xl leading-relaxed text-cocoa">웹에서는 건강 기록을 읽을 수 없어요. 휴대폰에 맞는 테스트 방법을 아래에서 확인해 주세요.</p>
       <fieldset className="mt-6">
         <legend className="text-2xl font-bold text-cocoa">어떤 휴대폰을 쓰시나요?</legend>
         <div className="mt-3 flex flex-wrap gap-3">
@@ -44,6 +44,7 @@ export function HealthConnectionPage() {
         </div>
       </fieldset>
       <HealthInstallGuide phone={phone} />
+      {phone === "android" ? <>
       <ol className="mt-6 list-decimal space-y-4 pl-7 text-2xl leading-relaxed text-cocoa">
         <li>걸음수를 잴 휴대폰에서 밥뭇나 앱을 열어요.</li>
         {phone==="android" ? <li>삼성 헬스의 설정에서 Health Connect를 열고, 삼성 헬스의 <strong>걸음수 쓰기</strong>를 켜 주세요.</li> : null}
@@ -53,13 +54,14 @@ export function HealthConnectionPage() {
       <a href={healthAppLink(phone)} onClick={() => setOpening(true)} className="mt-6 flex min-h-16 items-center justify-center rounded-full bg-cocoa px-5 py-4 text-center text-2xl font-bold text-paper">설치한 밥뭇나 열기</a>
       {opening ? <p role="status" className="mt-3 text-2xl leading-relaxed text-muted">앱이 열리지 않으면 설치 여부를 확인해 주세요. 이 버튼만으로 건강 기록이 연결되지는 않아요.</p> : null}
       <p className="mt-4 text-2xl leading-relaxed text-muted">웹을 홈 화면에 추가하는 것만으로는 건강 앱이 연결되지 않아요.</p>
+      </> : null}
     </>}
-    <details className="mt-5 text-2xl leading-relaxed text-muted">
+    {native || phone === "android" ? <details className="mt-5 text-2xl leading-relaxed text-muted">
       <summary className="min-h-12 cursor-pointer py-2 font-bold text-cocoa">기록이 보이지 않을 때</summary>
-      <p className="mt-3">아이폰은 건강 앱에서 밥뭇나의 걸음수 읽기를 허용해 주세요. 갤럭시는 삼성 헬스의 걸음수 공유와 밥뭇나의 읽기 권한을 모두 확인해 주세요.</p>
+      <p className="mt-3">{native && Capacitor.getPlatform() === "ios" ? "건강 앱에서 밥뭇나의 걸음수 읽기를 허용해 주세요." : "삼성 헬스의 걸음수 공유와 밥뭇나의 읽기 권한을 모두 확인해 주세요."}</p>
       <p className="mt-3">워치 기록은 휴대폰 건강 앱에 동기화된 뒤 표시돼요. 건강 앱을 연 다음 밥뭇나에서 다시 확인해 주세요.</p>
       <p className="mt-3">권한이 없거나 기록이 아직 없으면 0걸음으로 표시하지 않아요.</p>
-    </details>
+    </details> : null}
     {native ? <details className="mt-4 text-2xl leading-relaxed text-cocoa">
       <summary className="min-h-12 cursor-pointer py-3 underline underline-offset-4">걸음수 개인정보 안내</summary>
       <HealthPrivacyContent />

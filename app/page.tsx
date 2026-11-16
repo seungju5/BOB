@@ -1,6 +1,7 @@
 import { Logo } from "@/components/Mascot";
 import { BunnyGreeting } from "@/components/BunnyGreeting";
 import { ButtonLink } from "@/components/ui";
+import Link from "next/link";
 
 export default function StartPage() {
   return (
@@ -35,7 +36,7 @@ export default function StartPage() {
             어르신으로 시작
           </ButtonLink>
         </div>
-        <a href="https://app.notion.com/p/4163d756e70080399649fedbb690842f?source=copy_link" target="_blank" rel="noopener noreferrer" className="mt-5 block min-h-12 text-center text-sm text-muted underline underline-offset-4">개인정보 처리방침 (새 창)</a>
+        <Link href="/privacy" className="mt-5 block min-h-12 py-3 text-center text-[16px] text-muted underline underline-offset-4">개인정보 이용·제공 안내</Link>
       </div>
     </main>
   );

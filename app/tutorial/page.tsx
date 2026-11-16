@@ -21,9 +21,9 @@ import { completeTutorial } from "@/components/onboarding/tutorial-flow";
 import { Button, Skeleton } from "@/components/ui";
 import { useApp } from "@/lib/data/useApp";
 import { tutorialExitPath } from "@/lib/data/view";
+import { PrivacyNotice } from "@/components/privacy/PrivacyNotice";
 
 /** 가입 후의 소개. 명시적으로 선택한 데모도 같은 소개를 별도로 체험한다. */
-const POLICY_URL = "https://app.notion.com/p/4163d756e70080399649fedbb690842f?source=copy_link";
 
 type Slide = { title: string; body: string; content: ReactNode };
 
@@ -152,7 +152,7 @@ export default function TutorialPage() {
         </Button>
         {last ? <Button variant="ghost" disabled={busy} className="mt-1 text-cocoa/70" onClick={() => setIndex(0)}>소개 처음부터 다시 보기</Button> : null}
         {index === 0 ? (
-          <a href={POLICY_URL} target="_blank" rel="noreferrer" className="mt-2 flex min-h-12 items-center justify-center text-center text-[16px] text-cocoa/70 underline underline-offset-4">개인정보 이용·제공 안내 문서 (새 창·Notion 로그인 필요)</a>
+          <PrivacyNotice className="mt-2 text-center" />
         ) : (
           <Button variant="ghost" disabled={busy} className="mt-1 text-cocoa/70" onClick={() => setIndex(index - 1)}>
             이전

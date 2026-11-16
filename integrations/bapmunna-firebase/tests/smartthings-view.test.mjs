@@ -117,8 +117,10 @@ test('verified account proceeds into the existing consent/API UI',async t=>{
   assert.deepEqual(requests.map(x=>x.path),['/api/smartthings/config','/api/smartthings/status']);
   assert.equal(requests[1].options.headers.Authorization,'Bearer test-only-token');
   assert.doesNotMatch(el.innerHTML,/test-only-token|test-member/);
-  const policyAt=el.innerHTML.indexOf('개인정보 처리방침 바로가기');
+  const policyAt=el.innerHTML.indexOf('개인정보 이용·제공 안내');
   assert.ok(policyAt>0&&policyAt<el.innerHTML.indexOf('name="st-consent"'));
+  assert.ok(el.innerHTML.includes('https://impact-series.web.app/bapmunna/app/privacy/'));
+  assert.doesNotMatch(el.innerHTML,/notion\.com/);
   assert.match(el.innerHTML,/target="_blank" rel="noopener noreferrer"/);
 });
 test('reconnection explains the Samsung permission steps before asking for consent',async t=>{

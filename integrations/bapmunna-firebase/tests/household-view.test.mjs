@@ -25,7 +25,7 @@ function fixture(t,options={}){
   t.after(dispose);
   return {provider,element,events,listeners,reads,writes,dispose,get unsubscribed(){return unsubscribed;},
     emit(value){active=value;listener?.(value);},
-    submit(value=fields()){return events.get('submit')?.({preventDefault(){},stopPropagation(){},target:{matches:selector=>selector==='[data-household-form]',values:{...value,residentCount:String(value.residentCount),hasPet:value.hasPet?'on':null}}});},
+    submit(value=fields(),consent=true){return events.get('submit')?.({preventDefault(){},stopPropagation(){},target:{matches:selector=>selector==='[data-household-form]',values:{...value,privacyConsent:consent?'on':null,residentCount:String(value.residentCount),hasPet:value.hasPet?'on':null}}});},
     click(action){return events.get('click')?.({stopPropagation(){},target:{closest:()=>({dataset:{householdAction:action}})}});},
   };
 }
@@ -46,7 +46,20 @@ test('synchronous auth opens a blank, labelled form without seeded family names 
   const f=fixture(t);await flush();assert.deepEqual(f.reads,['a']);
   assert.match(f.element.innerHTML,/<input name="alias" value=""/);assert.match(f.element.innerHTML,/관계를 선택해 주세요/);
   for(const label of ['누구의 안부','어떻게 불러','함께 사는 인원','반려동물'])assert.ok(f.element.innerHTML.includes(label));
-  assert.match(f.element.innerHTML,/개인정보 안내 보기/);assert.match(f.element.innerHTML,/가족에게 공유하거나 어르신 동의로 처리하지 않아요/);assert.equal(f.writes.length,0);
+  assert.match(f.element.innerHTML,/개인정보 안내 보기/);assert.match(f.element.innerHTML,/실제 기기 연결과 가족 공유 권한은 별도로 확인/);assert.equal(f.writes.length,0);
+});
+
+test('required household consent blocks a synthetic direct submit and resets for another account',async t=>{
+  const f=fixture(t);await flush();
+  assert.match(f.element.innerHTML,/name="privacyConsent" required/);
+  assert.doesNotMatch(f.element.innerHTML,/name="privacyConsent" required checked/);
+  await f.submit(fields('미동의 가상 정보'),false);
+  assert.equal(f.writes.length,0);assert.match(f.element.innerHTML,/동의를 확인해 주세요/);
+  await f.submit(fields('동의한 가상 정보'),true);assert.equal(f.writes.length,1);
+  f.click('edit');assert.doesNotMatch(f.element.innerHTML,/name="privacyConsent" required checked/);
+  f.emit(user('b'));await flush();
+  assert.doesNotMatch(f.element.innerHTML,/name="privacyConsent" required checked/);
+  await f.submit(fields('다른 계정 가상 정보'),false);assert.equal(f.writes.length,1);
 });
 
 test('existing household values load from the account and rendered aliases are escaped',async t=>{
@@ -247,7 +260,7 @@ test('A draft cannot be written to B while currentUser is ahead of the UI auth n
   const element={innerHTML:'',addEventListener:(name,fn)=>events.set(name,fn),removeEventListener:name=>events.delete(name)};
   t.mock.method(globalThis,'FormData',function(form){this.get=name=>form.values[name]??null;});
   const stop=mountHousehold(element,{connect:async()=>f.provider});t.after(stop);await flush();
-  const submit=alias=>events.get('submit')({preventDefault(){},stopPropagation(){},target:{matches:()=>true,values:{relation:'mother',alias,residentCount:'1',hasPet:null}}});
+  const submit=alias=>events.get('submit')({preventDefault(){},stopPropagation(){},target:{matches:()=>true,values:{relation:'mother',alias,residentCount:'1',hasPet:null,privacyConsent:'on'}}});
   f.auth.currentUser={uid:'b',emailVerified:true};
   await submit('A의 비공개 초안');
   assert.equal(f.writes.length,0);assert.deepEqual(f.reads,['bapmunnaAccounts/a/preferences/household']);

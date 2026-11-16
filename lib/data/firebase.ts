@@ -5,6 +5,7 @@ import { resetSeniorStepsConsent } from '@/lib/steps/consent';
 import { ALERT_DEFAULTS } from '@/config/detection';
 import { accountError, ACCOUNT_CONSENT_VERSION, connectFirebase, within, type AccountProfile, type FirebaseUser, type Household, type Preferences, type SavedPreferences } from '@/lib/firebase/bridge';
 import { DEFAULT_WINDOWS, type AppActions, type AppView, type OnboardingPatch } from './view';
+import { assertOnboardingConsent } from './consent';
 
 type State = { user: FirebaseUser|null|undefined; profile: AccountProfile|null; saved: SavedPreferences|null; view: AppView|null; error:string|null; loading:boolean; revision:number };
 const EMPTY: State = {user:undefined,profile:null,saved:null,view:null,error:null,loading:true,revision:0};
@@ -66,6 +67,7 @@ export async function signOutFirebase() {
   await within(p.signOut());
 }
 export function preferencesPatch(saved:SavedPreferences,step:number,patch:OnboardingPatch):{settings:Preferences;household:Household|null} {
+  assertOnboardingConsent({onboardingStep:saved.settings?.onboardingStep??1,seniorConsent:saved.settings?.preparationAcknowledged??false},step,patch);
   const settings={...(saved.settings??defaultPreferences()),onboardingStep:saved.settings?.onboardingStep===8?8:step};
   if(patch.senior){settings.phone=patch.senior.phone;settings.relationLabel=Object.values(relationLabels).includes(patch.senior.relation as typeof relationLabels[keyof typeof relationLabels])?'':patch.senior.relation.trim();}
   if(patch.mealProfile)Object.assign(settings,{windows:patch.mealProfile.windows,eatOutPerWeek:patch.mealProfile.eatOutPerWeek,usesKeepWarm:patch.mealProfile.usesKeepWarm,cooksPerWeek:patch.mealProfile.cooksPerWeek});

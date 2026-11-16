@@ -2,12 +2,16 @@
 
 import type { AppActions } from "@/lib/data/view";
 import { updateDemo } from "./store";
+import { assertOnboardingConsent } from "@/lib/data/consent";
 
 const nowIso = () => new Date().toISOString();
 const ok = async () => {};
 
 export const demoActions: AppActions = {
-  saveOnboarding: async (step, patch = {}) => updateDemo((s) => ({ ...s, ...patch, onboardingStep: s.onboardingStep >= 8 ? 8 : step })),
+  saveOnboarding: async (step, patch = {}) => updateDemo((s) => {
+    assertOnboardingConsent(s, step, patch);
+    return { ...s, ...patch, onboardingStep: s.onboardingStep >= 8 ? 8 : step };
+  }),
   registerPlug: async (deviceId) => {
     updateDemo((s) => {
       if (!s.seniorConsent) throw new Error("기기를 연결하기 전에 어르신의 동의를 확인해 주세요.");

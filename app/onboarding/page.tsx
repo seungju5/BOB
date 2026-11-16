@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { AlertThresholdFields, Choice, Field, MealWindowsEditor, RelationPicker, Slider, TextInput, windowsValid } from "@/components/forms";
-import { IconCheck, IconInfo, IconLock } from "@/components/icons";
+import { IconCheck, IconInfo } from "@/components/icons";
+import { SeniorConsentField } from "@/components/privacy/SeniorConsentField";
 import { Mascot } from "@/components/Mascot";
 import { FlowProgress } from "@/components/onboarding/FlowProgress";
 import { HouseholdSummary } from "@/components/onboarding/HouseholdSummary";
@@ -15,7 +16,6 @@ import { useApp } from "@/lib/data/useApp";
 import { FOUR_MEAL_WINDOWS, HOUSEHOLD_STEP, ONBOARDING_COMPLETE, careDataAvailable, mealSlotsForCount, visibleOnboardingStep, type AppActions, type AppView, type OnboardingPatch } from "@/lib/data/view";
 import type { MealSlotName, MealWindow } from "@/lib/judge/types";
 
-const POLICY_URL = "https://app.notion.com/p/4163d756e70080399649fedbb690842f?source=copy_link";
 const TITLES: Record<number, string> = {
   3: "누구의 안부가\n듣고 싶으세요?",
   4: "평소 식사 습관을\n알려 주세요",
@@ -42,7 +42,7 @@ export default function OnboardingPage() {
 }
 
 function Onboarding({ state, actions, live }: { state: AppView; actions: AppActions; live: boolean }) {
-  const step = visibleOnboardingStep(state.onboardingStep);
+  const step = state.seniorConsent ? visibleOnboardingStep(state.onboardingStep) : HOUSEHOLD_STEP;
   const [busy, setBusy] = useState(false);
   const saving = useRef(false);
   const [error, setError] = useState("");
@@ -87,17 +87,6 @@ function Onboarding({ state, actions, live }: { state: AppView; actions: AppActi
 type StepProps = { state: AppView; next: (patch?: OnboardingPatch) => void };
 function Footer({ children }: { children: ReactNode }) { return <div className="mt-auto flex flex-col gap-2 pt-8">{children}</div>; }
 
-function ConsentField({ checked, onChange }: { checked: boolean; onChange: (value: boolean) => void }) {
-  return <div className="flex flex-col gap-3">
-    <a href={POLICY_URL} target="_blank" rel="noreferrer" className="min-h-12 text-[16px] leading-relaxed text-cocoa underline underline-offset-4">개인정보 이용·제공 안내 문서 보기 (새 창·Notion 로그인 필요)</a>
-    <label className="flex items-start gap-3 rounded-2xl border-2 border-line p-4">
-      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="mt-1 h-6 w-6 shrink-0 accent-[var(--color-sage-deep)]" />
-      <span className="text-[16px] leading-relaxed text-cocoa"><span className="flex items-center gap-1 font-bold"><IconLock className="h-4 w-4" />어르신께 정보 이용 동의를 받았어요</span>밥솥 사용 신호로 안부를 살피고 보호자에게 소식을 공유한다는 점을 설명드렸어요.</span>
-    </label>
-    <p className="text-[16px] leading-relaxed text-muted">동의 확인 전에도 홈은 이용할 수 있어요. 기기 연결과 소식 공유는 동의를 확인한 뒤에 시작해요.</p>
-  </div>;
-}
-
 function HouseholdStep({ state, next }: StepProps) {
   const [senior, setSenior] = useState(state.senior);
   const [household, setHousehold] = useState(state.household);
@@ -112,14 +101,11 @@ function HouseholdStep({ state, next }: StepProps) {
       <Field label="대표자 연락처 (선택)" htmlFor="onboarding-senior-phone" hint="전화는 대표자 한 분에게 연결돼요."><TextInput id="onboarding-senior-phone" type="tel" inputMode="tel" autoComplete="off" maxLength={24} value={senior.phone} aria-invalid={!!problems.phone || undefined} aria-describedby={problems.phone ? "onboarding-phone-error" : undefined} onChange={(e) => setSenior({ ...senior, phone: e.target.value })} placeholder="010-0000-0000" />{problems.phone ? <p id="onboarding-phone-error" role="status" className="text-[16px] text-blush-deep">{problems.phone}</p> : null}</Field>
       <Field label="함께 사는 분 (본인 포함)" hint="기록은 가구 단위로 보여요. 한 분 한 분의 실제 식사 여부를 뜻하지는 않아요."><Choice value={household.residentCount} options={[1, 2, 3].map((v) => ({ value: v, label: v === 3 ? "3명 이상" : `${v}명` }))} onChange={(residentCount) => setHousehold({ ...household, residentCount })} /></Field>
       <Field label="반려견이 있나요?"><Choice cols={2} value={household.hasPet} options={[{ value: false, label: "없어요" }, { value: true, label: "있어요" }]} onChange={(hasPet) => setHousehold({ ...household, hasPet })} /></Field>
-      <details className="rounded-2xl border border-line px-4">
-        <summary className="min-h-12 cursor-pointer py-3 text-[16px] font-semibold leading-relaxed text-cocoa">기기 연결 전 동의 안내 (선택)</summary>
-        <div className="pb-4"><ConsentField checked={consent} onChange={setConsent} /></div>
-      </details>
+      <SeniorConsentField checked={consent} onChange={setConsent} />
     </div>
     <Footer>
       <p className="text-[16px] leading-relaxed text-muted">기기 연결과 생활 기준은 홈의 설정에서 이어갈 수 있어요.</p>
-      <Button disabled={!valid} onClick={() => next(patch())}>저장하고 내용 확인</Button>
+      <Button disabled={!valid || !consent} onClick={() => { if (valid && consent) next(patch()); }}>저장하고 내용 확인</Button>
     </Footer>
   </>;
 }
@@ -216,10 +202,10 @@ function AlertStep({ state, next }: StepProps) {
             emergency: "안부를 직접 확인할 기준이에요. 지정 연락처·신고 기관에 자동으로 연락하지는 않아요.",
           }}
         />
-        <ConsentField checked={consent} onChange={setConsent} />
+        <SeniorConsentField checked={consent} onChange={setConsent} />
       </div>
       <Footer>
-        <Button onClick={() => next({ alertSettings: settings, seniorConsent: consent })}>다음</Button>
+        <Button disabled={!consent} onClick={() => { if (consent) next({ alertSettings: settings, seniorConsent: consent }); }}>다음</Button>
       </Footer>
     </>
   );

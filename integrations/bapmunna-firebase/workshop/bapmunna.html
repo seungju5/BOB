@@ -1637,7 +1637,7 @@ function createRuntimeSession({connect,onChange,timeoutMs=10000}){
 // These screens deliberately contain no synthetic meals, alerts, dates or people.
 // Family summaries are not wired to a server in this Firebase edition yet.
 const liveEscape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const livePolicy='https://app.notion.com/p/4163d756e70080399649fedbb690842f?source=copy_link';
+const livePolicy='https://impact-series.web.app/bapmunna/app/privacy/';
 const liveHeading=(title,detail='')=>`<header class="page-head"><h1 tabindex="-1">${title}</h1>${detail?`<p class="sub">${detail}</p>`:''}</header>`;
 function liveTutorialPage({index=0,companion}){
   const slides=[
@@ -1653,7 +1653,7 @@ function liveTutorialPage({index=0,companion}){
 function livePage({view,edition,session,href,companion}){
   const link=(route,label)=>`<a class="quiet-link" style="display:block;min-height:44px;padding:10px 0" href="${liveEscape(href(route))}">${label} →</a>`;
   const demo='<button type="button" class="text-button" data-action="enter-demo">예시로 체험하기</button>';
-  const policy=`<a class="quiet-link" href="${livePolicy}" target="_blank" rel="noopener noreferrer">개인정보 처리방침 보기 ↗</a>`;
+  const policy=`<a class="quiet-link" href="${livePolicy}" target="_blank" rel="noopener noreferrer">개인정보 이용·제공 안내</a>`;
   const image=`<img src="${liveEscape(companion)}" width="160" height="160" alt="안부를 기다리는 밥솥이" style="display:block;object-fit:contain;margin:0 auto 18px;max-width:100%">`;
   const shell=body=>`<div class="home-stack" data-runtime-mode="live">${body}</div>`;
   if(session.status==='checking')return shell(liveHeading('계정을 확인하고 있어요.')+'<section class="card" role="status"><p>저장된 로그인 상태를 확인하고 있어요.</p></section>');

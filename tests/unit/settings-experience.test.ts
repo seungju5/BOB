@@ -20,7 +20,7 @@ import type { AppView } from "@/lib/data/view";
 const NOW = new Date("2026-11-14T03:00:00Z");
 let view: AppView;
 beforeEach(() => {
-  view = { ...toView(createDemoState(NOW), NOW), mode: "live", onboardingStep: 8, senior: { relation: "어머니", name: "예시 정숙", phone: "010-1234-5678" }, plug: { deviceId: "", online: false, lastReadingAt: null } };
+  view = { ...toView(createDemoState(NOW), NOW), mode: "live", onboardingStep: 8, seniorConsent: true, senior: { relation: "어머니", name: "예시 정숙", phone: "010-1234-5678" }, plug: { deviceId: "", online: false, lastReadingAt: null } };
   mocks.useApp.mockReset().mockImplementation(() => ({ view, now: NOW, actions: {}, mode: view.mode, provider: view.dataSource ?? "supabase", needsLogin: false, error: null, accountKey: "synthetic-user", accountLabel: "synthetic@example.test", signOut: vi.fn() }));
 });
 
@@ -40,7 +40,7 @@ describe("settings and onboarding presentation contracts", () => {
   it("does not expose a PAT, fabricated family code or absence mutation for an unready Firebase account", () => {
     Object.assign(view, { dataSource: "firebase", careAvailable: false, seniorConsent: true, pairingCode: "867530", seniorPaired: false });
     const html = renderToStaticMarkup(createElement(SettingsPage));
-    expect(html).toContain("기기 연결 안내 보기");
+    expect(html).toContain("기기 연결 준비 상태 보기");
     expect(html).toContain("아직 수신한 기록이 없어요");
     expect(html).toContain("부재 일정은 가족 연결이 준비된 뒤");
     expect(html).not.toContain("SmartThings 테스트 토큰");

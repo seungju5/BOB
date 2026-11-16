@@ -112,6 +112,7 @@ function fixture() {
     'next/navigation': { useRouter: () => router },
     '@/components/Mascot': { Logo: 'Logo', Mascot: 'Mascot' },
     '@/components/ui': { Button: 'Button' },
+    '@/components/privacy/PrivacyNotice': { PrivacyNotice: 'PrivacyNotice' },
     '@/components/forms': { TextInput: 'TextInput' },
     '@/components/onboarding/FlowProgress': { FlowProgress: 'FlowProgress' },
     '@/lib/data/mode': { useMode: () => mode, setMode: (next: typeof mode) => { mode = next; } },

@@ -6,6 +6,8 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { AlertThresholdFields, Choice, Field, MealWindowsEditor, RelationPicker, Slider, TextInput, Toggle, windowsValid } from "@/components/forms";
 import { IconArrowRight, IconLock, IconPlug, IconSuitcase } from "@/components/icons";
 import { PlugForm } from "@/components/PlugForm";
+import { SeniorConsentField } from "@/components/privacy/SeniorConsentField";
+import { PrivacyNotice } from "@/components/privacy/PrivacyNotice";
 import { deviceReadingLabel, seniorDetailsProblems } from "@/components/onboarding/settings-validation";
 import { ConnectionGuide } from "@/components/onboarding/ConnectionGuide";
 import { Button, PageHeader, Skeleton } from "@/components/ui";
@@ -17,7 +19,6 @@ import { MEAL_PALETTES, setMealPalette, useMealPalette } from "@/lib/data/appear
 import type { MealSlotName, MealWindow } from "@/lib/judge/types";
 import { resetDemo, updateDemo } from "@/lib/demo/store";
 
-const POLICY_URL = "https://app.notion.com/p/4163d756e70080399649fedbb690842f?source=copy_link";
 const DEVICE_GUIDE_URL = "https://impact-series.web.app/bapmunna/carer/#connect";
 
 export default function SettingsPage() {
@@ -83,6 +84,7 @@ function Settings({ app, view, now }: { app: App; view: AppView; now: Date }) {
   return (
     <div className="px-6">
       <p className="mb-5 text-[16px] leading-relaxed text-muted">바꾸고 싶은 항목만 펼쳐 주세요.</p>
+      {!view.seniorConsent ? <p className="mb-4 rounded-2xl border border-line p-4 text-[16px] leading-relaxed text-cocoa">어르신 정보를 저장하기 전에 동의 확인이 필요해요. <a href="#device" className="font-bold underline">기기 메뉴에서 안내 읽기</a></p> : null}
       {app.mode === "demo" ? <p className="mb-4 rounded-2xl bg-butter-soft p-4 text-[16px] leading-relaxed text-cocoa">예시 체험 설정이에요. 이 브라우저에만 저장되고 실제 가족이나 기기에 연결되지 않아요.</p> : null}
       <div className="flex flex-col gap-3">
         <SettingsGroup id="alerts" title="알림 기준" summary={"연속 " + view.alertSettings.missedMealsThreshold + "끼 · " + view.alertSettings.fastingHours + "시간 · " + view.alertSettings.emergencyHours + "시간"}>
@@ -100,7 +102,7 @@ function Settings({ app, view, now }: { app: App; view: AppView; now: Date }) {
       </div>
       <div className="mt-6 flex flex-col gap-3 border-t border-line pt-5">
         <Link href="/tutorial" className="flex min-h-12 items-center justify-between gap-3 rounded-2xl px-2 text-[16px] font-bold text-cocoa hover:bg-butter-soft">소개 다시 보기<IconArrowRight className="h-5 w-5" /></Link>
-        <a className="min-h-12 px-2 py-3 text-[16px] text-muted underline underline-offset-4" href={POLICY_URL} target="_blank" rel="noopener noreferrer">개인정보 이용·제공 안내 (새 창)</a>
+        <PrivacyNotice className="px-2" />
         <section id="account" className="scroll-mt-4"><h2 className="mb-3 text-[18px] font-bold text-cocoa">계정</h2><AccountSettings app={app} /></section>
       </div>
     </div>
@@ -111,11 +113,11 @@ function AlertSettings({ view, actions }: { view: AppView; actions: AppActions }
   const [draft, setDraft] = useState(view.alertSettings);
   const feedback = useSaveFeedback();
   return (
-    <form onSubmit={(event) => { event.preventDefault(); void feedback.run(() => actions.saveAlertSettings(draft), "알림 기준을 저장했어요."); }}>
+    <form onSubmit={(event) => { event.preventDefault(); if (view.seniorConsent) void feedback.run(() => actions.saveAlertSettings(draft), "알림 기준을 저장했어요."); }}>
       <fieldset disabled={feedback.busy} aria-busy={feedback.busy} className="flex min-w-0 flex-col gap-5">
         <AlertThresholdFields value={draft} onChange={(value) => { setDraft(value); feedback.clear(); }} hints={{ missed: "연속으로 이만큼 끼니 소식이 없으면 알려 드려요.", fasting: "마지막 밥솥 사용 후 이 시간이 지나면 알려 드려요.", emergency: "안부를 직접 확인할 기준이에요. 지정 연락처나 기관에 자동으로 연락하지는 않아요." }} />
         <SaveFeedback {...feedback} />
-        <Button type="submit" disabled={feedback.busy}>{feedback.busy ? "저장하고 있어요…" : "알림 기준 저장"}</Button>
+        <Button type="submit" disabled={feedback.busy || !view.seniorConsent}>{feedback.busy ? "저장하고 있어요…" : "알림 기준 저장"}</Button>
       </fieldset>
     </form>
   );
@@ -133,7 +135,7 @@ function LifestyleSettings({ view, actions }: { view: AppView; actions: AppActio
   const [cooks, setCooks] = useState(Math.max(1, Math.min(21, view.mealProfile.cooksPerWeek)));
   const feedback = useSaveFeedback();
   const problems = seniorDetailsProblems(senior);
-  const valid = Object.values(problems).every((problem) => problem === null) && windowsValid(windows);
+  const valid = view.seniorConsent && Object.values(problems).every((problem) => problem === null) && windowsValid(windows);
   const save = () => feedback.run(() => actions.saveOnboarding(view.onboardingStep, {
     senior: { name: senior.name.trim(), relation: senior.relation.trim(), phone: senior.phone.trim() }, household,
     mealProfile: { windows, eatOutPerWeek: eatOut, usesKeepWarm: keepWarm, cooksPerWeek: cooks },
@@ -228,15 +230,19 @@ function DeviceSettings({ app, view }: { app: App; view: AppView }) {
       <p className="mt-1 break-words text-[16px] leading-relaxed text-muted">{deviceReadingLabel(view.plug.lastReadingAt)}</p>
       <p className="mt-3 text-[16px] leading-relaxed text-muted">기기 신호가 없는 것만으로 식사나 건강 상태를 판단하지 않아요.</p>
     </div>
-    {!view.seniorConsent ? <div className="rounded-2xl border border-line p-4">
-      <p className="text-[16px] font-bold text-cocoa">연결 전에 어르신께 설명해 주세요.</p>
-      <p className="mt-2 text-[16px] leading-relaxed text-muted">밥솥 사용 신호로 안부를 살피고 보호자에게 소식을 공유한다는 점에 동의하셨을 때만 연결해요. 동의하지 않아도 홈은 이용할 수 있어요.</p>
-      <a className="mt-2 block min-h-12 py-3 text-[16px] text-muted underline" href={POLICY_URL} target="_blank" rel="noopener noreferrer">개인정보 이용·제공 안내 (새 창·Notion 로그인 필요)</a>
-      <label className="flex min-h-12 items-start gap-3 py-3 text-[16px] leading-relaxed text-cocoa"><input type="checkbox" checked={consentChecked} disabled={consent.busy} onChange={(event) => { setConsentChecked(event.target.checked); consent.clear(); }} className="mt-0.5 h-5 w-5 shrink-0" />어르신께 안내하고 동의를 확인했어요.</label>
-      <SaveFeedback {...consent} />
-      <Button variant="soft" className="mt-3" disabled={!consentChecked || consent.busy} onClick={() => void consent.run(() => actions.saveOnboarding(view.onboardingStep, { seniorConsent: true }), "동의 확인을 저장했어요.")}>{consent.busy ? "저장하고 있어요…" : "동의 확인 저장하기"}</Button>
-    </div> : <p className="text-[16px] text-cocoa">어르신의 정보 이용 동의를 확인했어요.</p>}
-    {firebase ? <div className="rounded-2xl border border-line p-4"><p className="text-[16px] font-bold text-cocoa">기기 연결을 준비하고 있어요.</p><p className="mt-2 text-[16px] leading-relaxed text-muted">지금은 연결 안내를 확인할 수 있어요. 자동 신호 수신은 아직 시작되지 않았어요.</p><a href={DEVICE_GUIDE_URL} className="mt-3 flex min-h-12 items-center justify-between gap-2 rounded-xl bg-butter-soft px-3 py-3 text-[16px] font-bold text-cocoa">기기 연결 안내 보기<IconArrowRight className="h-5 w-5 shrink-0" /></a></div> : view.plug.deviceId ? <div className="flex items-center gap-3 rounded-2xl border border-line p-4"><IconPlug className="h-6 w-6 shrink-0 text-cocoa" /><div className="min-w-0"><p className="text-[16px] font-bold text-cocoa">스마트플러그</p><p className="mt-1 break-all text-[16px] text-muted">{view.plug.deviceId}</p></div></div> : <PlugForm onSubmit={actions.registerPlug} consentConfirmed={view.seniorConsent} isDemo={mode === "demo"} />}
+    {!view.seniorConsent ? <fieldset disabled={consent.busy} className="min-w-0">
+      <SeniorConsentField checked={consentChecked} onChange={checked => { setConsentChecked(checked); consent.clear(); }} />
+      <Button variant="soft" className="mt-3" disabled={!consentChecked || consent.busy} onClick={() => { if (consentChecked) void consent.run(() => actions.saveOnboarding(view.onboardingStep, { seniorConsent: true }), "동의 확인을 저장했어요."); }}>{consent.busy ? "저장하고 있어요…" : "동의 확인 저장하기"}</Button>
+    </fieldset> : <div className="rounded-2xl border border-line p-4">
+      <p className="text-[16px] font-bold text-cocoa">어르신 정보 이용 동의 확인을 저장했어요.</p>
+      <PrivacyNotice />
+      {firebase || mode === "demo" ? <><p className="text-[16px] leading-relaxed text-muted">확인을 취소하면 다시 동의하기 전에는 새 어르신 정보를 저장할 수 없어요. 기존 정보 삭제나 삼성·건강 앱 권한 해제는 별도예요.</p><Button variant="outline" className="mt-3 text-[16px]" disabled={consent.busy} onClick={() => {
+        if (!confirm("내 계정의 어르신 정보 이용 동의 확인을 취소할까요? 기존 정보는 삭제되지 않고, 삼성·건강 앱의 연결 권한도 별도로 해제해야 해요.")) return;
+        void consent.run(() => actions.saveOnboarding(view.onboardingStep, { seniorConsent: false }), "동의 확인을 취소했어요.").then(saved => { if (saved) setConsentChecked(false); });
+      }}>동의 확인 취소</Button></> : null}
+    </div>}
+    <SaveFeedback {...consent} />
+    {firebase ? <div className="rounded-2xl border border-line p-4"><p className="text-[16px] font-bold text-cocoa">실제 밥솥 연결은 아직 준비 중이에요.</p><p className="mt-2 text-[16px] leading-relaxed text-muted">삼성 연결 등록과 실제 수신 확인이 남아 있어요. 지금 휴대폰 설정을 바꾸거나 앱을 다시 설치할 필요는 없어요. 갤럭시 걸음수 테스트와는 다른 기능이에요.</p><a href={DEVICE_GUIDE_URL} className="mt-3 flex min-h-12 items-center justify-between gap-2 rounded-xl bg-butter-soft px-3 py-3 text-[16px] font-bold text-cocoa">기기 연결 준비 상태 보기<IconArrowRight className="h-5 w-5 shrink-0" /></a></div> : view.plug.deviceId ? <div className="flex items-center gap-3 rounded-2xl border border-line p-4"><IconPlug className="h-6 w-6 shrink-0 text-cocoa" /><div className="min-w-0"><p className="text-[16px] font-bold text-cocoa">스마트플러그</p><p className="mt-1 break-all text-[16px] text-muted">{view.plug.deviceId}</p></div></div> : <PlugForm onSubmit={actions.registerPlug} consentConfirmed={view.seniorConsent} isDemo={mode === "demo"} />}
     <ConnectionGuide />
     <div className="rounded-2xl bg-butter-soft p-4">
       <p className="text-[16px] font-bold text-cocoa">{view.senior.relation} 휴대폰 연결</p>

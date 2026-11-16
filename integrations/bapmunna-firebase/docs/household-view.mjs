@@ -1,7 +1,7 @@
 import {connectCloud} from './cloud-api.mjs';
 
 const RELATIONS={mother:'어머니',father:'아버지',parents:'부모님',other:'그 밖의 소중한 분'};
-const PRIVACY_URL='https://app.notion.com/p/4163d756e70080399649fedbb690842f?source=copy_link';
+const PRIVACY_URL='https://impact-series.web.app/bapmunna/app/privacy/';
 const safe=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const emptyDraft=()=>({relation:'',alias:'',residentCount:1,hasPet:false});
 
@@ -30,10 +30,10 @@ export function mountHousehold(element,{homeHref='#guardian',connect=connectClou
   const home=homeLink(homeHref),account=`${home.split('#')[0]}#account`;
   let alive=true,provider,unwatchAuth,connectionEpoch=0,operation=0,authSeen=false;
   const pending=new Map();
-  const model={phase:'connecting',user:null,draft:emptyDraft(),existing:false,problem:''};
+  const model={phase:'connecting',user:null,draft:emptyDraft(),existing:false,consent:false,problem:''};
   const current=(revision,uid)=>alive&&operation===revision&&model.user?.uid===uid&&model.user?.verified===true;
   const skip=()=>`<p class="caption"><a href="${safe(home)}">나중에 홈으로 →</a></p>`;
-  const privacy=()=>`<p class="caption">입력한 기본정보는 내 계정에만 저장해요. 가족에게 공유하거나 어르신 동의로 처리하지 않아요. <a href="${PRIVACY_URL}" target="_blank" rel="noopener noreferrer">개인정보 안내 보기</a></p>`;
+  const privacy=()=>`<p class="caption">입력한 기본정보는 내 계정에 저장해요. 어르신께 안내하고 동의를 확인한 뒤 저장해 주세요. 실제 기기 연결과 가족 공유 권한은 별도로 확인해요. <a href="${PRIVACY_URL}" target="_blank" rel="noopener noreferrer">개인정보 안내 보기</a></p>`;
   const problem=()=>model.problem?`<p class="notice error" role="alert">${safe(model.problem)}</p>`:'';
 
   function bounded(run){
@@ -61,7 +61,7 @@ export function mountHousehold(element,{homeHref='#guardian',connect=connectClou
     }else if(phase==='load-error'){
       body=`${problem()}<button type="button" data-household-action="retry-load">기본정보 다시 불러오기</button>${skip()}`;
     }else if(phase==='saved'){
-      body=`<p class="account-success" role="status">내 계정에 기본정보를 저장했어요.</p><dl><dt>호칭</dt><dd>${safe(model.draft.alias)}</dd><dt>관계</dt><dd>${RELATIONS[model.draft.relation]}</dd><dt>함께 사는 인원</dt><dd>${model.draft.residentCount}명</dd><dt>반려동물</dt><dd>${model.draft.hasPet?'함께 살아요':'없어요'}</dd></dl><p>기기 연결과 어르신 동의는 따로 진행해요. 연결 전에도 홈을 둘러볼 수 있어요.</p><p><a class="account-browse-link" href="${safe(home)}">홈으로 가기 →</a></p><button class="text-button" type="button" data-household-action="edit">기본정보 수정</button>`;
+      body=`<p class="account-success" role="status">내 계정에 기본정보를 저장했어요.</p><dl><dt>호칭</dt><dd>${safe(model.draft.alias)}</dd><dt>관계</dt><dd>${RELATIONS[model.draft.relation]}</dd><dt>함께 사는 인원</dt><dd>${model.draft.residentCount}명</dd><dt>반려동물</dt><dd>${model.draft.hasPet?'함께 살아요':'없어요'}</dd></dl><p>기기 연결과 가족 공유 권한은 따로 확인해요. 연결 전에도 홈을 둘러볼 수 있어요.</p><p><a class="account-browse-link" href="${safe(home)}">홈으로 가기 →</a></p><button class="text-button" type="button" data-household-action="edit">기본정보 수정</button>`;
     }else{
       const disabled=phase==='saving'?'disabled':'',draft=model.draft;
       body=`${model.existing?'<p class="caption">이 계정에 저장된 기본정보예요. 필요하면 수정해 주세요.</p>':''}${problem()}${model.problem?'<button class="text-button" type="button" data-household-action="retry-load">저장 결과 다시 확인하기</button>':''}${privacy()}
@@ -71,6 +71,7 @@ export function mountHousehold(element,{homeHref='#guardian',connect=connectClou
             <label class="field">어떻게 불러드릴까요?<input name="alias" value="${safe(draft.alias)}" minlength="1" maxlength="30" autocomplete="off" placeholder="호칭을 입력해 주세요" aria-describedby="household-alias-help" required></label><p class="caption" id="household-alias-help">호칭은 1~30자로 적어요. 실명이나 자세한 주소는 필요하지 않아요.</p>
             <label class="field">함께 사는 인원<select name="residentCount" required>${[1,2,3,4,5,6].map(count=>`<option value="${count}" ${draft.residentCount===count?'selected':''}>${count}명</option>`).join('')}</select></label><p class="caption">안부를 살필 분을 포함한 인원이에요.</p>
             <label class="check-row"><input type="checkbox" name="hasPet" ${draft.hasPet?'checked':''}>반려동물과 함께 살아요</label>
+            <label class="check-row"><input type="checkbox" name="privacyConsent" required ${model.consent?'checked':''}>필수 · 어르신께 개인정보 안내를 설명하고 정보 이용 동의를 확인했어요.</label>
           </fieldset>
           <button type="submit" class="primary full" ${disabled}>${phase==='saving'?'저장 확인 중…':'기본정보 저장'}</button>
           ${phase==='saving'?'<p role="status">서버에서 저장 결과를 확인하고 있어요.</p>':''}
@@ -82,7 +83,7 @@ export function mountHousehold(element,{homeHref='#guardian',connect=connectClou
   async function loadHousehold(){
     if(!alive||!model.user?.verified)return;
     const uid=model.user.uid,revision=++operation;
-    model.existing=false;model.problem='';
+    model.existing=false;model.consent=false;model.problem='';
     if(typeof provider?.getHousehold!=='function'||typeof provider?.saveHousehold!=='function'){
       model.phase='unsupported';render();return;
     }
@@ -101,7 +102,7 @@ export function mountHousehold(element,{homeHref='#guardian',connect=connectClou
     if(!alive)return;
     const changed=!authSeen||model.user?.uid!==user?.uid||model.user?.verified!==user?.verified;
     if(!changed)return; // A same-account auth event must not replace an unsaved draft.
-    authSeen=true;operation++;model.user=user;model.draft=emptyDraft();model.existing=false;model.problem='';
+    authSeen=true;operation++;model.user=user;model.draft=emptyDraft();model.existing=false;model.consent=false;model.problem='';
     if(!user){model.phase='signed-out';render();return;}
     if(user.verified!==true){model.phase='unverified';render();return;}
     void loadHousehold();
@@ -109,7 +110,7 @@ export function mountHousehold(element,{homeHref='#guardian',connect=connectClou
 
   async function startConnection(){
     const revision=++connectionEpoch;operation++;unwatchAuth?.();unwatchAuth=null;provider=null;authSeen=false;
-    model.user=null;model.draft=emptyDraft();model.existing=false;model.problem='';model.phase='connecting';render();
+    model.user=null;model.draft=emptyDraft();model.existing=false;model.consent=false;model.problem='';model.phase='connecting';render();
     try{
       const connected=await bounded(connect);if(!alive||revision!==connectionEpoch)return;
       provider=connected;model.phase='auth';render();
@@ -129,8 +130,9 @@ export function mountHousehold(element,{homeHref='#guardian',connect=connectClou
     if(!alive||model.phase!=='ready'||model.user?.verified!==true)return;
     const values=new FormData(event.target);
     const draft={relation:String(values.get('relation')??''),alias:String(values.get('alias')??'').trim(),residentCount:Number(values.get('residentCount')),hasPet:values.get('hasPet')==='on'};
-    model.draft=draft;model.problem='';
+    model.draft=draft;model.consent=values.get('privacyConsent')==='on';model.problem='';
     if(!validDraft(draft)){model.problem='관계, 1~30자의 호칭, 함께 사는 인원을 확인해 주세요.';render();return;}
+    if(!model.consent){model.problem='개인정보 안내를 읽고 어르신의 동의를 확인해 주세요.';render();return;}
     const uid=model.user.uid,revision=++operation;model.phase='saving';render();
     try{
       const record=await bounded(()=>{if(!current(revision,uid))throw Error('stale-household');return provider.saveHousehold({...draft},uid);});if(!current(revision,uid))return;
@@ -147,7 +149,7 @@ export function mountHousehold(element,{homeHref='#guardian',connect=connectClou
     if(!action||!alive)return;event.stopPropagation?.();
     if(action==='retry-connect'&&model.phase==='connect-error')return startConnection();
     if(action==='retry-load'&&(model.phase==='load-error'||model.phase==='ready'&&model.problem))return loadHousehold();
-    if(action==='edit'&&model.phase==='saved'){model.phase='ready';render();}
+    if(action==='edit'&&model.phase==='saved'){model.phase='ready';model.consent=false;render();}
   }
   element.addEventListener('submit',onSubmit);element.addEventListener('click',onClick);void startConnection();
   return ()=>{if(!alive)return;alive=false;connectionEpoch++;operation++;unwatchAuth?.();unwatchAuth=null;for(const cancel of pending.values())cancel();element.removeEventListener('submit',onSubmit);element.removeEventListener('click',onClick);};

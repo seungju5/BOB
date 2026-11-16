@@ -8,6 +8,7 @@ import { addDays, kstDate } from "@/lib/judge/time";
 import type { AlertPayload, AlertType, MealSlot, MealWindow } from "@/lib/judge/types";
 import { supabase } from "@/lib/supabase";
 import type { AppActions, AppView } from "./view";
+import { assertOnboardingConsent } from "./consent";
 
 type LiveState = { view: AppView | null; householdId: string | null; error: string | null };
 
@@ -196,6 +197,7 @@ const db = () => supabase();
 export const liveActions: AppActions = {
   saveOnboarding: (step, patch = {}) =>
     act(async (h) => {
+      assertOnboardingConsent({ onboardingStep: state.view?.onboardingStep ?? 1, seniorConsent: state.view?.seniorConsent ?? false }, step, patch);
       // 설정 편집이나 늦게 도착한 이전 버튼이 완료 상태를 다시 미완료로 바꾸지 않는다.
       const house: Record<string, unknown> = { onboarding_step: (state.view?.onboardingStep ?? 0) >= 8 ? 8 : step };
       if (patch.senior) Object.assign(house, { senior_name: patch.senior.name, senior_relation: patch.senior.relation, senior_phone: patch.senior.phone });

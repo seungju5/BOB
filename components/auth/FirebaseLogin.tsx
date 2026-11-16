@@ -1,5 +1,7 @@
 'use client';
 
+import { PrivacyNotice } from '@/components/privacy/PrivacyNotice';
+
 import Link from 'next/link';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
@@ -121,4 +123,4 @@ function LoginForm({account,busy,setBusy,continueUid,setContinueUid}:{account:Re
     </div>
   </main>;
 }
-function Policy(){return <p className="rounded-2xl bg-butter-soft p-4 text-[16px] leading-relaxed text-muted">이름·이메일과 입력한 설정은 본인 계정에 저장돼요. 가족에게 공유하는 동의와 기기 연결은 별도로 확인해요. <a href="https://impact-series.web.app/bapmunna/carer/#privacy" target="_blank" rel="noopener noreferrer" className="font-semibold text-cocoa underline">개인정보 처리 안내</a></p>;}
+function Policy(){return <div className="rounded-2xl bg-butter-soft p-4 text-[16px] leading-relaxed text-muted"><p>이름·이메일과 입력한 설정은 본인 계정에 저장돼요. 가족에게 공유하는 동의와 기기 연결은 별도로 확인해요.</p><PrivacyNotice /></div>;}

@@ -27,7 +27,7 @@ async function fixture() {
   const user=(uid:string):FirebaseUser=>({uid,email:`${uid.toLowerCase()}@example.test`,displayName:`가상 ${uid}`,verified:true});
   const profile=(uid:string):AccountProfile=>({ownerUid:uid,displayName:`가상 ${uid}`,consentVersion:'2026-10-16'});
   const saved=(uid:string,name=`${uid}의 가상 가족`,step=3):SavedPreferences=>({
-    settings:{...store.defaultPreferences(),onboardingStep:step},
+    settings:{...store.defaultPreferences(),preparationAcknowledged:true,onboardingStep:step},
     household:{relation:'mother',alias:name,residentCount:1,hasPet:false},
     revision:{settings:'1:0',household:'1:0'},
   });
@@ -69,6 +69,16 @@ afterEach(()=>{
 // Synthetic promises and Auth callbacks, with the production 12s timeout.
 // These tests do not claim browser, emulator, network or live account evidence.
 describe('Firebase account store asynchronous session isolation',()=>{
+  it('rejects an unconsented household save before contacting the write provider',async()=>{
+    const f=await fixture();
+    const old=f.server.get('A')!;
+    f.server.set('A',{...old,settings:{...old.settings!,preparationAcknowledged:false}});
+    await f.mount();await f.emit(f.user('A'));
+    await expect(f.store.firebaseActions.saveOnboarding(4,{senior:{name:'가상 이름',relation:'어머니',phone:''}})).rejects.toThrow('동의를 확인');
+    expect(f.provider.saveAppPreferences).not.toHaveBeenCalled();
+    expect(f.snapshot().view?.senior.name).toBe('A의 가상 가족');
+  });
+
   it('retries a failed first connection and subscribes to auth before refresh completes',async()=>{
     const f=await fixture();
     bridgeMock.connect.mockRejectedValueOnce(Object.assign(new Error('synthetic connection failure'),{code:'unavailable'}));
@@ -178,7 +188,7 @@ describe('Firebase account store asynchronous session isolation',()=>{
   it('resaves custom relation and contact fields without copying server-only household metadata',async()=>{
     const f=await fixture();
     const household={relation:'other' as const,alias:'가상 할머니',residentCount:1,hasPet:false,ownerUid:'A',updatedAt:{seconds:10,nanoseconds:20}};
-    f.server.set('A',{settings:{...f.store.defaultPreferences(),onboardingStep:8,relationLabel:'할머니'},household,revision:{settings:'12:0',household:'10:20'}});
+    f.server.set('A',{settings:{...f.store.defaultPreferences(),preparationAcknowledged:true,onboardingStep:8,relationLabel:'할머니'},household,revision:{settings:'12:0',household:'10:20'}});
     await f.mount();await f.emit(f.user('A'));
     expect(f.snapshot().view?.senior.relation).toBe('할머니');
     await f.store.firebaseActions.saveSenior({phone:'010-1234-5678'});

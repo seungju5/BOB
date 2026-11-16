@@ -17,17 +17,17 @@ describe('Firebase account preparation is separate from real care',()=>{
     expect(guardianStartPath(firebaseView({settings,household:null}).onboardingStep)).toBe('/onboarding');
   });
   it('lifestyle saves preserve alert choices and do not overwrite legacy household edits',()=>{
-    const settings={...defaultPreferences(),missedMealsThreshold:5};
+    const settings={...defaultPreferences(),preparationAcknowledged:true,missedMealsThreshold:5};
     const patch=preferencesPatch({settings,household},8,{mealProfile:{windows:[{slot:'lunch',start:'11:00',end:'14:00'}],eatOutPerWeek:4,cooksPerWeek:6,usesKeepWarm:false}});
     expect(patch.settings.missedMealsThreshold).toBe(5);expect(patch.household).toBeNull();expect(patch.settings.windows).toHaveLength(1);
   });
   it('keeps representative contact separate from the canonical household document',()=>{
-    const patch=preferencesPatch({settings:null,household},8,{senior:{name:'가상 아버지',relation:'아버지',phone:'010-0000-0000'},household:{residentCount:2,hasPet:true}});
+    const patch=preferencesPatch({settings:null,household},8,{seniorConsent:true,senior:{name:'가상 아버지',relation:'아버지',phone:'010-0000-0000'},household:{residentCount:2,hasPet:true}});
     expect(patch.household).toEqual({relation:'father',alias:'가상 아버지',residentCount:2,hasPet:true});
     expect(patch.settings.phone).toBe('010-0000-0000');expect(patch.settings).not.toHaveProperty('relation');
   });
   it('preserves a custom relation and never reopens completed onboarding',()=>{
-    const saved={settings:{...defaultPreferences(),onboardingStep:8},household};
+    const saved={settings:{...defaultPreferences(),onboardingStep:8,preparationAcknowledged:true},household};
     const patch=preferencesPatch(saved,3,{senior:{name:'가상 사용자',relation:'할머니',phone:''}});
     expect(patch.settings.onboardingStep).toBe(8);
     expect(firebaseView({settings:patch.settings,household:patch.household}).senior.relation).toBe('할머니');

@@ -181,9 +181,7 @@ function SeniorHome({ status, now, act, isDemo, endDemo }: { status: SeniorStatu
         </div>
       </div>
       <PhoneStepsCard demo={isDemo} />
-      <a href="https://app.notion.com/p/4163d756e70080399649fedbb690842f?source=copy_link" target="_blank" rel="noopener noreferrer" className="mt-5 block min-h-12 py-3 text-center text-2xl text-muted underline underline-offset-4">
-        개인정보 처리방침 <span className="block">(새 창·Notion 로그인 필요)</span>
-      </a>
+      <Link href="/privacy" className="mt-5 block min-h-12 py-3 text-center text-2xl text-muted underline underline-offset-4">개인정보 이용·제공 안내</Link>
 
       <Sheet open={sheet === "eat_out"} onClose={close} label="외식했어요">
         {done ? (

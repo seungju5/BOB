@@ -154,7 +154,7 @@ describe("senior page propagates demo status", () => {
     const html = renderToStaticMarkup(createElement(SeniorPage));
     expect(html).toContain("필요한 소식만 가볍게 남겨요");
     expect(html).toContain("오늘의 작은 응원");
-    expect(html).toContain("개인정보 처리방침");
+    expect(html).toContain("개인정보 이용·제공 안내");
     for (const label of ["외식했어요", "놀러가요", "도와줘요"]) expect(html).toContain(`aria-label="${label}"`);
     expect(html).not.toContain("밥솥 소식이 도착했어요");
     expect(html).not.toContain("사용 움직임");

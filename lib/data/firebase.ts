@@ -6,10 +6,11 @@ import { ALERT_DEFAULTS } from '@/config/detection';
 import { accountError, ACCOUNT_CONSENT_VERSION, connectFirebase, within, type AccountProfile, type FirebaseUser, type Household, type Preferences, type SavedPreferences } from '@/lib/firebase/bridge';
 import { DEFAULT_WINDOWS, type AppActions, type AppView, type OnboardingPatch } from './view';
 import { assertOnboardingConsent } from './consent';
+import { loadSmartThingsModule, type SmartThingsConnection } from '@/lib/firebase/smartthings';
 
-type State = { user: FirebaseUser|null|undefined; profile: AccountProfile|null; saved: SavedPreferences|null; view: AppView|null; error:string|null; loading:boolean; revision:number };
-const EMPTY: State = {user:undefined,profile:null,saved:null,view:null,error:null,loading:true,revision:0};
-let state=EMPTY, epoch=0;
+type State = { user: FirebaseUser|null|undefined; profile: AccountProfile|null; saved: SavedPreferences|null; connection:SmartThingsConnection|null; view: AppView|null; error:string|null; loading:boolean; revision:number };
+const EMPTY: State = {user:undefined,profile:null,saved:null,connection:null,view:null,error:null,loading:true,revision:0};
+let state=EMPTY, epoch=0, connectionRevision=0;
 let observing=false, observerReady:Promise<void>|null=null;
 const listeners=new Set<()=>void>();
 const emit=(patch:Partial<State>)=>{state={...state,...patch};listeners.forEach(cb=>cb());};
@@ -20,13 +21,30 @@ export function defaultPreferences():Preferences {
   return {schemaVersion:1,onboardingStep:1,phone:'',relationLabel:'',windows:DEFAULT_WINDOWS.map(w=>({...w})),eatOutPerWeek:0,usesKeepWarm:true,cooksPerWeek:7,
     missedMealsThreshold:ALERT_DEFAULTS.MISSED_MEALS_THRESHOLD,fastingHours:ALERT_DEFAULTS.FASTING_HOURS,emergencyHours:ALERT_DEFAULTS.EMERGENCY_HOURS,preparationAcknowledged:false};
 }
-export function firebaseView(saved:SavedPreferences):AppView {
+export function firebaseView(saved:SavedPreferences,connection:SmartThingsConnection|null=null,at=Date.now()):AppView {
   const p=saved.settings??defaultPreferences(),h=saved.household;
+  const selected=p.preparationAcknowledged&&connection?.stage==='connected'?connection:null;
+  const received=selected?.lastReceivedAt;
+  const lastReadingAt=typeof received==='number'&&Number.isFinite(received)&&received>=0&&received<=at?new Date(received).toISOString():null;
   return {mode:'live',dataSource:'firebase',careAvailable:false,onboardingStep:h?p.onboardingStep:Math.min(p.onboardingStep,3),
     senior:{name:h?.alias??'',relation:h?.relation==='other'&&p.relationLabel?p.relationLabel:relationLabels[h?.relation??'mother'],phone:p.phone},household:{residentCount:h?.residentCount??1,hasPet:h?.hasPet??false},
     mealProfile:{windows:p.windows,eatOutPerWeek:p.eatOutPerWeek,usesKeepWarm:p.usesKeepWarm,cooksPerWeek:p.cooksPerWeek},
     alertSettings:{missedMealsThreshold:p.missedMealsThreshold,fastingHours:p.fastingHours,emergencyHours:p.emergencyHours},seniorConsent:p.preparationAcknowledged,
-    plug:{deviceId:'',online:false,lastReadingAt:null},pairingCode:null,seniorPaired:false,slots:[],stats:{},lastCookerAt:null,lastActivityAt:null,absences:[],alerts:[]};
+    plug:{deviceId:selected?.device?.id??'',online:!!lastReadingAt&&at-received!<ALERT_DEFAULTS.DEVICE_OFFLINE_HOURS*60*60*1000,lastReadingAt},pairingCode:null,seniorPaired:false,slots:[],stats:{},lastCookerAt:null,lastActivityAt:null,absences:[],alerts:[]};
+}
+export function updateFirebaseConnection(uid:string,connection:SmartThingsConnection) {
+  if(state.user?.uid!==uid||!state.user.verified||!state.saved||!state.profile)return;
+  ++connectionRevision;
+  emit({connection,view:firebaseView(state.saved,connection)});
+}
+async function refreshFirebaseConnection(uid:string,at:number) {
+  const revision=connectionRevision;
+  try {
+    const module=await loadSmartThingsModule();
+    if(epoch!==at||state.user?.uid!==uid)return;
+    const connection=await module.readSmartThingsConnection(uid);
+    if(epoch===at&&connectionRevision===revision)updateFirebaseConnection(uid,connection);
+  } catch { /* Connection outages do not block saved household settings. */ }
 }
 async function observeUser(user:FirebaseUser|null) {
   if(state.user!==undefined&&state.user?.uid!==user?.uid)resetSeniorStepsConsent();
@@ -38,6 +56,7 @@ async function observeUser(user:FirebaseUser|null) {
     if(epoch!==at)return;
     const ready=profile?.ownerUid===user.uid&&profile.consentVersion===ACCOUNT_CONSENT_VERSION;
     emit({profile:ready?profile:null,saved,view:ready?firebaseView(saved):null,loading:false,error:null});
+    if(ready)void refreshFirebaseConnection(user.uid,at);
   } catch(error) { if(epoch===at)emit({error:accountError(error),loading:false}); }
 }
 async function ensureFirebaseObserver(){
@@ -90,10 +109,10 @@ function save(step:number,patch:OnboardingPatch={}) {
     const input=preferencesPatch(state.saved!,step,patch);
     try {
       const saved=await provider.saveAppPreferences(input.settings,input.household,uid!,state.saved!.revision??{settings:null,household:null});current();
-      emit({saved,view:firebaseView(saved),error:null});
+      emit({saved,view:firebaseView(saved,state.connection),error:null});
     }catch(error){
       if(typeof error==='object'&&error&&'code' in error&&error.code==='preferences/conflict'){
-        const saved=await provider.getAppPreferences(uid!);current();emit({saved,view:firebaseView(saved)});
+        const saved=await provider.getAppPreferences(uid!);current();emit({saved,view:firebaseView(saved,state.connection)});
       }
       throw error;
     }

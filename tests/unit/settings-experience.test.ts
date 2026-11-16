@@ -40,7 +40,7 @@ describe("settings and onboarding presentation contracts", () => {
   it("does not expose a PAT, fabricated family code or absence mutation for an unready Firebase account", () => {
     Object.assign(view, { dataSource: "firebase", careAvailable: false, seniorConsent: true, pairingCode: "867530", seniorPaired: false });
     const html = renderToStaticMarkup(createElement(SettingsPage));
-    expect(html).toContain("기기 연결 준비 상태 보기");
+    expect(html).toContain('aria-label="삼성 계정 기기 연결"');
     expect(html).toContain("아직 수신한 기록이 없어요");
     expect(html).toContain("부재 일정은 가족 연결이 준비된 뒤");
     expect(html).not.toContain("SmartThings 테스트 토큰");

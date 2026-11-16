@@ -34,3 +34,21 @@ describe('Firebase account preparation is separate from real care',()=>{
   });
 
 });
+
+describe('actual SmartThings connection summary stays separate from meal care',()=>{
+  const settings={...defaultPreferences(),preparationAcknowledged:true};
+  it('maps only an acknowledged selected connection and never invents food or health records',()=>{
+    const now=Date.now();
+    const view=firebaseView({settings,household},{stage:'connected',device:{id:'synthetic-plug',label:'가상 플러그'},lastReceivedAt:now,lastSignalAt:now});
+    expect(view.plug).toEqual({deviceId:'synthetic-plug',online:true,lastReadingAt:new Date(now).toISOString()});
+    expect(view.careAvailable).toBe(false);expect(view.slots).toEqual([]);expect(view.lastCookerAt).toBeNull();expect(view.alerts).toEqual([]);
+    expect(firebaseView({settings,household},{stage:'connected',device:{id:'synthetic-plug',label:'가상 플러그'},lastReceivedAt:now},now+3*60*60*1000).plug.online).toBe(false);
+  });
+  it('manual checks never become automatic event evidence; revoked consent clears the summary',()=>{
+    const connection={stage:'connected' as const,device:{id:'synthetic-plug',label:'가상 플러그'},lastCheckedAt:Date.now(),lastSignalAt:Date.now()};
+    expect(firebaseView({settings,household},connection).plug).toMatchObject({online:false,lastReadingAt:null});
+    expect(firebaseView({settings:{...settings,preparationAcknowledged:false},household},connection).plug.deviceId).toBe('');
+    expect(firebaseView({settings,household},{...connection,stage:'reconnect_required'}).plug.deviceId).toBe('');
+    expect(firebaseView({settings,household},{...connection,lastReceivedAt:Date.now()+60_000}).plug.lastReadingAt).toBeNull();
+  });
+});

@@ -7,6 +7,7 @@ export function connectInPopup({origin,consentVersion,getIdToken,readStatus,sign
   if(target.origin!==origin||target.protocol!=='https:')throw failure('invalid_response');
   const channel=browser.crypto.randomUUID()+browser.crypto.randomUUID();
   target.searchParams.set('opener',browser.location.origin);target.searchParams.set('channel',channel);
+  if(['/bapmunna/app/connect/','/bapmunna/app/connect','/bapmunna/app/settings/','/bapmunna/app/settings'].includes(browser.location.pathname))target.searchParams.set('returnPath',browser.location.pathname);
   const popup=browser.open(target.href,'bapmunna-smartthings-connect','popup,width=520,height=760');
   if(!popup)return Promise.reject(failure('popup_blocked'));
   return new Promise((resolve,reject)=>{

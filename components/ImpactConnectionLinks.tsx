@@ -13,10 +13,9 @@ export function ImpactConnectionLinks({compact=false}:{compact?:boolean}) {
   const dismissed=useSyncExternalStore(subscribe,()=>{try{return localStorage.getItem(key)==='seen';}catch{return false;}},()=>true);
   if(APP_BASE_PATH!=='/bapmunna/app')return null;
   if(compact){
-    if(view?.plug.deviceId)return null;
     return <section className="mt-5" aria-label="기기 연결 안내">
-      <Link href="/settings#device" className="flex min-h-12 items-center gap-3 rounded-2xl border border-line px-4 py-3 text-[16px] font-bold text-cocoa focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-cocoa">
-        <IconPlug className="h-5 w-5 shrink-0"/><span className="min-w-0 flex-1">기기 연결 준비하기</span><IconArrowRight className="h-5 w-5"/>
+      <Link href={provider==='firebase'?'/connect':'/settings#device'} className="flex min-h-12 items-center gap-3 rounded-2xl border border-line px-4 py-3 text-[16px] font-bold text-cocoa focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-cocoa">
+        <IconPlug className="h-5 w-5 shrink-0"/><span className="min-w-0 flex-1">{view?.plug.deviceId?'우리 집 기기 연결 확인':'삼성 계정으로 기기 연결'}</span><IconArrowRight className="h-5 w-5"/>
       </Link>
       {!dismissed?<div className="mt-2 rounded-2xl bg-butter-soft p-4 text-[16px] leading-relaxed text-cocoa">
         <p>기기 연결은 여기에서 시작해요. 나중에도 더보기 → 설정 → 기기에서 찾을 수 있어요.</p>

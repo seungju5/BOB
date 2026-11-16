@@ -43,7 +43,7 @@ node scripts/build-impact-next.mjs
 node workspaces/bapmunna-final/scripts/stage.mjs
 ```
 
-Next 일반 빌드와 정적 export는 `.next` 중간 결과를 공유하므로 동시에 실행하지 않는다. export는 `/bapmunna/app` basePath, 건강 안내와 카카오 복귀를 포함한 16개 사용자 경로, 상대 PWA 범위·아이콘, 서비스 워커와 폰트를 검사한다. stage는 숨김 파일·비밀/SQL/source map·심볼릭 링크를 거부한다.
+Next 일반 빌드와 정적 export는 `.next` 중간 결과를 공유하므로 동시에 실행하지 않는다. export는 `/bapmunna/app` basePath, 건강 안내·카카오 복귀·개인정보·삼성 연결을 포함한 18개 사용자 경로, 상대 PWA 범위·아이콘, 서비스 워커와 폰트를 검사한다. stage는 숨김 파일·비밀/SQL/source map·심볼릭 링크를 거부한다.
 
 ## 게시와 복구
 

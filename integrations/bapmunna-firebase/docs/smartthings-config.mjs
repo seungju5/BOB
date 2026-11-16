@@ -1,3 +1,3 @@
-// Set only after the dedicated backend's production origin has been verified.
-// Empty keeps the existing same-origin Cloud Run deployment compatible.
-export const smartThingsApiOrigin='';
+// The public server is reachable. New connections remain independently gated
+// by config.connectionReady until Samsung Business registration is ready.
+export const smartThingsApiOrigin='https://bapmunna-smartthings.vercel.app';

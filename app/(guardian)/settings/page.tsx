@@ -6,6 +6,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { AlertThresholdFields, Choice, Field, MealWindowsEditor, RelationPicker, Slider, TextInput, Toggle, windowsValid } from "@/components/forms";
 import { IconArrowRight, IconLock, IconPlug, IconSuitcase } from "@/components/icons";
 import { PlugForm } from "@/components/PlugForm";
+import { SmartThingsPanel } from "@/components/SmartThingsPanel";
 import { SeniorConsentField } from "@/components/privacy/SeniorConsentField";
 import { PrivacyNotice } from "@/components/privacy/PrivacyNotice";
 import { deviceReadingLabel, seniorDetailsProblems } from "@/components/onboarding/settings-validation";
@@ -19,7 +20,6 @@ import { MEAL_PALETTES, setMealPalette, useMealPalette } from "@/lib/data/appear
 import type { MealSlotName, MealWindow } from "@/lib/judge/types";
 import { resetDemo, updateDemo } from "@/lib/demo/store";
 
-const DEVICE_GUIDE_URL = "https://impact-series.web.app/bapmunna/carer/#connect";
 
 export default function SettingsPage() {
   const app = useApp();
@@ -236,13 +236,13 @@ function DeviceSettings({ app, view }: { app: App; view: AppView }) {
     </fieldset> : <div className="rounded-2xl border border-line p-4">
       <p className="text-[16px] font-bold text-cocoa">어르신 정보 이용 동의 확인을 저장했어요.</p>
       <PrivacyNotice />
-      {firebase || mode === "demo" ? <><p className="text-[16px] leading-relaxed text-muted">확인을 취소하면 다시 동의하기 전에는 새 어르신 정보를 저장할 수 없어요. 기존 정보 삭제나 삼성·건강 앱 권한 해제는 별도예요.</p><Button variant="outline" className="mt-3 text-[16px]" disabled={consent.busy} onClick={() => {
-        if (!confirm("내 계정의 어르신 정보 이용 동의 확인을 취소할까요? 기존 정보는 삭제되지 않고, 삼성·건강 앱의 연결 권한도 별도로 해제해야 해요.")) return;
+      {firebase || mode === "demo" ? <><p className="text-[16px] leading-relaxed text-muted">확인을 취소하면 새 어르신 정보 저장과 삼성 기기 소식 읽기를 멈춰요. 암호화된 연결 열쇠까지 지우려면 아래에서 기기 연결도 해제해 주세요. 건강 앱 권한 해제는 별도예요.</p><Button variant="outline" className="mt-3 text-[16px]" disabled={consent.busy} onClick={() => {
+        if (!confirm("내 계정의 어르신 정보 이용 동의 확인을 취소할까요? 새 기기 소식 읽기를 멈추지만, 기존 정보와 암호화된 연결 열쇠를 지우려면 연결도 해제해야 해요.")) return;
         void consent.run(() => actions.saveOnboarding(view.onboardingStep, { seniorConsent: false }), "동의 확인을 취소했어요.").then(saved => { if (saved) setConsentChecked(false); });
       }}>동의 확인 취소</Button></> : null}
     </div>}
     <SaveFeedback {...consent} />
-    {firebase ? <div className="rounded-2xl border border-line p-4"><p className="text-[16px] font-bold text-cocoa">실제 밥솥 연결은 아직 준비 중이에요.</p><p className="mt-2 text-[16px] leading-relaxed text-muted">삼성 연결 등록과 실제 수신 확인이 남아 있어요. 지금 휴대폰 설정을 바꾸거나 앱을 다시 설치할 필요는 없어요. 갤럭시 걸음수 테스트와는 다른 기능이에요.</p><a href={DEVICE_GUIDE_URL} className="mt-3 flex min-h-12 items-center justify-between gap-2 rounded-xl bg-butter-soft px-3 py-3 text-[16px] font-bold text-cocoa">기기 연결 준비 상태 보기<IconArrowRight className="h-5 w-5 shrink-0" /></a></div> : view.plug.deviceId ? <div className="flex items-center gap-3 rounded-2xl border border-line p-4"><IconPlug className="h-6 w-6 shrink-0 text-cocoa" /><div className="min-w-0"><p className="text-[16px] font-bold text-cocoa">스마트플러그</p><p className="mt-1 break-all text-[16px] text-muted">{view.plug.deviceId}</p></div></div> : <PlugForm onSubmit={actions.registerPlug} consentConfirmed={view.seniorConsent} isDemo={mode === "demo"} />}
+    {firebase ? <SmartThingsPanel key={String(view.seniorConsent)} accountKey={app.accountKey} /> : view.plug.deviceId ? <div className="flex items-center gap-3 rounded-2xl border border-line p-4"><IconPlug className="h-6 w-6 shrink-0 text-cocoa" /><div className="min-w-0"><p className="text-[16px] font-bold text-cocoa">스마트플러그</p><p className="mt-1 break-all text-[16px] text-muted">{view.plug.deviceId}</p></div></div> : <PlugForm onSubmit={actions.registerPlug} consentConfirmed={view.seniorConsent} isDemo={mode === "demo"} />}
     <ConnectionGuide />
     <div className="rounded-2xl bg-butter-soft p-4">
       <p className="text-[16px] font-bold text-cocoa">{view.senior.relation} 휴대폰 연결</p>

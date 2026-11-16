@@ -8,6 +8,14 @@ export function smartThingsClient(config,fetcher=fetch){
       body:form?new URLSearchParams(form).toString():body?JSON.stringify(body):undefined,
     });
     if(!response.ok){
+      // OAuth errors describe a rejected grant or client configuration. Never
+      // expose the upstream body (which may echo credentials) to callers.
+      if(form&&[400,401].includes(response.status)){
+        const raw=await response.text();let code;
+        if(raw.length<=16384)try{code=JSON.parse(raw).error;}catch{}
+        if(code==='invalid_grant')throw new ApiError(401,'reconnect_required');
+        if(['invalid_client','invalid_request','invalid_scope','unauthorized_client','unsupported_grant_type'].includes(code))throw new ApiError(503,'oauth_configuration_required');
+      }
       const code={401:'reconnect_required',402:'plan_required',403:'permission_required',404:'device_missing',409:'subscription_exists',429:'rate_limited'}[response.status]||'upstream_unavailable';
       throw new ApiError(response.status===401?401:response.status===429?429:502,code);
     }

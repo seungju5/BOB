@@ -71,5 +71,5 @@ export function readConfig(env){
   }
   const returnUrl=new URL(env.BAPMUNNA_RETURN_URL||app.href);
   if(![origin.origin,...appOrigins].includes(returnUrl.origin)||returnUrl.username||returnUrl.password)throw Error('BAPMUNNA_RETURN_URL must use an explicitly allowed app origin.');
-  return {appUrl:app.href,origin:origin.origin,appOrigins,returnUrl:returnUrl.href,secure:!local,appId:env.SMARTTHINGS_APP_ID||'',clientId:env.SMARTTHINGS_CLIENT_ID||'',secret:env.SMARTTHINGS_CLIENT_SECRET||'',key:env.SMARTTHINGS_ENCRYPTION_KEY||'',oauth:env.SMARTTHINGS_OAUTH_PREFIX||'/oauth',redirect:`${origin.origin}/api/smartthings/callback`,projectId:env.FIREBASE_PROJECT_ID||''};
+  return {appUrl:app.href,origin:origin.origin,appOrigins,returnUrl:returnUrl.href,secure:!local,connectionEnabled:env.SMARTTHINGS_CONNECTION_ENABLED==='true',appId:env.SMARTTHINGS_APP_ID||'',clientId:env.SMARTTHINGS_CLIENT_ID||'',secret:env.SMARTTHINGS_CLIENT_SECRET||'',key:env.SMARTTHINGS_ENCRYPTION_KEY||'',oauth:env.SMARTTHINGS_OAUTH_PREFIX||'/oauth',redirect:`${origin.origin}/api/smartthings/callback`,projectId:env.FIREBASE_PROJECT_ID||''};
 }

@@ -4,6 +4,7 @@ let parentOrigin,channel,settings,used=false,timeout;
 function show(heading,text){title.textContent=heading;description.textContent=text;}
 function tell(type,result){if(window.opener&&parentOrigin)window.opener.postMessage({type,channel,result},parentOrigin);}
 function validChannel(value){return typeof value==='string'&&/^[a-zA-Z0-9_-]{16,128}$/.test(value);}
+const validReturnPath=value=>['/bapmunna/app/connect/','/bapmunna/app/connect','/bapmunna/app/settings/','/bapmunna/app/settings'].includes(value);
 function fail(){clearTimeout(timeout);show('연결을 마치지 못했어요.','밥뭇나로 돌아가 다시 시작해 주세요.');tell('bapmunna-error');}
 back.addEventListener('click',()=>{if(!query.get('smartthings'))tell('bapmunna-result','cancelled');});
 try{
@@ -17,15 +18,20 @@ try{
   if(result){
     const saved=JSON.parse(sessionStorage.getItem(storageKey)||'null');sessionStorage.removeItem(storageKey);
     if(saved&&settings.appOrigins.includes(saved.origin)&&validChannel(saved.channel)){parentOrigin=saved.origin;channel=saved.channel;}
+    if(saved&&validReturnPath(saved.returnPath))back.href=new URL(saved.returnPath,returnUrl.origin).href;
     history.replaceState(null,'',location.pathname);
     if(result==='connected')show('삼성 계정을 확인했어요.','밥뭇나 화면에서 밥솥에 꽂은\n플러그를 골라 주세요.');
     else if(result==='cancelled')show('연결을 취소했어요.','원할 때 다시 시작할 수 있어요.');
     else show('연결을 마치지 못했어요.','밥뭇나에서 연결 상태를 확인하고\n다시 시작해 주세요.');
     tell('bapmunna-result',result);
+  }else if(settings.connectionReady!==true){
+    show('삼성 서비스 연결을 준비하고 있어요.','운영팀이 연결 등록을 마치면 밥뭇나에서 시작할 수 있어요. 토큰을 따로 만들 필요는 없어요.');
   }else{
     parentOrigin=query.get('opener');channel=query.get('channel');
     if(!window.opener||!settings.appOrigins.includes(parentOrigin)||!validChannel(channel))throw Error();
-    sessionStorage.setItem(storageKey,JSON.stringify({origin:parentOrigin,channel}));
+    const returnPath=validReturnPath(query.get('returnPath'))?query.get('returnPath'):null;
+    if(returnPath)back.href=new URL(returnPath,returnUrl.origin).href;
+    sessionStorage.setItem(storageKey,JSON.stringify({origin:parentOrigin,channel,returnPath}));
     history.replaceState(null,'',location.pathname);
     window.addEventListener('message',async event=>{
       if(used||event.source!==window.opener||event.origin!==parentOrigin||event.data?.type!=='bapmunna-start'||event.data.channel!==channel)return;

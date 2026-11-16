@@ -4,6 +4,8 @@ import {random,hash,ApiError} from './security.mjs';
 // a verified Firebase ID token and an owner UID derived by the server.
 export function firestoreStore(db,now=()=>Date.now()){
   const ref=(kind,id)=>db.collection(`bapmunnaSmartThings${kind}`).doc(hash(id));
+  const consentRef=uid=>db.collection(`bapmunnaAccounts/${uid}/preferences`).doc('settings');
+  const hasConsent=(value,uid)=>value?.ownerUid===uid&&value.preparationAcknowledged===true;
   const read=async(kind,id)=>(await ref(kind,id).get()).data()||null;
   async function transact(kind,id,fn){
     return db.runTransaction(async tx=>{
@@ -14,6 +16,19 @@ export function firestoreStore(db,now=()=>Date.now()){
     });
   }
   return {
+    async verifyConsent(uid){
+      if(!hasConsent((await consentRef(uid).get()).data(),uid))throw new ApiError(403,'consent_required');
+    },
+    async dueConnections({limit=20}={}){
+      if(!Number.isSafeInteger(limit)||limit<1||limit>20)throw new RangeError('Maintenance limit must be between 1 and 20.');
+      // One indexed field: no scan of every user's encrypted credentials and
+      // no additional paid scheduler/TTL. Only the cron receives these UIDs.
+      const found=await db.collection('bapmunnaSmartThingsConnections').where('refreshDueAt','<=',new Date(now())).orderBy('refreshDueAt').limit(limit).get();
+      return found.docs.flatMap(doc=>{
+        const value=doc.data();
+        return typeof value?.uid==='string'&&doc.id===hash(value.uid)&&typeof value.installId==='string'?[{uid:value.uid,installId:value.installId}]:[];
+      });
+    },
     async cleanupExpired({limit=5000}={}){
       if(!Number.isSafeInteger(limit)||limit<1||limit>5000)throw new RangeError('Cleanup limit must be between 1 and 5000.');
       const cutoff=now(),result={scanned:0,deleted:0,limitReached:false,collections:{}};
@@ -46,20 +61,26 @@ export function firestoreStore(db,now=()=>Date.now()){
       return result;
     },
     get:uid=>read('Connections',uid),
-    async patch(uid,fields){return transact('Connections',uid,current=>{
+    async patch(uid,fields,{installId,attemptId,requireConsent=false}={}){return db.runTransaction(async tx=>{
+      const target=ref('Connections',uid);
+      const [saved,consent]=await Promise.all([tx.get(target),requireConsent?tx.get(consentRef(uid)):null]);
+      const current=saved.data();
       if(!current)throw new ApiError(409,'reconnect_required');
+      if((installId&&current.installId!==installId)||(attemptId&&current.refreshAttemptId!==attemptId))throw new ApiError(409,'reconnect_required');
+      if(requireConsent&&!hasConsent(consent?.data(),uid))throw new ApiError(403,'consent_required');
       const next={...current,...fields};
       if(Object.hasOwn(fields,'lastSignalAt'))next.lastSignalAt=Math.max(current.lastSignalAt||0,fields.lastSignalAt||0)||null;
-      return {next,value:next};
+      tx.set(target,next);return next;
     });},
     async saveConnection(uid,value,{state,nonceHash}={}){
       await db.runTransaction(async tx=>{
         const connection=ref('Connections',uid),installation=ref('Installations',value.installId);
         const pending=state?ref('States',state):null;
-        const [old,saved,attempt]=await Promise.all([tx.get(connection),tx.get(installation),pending?tx.get(pending):null]);
+        const [old,saved,attempt,consent]=await Promise.all([tx.get(connection),tx.get(installation),pending?tx.get(pending):null,pending?tx.get(consentRef(uid)):null]);
         if(pending){
           const current=attempt?.data();
           if(!current||current.uid!==uid||current.nonceHash!==nonceHash||current.used!==true||current.cancelled===true||!Number.isFinite(current.until)||current.until<=now())throw new ApiError(400,'invalid_state');
+          if(!hasConsent(consent?.data(),uid))throw new ApiError(403,'consent_required');
         }
         if(saved.exists&&saved.data().uid!==uid)throw new ApiError(409,'installation_in_use');
         if(old.exists&&old.data().installId!==value.installId)tx.delete(ref('Installations',old.data().installId));
@@ -104,9 +125,9 @@ export function firestoreStore(db,now=()=>Date.now()){
     async receive(uid,installId,event){
       return db.runTransaction(async tx=>{
         const connection=ref('Connections',uid),receipt=ref('Receipts',`${installId}:${event.id}`);
-        const [saved,seen]=await Promise.all([tx.get(connection),tx.get(receipt)]);
+        const [saved,seen,consent]=await Promise.all([tx.get(connection),tx.get(receipt),tx.get(consentRef(uid))]);
         const current=saved.data();
-        if(seen.exists||!current||current.installId!==installId||current.deviceId!==event.deviceId)return false;
+        if(seen.exists||!current||current.installId!==installId||current.deviceId!==event.deviceId||current.stage!=='connected'||!hasConsent(consent.data(),uid))return false;
         // Deduplication metadata contains no power readings. cleanupExpired
         // removes expired receipts without requiring billed Firestore TTL.
         tx.set(receipt,{expiresAt:new Date(now()+86400000)});

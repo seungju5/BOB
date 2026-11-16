@@ -7,7 +7,7 @@ import { useAlertSync, useDemo, useNow } from "@/lib/demo/store";
 import { liveActions, useLive } from "./live";
 import { useMode, useSession } from "./mode";
 import { usesImpactFirebase, ACCOUNT_CONSENT_VERSION } from "@/lib/firebase/bridge";
-import { firebaseActions, signOutFirebase, useFirebaseAccount } from "./firebase";
+import { firebaseActions, firebaseView, signOutFirebase, useFirebaseAccount } from "./firebase";
 import { supabase } from "@/lib/supabase";
 import type { AppActions, AppView } from "./view";
 
@@ -43,7 +43,7 @@ export function useApp(): App {
 
   if (mode === "demo") return { provider: "demo", accountKey: "demo", view: demoView, actions: demoActions, now, mode, needsLogin: false, error: null };
   if (mode === "live" && usesImpactFirebase) return {
-    view: firebase.view, actions: firebaseActions, now, mode, provider: "firebase",
+    view: firebase.view && firebase.saved ? firebaseView(firebase.saved, firebase.connection, now?.getTime()) : firebase.view, actions: firebaseActions, now, mode, provider: "firebase",
     accountLabel: firebase.user?.email, accountKey: `${firebase.user?.uid ?? "signed-out"}:${firebase.revision}`, signOut: signOutFirebase,
     needsLogin: !firebase.loading && (!!firebase.user ? !firebase.user.verified || !firebase.profile || firebase.profile.consentVersion !== ACCOUNT_CONSENT_VERSION : firebase.user === null),
     error: firebase.error,

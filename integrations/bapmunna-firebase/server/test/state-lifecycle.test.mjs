@@ -29,6 +29,7 @@ function memoryDatabase(){
 
 function fixture(){
   const db=memoryDatabase();let time=1000000;
+  db.documents.set('bapmunnaAccounts/alice/preferences/settings',{ownerUid:'alice',preparationAcknowledged:true});
   return {db,store:firestoreStore(db,()=>time),advance:amount=>{time+=amount;},pending:{uid:'alice',nonceHash:'browser-hash',until:time+600000,consentedAt:time}};
 }
 const connection={installId:'installation-a',stage:'choose_device',tokens:{encrypted:true}};

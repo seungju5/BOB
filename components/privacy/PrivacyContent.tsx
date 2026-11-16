@@ -32,7 +32,7 @@ export function PrivacyContent() {
       <h2 className="text-[21px] font-bold">4. 보관과 삭제는 어떻게 하나요?</h2>
       <p className="mt-3">회원·가구·생활 설정은 현재 계정에 저장돼요. 테스트 버전에는 정해진 기간 뒤 자동으로 지우는 기능이나 앱 안의 회원 탈퇴 기능이 아직 없어요. 보관 기간이 확정되면 이 안내에 반영할게요.</p>
       <p className="mt-3">정보 확인·수정·동의 철회·삭제를 원하면 아래 운영팀 이메일로 요청해 주세요. 로그아웃이나 준비 동의 취소만으로 계정 정보가 삭제되지는 않아요.</p>
-      <p className="mt-3">삼성 연결을 사용한 경우에는 연결 화면에서 해제해야 해요. 밥뭇나의 연결 정보와 암호화된 연결 열쇠를 지우며, 삼성 쪽 서비스 권한은 SmartThings 앱에서 별도로 해제해 주세요.</p>
+      <p className="mt-3">정보 이용 동의 확인을 취소하면 새로운 삼성 기기 소식을 읽거나 저장하지 않아요. 암호화된 연결 열쇠와 기기 연결 정보는 연결 해제 전까지 남아 있어요. 연결 화면에서 해제하면 이 정보를 지워요. 삼성 쪽 서비스 권한은 SmartThings 앱에서 별도로 해제해 주세요.</p>
     </section>
     <section className="rounded-2xl border border-line p-5">
       <h2 className="text-[21px] font-bold">5. 운영팀에 문의하기</h2>

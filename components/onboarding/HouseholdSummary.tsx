@@ -1,4 +1,5 @@
 import { Mascot } from "@/components/Mascot";
+import Link from 'next/link';
 import { Button } from "@/components/ui";
 import { FlowProgress } from "./FlowProgress";
 import type { AppView } from "@/lib/data/view";
@@ -37,6 +38,7 @@ export function HouseholdSummary({ state, busy, error, onContinue, onHome, onEdi
           {["평소 식사 시간과 외식 횟수", "밥솥을 쓰는 생활 습관", "안부를 물어볼 알림 기준"].map((label, index) => <li key={label} className="flex items-center gap-3 rounded-2xl bg-butter-soft px-4 py-3 text-[16px] text-cocoa"><span aria-hidden className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-paper font-bold">{index + 1}</span>{label}</li>)}
         </ol>
         <p className="mt-4 text-[16px] leading-relaxed text-muted">지금 정하지 않아도 괜찮아요. 기기 연결과 생활 기준은 홈에서 이어갈 수 있어요.</p>
+        {state.dataSource === 'firebase' ? <Link href="/connect" className="mt-4 flex min-h-14 items-center justify-center rounded-2xl border border-line px-4 py-3 text-[16px] font-bold text-cocoa">삼성 계정으로 기기 연결하기</Link> : null}
         {error ? <p role="alert" className="mt-4 text-[16px] font-semibold text-blush-deep">{error}</p> : null}
         <div className="mt-auto flex flex-col gap-3 pt-7">
           <Button disabled={busy} onClick={onContinue}>이제 생활 설정하기</Button>

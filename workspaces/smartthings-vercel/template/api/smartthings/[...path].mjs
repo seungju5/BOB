@@ -23,8 +23,12 @@ export function createVercelHandler({env=process.env,runtimeFactory=createRuntim
           if((!runtime.ready||!runtime.store)&&(!kakao.ready||!kakao.store))return reply({error:'setup_required'},503);
           // Each integration cleans its own private namespace independently.
           const result=runtime.ready&&runtime.store?await runtime.store.cleanupExpired({limit:5000}):{deleted:0,limitReached:false};
+          if(runtime.ready&&runtime.maintain){
+            try{result.tokens=await runtime.maintain({limit:20,budgetMs:120000});}
+            catch{result.tokens={error:'temporarily_unavailable'};}
+          }
           if(kakao.ready&&kakao.store)result.kakao=await kakao.store.cleanup({limit:1000});
-          return reply(result);
+          return reply(result,result.tokens?.error?503:200);
         }});
       }
       await handler(req,res);

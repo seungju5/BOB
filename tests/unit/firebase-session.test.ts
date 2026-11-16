@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AccountProfile, FirebaseProvider, FirebaseUser, Household, Preferences, SavedPreferences } from '@/lib/firebase/bridge';
 
-const bridgeMock=vi.hoisted(()=>({connect:vi.fn()}));
+const bridgeMock=vi.hoisted(()=>({connect:vi.fn(),smartThings:vi.fn()}));
+vi.mock('@/lib/firebase/smartthings',()=>({loadSmartThingsModule:bridgeMock.smartThings}));
 vi.mock('@/lib/firebase/bridge',async original=>({
   ...await original<typeof import('@/lib/firebase/bridge')>(),
   connectFirebase:bridgeMock.connect,
@@ -60,7 +61,7 @@ async function fixture() {
 }
 
 beforeEach(()=>{
-  vi.resetModules();bridgeMock.connect.mockReset();vi.useFakeTimers();
+  vi.resetModules();bridgeMock.connect.mockReset();bridgeMock.smartThings.mockReset().mockRejectedValue(new Error('No network in unit tests'));vi.useFakeTimers();
 });
 afterEach(()=>{
   vi.clearAllTimers();vi.useRealTimers();
@@ -69,6 +70,17 @@ afterEach(()=>{
 // Synthetic promises and Auth callbacks, with the production 12s timeout.
 // These tests do not claim browser, emulator, network or live account evidence.
 describe('Firebase account store asynchronous session isolation',()=>{
+  it('a delayed initial status cannot overwrite a newer explicit connection change',async()=>{
+    const pending=deferred<{stage:'connected';device:{id:string;label:string}}>();
+    bridgeMock.smartThings.mockResolvedValue({readSmartThingsConnection:()=>pending.promise});
+    const f=await fixture();await f.mount();await f.emit(f.user('A'));
+    f.store.updateFirebaseConnection('A',{stage:'disconnected'});
+    pending.resolve({stage:'connected',device:{id:'old-plug',label:'이전 가상 기기'}});await flush();
+    expect(f.snapshot().connection?.stage).toBe('disconnected');expect(f.snapshot().view?.plug.deviceId).toBe('');
+    await f.emit(f.user('B'));
+    f.store.updateFirebaseConnection('A',{stage:'connected',device:{id:'wrong-owner',label:'다른 계정'}});
+    expect(f.snapshot().view?.plug.deviceId).not.toBe('wrong-owner');
+  });
   it('rejects an unconsented household save before contacting the write provider',async()=>{
     const f=await fixture();
     const old=f.server.get('A')!;

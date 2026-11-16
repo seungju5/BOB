@@ -6,13 +6,15 @@ import {ApiError,hash,readConfig,vault,webhookVerifier} from '../security.mjs';
 import {smartThingsClient,readingSummary} from '../smartthings.mjs';
 
 const instant=Date.parse('2026-11-03T03:00:00Z');
-const config=readConfig({PUBLIC_ORIGIN:'https://example.test',APP_URL:'https://example.test/carer/',FIREBASE_PROJECT_ID:'test-only',SMARTTHINGS_APP_ID:'app1',SMARTTHINGS_CLIENT_ID:'client',SMARTTHINGS_CLIENT_SECRET:'secret',SMARTTHINGS_ENCRYPTION_KEY:randomBytes(32).toString('base64')});
-function fixture(){
+const DAY=86400000;
+const config=readConfig({PUBLIC_ORIGIN:'https://example.test',APP_URL:'https://example.test/carer/',FIREBASE_PROJECT_ID:'test-only',SMARTTHINGS_CONNECTION_ENABLED:'true',SMARTTHINGS_APP_ID:'app1',SMARTTHINGS_CLIENT_ID:'client',SMARTTHINGS_CLIENT_SECRET:'secret',SMARTTHINGS_ENCRYPTION_KEY:randomBytes(32).toString('base64')});
+function fixture({connectionEnabled=true}={}){
   let time=instant,refreshes=0,subscriptions=0;
   const connections=new Map(),states=new Map(),locks=new Set(),seen=new Set();
   const store={
     get:async uid=>structuredClone(connections.get(uid)||null),
-    patch:async(uid,value)=>{if(!connections.has(uid))throw new ApiError(409,'reconnect_required');const next={...connections.get(uid),...value};connections.set(uid,next);return structuredClone(next);},
+    patch:async(uid,value,{installId,attemptId,requireConsent=false}={})=>{const current=connections.get(uid);if(!current||(installId&&current.installId!==installId)||(attemptId&&current.refreshAttemptId!==attemptId))throw new ApiError(409,'reconnect_required');if(requireConsent&&!consented)throw new ApiError(403,'consent_required');const next={...current,...value};connections.set(uid,next);return structuredClone(next);},
+    dueConnections:async({limit})=>[...connections].filter(([,c])=>c.refreshDueAt instanceof Date&&c.refreshDueAt.getTime()<=time).sort((a,b)=>a[1].refreshDueAt-b[1].refreshDueAt).slice(0,limit).map(([uid,c])=>({uid,installId:c.installId})),
     saveConnection:async(uid,value,attempt)=>{if(attempt){const pending=states.get(attempt.state);if(!pending||pending.uid!==uid||pending.nonceHash!==attempt.nonceHash||!pending.used||pending.cancelled||pending.until<=time)throw new ApiError(400,'invalid_state');}for(const [other,current]of connections)if(other!==uid&&current.installId===value.installId)throw new ApiError(409,'installation_in_use');connections.set(uid,value);if(attempt)states.delete(attempt.state);},
     remove:async(uid,id)=>{if(connections.get(uid)?.installId===id)connections.delete(uid);},
     installation:async id=>{for(const [uid,c]of connections)if(c.installId===id)return {uid};return null;},
@@ -31,14 +33,14 @@ function fixture(){
     status:async()=>({components:{main:{powerMeter:{power:{value:54,unit:'W',timestamp:new Date(time).toISOString()}}}}}),
     subscribe:async()=>{subscriptions++;},unsubscribe:async()=>{},confirm:async()=>{},
   };
-  let validAccount=true;
-  const handle=createService({config,store,smartthings,now:()=>time,verifyUser:async token=>{if(token==='revoked')throw Error();return {uid:token,email_verified:token!=='unverified',auth_time:Math.floor(instant/1000)};},verifyAccount:async()=>{if(!validAccount)throw new ApiError(401,'login_required');},verifyWebhook:async request=>{if(request.headers.get('authorization')!=='test-signed')throw new ApiError(401,'invalid_webhook');}});
+  let validAccount=true,consented=true;
+  const handle=createService({config:{...config,connectionEnabled},store,smartthings,now:()=>time,verifyUser:async token=>{if(token==='revoked')throw Error();return {uid:token,email_verified:token!=='unverified',auth_time:Math.floor(instant/1000)};},verifyAccount:async()=>{if(!validAccount)throw new ApiError(401,'login_required');},verifyConsent:async()=>{if(!consented)throw new ApiError(403,'consent_required');},verifyWebhook:async request=>{if(request.headers.get('authorization')!=='test-signed')throw new ApiError(401,'invalid_webhook');}});
   const call=(path,{method='GET',user='alice',body,headers={}}={})=>handle(new Request(config.origin+'/api/smartthings'+path,{method,headers:{Authorization:`Bearer ${user}`,Origin:config.origin,'Content-Type':'application/json',...headers},body:body===undefined?undefined:JSON.stringify(body)}));
   async function link(){
     const start=await call('/start',{method:'POST',body:{consentVersion:CONSENT}}),payload=await start.json(),state=new URL(payload.url).searchParams.get('state'),cookie=start.headers.get('set-cookie').split(';')[0];
     const callback=await call(`/callback?state=${state}&code=test-code`,{headers:{cookie}});assert.equal(callback.status,303);return {state,cookie};
   }
-  return {call,link,store,connections,states,smartthings,revokeAccount:()=>{validAccount=false;},advance:ms=>{time+=ms;},stats:()=>({refreshes,subscriptions})};
+  return {call,link,store,connections,states,smartthings,maintain:handle.maintain,setConsent:value=>{consented=value;},revokeAccount:()=>{validAccount=false;},advance:ms=>{time+=ms;},stats:()=>({refreshes,subscriptions})};
 }
 test('OAuth binds state to user and browser, encrypts credentials, and consumes state once',async()=>{
   const f=fixture(),{state,cookie}=await f.link();
@@ -115,6 +117,143 @@ test('unconfigured backend reports setup required and never initiates OAuth',asy
   const handle=createService({config:{...config,key:''}});
   assert.equal((await (await handle(new Request(config.origin+'/api/smartthings/config'))).json()).enabled,false);
   assert.equal((await handle(new Request(config.origin+'/api/smartthings/start',{method:'POST'}))).status,503);
+});
+test('operator admission is closed by default and never hides an existing connection or prevents unlink',async()=>{
+  for(const value of [undefined,'false','TRUE','1'])assert.equal(readConfig({SMARTTHINGS_CONNECTION_ENABLED:value}).connectionEnabled,false);
+  const paused=fixture({connectionEnabled:false});
+  const settings=await (await paused.call('/config')).json();
+  assert.equal(settings.enabled,true);assert.equal(settings.connectionReady,false);
+  assert.equal((await paused.call('/start',{method:'POST',body:{consentVersion:CONSENT}})).status,503);
+  assert.equal(paused.states.size,0);
+  const f=fixture();await f.link();
+  paused.connections.set('alice',await f.store.get('alice'));
+  assert.equal((await (await paused.call('/status')).json()).stage,'choose_device');
+  assert.equal((await paused.call('/connection',{method:'DELETE',body:{confirm:true}})).status,200);
+});
+test('saved consent is checked at start, callback, device access and event receipt; unlink still works',async()=>{
+  const f=fixture();f.setConsent(false);
+  assert.equal((await f.call('/start',{method:'POST',body:{consentVersion:CONSENT}})).status,403);
+  assert.equal(f.states.size,0);f.setConsent(true);
+  const start=await f.call('/start',{method:'POST',body:{consentVersion:CONSENT}}),{url}=await start.json();
+  const state=new URL(url).searchParams.get('state'),cookie=start.headers.get('set-cookie').split(';')[0];
+  f.setConsent(false);
+  assert.equal(new URL((await f.call(`/callback?state=${state}&code=test`,{headers:{cookie}})).headers.get('location')).searchParams.get('smartthings'),'failed');
+  assert.equal(f.connections.size,0);f.setConsent(true);await f.link();
+  await f.call('/device',{method:'POST',body:{deviceId:'mine'}});f.advance(60000);f.setConsent(false);
+  assert.equal((await f.call('/devices')).status,403);
+  assert.equal((await f.call('/check',{method:'POST',body:{}})).status,403);
+  const body={messageType:'EVENT',eventData:{installedApp:{installedAppId:'install1'},events:[{eventType:'DEVICE_EVENT',eventTime:new Date(instant+60000).toISOString(),deviceEvent:{eventId:'after-withdrawal',deviceId:'mine',capability:'powerMeter',attribute:'power'}}]}};
+  assert.equal((await f.call('/events',{method:'POST',body,headers:{Authorization:'test-signed'}})).status,200);
+  assert.equal((await f.store.get('alice')).lastSignalAt,instant);
+  assert.equal((await f.call('/status')).status,200);
+  assert.equal((await f.call('/connection',{method:'DELETE',body:{confirm:true}})).status,200);
+});
+test('daily maintenance refreshes a due household without a browser visit and retains isolation',async()=>{
+  const f=fixture();await f.link();
+  const alice=await f.store.get('alice');
+  f.connections.set('bob',{...alice,uid:'bob',installId:'install-b',refreshDueAt:new Date(instant+DAY),tokens:vault(config.key).seal({access:'bob-access',refresh:'bob-refresh',expiresAt:instant+DAY},'bob:install-b')});
+  const bobBefore=JSON.stringify(await f.store.get('bob'));f.advance(2800000);
+  const result=await f.maintain();assert.equal(result.refreshed,1);assert.equal(f.stats().refreshes,1);
+  assert.equal(JSON.stringify(await f.store.get('bob')),bobBefore);
+  assert.equal(vault(config.key).open((await f.store.get('alice')).tokens,'alice:install1').refresh,'refresh-new');
+  assert.equal((await f.maintain()).scanned,0);
+  assert.doesNotMatch(JSON.stringify(result),/alice|bob|install1|token|access-private|refresh-private/);
+});
+test('withdrawal during device status fetch cannot save a new reading or return connection details',async()=>{
+  const f=fixture();await f.link();await f.call('/device',{method:'POST',body:{deviceId:'mine'}});f.advance(60000);
+  const before=await f.store.get('alice'),status=f.smartthings.status;
+  f.smartthings.status=async(...args)=>{const result=await status(...args);f.setConsent(false);return result;};
+  const result=await f.call('/check',{method:'POST',body:{}});
+  assert.equal(result.status,403);assert.deepEqual(await result.json(),{error:'consent_required'});
+  assert.deepEqual(await f.store.get('alice'),before);
+});
+test('withdrawal during selection or subscription cannot commit a newly connected device',async()=>{
+  for(const phase of ['status','subscribe']){
+    const f=fixture();await f.link();const original=f.smartthings[phase];
+    f.smartthings[phase]=async(...args)=>{const result=await original(...args);f.setConsent(false);return result;};
+    const result=await f.call('/device',{method:'POST',body:{deviceId:'mine'}});
+    assert.equal(result.status,403);assert.deepEqual(await result.json(),{error:'consent_required'});
+    const saved=await f.store.get('alice');assert.notEqual(saved.stage,'connected');
+    assert.equal(saved.lastSignalAt,undefined);assert.equal(saved.hasPower,undefined);assert.equal(saved.lastCheckedAt,undefined);
+    if(phase==='status'){assert.equal(saved.deviceId,undefined);assert.equal(f.stats().subscriptions,0);}
+    // An already-sent upstream subscription cannot be recalled, but it cannot
+    // commit connection success, retain signals or prevent explicit unlink.
+    assert.equal((await f.call('/connection',{method:'DELETE',body:{confirm:true}})).status,200);
+  }
+});
+test('withdrawal while fetching device list prevents the list and rate metadata from being returned or saved',async()=>{
+  const f=fixture();await f.link();const devices=f.smartthings.devices;
+  f.smartthings.devices=async(...args)=>{const result=await devices(...args);f.setConsent(false);return result;};
+  const result=await f.call('/devices');assert.equal(result.status,403);assert.deepEqual(await result.json(),{error:'consent_required'});
+  assert.equal((await f.store.get('alice')).deviceListCheckedAt,undefined);
+});
+test('uninstall cleanup still runs after a withdrawn household data event in the same webhook batch',async()=>{
+  const f=fixture();await f.link();await f.call('/device',{method:'POST',body:{deviceId:'mine'}});f.setConsent(false);
+  const body={messageType:'EVENT',eventData:{installedApp:{installedAppId:'install1'},events:[
+    {eventType:'DEVICE_EVENT',eventTime:new Date(instant).toISOString(),deviceEvent:{eventId:'withdrawn-signal',deviceId:'mine',capability:'powerMeter',attribute:'power'}},
+    {eventType:'INSTALLED_APP_LIFECYCLE_EVENT',installedAppLifecycleEvent:{lifecycle:'DELETE',installedAppId:'install1',appId:'app1'}},
+  ]}};
+  assert.equal((await f.call('/events',{method:'POST',body,headers:{Authorization:'test-signed'}})).status,200);
+  assert.equal(await f.store.get('alice'),null);
+});
+test('maintenance suspends revoked Firebase accounts and withdrawn consent without refreshing',async()=>{
+  for(const reason of ['account','consent']){
+    const f=fixture();await f.link();f.advance(2800000);
+    if(reason==='account')f.revokeAccount();else f.setConsent(false);
+    const result=await f.maintain();assert.equal(result.suspended,1);assert.equal(f.stats().refreshes,0);
+    assert.equal((await f.store.get('alice')).stage,'reconnect_required');assert.equal((await f.maintain()).scanned,0);
+  }
+});
+test('explicit refresh rejections retain credentials and use a persistent retry delay',async()=>{
+  const f=fixture();await f.link();f.advance(3600001);let calls=0;
+  f.smartthings.refresh=async()=>{calls++;throw new ApiError(429,'rate_limited');};
+  assert.equal((await f.call('/devices')).status,429);
+  const saved=await f.store.get('alice');assert.equal(saved.stage,'choose_device');assert.equal(saved.refreshAttemptId,null);
+  assert.equal(vault(config.key).open(saved.tokens,'alice:install1').refresh,'refresh-private');
+  assert.equal((await f.call('/devices')).status,429);assert.equal(calls,1);
+  assert.equal((await f.maintain()).scanned,0);f.advance(300001);
+  assert.equal((await f.maintain()).deferred,1);assert.equal(calls,2);
+});
+test('a persisted unfinished refresh attempt is never retried after a process crash',async()=>{
+  const f=fixture();await f.link();f.advance(3600001);
+  await f.store.patch('alice',{refreshAttemptId:'previous-process-attempt'});
+  assert.equal((await f.call('/devices')).status,409);assert.equal(f.stats().refreshes,0);
+  assert.equal((await f.store.get('alice')).stage,'reconnect_required');
+});
+test('lost persistence after a successful rotation cannot cause reuse of the old refresh token',async()=>{
+  const f=fixture();await f.link();f.advance(3600001);const patch=f.store.patch;
+  let databaseFailed=false;
+  f.store.patch=async(uid,fields,options)=>{
+    if(fields.tokens)databaseFailed=true;
+    if(databaseFailed)throw Error('database temporarily unavailable');
+    return patch(uid,fields,options);
+  };
+  assert.equal((await f.call('/devices')).status,503);assert.equal(f.stats().refreshes,1);
+  assert.ok((await f.store.get('alice')).refreshAttemptId);
+  f.store.patch=patch;
+  assert.equal((await f.call('/devices')).status,409);assert.equal(f.stats().refreshes,1);
+});
+test('maintenance uses a bounded oldest-first batch and shares the live refresh lock',async()=>{
+  const f=fixture();await f.link();const original=await f.store.get('alice');
+  for(let i=0;i<21;i++){
+    const uid=`owner-${i}`,installId=`installation-${i}`;
+    f.connections.set(uid,{...original,uid,installId,tokens:vault(config.key).seal({access:'access-'+i,refresh:'refresh-'+i,expiresAt:instant+1000},`${uid}:${installId}`),refreshDueAt:new Date(instant-1000+i)});
+  }
+  const first=await f.maintain();assert.equal(first.processed,20);assert.equal(first.refreshed,20);assert.equal(first.limitReached,true);
+  const second=await f.maintain();assert.equal(second.refreshed,1);assert.equal(second.limitReached,false);
+  for(const limit of [0,21,1.5])await assert.rejects(()=>f.maintain({limit}),RangeError);
+  f.advance(3600001);let complete,entered;
+  const started=new Promise(resolve=>{entered=resolve;});
+  f.smartthings.refresh=async()=>{entered();await new Promise(resolve=>{complete=resolve;});return {access_token:'rotated',refresh_token:'rotated-next',expires_in:3600};};
+  const live=f.call('/devices');await started;
+  const concurrent=await f.maintain({limit:1});assert.equal(concurrent.deferred,1);complete();assert.equal((await live).status,200);
+});
+test('OAuth invalid grant requests reconnection while invalid client reports operator configuration',async()=>{
+  for(const [status,error,code] of [[400,'invalid_grant','reconnect_required'],[400,'invalid_client','oauth_configuration_required'],[401,'invalid_client','oauth_configuration_required']]){
+    let calls=0;
+    const client=smartThingsClient(config,async()=>{calls++;return Response.json({error,error_description:'private-details'},{status});});
+    await assert.rejects(()=>client.refresh('synthetic-refresh'),error=>error.code===code&&!error.message.includes('private-details'));assert.equal(calls,1);
+  }
 });
 test('verifies a real RSA signature, digest, freshness and approved key origin',async()=>{
   const {privateKey,publicKey}=generateKeyPairSync('rsa',{modulusLength:2048});let fetches=0;

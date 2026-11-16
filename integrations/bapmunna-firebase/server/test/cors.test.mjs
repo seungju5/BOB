@@ -4,10 +4,10 @@ import {randomBytes} from 'node:crypto';
 import {readConfig} from '../security.mjs';
 import {createService,CONSENT} from '../service.mjs';
 const origin='https://backend.test',appOrigin='https://app.test';
-const env={PUBLIC_ORIGIN:origin,APP_URL:origin+'/connect/',BAPMUNNA_APP_ORIGINS:appOrigin,BAPMUNNA_RETURN_URL:appOrigin+'/carer/#connect',FIREBASE_PROJECT_ID:'test',SMARTTHINGS_APP_ID:'test',SMARTTHINGS_CLIENT_ID:'test',SMARTTHINGS_CLIENT_SECRET:'test',SMARTTHINGS_ENCRYPTION_KEY:randomBytes(32).toString('base64')};
+const env={PUBLIC_ORIGIN:origin,APP_URL:origin+'/connect/',BAPMUNNA_APP_ORIGINS:appOrigin,BAPMUNNA_RETURN_URL:appOrigin+'/carer/#connect',FIREBASE_PROJECT_ID:'test',SMARTTHINGS_CONNECTION_ENABLED:'true',SMARTTHINGS_APP_ID:'test',SMARTTHINGS_CLIENT_ID:'test',SMARTTHINGS_CLIENT_SECRET:'test',SMARTTHINGS_ENCRYPTION_KEY:randomBytes(32).toString('base64')};
 function fixture(){
   let reads=0,states=0,verifications=0;
-  const handle=createService({config:readConfig(env),store:{get:async()=>{reads++;return null;},saveState:async()=>{states++;}},verifyUser:async token=>{verifications++;if(token!=='alice')throw Error();return {uid:'alice',email_verified:true,auth_time:1000};},smartthings:{},verifyWebhook:async()=>{throw Error();}});
+  const handle=createService({config:readConfig(env),store:{get:async()=>{reads++;return null;},saveState:async()=>{states++;}},verifyUser:async token=>{verifications++;if(token!=='alice')throw Error();return {uid:'alice',email_verified:true,auth_time:1000};},verifyConsent:async()=>{},smartthings:{},verifyWebhook:async()=>{throw Error();}});
   const call=(path,{method='GET',source=appOrigin,token='alice',headers={},body}={})=>handle(new Request(origin+'/api/smartthings/'+path,{method,headers:{Origin:source,Authorization:`Bearer ${token}`,...headers},body}));
   return {call,stats:()=>({reads,states,verifications})};
 }

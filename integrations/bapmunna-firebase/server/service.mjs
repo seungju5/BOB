@@ -6,11 +6,103 @@ export const CONSENT='smartthings-status-2026-11-03';
 export const configured=config=>Boolean(config.appId&&config.clientId&&config.secret&&config.projectId&&Buffer.from(config.key||'','base64').length===32);
 const response=(data,status=200,headers={})=>new Response(JSON.stringify(data),{status,headers:{'Content-Type':'application/json','Cache-Control':'no-store','Referrer-Policy':'no-referrer',...headers}});
 const publicConnection=current=>!current?{stage:'disconnected'}:{stage:current.stage,device:current.deviceId?{id:current.deviceId,label:current.deviceLabel}:null,connectedAt:current.connectedAt,lastSignalAt:current.lastSignalAt||null,lastReceivedAt:current.lastReceivedAt||null,lastCheckedAt:current.lastCheckedAt||null,hasPower:current.hasPower??null};
+const DAY=86400000;
+const nextRefresh=(tokens,now)=>new Date(now+Math.min((tokens.expiresAt-now)*0.75,7*DAY));
+function tokenBundle(data,now,previous){
+  if(typeof data.access_token!=='string'||!data.access_token||typeof data.refresh_token!=='string'||!data.refresh_token||!Number.isFinite(Number(data.expires_in))||Number(data.expires_in)<=0)throw new ApiError(502,'reconnect_required');
+  if(data.installed_app_id&&previous&&data.installed_app_id!==previous)throw new ApiError(502,'reconnect_required');
+  const expiresAt=now+Number(data.expires_in)*1000;
+  if(!Number.isFinite(expiresAt)||!Number.isFinite(new Date(expiresAt).getTime()))throw new ApiError(502,'reconnect_required');
+  return {access:data.access_token,refresh:data.refresh_token,expiresAt};
+}
+
+// One owner lease covers refresh and the API operation. A persisted attempt
+// marker prevents reusing a single-use refresh token after a process crash or
+// an ambiguous network failure, even after the lease itself expires.
+export function createTokenManager({store,secrets,smartthings,verifyAccount,verifyConsent,now=()=>Date.now()}){
+  async function authorized(uid,operation,{maintenance=false,allowWithoutConsent=false}={}){
+    return store.withLease(uid,async()=>{
+      let current=await store.get(uid);
+      if(!current)throw new ApiError(409,'reconnect_required');
+      if(current.stage==='reconnect_required'){
+        if(current.refreshDueAt)await store.patch(uid,{refreshDueAt:null},{installId:current.installId});
+        throw new ApiError(409,'reconnect_required');
+      }
+      if(!allowWithoutConsent)await verifyConsent(uid);
+      if(maintenance)await verifyAccount(uid,current.authTime);
+      if(current.refreshAttemptId){
+        await store.patch(uid,{stage:'reconnect_required',refreshDueAt:null},{installId:current.installId});
+        throw new ApiError(409,'reconnect_required');
+      }
+      let tokens;
+      try{tokens=secrets.open(current.tokens,`${uid}:${current.installId}`);}catch{
+        await store.patch(uid,{stage:'reconnect_required',refreshDueAt:null},{installId:current.installId});
+        throw new ApiError(409,'reconnect_required');
+      }
+      async function refresh(){
+        if(current.refreshRetryAt>now())throw new ApiError(429,'check_later');
+        const attemptId=random(),expected={installId:current.installId,attemptId};
+        current=await store.patch(uid,{refreshAttemptId:attemptId},{installId:current.installId});
+        try{
+          tokens=tokenBundle(await smartthings.refresh(tokens.refresh),now(),current.installId);
+          current=await store.patch(uid,{tokens:secrets.seal(tokens,`${uid}:${current.installId}`),refreshAttemptId:null,refreshRetryAt:null,refreshDueAt:nextRefresh(tokens,now()),lastRefreshedAt:now()},expected);
+          if(current.stage==='reconnect_required')throw new ApiError(409,'reconnect_required');
+        }catch(error){
+          if(['rate_limited','plan_required','permission_required','oauth_configuration_required'].includes(error.code)){
+            // These are explicit rejections, not a lost response after rotation.
+            const retryAt=now()+(error.code==='rate_limited'?300000:DAY);
+            await store.patch(uid,{refreshAttemptId:null,refreshRetryAt:retryAt,refreshDueAt:new Date(retryAt)},expected);
+            throw error;
+          }
+          await store.patch(uid,{stage:'reconnect_required',refreshDueAt:null},expected);
+          throw new ApiError(409,'reconnect_required');
+        }
+      }
+      const due=current.refreshDueAt instanceof Date?current.refreshDueAt.getTime():current.refreshDueAt?.toMillis?.();
+      if(maintenance&&Number.isFinite(due)&&due>now())return 'skipped';
+      if(maintenance||tokens.expiresAt<now()+30000)await refresh();
+      if(!allowWithoutConsent)await verifyConsent(uid);
+      async function run(){const result=await operation(current,tokens.access);if(!allowWithoutConsent)await verifyConsent(uid);return result;}
+      try{return await run();}
+      catch(error){
+        if(error.code!=='reconnect_required')throw error;
+        await refresh();
+        if(!allowWithoutConsent)await verifyConsent(uid);
+        try{return await run();}catch(retry){
+          if(retry.code==='reconnect_required')await store.patch(uid,{stage:'reconnect_required',refreshDueAt:null},{installId:current.installId});
+          throw retry;
+        }
+      }
+    });
+  }
+  async function maintain({limit=20,budgetMs=120000}={}){
+    if(!Number.isSafeInteger(limit)||limit<1||limit>20||!Number.isFinite(budgetMs)||budgetMs<1||budgetMs>120000)throw new RangeError('Invalid maintenance budget.');
+    const started=Date.now(),candidates=await store.dueConnections({limit}),result={scanned:candidates.length,processed:0,refreshed:0,skipped:0,deferred:0,reconnectRequired:0,suspended:0,limitReached:candidates.length===limit,timeBudgetReached:false};
+    for(const candidate of candidates){
+      if(Date.now()-started>=budgetMs){result.timeBudgetReached=true;break;}
+      result.processed++;
+      try{
+        const outcome=await authorized(candidate.uid,async()=> 'refreshed',{maintenance:true});
+        result[outcome==='skipped'?'skipped':'refreshed']++;
+      }catch(error){
+        if(['consent_required','login_required'].includes(error.code)){
+          try{await store.withLease(candidate.uid,()=>store.patch(candidate.uid,{stage:'reconnect_required',refreshDueAt:null},{installId:candidate.installId}));result.suspended++;}
+          catch{result.deferred++;}
+        }else if(error.code==='reconnect_required')result.reconnectRequired++;
+        else result.deferred++;
+      }
+    }
+    return result;
+  }
+  return {authorized,maintain};
+}
 
 // Dependencies are injected so authorization and OAuth can be tested without
 // contacting a real household, sending email, or changing a production database.
-export function createService({config,store,verifyUser,verifyAccount=async()=>{},smartthings,verifyWebhook,now=()=>Date.now()}){
+export function createService({config,store,verifyUser,verifyAccount=async()=>{throw new ApiError(503,'setup_required');},verifyConsent=async()=>{throw new ApiError(503,'setup_required');},smartthings,verifyWebhook,now=()=>Date.now()}){
   const ready=configured(config),secrets=ready?vault(config.key):null;
+  const tokens=createTokenManager({store,secrets,smartthings,verifyAccount,verifyConsent,now});
+  const authorized=tokens.authorized;
   // Firebase Hosting forwards only __session to Cloud Run. Restrict this nonce
   // cookie to the integration path so it does not replace an app-wide session.
   const cookieName='__session';
@@ -28,35 +120,6 @@ export function createService({config,store,verifyUser,verifyAccount=async()=>{}
     const text=await request.text();if(text.length>16384)throw new ApiError(413,'request_too_large');
     try{return JSON.parse(text);}catch{throw new ApiError(400,'invalid_request');}
   }
-  function tokenBundle(data,previous){
-    if(typeof data.access_token!=='string'||!data.access_token||typeof data.refresh_token!=='string'||!data.refresh_token||!Number.isFinite(Number(data.expires_in))||Number(data.expires_in)<=0)throw new ApiError(502,'reconnect_required');
-    if(data.installed_app_id&&previous&&data.installed_app_id!==previous)throw new ApiError(502,'reconnect_required');
-    return {access:data.access_token,refresh:data.refresh_token,expiresAt:now()+Number(data.expires_in)*1000};
-  }
-  async function authorized(uid,operation){
-    // The lease spans refresh AND the API call. Refresh tokens are single use.
-    return store.withLease(uid,async()=>{
-      let current=await store.get(uid);
-      if(!current||current.stage==='reconnect_required')throw new ApiError(409,'reconnect_required');
-      let tokens=secrets.open(current.tokens,`${uid}:${current.installId}`);
-      async function refresh(){
-        try{
-          tokens=tokenBundle(await smartthings.refresh(tokens.refresh),current.installId);
-          current=await store.patch(uid,{tokens:secrets.seal(tokens,`${uid}:${current.installId}`)});
-        }catch(error){await store.patch(uid,{stage:'reconnect_required'});throw new ApiError(409,'reconnect_required');}
-      }
-      if(tokens.expiresAt<now()+30000)await refresh();
-      try{return await operation(current,tokens.access);}
-      catch(error){
-        if(error.code!=='reconnect_required')throw error;
-        await refresh();
-        try{return await operation(current,tokens.access);}catch(retry){
-          if(retry.code==='reconnect_required')await store.patch(uid,{stage:'reconnect_required'});
-          throw retry;
-        }
-      }
-    });
-  }
   async function webhook(request,url){
     const raw=Buffer.from(await request.arrayBuffer());
     if(raw.length>1048576)throw new ApiError(413,'request_too_large');
@@ -70,6 +133,7 @@ export function createService({config,store,verifyUser,verifyAccount=async()=>{}
     const data=message.eventData,installId=data?.installedApp?.installedAppId;
     if(!identifier(installId)||!Array.isArray(data.events)||data.events.length>100)throw new ApiError(400,'invalid_event');
     const owner=await store.installation(installId);if(!owner)return response({ok:true});
+    let accountChecked=false,canReceive=false;
     for(const event of data.events){
       const lifecycle=event.installedAppLifecycleEvent;
       if(event.eventType==='INSTALLED_APP_LIFECYCLE_EVENT'&&lifecycle?.lifecycle==='DELETE'&&lifecycle.installedAppId===installId&&lifecycle.appId===config.appId){
@@ -80,6 +144,16 @@ export function createService({config,store,verifyUser,verifyAccount=async()=>{}
       const power=device.capability==='powerMeter'&&device.attribute==='power';
       const energy=(device.capability==='energyMeter'&&device.attribute==='energy')||device.capability==='powerConsumptionReport';
       if(!power&&!energy)continue;
+      if(!accountChecked){
+        accountChecked=true;
+        const connection=await store.get(owner.uid);
+        if(connection?.stage==='connected'){
+          try{await verifyAccount(owner.uid,connection.authTime);await verifyConsent(owner.uid);canReceive=true;}
+          catch(error){if(!['consent_required','login_required'].includes(error.code))throw error;}
+        }
+      }
+      // Rejected data must not skip a later DELETE lifecycle event in this batch.
+      if(!canReceive)continue;
       // Only signal arrival metadata is retained; never a raw power time series.
       await store.receive(owner.uid,installId,{id:device.eventId,deviceId:device.deviceId,time,kind:power?'power':'energy'});
     }
@@ -89,7 +163,7 @@ export function createService({config,store,verifyUser,verifyAccount=async()=>{}
     const url=new URL(request.url),path=url.pathname.slice(PREFIX.length);
     try{
       if(!url.pathname.startsWith(PREFIX+'/'))throw new ApiError(404,'not_found');
-      if(path==='/config'&&request.method==='GET')return response({enabled:ready,consentVersion:CONSENT,appOrigins:config.appOrigins||[],returnUrl:config.returnUrl||config.appUrl});
+      if(path==='/config'&&request.method==='GET')return response({enabled:ready,connectionReady:ready&&config.connectionEnabled===true,consentVersion:CONSENT,appOrigins:config.appOrigins||[],returnUrl:config.returnUrl||config.appUrl});
       if(!ready)throw new ApiError(503,'setup_required');
       if(path==='/events'&&request.method==='POST')return await webhook(request,url);
       if(path==='/callback'&&request.method==='GET'){
@@ -103,6 +177,7 @@ export function createService({config,store,verifyUser,verifyAccount=async()=>{}
           if(!code||code.length>2048)throw new ApiError(400,'invalid_request');
           await store.withLease(pending.uid,async()=>{
             await verifyAccount(pending.uid,pending.authTime);
+            await verifyConsent(pending.uid);
             const data=await smartthings.exchange(code),installId=data.installed_app_id;
             if(!identifier(installId))throw new ApiError(502,'reconnect_required');
             const old=await store.get(pending.uid);
@@ -110,7 +185,9 @@ export function createService({config,store,verifyUser,verifyAccount=async()=>{}
             // orphan an active subscription from a different installation.
             if(old&&old.installId!==installId)throw new ApiError(409,'disconnect_first');
             await verifyAccount(pending.uid,pending.authTime);
-            await store.saveConnection(pending.uid,{installId,tokens:secrets.seal(tokenBundle(data),`${pending.uid}:${installId}`),stage:old?.deviceId?'subscribing':'choose_device',connectedAt:old?.connectedAt||now(),consentVersion:CONSENT,consentedAt:pending.consentedAt,...(old?.deviceId?{deviceId:old.deviceId,deviceLabel:old.deviceLabel}: {})},{state,nonceHash:hash(browserNonce)});
+            await verifyConsent(pending.uid);
+            const bundle=tokenBundle(data,now());
+            await store.saveConnection(pending.uid,{uid:pending.uid,authTime:pending.authTime,installId,tokens:secrets.seal(bundle,`${pending.uid}:${installId}`),refreshDueAt:nextRefresh(bundle,now()),stage:old?.deviceId?'subscribing':'choose_device',connectedAt:old?.connectedAt||now(),consentVersion:CONSENT,consentedAt:pending.consentedAt,...(old?.deviceId?{deviceId:old.deviceId,deviceLabel:old.deviceLabel}: {})},{state,nonceHash:hash(browserNonce)});
           });
         }catch(error){outcome=error.code==='disconnect_first'?'disconnect_first':'failed';}
         if(outcome!=='connected')await store.cancelState(state,pending.uid);
@@ -128,9 +205,11 @@ export function createService({config,store,verifyUser,verifyAccount=async()=>{}
         await store.cancelState(body.attemptId,uid);return response({ok:true});
       }
       if(path==='/start'&&request.method==='POST'){
+        if(config.connectionEnabled!==true)throw new ApiError(503,'setup_required');
         if(!Number.isInteger(account.authTime)||account.authTime<0)throw new ApiError(401,'login_required');
         const body=await json(request);if(body.consentVersion!==CONSENT)throw new ApiError(400,'consent_required');
         if(body.attemptId!==undefined&&(!identifier(body.attemptId)||body.attemptId.length<32))throw new ApiError(400,'invalid_request');
+        await verifyConsent(uid);
         const current=await store.get(uid);if(current&&current.stage!=='reconnect_required')throw new ApiError(409,'already_connected');
         const state=body.attemptId||random(),nonce=random();await store.saveState(state,{uid,authTime:account.authTime,nonceHash:hash(nonce),until:now()+600000,consentedAt:now()});
         const target=new URL(`https://api.smartthings.com${config.oauth}/authorize`);
@@ -140,7 +219,7 @@ export function createService({config,store,verifyUser,verifyAccount=async()=>{}
       if(path==='/devices'&&request.method==='GET')return response(await authorized(uid,async(current,token)=>{
         if(current.deviceListCheckedAt&&now()-current.deviceListCheckedAt<30000)throw new ApiError(429,'check_later');
         const devices=(await smartthings.devices(token)).filter(x=>identifier(x.deviceId)).map(safeDevice).filter(x=>x.power);
-        await store.patch(uid,{deviceListCheckedAt:now()});return {devices};
+        await store.patch(uid,{deviceListCheckedAt:now()},{installId:current.installId,requireConsent:true});return {devices};
       }));
       if(path==='/device'&&request.method==='POST'){
         const body=await json(request);if(!identifier(body.deviceId))throw new ApiError(400,'invalid_device');
@@ -149,10 +228,12 @@ export function createService({config,store,verifyUser,verifyAccount=async()=>{}
           // Never trust the client-supplied device label/capability or a cached list.
           const device=safeDevice(await smartthings.device(token,body.deviceId));
           if(device.id!==body.deviceId||!device.power)throw new ApiError(422,'power_not_supported');
+          await verifyConsent(uid);
           const sample=readingSummary(await smartthings.status(token,device.id),now());
-          await store.patch(uid,{deviceId:device.id,deviceLabel:device.label,stage:'subscribing'});
+          await store.patch(uid,{deviceId:device.id,deviceLabel:device.label,stage:'subscribing'},{installId:current.installId,requireConsent:true});
+          await verifyConsent(uid);
           await smartthings.subscribe(token,current.installId,device.id);
-          const updated=await store.patch(uid,{stage:'connected',hasPower:sample.hasPower,lastCheckedAt:now(),lastSignalAt:sample.measuredAt});
+          const updated=await store.patch(uid,{stage:'connected',hasPower:sample.hasPower,lastCheckedAt:now(),lastSignalAt:sample.measuredAt},{installId:current.installId,requireConsent:true});
           return publicConnection(updated);
         }));
       }
@@ -160,7 +241,7 @@ export function createService({config,store,verifyUser,verifyAccount=async()=>{}
         if(!current.deviceId||current.stage!=='connected')throw new ApiError(409,'choose_device');
         if(current.lastCheckedAt&&now()-current.lastCheckedAt<30000)throw new ApiError(429,'check_later');
         const sample=readingSummary(await smartthings.status(token,current.deviceId),now());
-        const updated=await store.patch(uid,{hasPower:sample.hasPower,lastCheckedAt:now(),lastSignalAt:Math.max(current.lastSignalAt||0,sample.measuredAt||0)||null});return publicConnection(updated);
+        const updated=await store.patch(uid,{hasPower:sample.hasPower,lastCheckedAt:now(),lastSignalAt:Math.max(current.lastSignalAt||0,sample.measuredAt||0)||null},{installId:current.installId,requireConsent:true});return publicConnection(updated);
       }));
       if(path==='/connection'&&request.method==='DELETE'){
         const body=await json(request);
@@ -172,7 +253,7 @@ export function createService({config,store,verifyUser,verifyAccount=async()=>{}
           // offered after the user is told to revoke it in SmartThings as well.
           if(body.forgetExpired!==true)throw new ApiError(409,'revoke_in_smartthings');
           await store.withLease(uid,()=>store.remove(uid,current.installId));
-        }else await authorized(uid,async(saved,token)=>{await smartthings.unsubscribe(token,saved.installId);await store.remove(uid,saved.installId);});
+        }else await authorized(uid,async(saved,token)=>{await smartthings.unsubscribe(token,saved.installId);await store.remove(uid,saved.installId);},{allowWithoutConsent:true});
         return response({stage:'disconnected'});
       }
       throw new ApiError(404,'not_found');
@@ -181,7 +262,7 @@ export function createService({config,store,verifyUser,verifyAccount=async()=>{}
       return response({error:error instanceof ApiError?error.code:'temporarily_unavailable'},error instanceof ApiError?error.status:503);
     }
   };
-  return async request=>{
+  const routed=async request=>{
     const path=new URL(request.url).pathname.slice(PREFIX.length),origin=request.headers.get('origin');
     const remote=origin&&origin!==config.origin;
     const methods={ '/config':['GET'], '/status':['GET'], '/devices':['GET'], '/device':['POST'], '/check':['POST'], '/connection':['DELETE'], '/cancel-start':['POST'] };
@@ -201,4 +282,6 @@ export function createService({config,store,verifyUser,verifyAccount=async()=>{}
     }
     return handle(request);
   };
+  routed.maintain=options=>{if(!ready)throw new ApiError(503,'setup_required');return tokens.maintain(options);};
+  return routed;
 }

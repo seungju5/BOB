@@ -26,6 +26,7 @@ Vercel은 기본적으로 CommonJS의 ESM 로딩을 끄므로 Firebase Admin 14�
 | `SMARTTHINGS_CLIENT_SECRET` | 삼성 OAuth 앱 비밀값 |
 | `SMARTTHINGS_ENCRYPTION_KEY` | 서버 토큰 저장용 32바이트 base64 키. 기존 암호화 데이터가 있으면 키 유지 |
 | `SMARTTHINGS_OAUTH_PREFIX` | 기존 등록 앱과 일치하는 `/oauth` 또는 `/v1/oauth` |
+| `SMARTTHINGS_CONNECTION_ENABLED` | 기본값은 비활성. Business 이용 자격·운영 callback/webhook 등록 검증 후에만 `true`로 설정 |
 | `CRON_SECRET` | 32~256자의 공백 없는 무작위 비밀값. 청소 요청 인증에만 사용 |
 | `NODEJS_HELPERS` | `0` — `vercel.json`에도 명시 |
 | `NODE_OPTIONS` | `--experimental-require-module` — Vercel 기본 ESM 로딩 제한과 Firebase Admin 호환 |
@@ -36,6 +37,8 @@ Vercel은 기본적으로 CommonJS의 ESM 로딩을 끄므로 Firebase Admin 14�
 
 삼성 Redirect URI는 `<PUBLIC_ORIGIN>/api/smartthings/callback`, 웹훅은 `<PUBLIC_ORIGIN>/api/smartthings/events`여야 합니다. 고정 운영 배포의 웹훅·콜백은 Vercel 로그인 보호 없이 접근되어야 합니다. Firebase Spark의 301/302 리다이렉트를 웹훅 프록시로 사용하지 않습니다.
 
+`/config`의 `enabled`는 서버 설정 존재 여부이고 `connectionReady`는 신규 소비자 연결 허용 여부입니다. 두 값을 혼동하지 않습니다. 신규 연결이 닫혀 있어도 기존 상태 확인·연결 해제·이미 시작한 callback은 유지합니다. 고객은 PAT를 발급하지 않고 자신의 삼성 계정으로 동의합니다. 개발사 Business 계약 하나가 고객 전체의 공용 토큰이 되는 것은 아닙니다. 고객별 설치·토큰을 서버에서 분리합니다.
+
 ## TTL 없이 만료 정보 정리
 
 카카오 로그인도 이 서버의 `/api/kakao/*`를 사용하지만 준비 상태는 삼성 설정과 독립적입니다. 추가 환경변수는 `KAKAO_APP_ID`, `KAKAO_CLIENT_ID`, `KAKAO_CLIENT_SECRET`입니다. 정확한 등록 주소·브라우저 복귀·실제 완료 기준은 [Firebase 카카오 설정](../../documentation/kakao-firebase-20261115.md)을 따릅니다. 앱 ID나 비밀이 없으면 카카오 config는 비활성으로 응답합니다.
@@ -45,6 +48,10 @@ Vercel은 기본적으로 CommonJS의 ESM 로딩을 끄므로 Firebase Admin 14�
 정리 대상은 서버의 `States`, `Locks`, `Receipts` 컬렉션 중 만료된 문서뿐입니다. 한 번에 전체 최대 5,000개, 트랜잭션당 100개를 처리하며 갱신된 잠금·유효한 상태를 재확인해 보존합니다. 연결·설치·가구·암호화 토큰 문서는 정리 대상이 아닙니다. 결과는 `scanned`, `deleted`, `limitReached`와 컬렉션별 집계만 반환합니다.
 
 같은 인증된 cron이 카카오의 만료 `States`, `Handoffs`, `Limits`도 최대 1,000개 추가 정리합니다. 카카오와 삼성 중 준비된 통합을 각각 청소하므로 삼성 미설정이 카카오 정리를 막지 않습니다. 두 통합이 모두 미설정이면 실행하지 않습니다. 무료 읽기·삭제 할당량 계산에는 이 추가 문서도 포함해야 합니다.
+
+이 cron은 SmartThings의 갱신 예정 연결도 최대 20개·120초 예산으로 유지합니다. 브라우저를 열지 않아도 서버가 토큰을 갱신하며, API 요청 시 갱신과 동일한 설치별 잠금을 사용합니다. 일회용 refresh token을 요청하기 전에 시도 상태를 기록하고 새 access/refresh 쌍을 원자적으로 저장합니다. 응답 유실처럼 결과가 불확실하면 같은 토큰을 재사용하지 않고 재연결을 안내합니다. 기존 데이터 중 유지관리 메타데이터가 없는 연결은 새 OAuth 연결이 필요합니다. 일일 작업은 대규모 상용 서비스의 처리량·복구 시간을 보장하지 않습니다.
+
+시작·callback·읽기·자동 수신·유지관리에서 활성 Firebase 계정과 해당 UID에 저장한 어르신 동의를 확인합니다. 데이터 저장 직전에는 트랜잭션으로 동의를 재확인합니다. 동의 철회 시 새 조회·수신 저장을 멈추고 연결을 재연결 필요 상태로 두며, 암호화된 자격 증명은 명시적인 연결 해제 때 삭제합니다. 삼성 계정의 서비스 허용 철회는 SmartThings에서도 별도로 할 수 있습니다.
 
 Firestore TTL을 활성화하지 않고 일반 조회·삭제 무료 할당량을 사용합니다. 5,000개 정리 시 후보 조회와 재확인으로 최대 약 10,000회 읽기와 5,000회 삭제(재시도·빈 쿼리 별도)가 발생할 수 있습니다. 3가구가 각 1분마다 1회 전송하면 하루 4,320개 수신증이 생기므로 이 예시 빈도에서는 일일 상한 안이지만, 여러 기기·속성·빠른 이벤트는 상한을 넘길 수 있습니다.
 

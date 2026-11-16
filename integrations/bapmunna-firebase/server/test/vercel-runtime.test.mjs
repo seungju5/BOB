@@ -70,14 +70,15 @@ test('deployed Kakao wrapper starts a canonical login while continuing to reject
 });
 
 test('cron endpoint requires its own secret, rejects mutations and never widens cleanup from query input',async()=>{
-  let cleaned=0,delegated=0;
-  const runtime={config:{origin},ready:true,store:{async cleanupExpired(options){cleaned++;assert.deepEqual(options,{limit:5000});return {deleted:2,limitReached:false};}},async handle(){delegated++;return new Response('{"enabled":true}',{headers:{'content-type':'application/json'}});}};
+  let cleaned=0,delegated=0,maintained=0;
+  const runtime={config:{origin},ready:true,store:{async cleanupExpired(options){cleaned++;assert.deepEqual(options,{limit:5000});return {deleted:2,limitReached:false};}},async maintain(options){maintained++;assert.deepEqual(options,{limit:20,budgetMs:120000});return {refreshed:2};},async handle(){delegated++;return new Response('{"enabled":true}',{headers:{'content-type':'application/json'}});}};
   const handler=createVercelHandler({env:{CRON_SECRET:secret,NODEJS_HELPERS:'0',VERCEL:'1'},runtimeFactory:()=>runtime});
   assert.equal((await invoke(handler)).status,401);
   assert.equal((await invoke(handler,{authorization:'Bearer firebase-user-token'})).status,401);
   assert.equal((await invoke(handler,{method:'POST',authorization:'Bearer '+secret})).status,405);
+  assert.equal(maintained,0);
   const response=await invoke(handler,{path:'/api/smartthings/cleanup?limit=999999&collection=Connections',authorization:'Bearer '+secret});
-  assert.equal(response.status,200);assert.equal(response.json.deleted,2);assert.equal(cleaned,1);
+  assert.equal(response.status,200);assert.equal(response.json.deleted,2);assert.equal(cleaned,1);assert.equal(maintained,1);assert.equal(response.json.tokens.refreshed,2);
   assert.equal((await invoke(handler,{path:'/api/smartthings/config'})).json.enabled,true);assert.equal(delegated,1);
 });
 
@@ -97,6 +98,15 @@ test('Kakao cleanup works with Samsung unconfigured and remains behind cron auth
   const handler=createVercelHandler({env:{CRON_SECRET:secret},runtimeFactory:()=>runtime,kakaoFactory:()=>kakao});
   assert.equal((await invoke(handler)).status,401);assert.equal(cleaned,0);
   const result=await invoke(handler,{authorization:'Bearer '+secret});assert.equal(result.status,200);assert.equal(result.json.kakao.deleted,3);assert.equal(cleaned,1);
+});
+test('a token maintenance failure does not block Kakao cleanup or expose upstream details',async()=>{
+  let cleaned=0;
+  const runtime={config:{origin},ready:true,store:{cleanupExpired:async()=>({deleted:0})},maintain:async()=>{throw Error('private-provider-response');},handle:async()=>new Response('{}')};
+  const kakao={ready:true,store:{cleanup:async()=>{cleaned++;return {deleted:1};}}};
+  const handler=createVercelHandler({env:{CRON_SECRET:secret},runtimeFactory:()=>runtime,kakaoFactory:()=>kakao});
+  const result=await invoke(handler,{authorization:'Bearer '+secret});
+  assert.equal(cleaned,1);assert.equal(result.status,503);assert.equal(result.json.tokens.error,'temporarily_unavailable');
+  assert.doesNotMatch(String(result.body),/private-provider-response/);
 });
 
 test('Vercel wrapper fails closed if raw-body helpers or credentials are misconfigured, without logging details',async()=>{

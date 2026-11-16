@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {setTimeout as delay} from 'node:timers/promises';
-import {mountSmartThings,signalLabel} from '../docs/smartthings-view.mjs';
+import {mountSmartThings,signalLabel,readSmartThingsConnection} from '../docs/smartthings-view.mjs';
 
 const member={uid:'test-member',verified:true};
 const never=()=>new Promise(()=>{});
@@ -15,6 +15,7 @@ function provider(user=member){
   const listeners=new Set();
   return {
     getIdToken:async()=> 'test-only-token',
+    getAppPreferences:async()=>({settings:{preparationAcknowledged:true}}),
     onUser(callback){listeners.add(callback);callback(user);return ()=>listeners.delete(callback);},
     emit(next){user=next;for(const callback of [...listeners])callback(next);},
     get listeners(){return listeners.size;},
@@ -34,7 +35,7 @@ function fixture(t,{connect,fetcher,requestTimeoutMs=25,auth=provider(),homeHref
   Object.defineProperty(globalThis,'location',{configurable:true,value:{href:'https://example.test/carer/#connect',assign:url=>navigations.push(url)}});
   const el=surface(),requests=[];
   const dispose=mountSmartThings(el,{accountHref:'/carer/#account',homeHref,requestTimeoutMs,apiOrigin,...(popupConnect?{popupConnect}:{}),connect:connect||(()=>Promise.resolve(auth)),fetcher:async(path,options)=>{
-    requests.push({path,options});return fetcher?fetcher(path,options):json(path.endsWith('/config')?{enabled:true,consentVersion:'test-v1'}:{stage:'disconnected'});
+    requests.push({path,options});return fetcher?fetcher(path,options):json(path.endsWith('/config')?{enabled:true,connectionReady:true,consentVersion:'test-v1'}:{stage:'disconnected'});
   }});
   t.after(()=>{dispose();if(previousLocation)Object.defineProperty(globalThis,'location',previousLocation);else delete globalThis.location;});
   return {el,requests,auth,dispose,navigations};
@@ -124,7 +125,7 @@ test('verified account proceeds into the existing consent/API UI',async t=>{
   assert.match(el.innerHTML,/target="_blank" rel="noopener noreferrer"/);
 });
 test('reconnection explains the Samsung permission steps before asking for consent',async t=>{
-  const {el}=fixture(t,{fetcher:async path=>json(path.endsWith('/config')?{enabled:true,consentVersion:'test-v1'}:{stage:'reconnect_required'})});
+  const {el}=fixture(t,{fetcher:async path=>json(path.endsWith('/config')?{enabled:true,connectionReady:true,consentVersion:'test-v1'}:{stage:'reconnect_required'})});
   await eventually(()=>el.innerHTML.includes('삼성 계정 다시 연결'));
   assert.match(el.innerHTML,/삼성 화면에서 연결할 기기와 읽기 허용 내용을 확인/);
   assert.match(el.innerHTML,/밥뭇나로 돌아와 플러그를 골라/);
@@ -146,7 +147,7 @@ test('a stalled token refresh cannot start a late authenticated request',async t
   assert.equal(requests.length,1);assert.ok(failed(el));
 });
 test('status API timeout stops loading even when fetch ignores abort',async t=>{
-  const {el}=fixture(t,{fetcher:path=>path.endsWith('/config')?json({enabled:true}):never()});
+  const {el}=fixture(t,{fetcher:path=>path.endsWith('/config')?json({enabled:true,connectionReady:true}):never()});
   await eventually(()=>failed(el));assert.doesNotMatch(el.innerHTML,/연결 설정 완료/);
 });
 test('repeated unchanged auth notifications do not restart loading',async t=>{
@@ -156,7 +157,7 @@ test('repeated unchanged auth notifications do not restart loading',async t=>{
 });
 test('sign-out invalidates an in-flight status response and clears old account state',async t=>{
   const status=deferred();
-  const {el,auth,requests}=fixture(t,{requestTimeoutMs:200,fetcher:path=>path.endsWith('/config')?json({enabled:true}):status.promise});
+  const {el,auth,requests}=fixture(t,{requestTimeoutMs:200,fetcher:path=>path.endsWith('/config')?json({enabled:true,connectionReady:true}):status.promise});
   await eventually(()=>requests.length===2);auth.emit(null);
   await eventually(()=>el.innerHTML.includes('로그인하러 가기'));
   status.resolve(json({stage:'connected',device:{label:'Old account device'}}));await flush();
@@ -164,33 +165,33 @@ test('sign-out invalidates an in-flight status response and clears old account s
 });
 test('navigation cleanup ignores late responses and removes subscriptions',async t=>{
   const status=deferred();
-  const {el,auth,requests,dispose}=fixture(t,{requestTimeoutMs:200,fetcher:path=>path.endsWith('/config')?json({enabled:true}):status.promise});
+  const {el,auth,requests,dispose}=fixture(t,{requestTimeoutMs:200,fetcher:path=>path.endsWith('/config')?json({enabled:true,connectionReady:true}):status.promise});
   await eventually(()=>requests.length===2);dispose();el.innerHTML='다른 화면';status.resolve(json({stage:'connected'}));await flush();
   assert.equal(el.innerHTML,'다른 화면');assert.equal(auth.listeners,0);assert.equal(requests[1].options.signal.aborted,true);
 });
 test('an API action timeout releases disabled buttons without a false success',async t=>{
-  const {el}=fixture(t,{fetcher:path=>path.endsWith('/config')?json({enabled:true}):path.endsWith('/status')?json({stage:'choose_device'}):never()});
+  const {el}=fixture(t,{fetcher:path=>path.endsWith('/config')?json({enabled:true,connectionReady:true}):path.endsWith('/status')?json({stage:'choose_device'}):never()});
   await eventually(()=>el.innerHTML.includes('플러그 목록 보기'));await el.click('devices');
   assert.match(el.innerHTML,/응답이 늦어지고/);assert.match(el.innerHTML,/aria-busy="false"/);assert.doesNotMatch(el.innerHTML,/ disabled|기기를 연결했어요/);
 });
 test('OAuth starts only after consent and only through an approved Samsung URL',async t=>{
   const url='https://api.smartthings.com/oauth/authorize?state=test-only';
-  const {el,requests,navigations}=fixture(t,{fetcher:path=>path.endsWith('/config')?json({enabled:true,consentVersion:'test-v1'}):path.endsWith('/status')?json({stage:'disconnected'}):json({url})});
+  const {el,requests,navigations}=fixture(t,{fetcher:path=>path.endsWith('/config')?json({enabled:true,connectionReady:true,consentVersion:'test-v1'}):path.endsWith('/status')?json({stage:'disconnected'}):json({url})});
   await eventually(()=>el.innerHTML.includes('name="st-consent"'));el.checked=false;await el.click('start');assert.equal(requests.length,2);
   el.checked=true;await el.click('start');assert.deepEqual(navigations,[url]);
   assert.equal(requests.at(-1).options.method,'POST');assert.deepEqual(JSON.parse(requests.at(-1).options.body),{consentVersion:'test-v1'});
 });
 test('HTML returned by an API action is recoverable and is never a successful connection',async t=>{
-  const {el,navigations}=fixture(t,{fetcher:path=>path.endsWith('/config')?json({enabled:true}):path.endsWith('/status')?json({stage:'disconnected'}):html()});
+  const {el,navigations}=fixture(t,{fetcher:path=>path.endsWith('/config')?json({enabled:true,connectionReady:true}):path.endsWith('/status')?json({stage:'disconnected'}):html()});
   await eventually(()=>el.innerHTML.includes('name="st-consent"'));await el.click('start');
   assert.match(el.innerHTML,/연결 기능을 준비하고 있어요/);assert.match(el.innerHTML,/aria-busy="false"/);assert.deepEqual(navigations,[]);
 });
 test('invalid status JSON is not mistaken for a connected device',async t=>{
-  const {el}=fixture(t,{fetcher:path=>json(path.endsWith('/config')?{enabled:true}:{})});
+  const {el}=fixture(t,{fetcher:path=>json(path.endsWith('/config')?{enabled:true,connectionReady:true}:{})});
   await eventually(()=>failed(el));assert.doesNotMatch(el.innerHTML,/연결 설정 완료|연결 마무리 중/);
 });
 test('invalid device JSON leaves the list button available for retry',async t=>{
-  const {el}=fixture(t,{fetcher:path=>json(path.endsWith('/config')?{enabled:true}:path.endsWith('/status')?{stage:'choose_device'}:{devices:[null]})});
+  const {el}=fixture(t,{fetcher:path=>json(path.endsWith('/config')?{enabled:true,connectionReady:true}:path.endsWith('/status')?{stage:'choose_device'}:{devices:[null]})});
   await eventually(()=>el.innerHTML.includes('플러그 목록 보기'));await el.click('devices');
   assert.match(el.innerHTML,/연결 정보를 읽지 못했어요/);assert.match(el.innerHTML,/플러그 목록 보기/);assert.match(el.innerHTML,/aria-busy="false"/);
 });
@@ -199,7 +200,7 @@ test('unexpected fetch abort is recoverable rather than an invented disconnected
   await eventually(()=>failed(el));assert.match(el.innerHTML,/role="alert"/);
 });
 test('untrusted OAuth destination cannot navigate away from the app',async t=>{
-  const {el,navigations}=fixture(t,{fetcher:path=>json(path.endsWith('/config')?{enabled:true}:path.endsWith('/status')?{stage:'disconnected'}:{url:'https://example.invalid/authorize'})});
+  const {el,navigations}=fixture(t,{fetcher:path=>json(path.endsWith('/config')?{enabled:true,connectionReady:true}:path.endsWith('/status')?{stage:'disconnected'}:{url:'https://example.invalid/authorize'})});
   await eventually(()=>el.innerHTML.includes('name="st-consent"'));await el.click('start');
   assert.deepEqual(navigations,[]);assert.match(el.innerHTML,/role="alert"/);assert.match(el.innerHTML,/aria-busy="false"/);
 });
@@ -216,22 +217,69 @@ test('home remains reachable during loading and after a timeout',async t=>{
 });
 for(const field of ['lastSignalAt','lastReceivedAt','lastCheckedAt']){
   test(`malformed ${field} in initial status shows retry instead of throwing during render`,async t=>{
-    const {el}=fixture(t,{fetcher:path=>json(path.endsWith('/config')?{enabled:true}:{stage:'connected',[field]:'not-a-date'})});
+    const {el}=fixture(t,{fetcher:path=>json(path.endsWith('/config')?{enabled:true,connectionReady:true}:{stage:'connected',[field]:'not-a-date'})});
     await eventually(()=>failed(el));assert.match(el.innerHTML,/연결 정보를 읽지 못했어요/);assert.doesNotMatch(el.innerHTML,/연결 상태를 확인하고 있어요/);
   });
   test(`malformed ${field} in an action keeps the previous valid status and releases controls`,async t=>{
-    const {el}=fixture(t,{fetcher:path=>json(path.endsWith('/config')?{enabled:true}:path.endsWith('/status')?{stage:'connected',lastSignalAt:1794531600000}:{stage:'connected',[field]:'not-a-date'})});
+    const {el}=fixture(t,{fetcher:path=>json(path.endsWith('/config')?{enabled:true,connectionReady:true}:path.endsWith('/status')?{stage:'connected',lastSignalAt:1794531600000}:{stage:'connected',[field]:'not-a-date'})});
     await eventually(()=>el.innerHTML.includes('지금 연결 확인하기'));await el.click('check');
     assert.match(el.innerHTML,/연결 정보를 읽지 못했어요/);assert.match(el.innerHTML,/aria-busy="false"/);assert.doesNotMatch(el.innerHTML,/기기의 최근 상태를 확인했어요/);
   });
 }
 test('nonfinite and out-of-range timestamps cannot crash status rendering',async t=>{
-  const {el}=fixture(t,{fetcher:path=>json(path.endsWith('/config')?{enabled:true}:{stage:'connected',lastCheckedAt:1e100})});
+  const {el}=fixture(t,{fetcher:path=>json(path.endsWith('/config')?{enabled:true,connectionReady:true}:{stage:'connected',lastCheckedAt:1e100})});
   await eventually(()=>failed(el));
   for(const value of [NaN,Infinity,1e100,-1,true,{},'not-a-date'])assert.equal(signalLabel({lastSignalAt:value}),'신호 시각을 확인해 주세요');
 });
 test('valid epoch timestamps and missing times retain the existing connection display',async t=>{
-  const {el}=fixture(t,{fetcher:path=>json(path.endsWith('/config')?{enabled:true}:{stage:'connected',lastSignalAt:Date.now(),lastReceivedAt:null,lastCheckedAt:1794531600000})});
+  const {el}=fixture(t,{fetcher:path=>json(path.endsWith('/config')?{enabled:true,connectionReady:true}:{stage:'connected',lastSignalAt:Date.now(),lastReceivedAt:null,lastCheckedAt:1794531600000})});
   await eventually(()=>el.innerHTML.includes('지금 연결 확인하기'));
   assert.match(el.innerHTML,/기기 신호를 받았어요/);assert.match(el.innerHTML,/아직 없음/);assert.doesNotMatch(el.innerHTML,/role="alert"/);
+});
+
+for(const connectionReady of [undefined,false]){
+  test(`Business admission is fail-closed (${connectionReady}) without hiding existing status`,async t=>{
+    let popups=0;
+    const {el,requests}=fixture(t,{apiOrigin:'https://backend.test',popupConnect:async()=>{popups++;},fetcher:path=>json(path.endsWith('/config')?{enabled:true,connectionReady}:{stage:'disconnected'})});
+    await eventually(()=>el.innerHTML.includes('삼성 서비스 연결을 준비'));
+    assert.doesNotMatch(el.innerHTML,/data-st-action="start"|type="password"|토큰 붙여/);
+    await el.click('start');assert.equal(popups,0);
+    assert.equal(requests.filter(r=>r.path.endsWith('/start')).length,0);
+  });
+}
+test('closed Business admission preserves unlink for an existing expired connection',async t=>{
+  const {el}=fixture(t,{fetcher:path=>json(path.endsWith('/config')?{enabled:true,connectionReady:false}:{stage:'reconnect_required'})});
+  await eventually(()=>el.innerHTML.includes('기존 연결 지우기'));
+  await el.click('disconnect');assert.match(el.innerHTML,/연결 해제하기/);
+});
+test('a saved senior consent is required before offering consumer OAuth',async t=>{
+  const auth=provider();auth.getAppPreferences=async()=>({settings:{preparationAcknowledged:false}});
+  const {el,requests}=fixture(t,{auth});
+  await eventually(()=>el.innerHTML.includes('동의 확인하러 가기'));
+  await el.click('start');assert.equal(requests.filter(r=>r.path.endsWith('/start')).length,0);
+  assert.doesNotMatch(el.innerHTML,/data-st-action="start"/);
+});
+test('status reader binds the explicit account, omits cookies and rejects malformed status',async()=>{
+  const seen=[];
+  const auth={getIdToken:async uid=>{assert.equal(uid,'alice');return 'synthetic-token';}};
+  const fetcher=async(url,options)=>{seen.push({url,options});return json({stage:'connected',device:{id:'plug-a',label:'가상 플러그'},lastReceivedAt:123});};
+  const value=await readSmartThingsConnection('alice',{connect:async()=>auth,fetcher,apiOrigin:'https://backend.test'});
+  assert.equal(value.device.id,'plug-a');assert.equal(seen[0].options.credentials,'omit');
+  assert.equal(seen[0].options.headers.Authorization,'Bearer synthetic-token');
+  await assert.rejects(readSmartThingsConnection('bob',{connect:async()=>({getIdToken:async()=>{throw Object.assign(Error(),{code:'auth/user-changed'});}}),fetcher}),{code:'auth/user-changed'});
+  assert.equal(seen.length,1);
+  await assert.rejects(readSmartThingsConnection('alice',{connect:async()=>auth,fetcher:async()=>json({stage:'connected',device:{id:null}})}),{code:'invalid_response'});
+});
+
+test('unlink refreshes saved consent before offering another Samsung connection',async t=>{
+  let stage='connected';
+  const {el}=fixture(t,{fetcher:(path,options)=>{
+    if(path.endsWith('/config'))return json({enabled:true,connectionReady:true});
+    if(path.endsWith('/connection')&&options.method==='DELETE')stage='disconnected';
+    return json({stage,device:stage==='connected'?{id:'mock',label:'가상 플러그'}:null});
+  }});
+  await eventually(()=>el.innerHTML.includes('지금 연결 확인하기'));
+  await el.click('disconnect');await el.click('remove');
+  await eventually(()=>el.innerHTML.includes('name="st-consent"'));
+  assert.doesNotMatch(el.innerHTML,/동의 확인하러 가기/);
 });

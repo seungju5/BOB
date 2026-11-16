@@ -27,11 +27,13 @@ export function createRuntime(env=process.env){
   if(env.VERCEL&&ready&&!env.FIREBASE_SERVICE_ACCOUNT_JSON)throw Error('A dedicated Firebase server credential is required on Vercel.');
   const app=ready?initializeApp({credential:firebaseCredential(env,config.projectId),projectId:config.projectId}):null;
   const store=app?firestoreStore(getFirestore(app)):null;
-  const handle=createService({config,store,verifyUser:token=>getAuth(app).verifyIdToken(token,true),verifyAccount:async(uid,authTime)=>{
-    const user=await getAuth(app).getUser(uid),validAfter=Date.parse(user.tokensValidAfterTime||'1970-01-01T00:00:00Z');
+  const handle=createService({config,store,verifyConsent:uid=>store.verifyConsent(uid),verifyUser:token=>getAuth(app).verifyIdToken(token,true),verifyAccount:async(uid,authTime)=>{
+    let user;
+    try{user=await getAuth(app).getUser(uid);}catch(error){if(error.code==='auth/user-not-found')throw new ApiError(401,'login_required');throw error;}
+    const validAfter=Date.parse(user.tokensValidAfterTime||'1970-01-01T00:00:00Z');
     if(user.disabled||!user.emailVerified||!Number.isInteger(authTime)||!Number.isFinite(validAfter)||authTime*1000<validAfter)throw new ApiError(401,'login_required');
   },smartthings:smartThingsClient(config),verifyWebhook:webhookVerifier()});
-  return {config,ready,store,handle};
+  return {config,ready,store,handle,maintain:handle.maintain};
 }
 
 // Importing the runtime in a serverless function must not open a listening port.

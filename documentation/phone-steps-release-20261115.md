@@ -76,3 +76,8 @@
 - 영수증: `workspaces/bapmunna-final/releases/20261115-health-web.json`. 이전 Hosting은 `9ea0c97d5e9613ec`이며 다음 게시 기준은 배포 담당 worktree의 `tmp/impact-final/site/bapmunna`다.
 
 SmartThings는 이 건강 모듈과 별도다. 담당 채팅에서 무료 Vercel 서버 게시와 API 응답을 확인했으나, 삼성의 등록 URL 변경이 HTTP403 및 유료 플랜 요구로 거절되어 웹 OAuth·자동 수신 완료로 표시하지 않는다. 현재 무료 유지 결정을 바꾸지 않았다.
+
+
+## 이후 공개 설치 안내
+
+2026-11-15 공개 테스트 APK와 건강 안내 후속은 [설치 릴리스 기록](health-install-release-20261115.md)과 `workspaces/bapmunna-final/releases/20261115-public-install.json`을 따른다. 이전 미공개 debug 산출물을 현재 공개 설치본과 혼동하지 않는다. 실기기 검증은 여전히 별도다.

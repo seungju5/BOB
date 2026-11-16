@@ -28,7 +28,7 @@ public final class HealthPermissionsRationaleActivity extends Activity {
         policy.setText("개인정보 처리방침 보기");
         policy.setTextSize(24);
         policy.setOnClickListener(view -> startActivity(new Intent(Intent.ACTION_VIEW,
-            Uri.parse("https://app.notion.com/p/4163d756e70080399649fedbb690842f?source=copy_link"))));
+            Uri.parse("https://impact-series.web.app/bapmunna/app/health/privacy/"))));
         content.addView(policy);
         Button done = new Button(this);
         done.setText("돌아가기");

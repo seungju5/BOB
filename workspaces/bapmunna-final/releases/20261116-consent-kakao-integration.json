@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "kind": "verified-source-integration-not-deployment",
+  "dateKST": "2026-11-16",
+  "branch": "codex/consent-feedback-20261116",
+  "parents": [
+    "557f052",
+    "989a7c7"
+  ],
+  "currentRuntime": {
+    "hosting": {
+      "version": "0a649e4f0c650e57",
+      "source": "283ff0e",
+      "receipt": "workspaces/bapmunna-final/releases/20261116-consent-feedback.json"
+    },
+    "kakaoServer": {
+      "deploymentId": "dpl_8RCTuTfvmD4SCSJho4E3YEUGvrBH",
+      "source": "270a38d",
+      "receipt": "workspaces/smartthings-vercel/releases/20261116-kakao-active.json"
+    }
+  },
+  "preservation": {
+    "appAndConsentFilesMatch": "557f052",
+    "kakaoRuntimePackageMatches": "989a7c7",
+    "apkRebuilt": false,
+    "hostingRedeployed": false,
+    "vercelRedeployed": false,
+    "billingChanged": false,
+    "rulesChanged": false,
+    "iamChanged": false
+  },
+  "checks": {
+    "report": ".harness/runs/2026-11-16T04-17-20-166Z-46548/report.md",
+    "node": "24.22.1",
+    "localFirestoreProject": "demo-bapmunna",
+    "passed": 511,
+    "failed": 0,
+    "skipped": 0,
+    "sourceFingerprint": "e1e89033975f12001fc525b254bdf5bd43dfeb1baeaa8a81806b0c8e1a81afd9",
+    "typesAndBuildsPassed": true,
+    "independentRouteChecksPassed": 7,
+    "independentReview": "no_actionable_findings",
+    "postCheckChanges": "Documentation and source integration receipt only; runtime files unchanged."
+  },
+  "publicReadOnlyChecks": {
+    "kakaoConfigStatus": 200,
+    "kakaoEnabled": true,
+    "kakaoCacheControl": "no-store",
+    "privacyPageStatus": 200,
+    "internalPrivacyPagePresent": true,
+    "supportEmailPresent": true
+  },
+  "liveAuthEvidence": "Inherited source-thread receipt only; real Kakao sign-in was not repeated during this source integration.",
+  "remaining": [
+    "Kakao email verification through profile and full household onboarding with a real account.",
+    "Kakao User Unlinked webhook and account cleanup lifecycle.",
+    "SmartThings authentication remains paused; actual device receipt and family care are not complete.",
+    "Physical Android/iPhone verification and signed iOS installation.",
+    "Confirmed retention period."
+  ]
+}

@@ -359,8 +359,26 @@ Firebase 배포 계획이 낡은 로컬 기준과 실제 최신 설치 공개 �
 
 공개 로그인320/390px 가로 넘침0·콘솔 오류/경고0, 만료 콜백 안내·로그인 복귀와 역할 메뉴 숨김을 확인했다. 최신 건강 다운로드 링크도 보존했다. 영수증은 두 workspaces의20261116-kakao 파일, 화면은 상위 output/bapmunna-kakao-20261116에 있다. 본인 로컬 Auth/Firestore 에뮬레이터와 만료된 CLI 로그인만 종료했다. 카카오 Developers 세션이 로그인 전이라 QR 확인을 요청한 상태이며 실제 앱 키·콘솔 등록·실사용자 로그인은 아직 미완료다. 기존 사용자 데이터·Rules·IAM·Identity Platform·무료 플랜은 변경하지 않았다.
 
+2026-11-16 콘솔 후속: 사용자의 QR 재요청 후 기존 탭을 확인하니 Developers 로그인이 완료돼 있었다. 밥뭇나 앱1649759의 Owner, 기존 REST 키와 로그인 시크릿 및 시크릿 보호 ON을 읽어 확인했다. 로그인 사용 설정은 OFF, 카카오 Redirect URI는 빈 값이다. 기존 값은 메모리에서만 취급하고 소스·로그·이미지에는 남기지 않았다. 로그인 ON·고정 Vercel callback 등록·기존 키/secret의 production Secret 저장·ID만 사용하는 실제 로그인 검증을 구체적인 승인 항목으로 준비했다. 브라우저 제어 규칙에 따른 승인을 기다리며 아직 운영 설정은 변경하지 않았다. Vercel Hobby 기존 프로젝트의 Secret/Production 입력 화면까지 확인했으며 코드 재업로드는 불필요하다. 앱 실행 코드를 수정하지 않아 전체 검사를 반복하지 않았다.
+
+## 2026-11-16 카카오 활성화·실제 Firebase 인증 성공
+
+사용자가 로그인 활성화·정확한 callback·기존 REST 키/secret의 production Secret 보관·ID만 사용하는 실제 로그인을 승인했다. 앱1649759 로그인 ON·고정 Redirect URI 등록과 Vercel Secret 3개를 저장하고 시크릿 보호 ON/OIDC OFF·추가 개인정보 권한 없음 상태를 확인했다. 이메일 본인 확인 후 첫 활성화 배포 dpl_GH24d4PMBcTT8dJHBhgH8nhcZrFb가 Ready였고 config enabled:true였으나 실제 시작 요청이400으로 실패했다. 이를 인증 성공으로 보고하지 않았다.
+
+공식 Vercel CLI 라우트 생성기가 catch-all 쿼리에 ...path를 추가하는 문제를 확인했다. 카카오 경로4개와 공통 핸들러로 수정하고 잘못된 입력 차단을 유지했다. 독립 검토7/7과 전체492개·실패/skip0·타입/동기화/빌드·소스 지문 일치를 확인했다. 보고서 .harness/runs/2026-11-16T02-53-26-915Z-42357/report.md. 소스270a38d를 GitHub에 푸시하고 비밀 없는24개 파일 ZIP을 기존 프로젝트에 게시했다.
+
+최종 dpl_8RCTuTfvmD4SCSJho4E3YEUGvrBH의 Ready/Current와 공개검사16/16을 확인했다. 실제 브라우저에서 카카오 ID만 제공하는 동의 → 밥뭇나 callback → Firebase 인증된 사용자의 최초 이메일 확인 화면으로 돌아왔다. 새로고침 세션 복원과 로그아웃 후 카카오 재로그인도 성공했고 콘솔 오류/경고0이었다. 이메일은 임의 입력하지 않았으며 확인 메일→프로필/소개/가구 설정의 전체 실계정 검증은 남아 있다. User Unlinked 웹훅도 미설정으로 남겨 기록한다.
+
+영수증 workspaces/smartthings-vercel/releases/20261116-kakao-active.json와 상위 output/bapmunna-kakao-20261116의 활성화/Secret 이름/최종 Ready/인증 완료 화면을 보관했다. Hosting675c7f7210170b44는 유지했고 삼성 로그인은 재시도하지 않았다. 무료 플랜·IAM·Rules·기존 계정·건강 설치 경로 변경 없음. 과거 OFF/준비 중 영수증과 이미지는 이력으로 보존한다.
+
 ## 2026-11-16 개인정보 안내·필수 동의
 
 Notion 로그인 링크를 앱 내부 공개 안내로 통일하고 양쪽 가구 입력 경로에 필수 동의를 적용했다. 기존 중간 단계·직접 저장 경로·취소 후 재저장을 검사했으며, iPhone 웹에서 미배포 앱 실행 버튼을 제거했다. 운영팀 문의는 사용자가 지정한 이메일로 반영했다. 로컬 전체 하네스와 320/390px 브라우저 검증 통과. 실제 기기 수신/실기기 및 보관 기간 확정은 남아 있다. 상세: documentation/consent-feedback-20261116.md.
 
 공개 게시: `283ff0e` → Hosting `0a649e4f0c650e57`, 공개128파일 검증·경로누락0·무료 유지. 기존 설치/Kakao 통합을 보존했다.
+
+## 2026-11-16 카카오 완료 인계 소스 병합
+
+동의 수정557f052에 카카오 완료989a7c7을 병합했다. 충돌은 log.md의 동시 추가 기록만 있었으며 양쪽을 보존했다. 앱·동의·건강 자산은557f052, Vercel 고정4경로 패키지는989a7c7과 동일하다. 실제 공개 기준은 Hosting0a649e4f0c650e57과 Vercel dpl_8RCTuTfvmD4SCSJho4E3YEUGvrBH의 조합이며 서버 영수증의 옛 Hosting675 기록으로 되돌리지 않는다.
+
+Node24·본인 로컬 Firestore로 통합511개·실패0·skip0·타입/동기화/빌드·소스 안정성을 확인했다. 보고서 `.harness/runs/2026-11-16T04-17-20-166Z-46548/report.md`. 독립 검토에서 수정 필요 사항 없음, 경로7개 통과와 개인정보/건강/설치 파일 보존을 확인했다. 공개 GET은 카카오config200 enabled:true/no-store와 개인정보200/지원이메일을 확인했다. 실제 카카오 인증 성공은 다른 채팅의 영수증을 인계받았으며 이번에 재실행하지 않았다. 운영 재배포·인증 재시도·권한·규칙·결제 변경 없음. 최신 통합 기록은 `workspaces/bapmunna-final/releases/20261116-consent-kakao-integration.json`이다.

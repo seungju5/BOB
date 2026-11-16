@@ -84,3 +84,11 @@ node workspaces/bapmunna-final/scripts/publish.mjs rollback
 ## 2026-11-16 개인정보 안내·필수 동의 후속
 
 카카오/설치 통합본 `7cad5c1` 위에 내부 개인정보 페이지·필수 동의·구형 폼 차단·아이폰 웹 테스트 동선을 반영한 `283ff0e`를 Hosting `0a649e4f0c650e57`로 게시했다. 공개128파일 일치·기존경로누락0. 기존 APK와 무료 설정을 보존했다. 최신 기준은 `codex/consent-feedback-20261116` 및 해당 작업본의 `tmp/impact-final/site/bapmunna`다. `releases/20261116-consent-feedback.json`을 참조한다. 실제 삼성 연동·실기기·iOS 설치·보관기간 확정은 남아 있다.
+
+## 2026-11-16 카카오 활성화와 필수 동의 통합 기준
+
+현재 공개 앱은 **Hosting `0a649e4f0c650e57` / 웹 소스 `283ff0e`**, 카카오 서버는 **Vercel `dpl_8RCTuTfvmD4SCSJho4E3YEUGvrBH` / 서버 소스 `270a38d`** 조합이다. 앞선 카카오 준비 중·Hosting `675c7f7210170b44` 기록은 당시 이력이며 최신 공개 기준이 아니다.
+
+`codex/consent-feedback-20261116`에 활성화 기록 `989a7c7`을 병합해 고정 카카오 경로와 내부 개인정보·필수 동의·건강 설치 안내를 함께 보존했다. 공개 앱 파일은 `557f052`, Vercel 패키지는 `989a7c7`과 각각 동일하며 이번 통합에서는 재배포하지 않았다. 다음 웹 배포는 이 작업본의 `tmp/impact-final/site/bapmunna`와 현행 Hosting 버전을 기준으로 한다. 과거 catch-all 카카오 서버를 재배포하지 않는다.
+
+통합 하네스 511개·실패0·skip0, 타입/동기화/두 앱 빌드·지문 안정성과 독립 경로 검사7개를 통과했다. 공개 config `enabled:true`와 앱 내부 개인정보 안내·문의 이메일도 읽기 전용으로 재확인했다. 실제 카카오 동의→Firebase 인증·새로고침·재로그인 성공은 담당 채팅의 `20261116-kakao-active.json` 증거를 인계받았다. 이메일 확인→프로필·가구 설정 전체 실계정 검증, User Unlinked 웹훅은 남아 있다. 삼성 인증 보류·실기기 미검증·무료 유지 결정은 그대로다. 상세: `releases/20261116-consent-kakao-integration.json`.

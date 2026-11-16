@@ -1,0 +1,267 @@
+{
+  "schemaVersion": 1,
+  "checkedAt": "2026-11-16T03:07:14.414829+00:00",
+  "project": "bapmunna-smartthings",
+  "projectId": "prj_oGTlANnAsT3dLHCWcsCNzOwpyhW3",
+  "deploymentId": "dpl_8RCTuTfvmD4SCSJho4E3YEUGvrBH",
+  "previousDeploymentId": "dpl_GH24d4PMBcTT8dJHBhgH8nhcZrFb",
+  "origin": "https://bapmunna-smartthings.vercel.app",
+  "deploymentUrl": "https://bapmunna-smartthings-9a9iu2051-peterjang9296-8249.vercel.app",
+  "readyVerifiedInDashboard": true,
+  "currentProductionVerifiedInDashboard": true,
+  "source": "270a38d6eaa152f856af020b2e148f53ad5b2002",
+  "sourceBranch": "codex/google-kakao-login",
+  "archive": {
+    "fileCount": 24,
+    "bytes": 549757,
+    "sha256": "f3d1d07cbef90d8c528d12707b0efd1b4abd1f24025dda6d0cd1fabc1204c713",
+    "files": [
+      ".vercelignore",
+      "api/kakao/callback.mjs",
+      "api/kakao/config.mjs",
+      "api/kakao/exchange.mjs",
+      "api/kakao/start.mjs",
+      "api/smartthings/[...path].mjs",
+      "package-lock.json",
+      "package.json",
+      "public/connect/bunny.png",
+      "public/connect/connect.mjs",
+      "public/connect/index.html",
+      "public/connect/style.css",
+      "runtime/http-adapter.mjs",
+      "runtime/index.mjs",
+      "runtime/kakao-handler.mjs",
+      "runtime/kakao-runtime.mjs",
+      "runtime/kakao-security.mjs",
+      "runtime/kakao-service.mjs",
+      "runtime/kakao-store.mjs",
+      "runtime/security.mjs",
+      "runtime/service.mjs",
+      "runtime/smartthings.mjs",
+      "runtime/store.mjs",
+      "vercel.json"
+    ],
+    "credentialsIncluded": false
+  },
+  "publicChecks": {
+    "checkedAt": "2026-11-16T03:03:19.634Z",
+    "origin": "https://bapmunna-smartthings.vercel.app",
+    "deploymentId": "dpl_8RCTuTfvmD4SCSJho4E3YEUGvrBH",
+    "passed": 16,
+    "total": 16,
+    "results": [
+      {
+        "name": "kakao-config",
+        "status": 200,
+        "expected": 200,
+        "passed": true,
+        "cacheControl": "no-store",
+        "frameOptions": "DENY",
+        "enabled": true
+      },
+      {
+        "name": "kakao-config-app",
+        "status": 200,
+        "expected": 200,
+        "passed": true,
+        "cacheControl": "no-store",
+        "frameOptions": "DENY",
+        "cors": "https://impact-series.web.app"
+      },
+      {
+        "name": "kakao-invalid-start",
+        "status": 400,
+        "expected": 400,
+        "passed": true,
+        "cacheControl": "no-store",
+        "frameOptions": "DENY"
+      },
+      {
+        "name": "kakao-invalid-exchange",
+        "status": 400,
+        "expected": 400,
+        "passed": true,
+        "cacheControl": "no-store",
+        "frameOptions": "DENY"
+      },
+      {
+        "name": "kakao-missing-origin",
+        "status": 403,
+        "expected": 403,
+        "passed": true,
+        "cacheControl": "no-store",
+        "frameOptions": "DENY"
+      },
+      {
+        "name": "kakao-foreign-origin",
+        "status": 403,
+        "expected": 403,
+        "passed": true,
+        "cacheControl": "no-store",
+        "frameOptions": "DENY"
+      },
+      {
+        "name": "kakao-approved-preflight",
+        "status": 204,
+        "expected": 204,
+        "passed": true,
+        "cacheControl": "no-store",
+        "frameOptions": "DENY",
+        "cors": "https://impact-series.web.app"
+      },
+      {
+        "name": "kakao-foreign-preflight",
+        "status": 403,
+        "expected": 403,
+        "passed": true,
+        "cacheControl": "no-store",
+        "frameOptions": "DENY"
+      },
+      {
+        "name": "kakao-invalid-callback",
+        "status": 303,
+        "expected": 303,
+        "passed": true,
+        "cacheControl": "no-store",
+        "frameOptions": "DENY",
+        "fixedErrorRedirectMatches": true
+      },
+      {
+        "name": "smartthings-config",
+        "status": 200,
+        "expected": 200,
+        "passed": true,
+        "cacheControl": "no-store",
+        "frameOptions": "DENY"
+      },
+      {
+        "name": "smartthings-unauthenticated",
+        "status": 401,
+        "expected": 401,
+        "passed": true,
+        "cacheControl": "no-store",
+        "frameOptions": "DENY"
+      },
+      {
+        "name": "smartthings-unsigned-webhook",
+        "status": 401,
+        "expected": 401,
+        "passed": true,
+        "cacheControl": "no-store",
+        "frameOptions": "DENY"
+      },
+      {
+        "name": "cleanup-unauthenticated",
+        "status": 401,
+        "expected": 401,
+        "passed": true,
+        "cacheControl": "no-store",
+        "frameOptions": "DENY"
+      },
+      {
+        "name": "kakao-valid-start",
+        "status": 303,
+        "expected": 303,
+        "passed": true,
+        "cacheControl": "no-store",
+        "frameOptions": "DENY",
+        "authorizationHost": "kauth.kakao.com",
+        "redirectMatches": true,
+        "noExtraScopes": true,
+        "statePresent": true,
+        "secureCookie": true,
+        "httpOnlyCookie": true,
+        "sameSiteLax": true
+      },
+      {
+        "name": "kakao-reject-unknown-query",
+        "status": 400,
+        "expected": 400,
+        "passed": true,
+        "cacheControl": "no-store",
+        "frameOptions": "DENY"
+      },
+      {
+        "name": "kakao-reject-duplicate-flow",
+        "status": 400,
+        "expected": 400,
+        "passed": true,
+        "cacheControl": "no-store",
+        "frameOptions": "DENY"
+      }
+    ]
+  },
+  "kakao": {
+    "appId": "1649759",
+    "enabled": true,
+    "credentialsConfigured": true,
+    "secretNames": [
+      "KAKAO_APP_ID",
+      "KAKAO_CLIENT_ID",
+      "KAKAO_CLIENT_SECRET"
+    ],
+    "secretEnvironments": [
+      "production"
+    ],
+    "clientSecretProtection": true,
+    "oidcEnabled": false,
+    "registeredRedirectUri": "https://bapmunna-smartthings.vercel.app/api/kakao/callback",
+    "consoleRegistrationVerified": true,
+    "consentedData": [
+      "appScopedServiceUserId"
+    ],
+    "emailProfilePhoneScopesAdded": false,
+    "realKakaoAuthorizationVerified": true,
+    "realFirebaseAuthenticationVerified": true,
+    "browserRefreshSessionRestoreVerified": true,
+    "logoutAndRepeatLoginVerified": true,
+    "emailVerificationAndFullOnboardingVerified": false,
+    "unlinkWebhookConfigured": false
+  },
+  "browserEvidence": {
+    "app": "https://impact-series.web.app/bapmunna/app/login/",
+    "observedText": "카카오 본인 확인을 마쳤어요. 내 계정과 기록을 안전하게 이용할 이메일을 알려주세요. 별도 비밀번호는 만들지 않아요.",
+    "evidenceBasis": "FirebaseLogin renders this branch only with an authenticated Firebase user whose email is unverified; public Kakao callback, refresh and repeat sign-in were observed.",
+    "consoleErrorsOrWarnings": 0,
+    "screenshotDirectory": "output/bapmunna-kakao-20261116",
+    "screenshots": [
+      "kakao-activation-on.jpg",
+      "vercel-kakao-secrets.jpg",
+      "vercel-kakao-fixed-ready.jpg",
+      "kakao-login-enabled.jpg",
+      "kakao-firebase-authenticated.jpg"
+    ]
+  },
+  "localChecks": {
+    "report": ".harness/runs/2026-11-16T02-53-26-915Z-42357/report.md",
+    "sourceFingerprint": "ba455ac3080d8809a3170674014bec5b7e489775ee453aab3ba4cbb6af83ec90",
+    "testsPassed": 492,
+    "failed": 0,
+    "skipped": 0,
+    "testsByGroup": {
+      "harness": 25,
+      "root": 260,
+      "privacy": 48,
+      "firebase": 85,
+      "server": 74
+    },
+    "independentRouteTestsPassed": 7,
+    "independentReview": "no_actionable_findings"
+  },
+  "scope": {
+    "hostingVersionUnchanged": "675c7f7210170b44",
+    "existingSmartThingsRoutesAndGuardsPreserved": true,
+    "smartthingsAuthenticationRetried": false,
+    "iamChanged": false,
+    "firebaseRulesChanged": false,
+    "billingChanged": false,
+    "identityPlatformEnabled": false,
+    "existingGoogleEmailAccountsPreserved": true
+  },
+  "remaining": [
+    "User chooses an email and completes Firebase email verification, profile, tutorial and household setup.",
+    "Live consent cancellation and switching to a different Google account.",
+    "Kakao User Unlinked webhook and account cleanup lifecycle review; not configured in this release.",
+    "SmartThings provider authorization remains a separate paused task."
+  ]
+}

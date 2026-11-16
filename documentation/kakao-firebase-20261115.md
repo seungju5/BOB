@@ -33,21 +33,26 @@ REST API 키와 비밀값은 서버 환경변수에만 보관한다. `KAKAO_APP_
 
 ## 검증과 완료 기준
 
-최종 통합 전체 검사: `.harness/runs/2026-11-16T01-27-22-878Z-28170/report.md` — 490개 통과, 실패·skip 0, 시작/종료 소스 지문 일치. 실제 로컬 Firestore 트랜잭션·기존 병합 Rules 차단과 실제 콜백 TSX 실행 회귀 11개를 포함한다. 독립 검토에서 지연 로그인 계정 덮어쓰기·삼성 미설정 시 카카오 청소 누락·이전 계정 확인 주소 잔류를 찾아 수정 후 재검증했다. 320/390px 공개 로그인 화면의 가로 넘침 0, 콘솔 오류/경고 0, 만료된 콜백의 오류 안내·로그인 복귀를 실제 브라우저에서 확인했다.
+**2026-11-16 현재: 실제 카카오 동의 → 공개 앱 복귀 → Firebase 인증 성공을 확인했다.** 새로고침 후 세션 복원과 로그아웃 후 카카오 재로그인도 성공했다. 화면에는 Firebase 인증된 사용자에게만 표시하는 “처음 한 번, 이메일을 확인해요”가 나타났고 콘솔 오류·경고는 0개였다. 본인 이메일을 선택·확인한 후 프로필·소개·가구 설정을 끝내는 신규 가입 전체 경로는 아직 실계정 검증하지 않았다.
 
-2026-11-16 Vercel 본인 확인 후 기존 production에 서버 20개 파일을 게시했다. 배포 `dpl_47mADN9AH8CKet4gtgh998t9X5fw`의 Ready와 공개 응답·잘못된 Origin/무인증 차단 12개를 확인했다. 실제 카카오 키는 아직 없으므로 config는 `enabled:false`, 시작·교환은 `setup_required`다. 영수증은 `workspaces/smartthings-vercel/releases/20261116-kakao-runtime.json`이다.
+사용자의 구체적 승인 후 기존 앱 **밥뭇나(1649759)**의 카카오 로그인을 ON으로 바꾸고 정확한 Vercel Redirect URI를 등록했다. 기존 REST 키·로그인 Client Secret과 앱 ID는 Vercel의 **production Secret**으로 보관했다. 시크릿 보호 ON·OIDC OFF를 유지했으며 카카오 이메일·프로필·전화번호 권한은 추가하지 않았다. 실제 동의 화면도 Service User ID만 제공한다고 표시했다. 비밀값은 소스·문서·이미지에 남기지 않았다.
+
+첫 활성화 배포에서 정상 시작 요청이 400으로 실패했다. 설치된 공식 Vercel CLI의 라우트 생성기를 확인하니 `[...path].mjs`가 `...path=start` 쿼리를 추가했고 엄격한 서비스 검증과 충돌했다. 카카오 경로를 `config/start/callback/exchange.mjs` 4개로 명시하고 공통 핸들러로 위임해 해결했다. 모르는 쿼리·중복 flow를 거부하는 보호는 유지했다. 삼성 라우트와 공통 HTTP 어댑터는 바꾸지 않았다.
+
+최종 소스 **270a38d**의 서버 24개 파일을 배포 **dpl_8RCTuTfvmD4SCSJho4E3YEUGvrBH**에 게시하고 Ready·Current를 확인했다. 공개 주소에서 정상 시작 303, 고정 callback, 범위 추가 없음, Secure/HttpOnly/SameSite 쿠키와 잘못된 입력·Origin·무인증·미서명 차단 **16개 모두 통과**했다. 활성 상태 영수증은 `workspaces/smartthings-vercel/releases/20261116-kakao-active.json`이다. 앞선 `20261116-kakao-runtime.json`은 키 설정 전의 역사적 영수증으로 보존한다.
+
+최종 전체 검사: `.harness/runs/2026-11-16T02-53-26-915Z-42357/report.md` — **492개 통과, 실패·skip 0**, 시작/종료 소스 지문 일치. 실제 로컬 Firestore 트랜잭션·기존 병합 Rules 차단, 콜백 TSX 실행 회귀 11개와 Vercel 정적 라우트 회귀 2개를 포함한다. 독립 검토자가 라우트 검사 7개를 재실행했으며 추가 결함이 없었다. 앞선 공개 로그인 320/390px 가로 넘침 0과 만료 콜백 복귀 확인도 보존한다.
 
 Hosting은 기존 건강 설치 공개 버전 `9c953108d6155e4d`를 확인하고 해당 소스 `c2077aa`를 병합한 뒤 `675c7f7210170b44`로 게시했다. 카카오와 건강 설치 소스가 각각 검증본과 동일하다는 독립 검토, 다운로드 파일 무결성 검사 2개, 공개 변경 124파일 일치·기존 경로 누락 0을 확인했다. 기존 공개 Android 링크·영수증과 나머지 사이트 파일을 보존했다. 배포 소스는 `d466af4`, 영수증은 `workspaces/bapmunna-final/releases/20261116-kakao-login.json`이다.
 
-**현재 남은 일:** 카카오 Developers 로그인 완료 탭을 아직 확인하지 못해 앱 ID·REST API 키·Client Secret과 콘솔 등록을 확인하지 못했다. 카카오 QR 로그인 화면을 준비했고, 공개 버튼은 준비 중으로 남긴다. 실제 계정으로의 카카오 동의→복귀→이메일 확인은 아직 미검증이다. 소스 구현·서버/화면 게시·실제 로그인 완료를 구분한다.
+**남은 실사용 확인:** 본인이 선택한 이메일의 수신·링크 확인 → 프로필·소개·가구 설정, 동의 취소와 다른 Google 계정 전환. 이메일을 임의로 지정하거나 기존 계정을 합치지 않았다. 카카오 콘솔의 User Unlinked 웹훅은 미설정이므로 외부 카카오 연결 해제와 밥뭇나 계정 정리의 자동 동기화는 이번 완료 범위에 포함하지 않는다.
 
-최종 운영 확인은 다음 순서로 한다.
+무료 한도와 기존 Spark/Hobby·IAM·Rules·Google/이메일·건강 설치 흐름을 유지한다. 삼성 인증은 사용자 요청대로 보류하며 이번 카카오 로그인 성공을 삼성 기기 연결 성공으로 표현하지 않는다. **카카오/Firebase 인증 성공과 이메일 확인을 포함한 가입 전체 완료를 구분한다.**
 
-1. 콘솔의 정확한 Redirect URI와 로그인 활성 상태를 읽어 확인한다.
-2. 서버 production 비밀 설정과 코드 배포 후 config·잘못된 state·무인증 교환·다른 Origin 거부를 확인한다.
-3. 실제 카카오 동의 후 앱 복귀 → 본인 확인 메일 → 프로필·소개·가구 설정까지 진행한다.
-4. 로그아웃·같은 계정 재로그인·동의 취소·다른 Google 계정 전환에서 기존 자료 보존과 계정 격리를 확인한다.
+## 복구와 인계
 
-무료 한도와 기존 Spark/Hobby 선택을 유지한다. 이 변경은 유료 플랜 가입이나 카카오/삼성의 이용 조건 변경을 포함하지 않는다. 서버 소스 배포와 콘솔 설정이 끝나도 3번의 실사용 확인 전에는 카카오 로그인 완료라고 안내하지 않는다.
+서버 소스는 GitHub `codex/google-kakao-login`의 `270a38d`에 보관했다. 재게시할 때 이 소스에서 스테이징하고 production의 기존 Secret을 유지한다. 정상 시작을 막던 과거 catch-all 배포를 단순히 되돌려 사용하지 않는다. 공개 웹앱은 `/bapmunna/app/login/`, 서버는 위 Vercel 고정 도메인이다. Firebase Hosting은 이번 서버 경로 수정 중 재배포하지 않았다.
+
+이미지는 작업공간 `output/bapmunna-kakao-20261116/`의 `kakao-activation-on.jpg`, `vercel-kakao-secrets.jpg`, `vercel-kakao-fixed-ready.jpg`, `kakao-firebase-authenticated.jpg`에 있다. 과거 OFF/준비 중/QR 이미지는 현재 상태 증거로 사용하지 않는다.
 
 공식 기준: [Firebase custom token 생성](https://firebase.google.com/docs/auth/admin/create-custom-tokens), [웹 custom authentication](https://firebase.google.com/docs/auth/web/custom-auth), [카카오 로그인 REST API](https://developers.kakao.com/docs/latest/ko/kakaologin/rest-api).

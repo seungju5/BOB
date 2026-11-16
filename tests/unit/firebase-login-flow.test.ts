@@ -70,6 +70,9 @@ function fixture() {
     signIn: vi.fn<FirebaseProvider['signIn']>(async () => user('A')),
     signUp: vi.fn<FirebaseProvider['signUp']>(async () => user('A', false)),
     google: vi.fn<FirebaseProvider['google']>(async () => user('G')),
+    kakaoStatus: vi.fn(async () => true),
+    kakao: vi.fn(async (_remember:boolean) => {}),
+    requestEmail: vi.fn(async (_email:string,_uid:string) => {}),
     resetPassword: vi.fn<FirebaseProvider['resetPassword']>(async () => {}),
     resendVerification: vi.fn<FirebaseProvider['resendVerification']>(async () => {}),
     saveProfile: vi.fn<FirebaseProvider['saveProfile']>(async () => {}),
@@ -150,6 +153,28 @@ afterEach(() => { vi.clearAllTimers(); vi.useRealTimers(); });
 // are the real sanitized provider contract, not undefined success placeholders.
 // These are component-flow regressions, not browser or live OAuth evidence.
 describe('Firebase login intent and completed-user navigation', () => {
+  it('opens Kakao only after server readiness and waits for the redirect result', async () => {
+    const f=fixture();f.render();await flush();
+    const tree=f.render(),kakao=find(tree,node=>node.type==='button'&&Array.isArray(node.props.children)&&node.props.children.includes('카카오로 계속하기'));
+    await click(kakao);
+    expect(f.provider.kakao).toHaveBeenCalledExactlyOnceWith(false);
+    expect(f.provider.signIn).not.toHaveBeenCalled();expect(f.router.replace).not.toHaveBeenCalled();
+  });
+
+  it('keeps Kakao unavailable when the server lacks developer configuration', async () => {
+    const f=fixture();f.provider.kakaoStatus.mockResolvedValue(false);f.render();await flush();
+    const tree=f.render(),kakao=find(tree,node=>node.type==='button'&&Array.isArray(node.props.children)&&node.props.children.includes('카카오 로그인 · 준비 중'));
+    expect(kakao.props.disabled).toBe(true);expect(f.provider.kakao).not.toHaveBeenCalled();
+  });
+
+  it('binds the first Kakao email verification to that account without saving a profile', async () => {
+    const f=fixture(),account={...unverified('K'),user:{...user('K',false),email:''}};
+    let tree=f.render(account);change(tree,'kakao-email','k@example.test');tree=f.render(account);await submit(tree);await flush();
+    expect(f.provider.requestEmail).toHaveBeenCalledExactlyOnceWith('k@example.test','K');
+    expect(f.provider.saveProfile).not.toHaveBeenCalled();expect(f.router.replace).not.toHaveBeenCalled();
+    await click(button(f.render(account),'이메일 확인했어요'));f.render(ready('K'));
+    expect(f.router.replace).toHaveBeenCalledExactlyOnceWith('/start');
+  });
   it('keeps account switching reachable when an existing session is restored', async () => {
     const f = fixture(), tree = f.render(ready('A'));
     expect(f.router.replace).not.toHaveBeenCalled();

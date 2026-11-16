@@ -1,13 +1,17 @@
 import {initializeApp,getApp,getApps} from 'firebase/app';
-import {getAuth,onAuthStateChanged,signInWithEmailAndPassword,createUserWithEmailAndPassword,sendEmailVerification,sendPasswordResetEmail,updateProfile,signOut,reload,setPersistence,browserLocalPersistence,browserSessionPersistence,GoogleAuthProvider,signInWithPopup,validatePassword} from 'firebase/auth';
+import {getAuth,onAuthStateChanged,beforeAuthStateChanged,signInWithEmailAndPassword,createUserWithEmailAndPassword,sendEmailVerification,sendPasswordResetEmail,updateProfile,signOut,reload,setPersistence,browserLocalPersistence,browserSessionPersistence,GoogleAuthProvider,signInWithPopup,validatePassword,signInWithCustomToken,verifyBeforeUpdateEmail} from 'firebase/auth';
 import {getFirestore,doc,getDoc,getDocFromServer,setDoc,updateDoc,deleteDoc,collection,getDocs,query,orderBy,limit,startAfter,documentId,where,onSnapshot,writeBatch,runTransaction,serverTimestamp,Timestamp} from 'firebase/firestore';
 import {preferenceFields} from './app-preferences.mjs';
 import {CONSENT_VERSION,koreanDay,checkDisplayName,checkMeal,STAGES} from './auth-utils.mjs';
+import {createKakaoClient,requestAccountEmail,completeKakaoSession} from './kakao-client.mjs';
+import {kakaoConfig} from './kakao-config.mjs';
 
 export function createProvider(config){
   const appName='bapmunna-accounts-v3';
   const app=getApps().find(app=>app.name===appName)?getApp(appName):initializeApp(config,appName);
   const auth=getAuth(app),db=getFirestore(app);
+  let kakaoClient,kakaoCompletion;
+  const kakao=()=>kakaoClient??=createKakaoClient({config:kakaoConfig,storage:{getItem:key=>window.sessionStorage.getItem(key),setItem:(key,value)=>window.sessionStorage.setItem(key,value),removeItem:key=>window.sessionStorage.removeItem(key)},location:window.location,history:window.history,crypto:window.crypto,fetch:window.fetch.bind(window)});
   const mapUser=user=>user?{uid:user.uid,email:user.email||'',displayName:user.displayName||'',verified:user.emailVerified}:null;
   const requireUser=()=>{const user=auth.currentUser;if(!user?.emailVerified)throw Error('이메일을 확인한 계정으로 로그인해 주세요.');return user;};
   const profileRef=uid=>doc(db,'bapmunnaAccounts',uid);
@@ -57,6 +61,14 @@ export function createProvider(config){
   }
   return {
     name:'Firebase',supportsGoogle:true,
+    kakaoStatus:()=>kakao().available(),
+    async kakao(keep){
+      await auth.authStateReady();
+      if(auth.currentUser)throw Object.assign(Error(),{code:'auth/user-changed'});
+      return kakao().begin(keep);
+    },
+    completeKakaoLogin(fragment,signal){return kakaoCompletion??=completeKakaoSession({auth,client:kakao(),fragment,signal,remember,beforeChange:beforeAuthStateChanged,observe:onAuthStateChanged,signIn:signInWithCustomToken}).then(mapUser);},
+    requestEmail(email,expectedUid){return requestAccountEmail({email,expectedUid,currentUser:()=>auth.currentUser,sendVerification:(user,address)=>verifyBeforeUpdateEmail(user,address,{url:'https://impact-series.web.app/bapmunna/app/login/',handleCodeInApp:false})});},
     getIdToken(expectedUid){return withHouseholdUser(expectedUid,async(user,assertCurrent)=>{const token=await user.getIdToken();assertCurrent();return token;});},
     onUser(callback){return onAuthStateChanged(auth,user=>callback(mapUser(user)));},
     async signIn(email,password,keep){await remember(keep);const result=await signInWithEmailAndPassword(auth,email.trim(),password);return mapUser(result.user);},
@@ -70,7 +82,7 @@ export function createProvider(config){
     async resetPassword(email){try{await sendPasswordResetEmail(auth,email.trim(),actionSettings);}catch(error){if(!['auth/user-not-found','auth/invalid-email'].includes(error.code))throw error;}},
     async resendVerification(){if(auth.currentUser&&!auth.currentUser.emailVerified)await sendEmailVerification(auth.currentUser,actionSettings);},
     async refreshUser(){if(auth.currentUser){await reload(auth.currentUser);await auth.currentUser.getIdToken(true);}return mapUser(auth.currentUser);},
-    signOut:()=>signOut(auth),
+    signOut:()=>{kakao().cancel();return signOut(auth);},
     async getProfile(){const user=requireUser(),snapshot=await getDoc(profileRef(user.uid));return snapshot.exists()?snapshot.data():null;},
     getAppProfile(expectedUid){return withHouseholdUser(expectedUid,async(user,assertCurrent)=>{const snapshot=await getDocFromServer(profileRef(user.uid));assertCurrent();return snapshot.exists()?snapshot.data():null;});},
     getAppPreferences(expectedUid){return withHouseholdUser(expectedUid,async(user,assertCurrent)=>{

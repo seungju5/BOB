@@ -22,14 +22,21 @@ function LoginForm({account,busy,setBusy,continueUid,setContinueUid}:{account:Re
   const [tab,setTab]=useState<'login'|'signup'|'reset'>('login');
   const [email,setEmail]=useState(''),[password,setPassword]=useState(''),[name,setName]=useState(account.user?.displayName??'');
   const [keep,setKeep]=useState(false),[consent,setConsent]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
+  const [kakaoReady,setKakaoReady]=useState(false),[verificationEmail,setVerificationEmail]=useState('');
+  const locked=useRef(false);
+  useEffect(()=>{
+    let active=true;
+    void connectFirebase().then(p=>p.kakaoStatus?.()??false).then(ready=>{if(active)setKakaoReady(ready);}).catch(()=>{});
+    return ()=>{active=false;};
+  },[]);
   useEffect(()=>{
     // Restoring a session must leave the account-switch choice reachable.
     // Only a sign-in/profile action started on this screen advances automatically.
     if(!busy&&continueUid&&account.user?.uid===continueUid&&account.view&&mode==='live'&&!leavingForDemo.current)router.replace('/start');
   },[account.user?.uid,account.view,busy,continueUid,mode,router]);
   async function run(action:()=>Promise<void>){
-    if(busy)return;setBusy(true);setContinueUid(null);setError('');setNotice('');
-    try{await action();}catch(e){setContinueUid(null);setError(accountError(e));}finally{setBusy(false);}
+    if(busy||locked.current)return;locked.current=true;setBusy(true);setContinueUid(null);setError('');setNotice('');
+    try{await action();}catch(e){setContinueUid(null);setError(accountError(e));}finally{locked.current=false;setBusy(false);}
   }
   async function submit(event:FormEvent<HTMLFormElement>){
     event.preventDefault();
@@ -57,9 +64,21 @@ function LoginForm({account,busy,setBusy,continueUid,setContinueUid}:{account:Re
       {notice?<p role="status" className="mt-5 rounded-2xl bg-sage p-4 text-[16px] text-cocoa">{notice}</p>:null}
       {account.loading ? <p role="status" className="py-8 text-center text-[16px] text-muted">로그인 상태를 확인하고 있어요…</p>
       : user && !user.verified ? <section className="mt-6 flex flex-col gap-3">
-        <h2 className="text-[20px] font-bold text-cocoa">이메일을 확인해 주세요</h2><p className="break-all text-[16px] text-muted">{user.email}로 보낸 확인 링크를 눌러 주세요.</p>
+        <h2 className="text-[20px] font-bold text-cocoa">{user.email?'이메일을 확인해 주세요':'처음 한 번, 이메일을 확인해요'}</h2>
+        {user.email?<p className="break-all text-[16px] text-muted">{user.email}로 보낸 확인 링크를 눌러 주세요.</p>:<>
+          <p className="text-[16px] leading-relaxed text-muted">카카오 본인 확인을 마쳤어요. 내 계정과 기록을 안전하게 이용할 이메일을 알려주세요. 별도 비밀번호는 만들지 않아요.</p>
+          <form className="flex flex-col gap-3" onSubmit={event=>{event.preventDefault();void run(async()=>{
+            const p=await connectFirebase();if(!p.requestEmail)throw Error('새 버전을 불러오도록 새로고침해 주세요.');
+            await within(p.requestEmail(email,user.uid));setVerificationEmail(email.trim());setNotice('확인 메일을 보냈어요. 메일의 링크를 누른 뒤 이 화면에서 확인해 주세요.');
+          });}}>
+            <label htmlFor="kakao-email" className="text-[16px] font-semibold">내 이메일</label><TextInput id="kakao-email" type="email" required autoComplete="email" inputMode="email" maxLength={254} value={email} onChange={e=>setEmail(e.target.value)} placeholder="name@example.com"/>
+            <Button type="submit" disabled={busy}>{verificationEmail?'확인 메일 다시 받기':'확인 메일 받기'}</Button>
+          </form>
+          {verificationEmail?<p className="break-all text-[16px] text-muted">보낸 주소: {verificationEmail}</p>:null}
+          <p className="text-[15px] leading-relaxed text-muted">이미 Google·이메일로 가입하셨다면 아래에서 기존 계정으로 로그인해 주세요. 기록은 자동으로 합치지 않아요.</p>
+        </>}
         <Button disabled={busy} onClick={()=>run(async()=>{await refreshFirebaseAccount();setContinueUid(user.uid);})}>이메일 확인했어요</Button>
-        <Button variant="outline" disabled={busy} onClick={()=>run(async()=>{const p=await connectFirebase();await within(p.resendVerification());setNotice('확인 메일을 다시 보냈어요.');})}>확인 메일 다시 받기</Button>
+        {user.email?<Button variant="outline" disabled={busy} onClick={()=>run(async()=>{const p=await connectFirebase();await within(p.resendVerification());setNotice('확인 메일을 다시 보냈어요.');})}>확인 메일 다시 받기</Button>:null}
         <Button variant="ghost" disabled={busy} onClick={()=>run(signOutFirebase)}>다른 계정으로 로그인</Button>
       </section>
       : user && !account.view ? <form className="mt-6 flex flex-col gap-3" onSubmit={event=>{event.preventDefault();void run(async()=>{
@@ -76,12 +95,19 @@ function LoginForm({account,busy,setBusy,continueUid,setContinueUid}:{account:Re
       </form>
       : user && account.view ? <section className="mt-6 flex flex-col gap-3"><p className="break-all text-center text-[16px]">{user.email}</p><Button onClick={()=>{setMode('live');router.push('/start');}}>내 계정으로 계속하기</Button><Button variant="ghost" disabled={busy} onClick={()=>run(signOutFirebase)}>다른 계정으로 로그인</Button></section>
       : <form className="mt-7 flex flex-col gap-3" onSubmit={submit}>
+        {tab==='login'?<>
+          <button type="button" disabled={busy||!kakaoReady} aria-describedby={!kakaoReady?'kakao-ready-note':undefined} onClick={()=>run(async()=>{const p=await connectFirebase();if(!p.kakao)throw Error('카카오 로그인 연결을 준비하고 있어요.');await p.kakao(keep);})} className="relative flex min-h-14 items-center justify-center rounded-full bg-kakao px-6 text-[17px] font-bold text-kakao-label disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-cocoa">
+            <svg aria-hidden="true" className="absolute left-5 h-5 w-5" viewBox="0 0 24 24"><path fill="currentColor" d="M12 3C6.48 3 2 6.53 2 10.88c0 2.82 1.88 5.29 4.7 6.68l-.96 3.53c-.08.31.27.56.54.38l4.18-2.77c.5.06 1.01.1 1.54.1 5.52 0 10-3.53 10-7.92S17.52 3 12 3z"/></svg>{kakaoReady?'카카오로 계속하기':'카카오 로그인 · 준비 중'}
+          </button>
+          {!kakaoReady?<p id="kakao-ready-note" className="text-center text-[14px] text-muted">카카오 연결을 준비하고 있어요. Google·이메일로 시작할 수 있어요.</p>:null}
+          <Button type="button" variant="outline" disabled={busy} onClick={()=>run(async()=>{const p=await connectFirebase();setMode('live');const signedIn=await p.google(keep);await refreshFirebaseAccount();setContinueUid(signedIn.uid);})}>Google로 계속하기</Button>
+          <p className="my-2 text-center text-[15px] text-muted">또는 이메일로</p>
+        </>:null}
         {tab==='signup'?<><label htmlFor="signup-name" className="text-[16px]">이름</label><TextInput id="signup-name" required minLength={2} maxLength={30} autoComplete="nickname" value={name} onChange={e=>setName(e.target.value)}/></>:null}
         <label htmlFor="login-email" className="text-[16px]">이메일</label><TextInput id="login-email" type="email" autoComplete="email" inputMode="email" placeholder="name@example.com" required value={email} onChange={e=>setEmail(e.target.value)}/>
         {tab!=='reset'?<><label htmlFor="login-password" className="text-[16px]">비밀번호</label><TextInput id="login-password" type="password" required minLength={tab==='signup'?8:1} autoComplete={tab==='signup'?'new-password':'current-password'} placeholder="비밀번호를 입력해 주세요." value={password} onChange={e=>setPassword(e.target.value)}/><label className="flex min-h-12 items-center gap-3 text-[16px]"><input type="checkbox" className="h-5 w-5" checked={keep} onChange={e=>setKeep(e.target.checked)}/>로그인 상태 유지</label></>:null}
         {tab==='signup'?<><Policy/><label className="flex min-h-12 items-start gap-3 text-[16px]"><input className="mt-1 h-5 w-5" type="checkbox" checked={consent} onChange={e=>setConsent(e.target.checked)} required/>회원 정보 저장 안내를 확인했어요.</label></>:null}
         <Button type="submit" disabled={busy}>{busy?'확인 중…':tab==='signup'?'회원가입':tab==='reset'?'재설정 메일 받기':'로그인'}</Button>
-        {tab==='login'?<Button type="button" variant="outline" disabled={busy} onClick={()=>run(async()=>{const p=await connectFirebase();setMode('live');const signedIn=await p.google(keep);await refreshFirebaseAccount();setContinueUid(signedIn.uid);})}>Google로 계속하기</Button>:null}
         <div className="flex flex-wrap items-center justify-center gap-x-4">
           {tab!=='signup'?<button type="button" disabled={busy} className="min-h-12 text-[16px] text-muted underline" onClick={()=>{setTab('signup');setError('');setPassword('');}}>회원가입</button>:null}
           {tab!=='reset'?<button type="button" disabled={busy} className="min-h-12 text-[16px] text-muted underline" onClick={()=>{setTab('reset');setError('');setPassword('');}}>비밀번호 찾기</button>:null}

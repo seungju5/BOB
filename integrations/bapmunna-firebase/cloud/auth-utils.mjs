@@ -16,6 +16,11 @@ export function checkMeal(slot,kind){
 }
 export function authMessage(error){
   const code=String(error?.code||'');
+  if(/email-already-in-use|account-exists-with-different-credential/.test(code))return '이미 가입한 이메일이에요. 기존 Google 또는 이메일 계정으로 로그인해 주세요. 기록은 자동으로 합치지 않아요.';
+  if(/requires-recent-login/.test(code))return '확인 시간이 지났어요. 다시 로그인한 뒤 이메일 확인을 진행해 주세요.';
+  if(/invalid-email/.test(code))return '받을 수 있는 이메일 주소를 확인해 주세요.';
+  if(/kakao-cancelled/.test(code))return '카카오 로그인을 취소했어요. 원하실 때 다시 시작해 주세요.';
+  if(/kakao-expired|kakao-failed/.test(code))return '로그인 확인 시간이 지났어요. 카카오로 시작하기를 다시 눌러 주세요.';
   if(/popup-closed-by-user|cancelled-popup-request|access_denied/.test(code))return '로그인이 취소됐어요. 원하실 때 다시 시작해 주세요.';
   if(/popup-blocked/.test(code))return '로그인 창이 차단됐어요. Safari나 Chrome에서 이 페이지를 열고 팝업을 허용한 뒤 다시 눌러 주세요.';
   if(/unauthorized-domain|operation-not-allowed|provider_disabled/.test(code))return '이 로그인 방법의 연결을 준비하고 있어요. 다른 방법으로 시작해 주세요.';

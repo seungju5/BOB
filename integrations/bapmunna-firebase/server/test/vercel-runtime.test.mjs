@@ -57,6 +57,15 @@ test('cron cannot run with a missing secret or unconfigured runtime',async()=>{
   assert.equal((await invoke(unconfigured,{authorization:'Bearer '+secret})).json.error,'setup_required');assert.equal(cleaned,0);
 });
 
+test('Kakao cleanup works with Samsung unconfigured and remains behind cron authorization',async()=>{
+  let cleaned=0;
+  const runtime={config:{origin},ready:false,store:null,handle:async()=>new Response('{}')};
+  const kakao={ready:true,store:{async cleanup(options){assert.deepEqual(options,{limit:1000});cleaned++;return {deleted:3};}}};
+  const handler=createVercelHandler({env:{CRON_SECRET:secret},runtimeFactory:()=>runtime,kakaoFactory:()=>kakao});
+  assert.equal((await invoke(handler)).status,401);assert.equal(cleaned,0);
+  const result=await invoke(handler,{authorization:'Bearer '+secret});assert.equal(result.status,200);assert.equal(result.json.kakao.deleted,3);assert.equal(cleaned,1);
+});
+
 test('Vercel wrapper fails closed if raw-body helpers or credentials are misconfigured, without logging details',async()=>{
   let initialized=0;
   const handler=createVercelHandler({env:{VERCEL:'1'},runtimeFactory:()=>{initialized++;throw Error('synthetic-private-key');}});

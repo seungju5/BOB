@@ -27,6 +27,7 @@ export function mountAccount(element,{admin=false,management,audience='senior',b
     ${carer?'<p class="notice">보호자 본인의 계정으로 시작해요. 로그인해도 어르신의 기록이 자동으로 연결되지는 않아요.</p>':''}${policy()}<p class="auth-provider">${admin?'지정된 운영자만 이용할 수 있어요.':provider?.name==='Supabase'?'Supabase 별도 계정으로 이용해요.':'로그인 없이 먼저 둘러볼 수도 있어요.'}</p></section>${!admin?`<a class="auth-back" href="${safe(demoHref)}">${carer?'보호자용':'어르신용'} 예시로 체험하기 →</a>`:''}</div>`;
   }
   function verifyView(){
+    if(!model.user.email&&provider.requestEmail)return `<section class="card account-narrow"><span class="pill">이메일 확인</span><h2>처음 한 번, 이메일을 확인해요.</h2><p>카카오 본인 확인을 마쳤어요. 별도 비밀번호 없이, 내 기록을 위한 이메일만 확인해 주세요.</p>${feedback()}<form id="cloud-email-form"><label class="field">내 이메일<input name="email" type="email" autocomplete="email" maxlength="254" value="${safe(model.pendingVerificationEmail)}" required></label><button type="submit" class="primary full" ${model.busy?'disabled':''}>확인 메일 받기</button></form><p>메일의 링크를 누른 뒤 돌아와 주세요. 이미 가입한 이메일이라면 기존 Google 또는 이메일 계정으로 로그인해 주세요.</p><button class="primary full" data-cloud-action="refresh-user" ${model.busy?'disabled':''}>이메일 확인했어요</button><button class="text-button full" data-cloud-action="logout">다른 계정으로 로그인</button></section>`;
     return `<section class="card account-narrow"><span class="pill">이메일 확인</span><h2>메일함에서 한 번 확인해 주세요.</h2><p>${safe(model.user.email)}</p><p>이메일을 확인한 뒤 ‘확인했어요’를 눌러 주세요. 확인 전에는 식사 기록과 고객관리 정보를 만들지 않아요.</p>${feedback()}<div class="buttons"><button class="primary" data-cloud-action="refresh-user">확인했어요</button><button data-cloud-action="resend">확인 메일 다시 받기</button></div><button class="text-button full" data-cloud-action="logout">로그아웃</button></section>`;
   }
   function profileForm(){
@@ -67,7 +68,7 @@ export function mountAccount(element,{admin=false,management,audience='senior',b
   async function loadUser(user,metadata={}){
     if(!alive)return false;
     const identityChanged=(model.user?.uid??null)!==(user?.uid??null);
-    if(identityChanged)accountEpoch++;
+    if(identityChanged){accountEpoch++;model.pendingVerificationEmail='';model.email='';model.notice='';}
     const revision=++generation;unwatchMeals?.();unwatchMeals=null;
     model.user=user;model.profile=null;model.staff=false;model.meals=[];model.loading=true;model.recovery=!!metadata.recovery||(!identityChanged&&model.recovery);if(user?.verified)model.pendingVerificationEmail='';render();
     try{
@@ -112,12 +113,18 @@ export function mountAccount(element,{admin=false,management,audience='senior',b
     if(name==='resend'){await run(()=>provider.resendVerification(model.pendingVerificationEmail||model.email),'확인 메일을 요청했어요. 메일함과 스팸함을 확인해 주세요.');return;}
   };
   const submit=async event=>{
-    const form=event.target;if(!form.matches('#cloud-auth-form,#cloud-profile-form,#cloud-meal-form,#cloud-password-form'))return;
+    const form=event.target;if(!form.matches('#cloud-auth-form,#cloud-profile-form,#cloud-meal-form,#cloud-password-form,#cloud-email-form'))return;
     event.preventDefault();if(model.busy)return;
     const fields=new FormData(form);
     try{
       await run(async()=>{
-        if(form.id==='cloud-auth-form'){
+        if(form.id==='cloud-email-form'){
+          const uid=model.user?.uid,address=String(fields.get('email')||'').trim();
+          await provider.requestEmail(address,uid);
+          if(model.user?.uid!==uid)return;
+          model.pendingVerificationEmail=address;
+          model.notice='확인 메일을 보냈어요. 메일의 링크를 누른 뒤 돌아와 주세요.';
+        }else if(form.id==='cloud-auth-form'){
           model.email=String(fields.get('email')).trim();const password=String(fields.get('password')||''),remember=fields.get('remember')==='on';
           if(model.tab==='reset'){await provider.resetPassword(model.email);model.notice='입력한 주소로 안내 가능한 경우 재설정 메일을 보냈어요.';}
           else if(model.tab==='signup'){if(fields.get('consent')!=='on')throw Error('저장 목적 확인이 필요해요.');await provider.signUp(model.email,password,fields.get('name'),remember);model.pendingVerificationEmail=model.email;model.notice='확인 메일을 보냈어요. 이메일 확인 뒤 내 기록을 시작해 주세요.';await loadUser(await provider.refreshUser());}

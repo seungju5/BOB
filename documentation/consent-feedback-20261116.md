@@ -33,3 +33,7 @@
 ## 브라우저 확인
 
 390px/320px에서 개인정보 안내·동의 화면·건강 안내의 가로 넘침 0을 확인했다. 안내 dialog를 Escape/닫기로 닫으면 입력한 가상 이름이 보존되고 초점이 안내 버튼으로 돌아왔다. 안내 열람만으로 체크되지 않으며 체크/해제에 따라 저장 버튼이 활성/비활성화됐다. 가상 정보 저장→요약→홈 이동, 설정에서 확인 취소→미체크·생활 저장 차단을 확인했다. iPhone에는 웹 테스트 링크만, Galaxy에는 기존 검증 APK·앱 실행 링크가 표시된다. 로컬 브라우저 콘솔 오류·경고 0. 실제 Apple/Samsung 건강 권한이나 기기 수신 검증은 아니다.
+
+## 공개 게시
+
+소스 `283ff0e547770c71cffaf883a4e9a551255eeea9`를 기존 비공개 GitHub의 `codex/consent-feedback-20261116`에 푸시한 뒤 Hosting `0a649e4f0c650e57`에 게시했다. 공개 변경 128개 바이트 일치, 기존 경로 누락 0개, 무료 상태를 확인했다. 기존 APK·설치 영수증과 카카오·SmartThings 서버/Rules/인증 설정을 보존했다. 다음 배포는 이 브랜치와 이 작업본 `tmp/impact-final/site/bapmunna`를 기준으로 한다. 영수증: `workspaces/bapmunna-final/releases/20261116-consent-feedback.json`.

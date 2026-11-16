@@ -80,3 +80,7 @@ node workspaces/bapmunna-final/scripts/publish.mjs rollback
 ## 2026-11-16 카카오 로그인 경로 게시
 
 위 공개 설치 기능과 카카오 인증 소스를 함께 보존한 `d466af4`를 Hosting `675c7f7210170b44`로 게시했다. 변경 124개 공개 파일과 기존 모든 경로를 확인했다. 서버와 화면은 게시됐지만 카카오 개발자 앱 키·등록 확인이 남아 로그인 버튼은 준비 중이다. 실제 카카오 로그인 성공을 뜻하지 않는다. 최신 영수증은 `releases/20261116-kakao-login.json`, 다음 배포 기준은 이 통합 작업본의 `tmp/impact-final/site/bapmunna`다.
+
+## 2026-11-16 개인정보 안내·필수 동의 후속
+
+카카오/설치 통합본 `7cad5c1` 위에 내부 개인정보 페이지·필수 동의·구형 폼 차단·아이폰 웹 테스트 동선을 반영한 `283ff0e`를 Hosting `0a649e4f0c650e57`로 게시했다. 공개128파일 일치·기존경로누락0. 기존 APK와 무료 설정을 보존했다. 최신 기준은 `codex/consent-feedback-20261116` 및 해당 작업본의 `tmp/impact-final/site/bapmunna`다. `releases/20261116-consent-feedback.json`을 참조한다. 실제 삼성 연동·실기기·iOS 설치·보관기간 확정은 남아 있다.

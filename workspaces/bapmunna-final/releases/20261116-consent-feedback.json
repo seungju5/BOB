@@ -1,0 +1,63 @@
+{
+  "release": {
+    "at": "2026-11-16T03:01:47.858Z",
+    "site": "impact-series",
+    "url": "https://impact-series.web.app/bapmunna/final/",
+    "version": "sites/impact-series/versions/0a649e4f0c650e57",
+    "previous": "sites/impact-series/versions/675c7f7210170b44",
+    "release": "sites/impact-series/releases/1794798107043000",
+    "source": "283ff0e547770c71cffaf883a4e9a551255eeea9",
+    "changed": 128,
+    "preserved": 2645,
+    "totalFiles": 2773,
+    "uploads": 104,
+    "hostingConfig": "unchanged",
+    "billingEnabled": false
+  },
+  "verify": {
+    "at": "2026-11-16T03:03:07.584Z",
+    "version": "sites/impact-series/versions/0a649e4f0c650e57",
+    "publicFilesVerified": 128,
+    "existingPathsMissing": 0,
+    "project": "impact-series",
+    "billingEnabled": false
+  },
+  "runtimeSource": "283ff0e547770c71cffaf883a4e9a551255eeea9",
+  "preservedPreviousSource": "7cad5c1",
+  "checks": {
+    "fullHarness": ".harness/runs/2026-11-16T02-52-51-219Z-41019/report.md",
+    "passedCountedChecks": 509,
+    "firebaseUiContractTests": 136,
+    "publicDownloadIntegrityTests": 2,
+    "failed": 0,
+    "skipped": 0,
+    "sourceStable": true,
+    "independentReview": "no_remaining_actionable_findings",
+    "mobileWidths": [
+      320,
+      390
+    ],
+    "horizontalOverflow": 0,
+    "consoleWarningsOrErrors": 0,
+    "internalReaderPreservesDraft": true,
+    "consentRequiredBeforeHouseholdSave": true,
+    "legacyHouseholdDirectSubmitBlocked": true,
+    "withdrawalBlocksPersonalSave": true,
+    "publicPrivacyAndIphoneWebRouteVerified": true
+  },
+  "scope": {
+    "existingApkAndMetadataChanged": false,
+    "kakaoActivationChanged": false,
+    "firebaseRulesChanged": false,
+    "iamChanged": false,
+    "billingChanged": false,
+    "identityPlatformEnabled": false
+  },
+  "outstanding": [
+    "Samsung app registration and actual OAuth/webhook receipt",
+    "Android physical-device installation and health data comparison",
+    "Signed iOS install release",
+    "Confirmed retention period and deletion procedure"
+  ],
+  "privacySupportEmail": "peterjang9296@gmail.com"
+}

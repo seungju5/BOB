@@ -1,0 +1,61 @@
+{
+  "release": {
+    "at": "2026-11-16T01:32:28.670Z",
+    "site": "impact-series",
+    "url": "https://impact-series.web.app/bapmunna/final/",
+    "version": "sites/impact-series/versions/675c7f7210170b44",
+    "previous": "sites/impact-series/versions/9c953108d6155e4d",
+    "release": "sites/impact-series/releases/1794792747772000",
+    "source": "d466af4e3f00576c46845e14ce8bfc09a5232d5f",
+    "changed": 124,
+    "preserved": 2614,
+    "totalFiles": 2738,
+    "uploads": 100,
+    "hostingConfig": "unchanged",
+    "billingEnabled": false
+  },
+  "verify": {
+    "at": "2026-11-16T01:34:12.814Z",
+    "version": "sites/impact-series/versions/675c7f7210170b44",
+    "publicFilesVerified": 124,
+    "existingPathsMissing": 0,
+    "project": "impact-series",
+    "billingEnabled": false
+  },
+  "runtimeSource": "d466af4e3f00576c46845e14ce8bfc09a5232d5f",
+  "preservedLiveHealthSource": "c2077aa",
+  "checks": {
+    "fullHarness": ".harness/runs/2026-11-16T01-27-22-878Z-28170/report.md",
+    "passed": 490,
+    "failed": 0,
+    "skipped": 0,
+    "publicDownloadIntegrityTests": 2,
+    "independentMergeReview": "no_actionable_findings",
+    "browser": {
+      "loginWidths": [
+        320,
+        390
+      ],
+      "horizontalOverflow": 0,
+      "publicLoginConsoleWarningsOrErrors": 0,
+      "expiredCallbackRecoveryVerified": true,
+      "callbackHidesRoleSwitch": true,
+      "healthDownloadLinkPreserved": true
+    }
+  },
+  "kakao": {
+    "serverDeployed": true,
+    "consoleLoginPending": true,
+    "providerKeysConfigured": false,
+    "publicButton": "disabled-preparing",
+    "realAccountLoginVerified": false
+  },
+  "scope": {
+    "firebaseRulesChanged": false,
+    "iamChanged": false,
+    "identityPlatformEnabled": false,
+    "billingChanged": false,
+    "existingGoogleAndEmailFlowPreserved": true,
+    "publicAndroidDownloadMetadataPreserved": true
+  }
+}

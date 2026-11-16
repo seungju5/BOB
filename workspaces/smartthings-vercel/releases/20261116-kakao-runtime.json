@@ -1,0 +1,230 @@
+{
+  "schemaVersion": 1,
+  "checkedAt": "2026-11-16T01:22:07.217Z",
+  "project": "bapmunna-smartthings",
+  "projectId": "prj_oGTlANnAsT3dLHCWcsCNzOwpyhW3",
+  "deploymentId": "dpl_47mADN9AH8CKet4gtgh998t9X5fw",
+  "previousDeploymentId": "dpl_22Lwa2Vr6oWA2UE1YWYpeXPqvwxg",
+  "origin": "https://bapmunna-smartthings.vercel.app",
+  "deploymentUrl": "https://bapmunna-smartthings-eyfv44idt-peterjang9296-8249.vercel.app",
+  "readyVerifiedInDashboard": true,
+  "source": "b93c4548fb0b0313602d0756d70f53ce49c7088c",
+  "archive": {
+    "fileCount": 20,
+    "bytes": 549061,
+    "sha256": "04350b4a21b9dc99555a12801a1fce5d41677f98a5e264d6951772c865829ec5",
+    "files": [
+      ".vercelignore",
+      "api/kakao/[...path].mjs",
+      "api/smartthings/[...path].mjs",
+      "package-lock.json",
+      "package.json",
+      "public/connect/bunny.png",
+      "public/connect/connect.mjs",
+      "public/connect/index.html",
+      "public/connect/style.css",
+      "runtime/http-adapter.mjs",
+      "runtime/index.mjs",
+      "runtime/kakao-runtime.mjs",
+      "runtime/kakao-security.mjs",
+      "runtime/kakao-service.mjs",
+      "runtime/kakao-store.mjs",
+      "runtime/security.mjs",
+      "runtime/service.mjs",
+      "runtime/smartthings.mjs",
+      "runtime/store.mjs",
+      "vercel.json"
+    ],
+    "credentialsIncluded": false
+  },
+  "publicChecks": {
+    "at": "2026-11-16T01:22:07.217Z",
+    "origin": "https://bapmunna-smartthings.vercel.app",
+    "deploymentId": "dpl_47mADN9AH8CKet4gtgh998t9X5fw",
+    "passed": 12,
+    "total": 12,
+    "realKakaoLoginVerified": false,
+    "results": [
+      {
+        "name": "kakao-config",
+        "status": 200,
+        "expected": 200,
+        "headers": {
+          "cache-control": "no-store",
+          "content-security-policy": "default-src 'none'; script-src 'self'; connect-src 'self'; style-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+          "referrer-policy": "no-referrer",
+          "x-frame-options": "DENY",
+          "access-control-allow-origin": null
+        },
+        "body": {
+          "enabled": false
+        },
+        "passed": true
+      },
+      {
+        "name": "kakao-config-app",
+        "status": 200,
+        "expected": 200,
+        "headers": {
+          "cache-control": "no-store",
+          "content-security-policy": "default-src 'none'; script-src 'self'; connect-src 'self'; style-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+          "referrer-policy": "no-referrer",
+          "x-frame-options": "DENY",
+          "access-control-allow-origin": "https://impact-series.web.app"
+        },
+        "passed": true
+      },
+      {
+        "name": "kakao-start-disabled",
+        "status": 503,
+        "expected": 503,
+        "headers": {
+          "cache-control": "no-store",
+          "content-security-policy": "default-src 'none'; script-src 'self'; connect-src 'self'; style-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+          "referrer-policy": "no-referrer",
+          "x-frame-options": "DENY",
+          "access-control-allow-origin": null
+        },
+        "passed": true
+      },
+      {
+        "name": "kakao-exchange-disabled",
+        "status": 503,
+        "expected": 503,
+        "headers": {
+          "cache-control": "no-store",
+          "content-security-policy": "default-src 'none'; script-src 'self'; connect-src 'self'; style-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+          "referrer-policy": "no-referrer",
+          "x-frame-options": "DENY",
+          "access-control-allow-origin": "https://impact-series.web.app"
+        },
+        "passed": true
+      },
+      {
+        "name": "kakao-foreign-origin",
+        "status": 403,
+        "expected": 403,
+        "headers": {
+          "cache-control": "no-store",
+          "content-security-policy": "default-src 'none'; script-src 'self'; connect-src 'self'; style-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+          "referrer-policy": "no-referrer",
+          "x-frame-options": "DENY",
+          "access-control-allow-origin": null
+        },
+        "passed": true
+      },
+      {
+        "name": "kakao-approved-preflight",
+        "status": 204,
+        "expected": 204,
+        "headers": {
+          "cache-control": "no-store",
+          "content-security-policy": "default-src 'none'; script-src 'self'; connect-src 'self'; style-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+          "referrer-policy": "no-referrer",
+          "x-frame-options": "DENY",
+          "access-control-allow-origin": "https://impact-series.web.app"
+        },
+        "passed": true
+      },
+      {
+        "name": "kakao-foreign-preflight",
+        "status": 403,
+        "expected": 403,
+        "headers": {
+          "cache-control": "no-store",
+          "content-security-policy": "default-src 'none'; script-src 'self'; connect-src 'self'; style-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+          "referrer-policy": "no-referrer",
+          "x-frame-options": "DENY",
+          "access-control-allow-origin": null
+        },
+        "passed": true
+      },
+      {
+        "name": "smartthings-config",
+        "status": 200,
+        "expected": 200,
+        "headers": {
+          "cache-control": "no-store",
+          "content-security-policy": "default-src 'none'; script-src 'self'; connect-src 'self'; style-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+          "referrer-policy": "no-referrer",
+          "x-frame-options": "DENY",
+          "access-control-allow-origin": null
+        },
+        "passed": true
+      },
+      {
+        "name": "smartthings-unauthenticated",
+        "status": 401,
+        "expected": 401,
+        "headers": {
+          "cache-control": "no-store",
+          "content-security-policy": "default-src 'none'; script-src 'self'; connect-src 'self'; style-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+          "referrer-policy": "no-referrer",
+          "x-frame-options": "DENY",
+          "access-control-allow-origin": null
+        },
+        "passed": true
+      },
+      {
+        "name": "smartthings-unsigned-webhook",
+        "status": 401,
+        "expected": 401,
+        "headers": {
+          "cache-control": "no-store",
+          "content-security-policy": "default-src 'none'; script-src 'self'; connect-src 'self'; style-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+          "referrer-policy": "no-referrer",
+          "x-frame-options": "DENY",
+          "access-control-allow-origin": null
+        },
+        "passed": true
+      },
+      {
+        "name": "cleanup-unauthenticated",
+        "status": 401,
+        "expected": 401,
+        "headers": {
+          "cache-control": "no-store",
+          "content-security-policy": "default-src 'none'; script-src 'self'; connect-src 'self'; style-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+          "referrer-policy": "no-referrer",
+          "x-frame-options": "DENY",
+          "access-control-allow-origin": null
+        },
+        "passed": true
+      },
+      {
+        "name": "connect",
+        "status": 200,
+        "expected": 200,
+        "headers": {
+          "cache-control": "no-store",
+          "content-security-policy": "default-src 'none'; script-src 'self'; connect-src 'self'; style-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+          "referrer-policy": "no-referrer",
+          "x-frame-options": "DENY",
+          "access-control-allow-origin": "*"
+        },
+        "passed": true
+      }
+    ]
+  },
+  "kakao": {
+    "enabled": false,
+    "credentialsConfigured": false,
+    "consoleRegistrationVerified": false,
+    "realUserLoginVerified": false
+  },
+  "scope": {
+    "existingSmartThingsGuardsPreserved": true,
+    "iamChanged": false,
+    "firebaseRulesChanged": false,
+    "billingChanged": false,
+    "identityPlatformEnabled": false
+  },
+  "localChecks": {
+    "report": ".harness/runs/2026-11-16T01-27-22-878Z-28170/report.md",
+    "testsPassed": 490,
+    "failed": 0,
+    "skipped": 0,
+    "publicDownloadIntegrityTests": 2,
+    "independentReview": "no_actionable_findings"
+  }
+}

@@ -76,3 +76,7 @@ node workspaces/bapmunna-final/scripts/publish.mjs rollback
 건강 안내에서 갤럭시 테스트 APK를 받을 수 있다. Firebase Spark의 APK 제한에 따라 바이너리는 `https://github.com/jooji13/bapmunna-downloads/releases/tag/android-0.1.0-test.1`에, 링크·검증 JSON은 기존 Firebase에 둔다. 소스와 키는 공개하지 않는다. `stage.mjs`는 `downloads/android-test.json`의 검증된 파일을 대조하되 APK를 Firebase staging에 복사하지 않는다. 클린 작업본에서는 같은 공개 GitHub 자산을 해시 검증해 재사용한다.
 
 최신 Hosting은 `9c953108d6155e4d`; 다음 staging 기준은 이 작업본 `tmp/impact-final/site/bapmunna`이다. 상세 영수증은 `releases/20261115-public-install.json`. iPhone 설치본·실기기 검증은 완료되지 않았다.
+
+## 2026-11-16 카카오 로그인 경로 게시
+
+위 공개 설치 기능과 카카오 인증 소스를 함께 보존한 `d466af4`를 Hosting `675c7f7210170b44`로 게시했다. 변경 124개 공개 파일과 기존 모든 경로를 확인했다. 서버와 화면은 게시됐지만 카카오 개발자 앱 키·등록 확인이 남아 로그인 버튼은 준비 중이다. 실제 카카오 로그인 성공을 뜻하지 않는다. 최신 영수증은 `releases/20261116-kakao-login.json`, 다음 배포 기준은 이 통합 작업본의 `tmp/impact-final/site/bapmunna`다.

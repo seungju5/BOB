@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "checkedAt": "2026-11-17T03:31:19.589Z",
+  "checkedAt": "2026-11-17T03:42:14.184Z",
   "source": "077233e422f1d7645cdc07b65aab6dff7fad82af",
   "sourceBranch": "codex/consent-feedback-20261116",
   "pushed": true,
@@ -31,9 +31,9 @@
   "backend": {
     "project": "bapmunna-smartthings",
     "origin": "https://bapmunna-smartthings.vercel.app",
-    "newVersionPublished": false,
+    "newVersionPublished": true,
     "previousDeploymentId": "dpl_8RCTuTfvmD4SCSJho4E3YEUGvrBH",
-    "status": "awaiting_vercel_email_identity_verification",
+    "status": "ready_current_production",
     "archive": {
       "fileCount": 24,
       "bytes": 552077,
@@ -68,7 +68,15 @@
     },
     "privateKeyMarkersWereValidationCode": true,
     "actualCredentialsDetected": false,
-    "reviewRejectionResolvedByInspection": true
+    "reviewRejectionResolvedByInspection": true,
+    "deploymentId": "dpl_1pwiU6uoBSLcdLyfWFDCGYisC1zU",
+    "deploymentUrl": "https://bapmunna-smartthings-im10wjbih-peterjang9296-8249.vercel.app",
+    "dashboardUrl": "https://vercel.com/peterjang9296-8249/bapmunna-smartthings/1pwiU6uoBSLcdLyfWFDCGYisC1zU",
+    "identityVerificationCompleted": true,
+    "readyVerifiedInDashboard": true,
+    "currentProductionVerifiedInDashboard": true,
+    "connectionReady": false,
+    "kakaoEnabled": true
   },
   "smartthingsRegistration": {
     "at": "2026-11-16T11:36:16.948Z",
@@ -91,7 +99,22 @@
     "independentReview": "completed; findings fixed; no remaining actionable findings",
     "browser": "synthetic 320/390px select/check/unlink; keyboard consent/button; no horizontal overflow"
   },
-  "publicChecks": {
+  "boundaries": {
+    "actualSmartThingsOAuthVerified": false,
+    "actualPlugAutomaticEventVerified": false,
+    "physicalMobileVerified": false,
+    "businessContractActivated": false,
+    "businessBillingChanged": false,
+    "firebaseBillingChanged": false,
+    "firebaseRulesChanged": false,
+    "iamChanged": false,
+    "kakaoRuntimeChanged": false
+  },
+  "remaining": [
+    "SmartThings Business eligibility/contract and registration update",
+    "Live Samsung consent, plug selection, automatic event, refresh, unlink and multi-household isolation"
+  ],
+  "webAndPreviousBackendChecks": {
     "at": "2026-11-17T03:33:54.134Z",
     "checks": [
       {
@@ -124,20 +147,187 @@
     "backendRelease": "previous deployment; Vercel identity verification pending",
     "actualSmartThingsOAuthVerified": false
   },
-  "boundaries": {
-    "actualSmartThingsOAuthVerified": false,
-    "actualPlugAutomaticEventVerified": false,
-    "physicalMobileVerified": false,
-    "businessContractActivated": false,
-    "businessBillingChanged": false,
-    "firebaseBillingChanged": false,
-    "firebaseRulesChanged": false,
-    "iamChanged": false,
-    "kakaoRuntimeChanged": false
-  },
-  "remaining": [
-    "Vercel existing account email identity verification and final backend publication",
-    "SmartThings Business eligibility/contract and registration update",
-    "Live Samsung consent, plug selection, automatic event, refresh, unlink and multi-household isolation"
-  ]
+  "publicChecks": {
+    "checkedAt": "2026-11-17T03:42:14.184Z",
+    "origin": "https://bapmunna-smartthings.vercel.app",
+    "deploymentId": "dpl_1pwiU6uoBSLcdLyfWFDCGYisC1zU",
+    "passed": 20,
+    "total": 20,
+    "results": [
+      {
+        "name": "smartthings-reject-cross-origin-start",
+        "status": 403,
+        "expected": 403,
+        "passed": true,
+        "cacheControl": "no-store",
+        "frameOptions": "DENY"
+      },
+      {
+        "name": "smartthings-unauthenticated-start",
+        "status": 401,
+        "expected": 401,
+        "passed": true,
+        "cacheControl": "no-store",
+        "frameOptions": "DENY"
+      },
+      {
+        "name": "connect-portal",
+        "status": 200,
+        "expected": 200,
+        "passed": true,
+        "cacheControl": "no-store",
+        "frameOptions": "DENY"
+      },
+      {
+        "name": "connect-module",
+        "status": 200,
+        "expected": 200,
+        "passed": true,
+        "cacheControl": "no-store",
+        "frameOptions": "DENY",
+        "matchesStagedModule": true
+      },
+      {
+        "name": "kakao-config",
+        "status": 200,
+        "expected": 200,
+        "passed": true,
+        "cacheControl": "no-store",
+        "frameOptions": "DENY",
+        "enabled": true
+      },
+      {
+        "name": "kakao-config-app",
+        "status": 200,
+        "expected": 200,
+        "passed": true,
+        "cacheControl": "no-store",
+        "frameOptions": "DENY",
+        "cors": "https://impact-series.web.app"
+      },
+      {
+        "name": "kakao-invalid-start",
+        "status": 400,
+        "expected": 400,
+        "passed": true,
+        "cacheControl": "no-store",
+        "frameOptions": "DENY"
+      },
+      {
+        "name": "kakao-invalid-exchange",
+        "status": 400,
+        "expected": 400,
+        "passed": true,
+        "cacheControl": "no-store",
+        "frameOptions": "DENY"
+      },
+      {
+        "name": "kakao-missing-origin",
+        "status": 403,
+        "expected": 403,
+        "passed": true,
+        "cacheControl": "no-store",
+        "frameOptions": "DENY"
+      },
+      {
+        "name": "kakao-foreign-origin",
+        "status": 403,
+        "expected": 403,
+        "passed": true,
+        "cacheControl": "no-store",
+        "frameOptions": "DENY"
+      },
+      {
+        "name": "kakao-approved-preflight",
+        "status": 204,
+        "expected": 204,
+        "passed": true,
+        "cacheControl": "no-store",
+        "frameOptions": "DENY",
+        "cors": "https://impact-series.web.app"
+      },
+      {
+        "name": "kakao-foreign-preflight",
+        "status": 403,
+        "expected": 403,
+        "passed": true,
+        "cacheControl": "no-store",
+        "frameOptions": "DENY"
+      },
+      {
+        "name": "kakao-invalid-callback",
+        "status": 303,
+        "expected": 303,
+        "passed": true,
+        "cacheControl": "no-store",
+        "frameOptions": "DENY",
+        "fixedErrorRedirectMatches": true
+      },
+      {
+        "name": "smartthings-config",
+        "status": 200,
+        "expected": 200,
+        "passed": true,
+        "cacheControl": "no-store",
+        "frameOptions": "DENY",
+        "enabled": true,
+        "connectionReady": false
+      },
+      {
+        "name": "smartthings-unauthenticated",
+        "status": 401,
+        "expected": 401,
+        "passed": true,
+        "cacheControl": "no-store",
+        "frameOptions": "DENY"
+      },
+      {
+        "name": "smartthings-unsigned-webhook",
+        "status": 401,
+        "expected": 401,
+        "passed": true,
+        "cacheControl": "no-store",
+        "frameOptions": "DENY"
+      },
+      {
+        "name": "cleanup-unauthenticated",
+        "status": 401,
+        "expected": 401,
+        "passed": true,
+        "cacheControl": "no-store",
+        "frameOptions": "DENY"
+      },
+      {
+        "name": "kakao-valid-start",
+        "status": 303,
+        "expected": 303,
+        "passed": true,
+        "cacheControl": "no-store",
+        "frameOptions": "DENY",
+        "authorizationHost": "kauth.kakao.com",
+        "redirectMatches": true,
+        "noExtraScopes": true,
+        "statePresent": true,
+        "secureCookie": true,
+        "httpOnlyCookie": true,
+        "sameSiteLax": true
+      },
+      {
+        "name": "kakao-reject-unknown-query",
+        "status": 400,
+        "expected": 400,
+        "passed": true,
+        "cacheControl": "no-store",
+        "frameOptions": "DENY"
+      },
+      {
+        "name": "kakao-reject-duplicate-flow",
+        "status": 400,
+        "expected": 400,
+        "passed": true,
+        "cacheControl": "no-store",
+        "frameOptions": "DENY"
+      }
+    ]
+  }
 }

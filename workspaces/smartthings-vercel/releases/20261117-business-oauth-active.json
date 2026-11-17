@@ -1,0 +1,265 @@
+{
+  "schemaVersion": 1,
+  "checkedAt": "2026-11-17T03:42:14.184Z",
+  "source": "077233e422f1d7645cdc07b65aab6dff7fad82af",
+  "sourceBranch": "codex/consent-feedback-20261116",
+  "project": "bapmunna-smartthings",
+  "projectId": "prj_oGTlANnAsT3dLHCWcsCNzOwpyhW3",
+  "origin": "https://bapmunna-smartthings.vercel.app",
+  "newVersionPublished": true,
+  "previousDeploymentId": "dpl_8RCTuTfvmD4SCSJho4E3YEUGvrBH",
+  "status": "ready_current_production",
+  "archive": {
+    "fileCount": 24,
+    "bytes": 552077,
+    "sha256": "150a068ec306df8f78a77d86ab649e5c0b8895c65c913b841ba8a652f9b990b0",
+    "files": [
+      ".vercelignore",
+      "api/kakao/callback.mjs",
+      "api/kakao/config.mjs",
+      "api/kakao/exchange.mjs",
+      "api/kakao/start.mjs",
+      "api/smartthings/[...path].mjs",
+      "package-lock.json",
+      "package.json",
+      "public/connect/bunny.png",
+      "public/connect/connect.mjs",
+      "public/connect/index.html",
+      "public/connect/style.css",
+      "runtime/http-adapter.mjs",
+      "runtime/index.mjs",
+      "runtime/kakao-handler.mjs",
+      "runtime/kakao-runtime.mjs",
+      "runtime/kakao-security.mjs",
+      "runtime/kakao-service.mjs",
+      "runtime/kakao-store.mjs",
+      "runtime/security.mjs",
+      "runtime/service.mjs",
+      "runtime/smartthings.mjs",
+      "runtime/store.mjs",
+      "vercel.json"
+    ],
+    "credentialsIncluded": false
+  },
+  "privateKeyMarkersWereValidationCode": true,
+  "actualCredentialsDetected": false,
+  "reviewRejectionResolvedByInspection": true,
+  "deploymentId": "dpl_1pwiU6uoBSLcdLyfWFDCGYisC1zU",
+  "deploymentUrl": "https://bapmunna-smartthings-im10wjbih-peterjang9296-8249.vercel.app",
+  "dashboardUrl": "https://vercel.com/peterjang9296-8249/bapmunna-smartthings/1pwiU6uoBSLcdLyfWFDCGYisC1zU",
+  "identityVerificationCompleted": true,
+  "readyVerifiedInDashboard": true,
+  "currentProductionVerifiedInDashboard": true,
+  "connectionReady": false,
+  "kakaoEnabled": true,
+  "publicChecks": {
+    "checkedAt": "2026-11-17T03:42:14.184Z",
+    "origin": "https://bapmunna-smartthings.vercel.app",
+    "deploymentId": "dpl_1pwiU6uoBSLcdLyfWFDCGYisC1zU",
+    "passed": 20,
+    "total": 20,
+    "results": [
+      {
+        "name": "smartthings-reject-cross-origin-start",
+        "status": 403,
+        "expected": 403,
+        "passed": true,
+        "cacheControl": "no-store",
+        "frameOptions": "DENY"
+      },
+      {
+        "name": "smartthings-unauthenticated-start",
+        "status": 401,
+        "expected": 401,
+        "passed": true,
+        "cacheControl": "no-store",
+        "frameOptions": "DENY"
+      },
+      {
+        "name": "connect-portal",
+        "status": 200,
+        "expected": 200,
+        "passed": true,
+        "cacheControl": "no-store",
+        "frameOptions": "DENY"
+      },
+      {
+        "name": "connect-module",
+        "status": 200,
+        "expected": 200,
+        "passed": true,
+        "cacheControl": "no-store",
+        "frameOptions": "DENY",
+        "matchesStagedModule": true
+      },
+      {
+        "name": "kakao-config",
+        "status": 200,
+        "expected": 200,
+        "passed": true,
+        "cacheControl": "no-store",
+        "frameOptions": "DENY",
+        "enabled": true
+      },
+      {
+        "name": "kakao-config-app",
+        "status": 200,
+        "expected": 200,
+        "passed": true,
+        "cacheControl": "no-store",
+        "frameOptions": "DENY",
+        "cors": "https://impact-series.web.app"
+      },
+      {
+        "name": "kakao-invalid-start",
+        "status": 400,
+        "expected": 400,
+        "passed": true,
+        "cacheControl": "no-store",
+        "frameOptions": "DENY"
+      },
+      {
+        "name": "kakao-invalid-exchange",
+        "status": 400,
+        "expected": 400,
+        "passed": true,
+        "cacheControl": "no-store",
+        "frameOptions": "DENY"
+      },
+      {
+        "name": "kakao-missing-origin",
+        "status": 403,
+        "expected": 403,
+        "passed": true,
+        "cacheControl": "no-store",
+        "frameOptions": "DENY"
+      },
+      {
+        "name": "kakao-foreign-origin",
+        "status": 403,
+        "expected": 403,
+        "passed": true,
+        "cacheControl": "no-store",
+        "frameOptions": "DENY"
+      },
+      {
+        "name": "kakao-approved-preflight",
+        "status": 204,
+        "expected": 204,
+        "passed": true,
+        "cacheControl": "no-store",
+        "frameOptions": "DENY",
+        "cors": "https://impact-series.web.app"
+      },
+      {
+        "name": "kakao-foreign-preflight",
+        "status": 403,
+        "expected": 403,
+        "passed": true,
+        "cacheControl": "no-store",
+        "frameOptions": "DENY"
+      },
+      {
+        "name": "kakao-invalid-callback",
+        "status": 303,
+        "expected": 303,
+        "passed": true,
+        "cacheControl": "no-store",
+        "frameOptions": "DENY",
+        "fixedErrorRedirectMatches": true
+      },
+      {
+        "name": "smartthings-config",
+        "status": 200,
+        "expected": 200,
+        "passed": true,
+        "cacheControl": "no-store",
+        "frameOptions": "DENY",
+        "enabled": true,
+        "connectionReady": false
+      },
+      {
+        "name": "smartthings-unauthenticated",
+        "status": 401,
+        "expected": 401,
+        "passed": true,
+        "cacheControl": "no-store",
+        "frameOptions": "DENY"
+      },
+      {
+        "name": "smartthings-unsigned-webhook",
+        "status": 401,
+        "expected": 401,
+        "passed": true,
+        "cacheControl": "no-store",
+        "frameOptions": "DENY"
+      },
+      {
+        "name": "cleanup-unauthenticated",
+        "status": 401,
+        "expected": 401,
+        "passed": true,
+        "cacheControl": "no-store",
+        "frameOptions": "DENY"
+      },
+      {
+        "name": "kakao-valid-start",
+        "status": 303,
+        "expected": 303,
+        "passed": true,
+        "cacheControl": "no-store",
+        "frameOptions": "DENY",
+        "authorizationHost": "kauth.kakao.com",
+        "redirectMatches": true,
+        "noExtraScopes": true,
+        "statePresent": true,
+        "secureCookie": true,
+        "httpOnlyCookie": true,
+        "sameSiteLax": true
+      },
+      {
+        "name": "kakao-reject-unknown-query",
+        "status": 400,
+        "expected": 400,
+        "passed": true,
+        "cacheControl": "no-store",
+        "frameOptions": "DENY"
+      },
+      {
+        "name": "kakao-reject-duplicate-flow",
+        "status": 400,
+        "expected": 400,
+        "passed": true,
+        "cacheControl": "no-store",
+        "frameOptions": "DENY"
+      }
+    ]
+  },
+  "hostingVersion": "32111bb72b9a0a15",
+  "localChecks": {
+    "report": ".harness/runs/2026-11-16T11-42-23-873Z-62716/report.md",
+    "harnessTests": 528,
+    "sharedViewAndPopupTests": 52,
+    "failed": 0,
+    "skipped": 0,
+    "staticRoutes": 18,
+    "independentReview": "completed; findings fixed; no remaining actionable findings",
+    "browser": "synthetic 320/390px select/check/unlink; keyboard consent/button; no horizontal overflow"
+  },
+  "boundaries": {
+    "actualSmartThingsOAuthVerified": false,
+    "actualPlugAutomaticEventVerified": false,
+    "physicalMobileVerified": false,
+    "businessContractActivated": false,
+    "businessBillingChanged": false,
+    "firebaseBillingChanged": false,
+    "firebaseRulesChanged": false,
+    "iamChanged": false,
+    "kakaoRuntimeChanged": false
+  },
+  "remaining": [
+    "SmartThings Business eligibility/contract and registration update",
+    "Live Samsung consent, plug selection, automatic event, refresh, unlink and multi-household isolation"
+  ],
+  "probeCorrection": "Initial additional probe expected 401 for cross-origin /start; service.mjs explicitly rejects that origin with 403 before auth. Final checks cover cross-origin 403 and same-origin unauthenticated 401 separately; runtime code unchanged."
+}

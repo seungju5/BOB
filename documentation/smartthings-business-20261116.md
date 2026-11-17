@@ -63,8 +63,8 @@ Business 문의를 발송하거나 결제/계약을 수락하지 않았다. Fire
 
 - 소스 `077233e422f1d7645cdc07b65aab6dff7fad82af`를 기존 `codex/consent-feedback-20261116` 브랜치에 푸시했다.
 - Hosting `32111bb72b9a0a15` 게시. 변경 126개 공개 바이트 일치·기존 경로 누락 0·기존 파일 2,675개 보존·Spark 유지. `/bapmunna/app/connect/`는 비로그인 시 기존 Google/카카오 로그인 화면으로 이동한다. 공개 브라우저 오류/경고 0.
-- Vercel 24개 파일 ZIP은 업로드됐으나 **기존 계정의 이메일 본인 확인 대기**로 최종 서버 게시가 끝나지 않았다. 운영 서버는 이전 배포 `dpl_8RCTuTfvmD4SCSJho4E3YEUGvrBH`다. 새 토큰 유지관리 코드를 운영 중이라고 보고하지 않는다.
+- Vercel 24개 파일 ZIP을 게시했다. 사용자의 인증 코드 재전송 요청 후 같은 창에서 본인 확인이 완료되어 **`dpl_1pwiU6uoBSLcdLyfWFDCGYisC1zU`가 Ready·현재 Production**인 것을 확인했다. 운영 도메인은 `https://bapmunna-smartthings.vercel.app`이며 기존 Secret·권한·과금 설정을 유지했다.
 - 자동 승인 검토가 PRIVATE KEY 문자열을 우려해 서버 게시를 차단했으나, 두 곳 모두 환경변수의 키 헤더를 검사하는 코드임을 확인했다. ZIP 21개 코드·자산이 커밋과 일치하고 나머지는 생성된 의존성/제외 목록이다. 실제 자격 증명 없음 확인 후 같은 게시 재시도는 허용됐다. 그다음 Vercel 자체 본인 확인이 표시됐다.
-- 신규 화면은 이전 서버가 `connectionReady`를 제공하지 않아도 연결 시작을 닫는다. 공개 카카오 config는 기존처럼 `enabled:true`다. 실제 Samsung OAuth는 Business 단계 때문에 미검증이다.
+- 새 서버의 공개 검사 **20/20 통과**. SmartThings config는 `enabled:true`, `connectionReady:false`이고 카카오 config는 기존처럼 `enabled:true`다. 연결 portal 모듈은 게시한 소스와 바이트가 일치한다. 삼성 시작 원점 제한(다른 원점 403)·동일 원점 무인증(401), 서명 없는 webhook/청소 요청 거부, 카카오 정상 시작 URL 및 잘못된 교환/원점/쿼리 차단을 확인했다. 실제 Samsung OAuth·자동 수신·운영 갱신은 Business 단계 때문에 미검증이다.
 
-영수증: `workspaces/bapmunna-final/releases/20261117-business-oauth.json`. 서버 게시 후에는 해당 대기 상태와 실제 배포 ID를 갱신해야 한다.
+영수증: `workspaces/bapmunna-final/releases/20261117-business-oauth.json`, `workspaces/smartthings-vercel/releases/20261117-business-oauth-active.json`. Vercel 인증 대기는 해소됐고 삼성 Business 활성화·실기기 검증은 계속 남아 있다.

@@ -408,5 +408,5 @@ SmartThings frontend API origin은 빈 값이며 아직 실제 연결 준비 완
 - [x] 320/390px 합성 동선, 실제 로컬 Firestore 검사·독립 검토, 자동/수동 수신 구분
 - [x] 기존 삼성 등록 재조회 및 주소 변경 시도 — 유료 플랜 필요 안내로 거절됨을 확인
 - [x] 최종 코드 077233e 푸시·기존 웹 32111bb72b9a0a15 게시·공개126파일 일치·경로누락0 확인
-- [ ] 서버 게시 — 검토 ZIP 업로드 완료, Vercel 이메일 본인 확인 대기
+- [x] 서버 dpl_1pwiU6uoBSLcdLyfWFDCGYisC1zU 게시 — 본인 확인 완료·Ready/현재 Production·공개20개 검사 통과
 - [ ] Business 이용 자격 확정·정확한 callback/webhook 등록·실제 OAuth/자동 수신/갱신/해제 검증

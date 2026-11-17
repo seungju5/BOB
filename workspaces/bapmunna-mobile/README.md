@@ -1,11 +1,12 @@
-# 밥뭇나 로컬 건강 연결 앱
+# 밥뭇나 건강 연결·걷기 앱
 
-기존 밥뭇나의 `/health/` 화면과 승인된 디자인을 담는 Android/iPhone 설치형 모듈입니다. 웹의 **로그인 → 튜토리얼 → 홈 → 건강 연결 선택** 순서는 그대로 두고, 설치형 앱은 본인 휴대폰의 오늘 걸음수만 보여줍니다. Firebase 운영 계정·페어링·Supabase 로그인을 네이티브 원점으로 옮기지 않습니다.
+기존 밥뭇나의 `/health/` 화면과 승인된 디자인을 담는 Android/iPhone 설치형 모듈입니다. 웹의 **로그인 → 튜토리얼 → 홈 → 건강 연결 선택** 순서는 그대로 두고, 설치형 앱은 건강 걸음수·선택한 전체 사용자 랭킹·직접 정한 산책 알림을 제공합니다. Firebase 운영 계정·Supabase 로그인을 네이티브 원점으로 옮기지 않습니다.
 
 - Android: Samsung Health가 Health Connect로 공유한 `StepsRecord`만 읽습니다. `com.sec.android.app.shealth` 출처 필터와 `READ_STEPS` 한 권한을 사용합니다.
 - iPhone: Apple 건강(HealthKit)의 `stepCount`를 읽기만 합니다. 읽기 거부와 기록 없음은 구분할 수 없어 모두 정직하게 `no-data`로 표시합니다.
-- 건강 숫자를 서버·가족에게 보내거나 저장하지 않습니다. 로컬 동의 플래그만 보관합니다. 연결 해제는 이 앱의 읽기를 멈추며 OS 건강 공유 권한을 철회하지 않습니다.
+- 기본 건강 조회는 로컬입니다. 별도 랭킹 참여·이 휴대폰의 별명 확인·공유 동의를 완료한 경우에만 **한국 시간 오늘 총걸음수**를 서버에 보내 전체 동의한 참여자끼리 비교합니다. 원시 건강 기록·다른 건강 항목·기기 토큰은 JS로 보내지 않습니다. 연결 해제는 읽기·추가 업로드를 멈추며 OS 건강 공유 권한을 철회하지 않습니다.
 - 브라우저에서 건강 자료를 읽거나 연동 완료·걸음수를 예시 숫자로 만들지 않습니다.
+- 산책 알림은 기본 꺼짐이며 직접 고른 하루 최대 4개 시각에 OS 로컬 알림으로 동작합니다. 실제 식사를 감지한 알림이나 혈당 측정 기능이 아닙니다. 집중 모드·절전·강제 종료 등의 영향을 받습니다.
 
 ## 준비와 실행
 
@@ -37,7 +38,9 @@ https://impact-series.web.app/bapmunna/app/health/
 
 Capacitor는 extensionless 경로에 `index.html`을 제공하므로, **기존 `/health/index.html`을 루트 index에도 동일하게 복사**합니다. 다른 로그인·계정·privacy HTML은 제외합니다. 개인정보 설명은 건강 화면 안에 표시하며 `/health/privacy`는 웹 전용입니다. 네이티브 새 페이지를 추가하려면 라우터·HTML·RSC·CSP 전략도 함께 바꿔야 합니다.
 
-건강 HTML·정적 청크·실제 public 자산·manifest만 가져오며 서버 코드·환경 파일·source map은 제외합니다. CSP는 로컬 스크립트와 정확한 inline hash만 허용하고 `connect-src 'self'`로 외부 API/telemetry를 막습니다. 원격 페이지·iframe·원격 스크립트·서비스워커를 네이티브 브리지에 넣지 않습니다.
+건강 HTML(그 안의 걷기 패널 포함)·정적 청크·실제 public 자산·manifest만 가져오며 서버 코드·환경 파일·source map은 제외합니다. CSP는 로컬 스크립트와 정확한 inline hash만 허용하고 `connect-src 'self'`로 **웹 JS**의 외부 API/telemetry를 막습니다. 선택한 랭킹의 HTTP는 네이티브 코드 안에서 고정 서버 `https://bapmunna-smartthings.vercel.app/api/walking/`로만 수행하며 네이티브 보안 저장소의 토큰은 JS가 읽을 수 없습니다. 원격 페이지·iframe·원격 스크립트·서비스워커를 네이티브 브리지에 넣지 않습니다.
+
+랭킹은 웹에서 참여 → 8자리 코드 → 휴대폰에서 별명 확인 → 전체 공개 동의 → KST 오늘 걸음 전송 순서입니다. 웹 계정은 시스템 브라우저의 고정 `/bapmunna/app/walking/` 주소로 엽니다. 오프라인 연결 해제는 안전하게 **해제 대기**로 남고 재시도되며 그동안 업로드를 차단합니다. 별명과 이미 공개된 오늘 합계까지 지우려면 웹에서 랭킹 참여를 그만합니다. 상세 계약·저장 방식은 [PhoneSteps README](../../packages/phone-steps/README.md)에 있습니다.
 
 런처는 기존 `public/brand/rice-logo.png`, 공통 시작은 원본 `public/brand/bunny.png`입니다. 원본을 수정하지 않고 플랫폼 규격의 크기·여백만 변환합니다. `brand-assets.json`에 원본 SHA256을 기록합니다. 로고가 160px이므로 대형 스토어 이미지용 고해상도 원본은 별도 전달 항목입니다.
 

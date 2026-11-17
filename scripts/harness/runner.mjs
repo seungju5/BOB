@@ -82,6 +82,12 @@ export function localEnv({allowEmulator = false} = {}) {
     const match = /^(?:127\.0\.0\.1|localhost):(\d{1,5})$/.exec(host);
     if (!match || Number(match[1]) < 1 || Number(match[1]) > 65535) throw new Error('Harness emulator checks require a loopback Firestore host and valid port.');
     env.FIRESTORE_EMULATOR_HOST = host;
+    const authHost = process.env.FIREBASE_AUTH_EMULATOR_HOST;
+    if (authHost) {
+      const authMatch = /^(?:127\.0\.0\.1|localhost):(\d{1,5})$/.exec(authHost);
+      if (!authMatch || Number(authMatch[1]) < 1 || Number(authMatch[1]) > 65535) throw new Error('Harness emulator checks require a loopback Auth host and valid port.');
+      env.FIREBASE_AUTH_EMULATOR_HOST = authHost;
+    }
   }
   delete env.FORCE_COLOR;
   return env;

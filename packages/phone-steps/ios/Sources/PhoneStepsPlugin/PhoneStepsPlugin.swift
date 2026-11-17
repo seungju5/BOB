@@ -13,7 +13,17 @@ public final class PhoneStepsPlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "readToday", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "disconnect", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "openSettings", returnType: CAPPluginReturnPromise),
-        CAPPluginMethod(name: "openWebApp", returnType: CAPPluginReturnPromise)
+        CAPPluginMethod(name: "openWebApp", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "openWalkingWebApp", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "readRankingToday", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "rankingStatus", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "rankingLink", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "rankingConfirm", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "rankingSync", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "rankingBoard", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "rankingDisconnect", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "walkReminderStatus", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "configureWalkReminders", returnType: CAPPluginReturnPromise)
     ]
 
     private lazy var store = HKHealthStore()
@@ -24,6 +34,36 @@ public final class PhoneStepsPlugin: CAPPlugin, CAPBridgedPlugin {
     private var authorizationPending = false
     private var queries: [UUID: (HKQuery, CAPPluginCall)] = [:]
     private var resumeObserver: NSObjectProtocol?
+    @MainActor private lazy var walking = WalkingNative(healthEnabled:{ [weak self] in
+        guard let self else { return false }; return self.defaults.bool(forKey:self.enabledKey) && self.defaults.bool(forKey:self.requestedKey)
+    },healthRevision:{ [weak self] in self?.generation ?? 0 })
+    @MainActor private lazy var walkReminders = WalkReminderCenter()
+
+    private func walkingCall(_ call: CAPPluginCall, operation: @escaping @MainActor () async throws -> JSObject) {
+        Task { @MainActor in
+            guard self.trusted(call) else { return }
+            do { call.resolve(try await operation()) }
+            catch let failure as WalkingNativeError { call.reject("연결 상태를 확인해 주세요.",failure.code) }
+            catch { call.reject("잠시 후 다시 확인해 주세요.","walking_unavailable") }
+        }
+    }
+    @objc public func readRankingToday(_ call: CAPPluginCall) { walkingCall(call) { try await self.walking.readToday() } }
+    @objc public func rankingStatus(_ call: CAPPluginCall) { walkingCall(call) { try self.walking.status() } }
+    @objc public func rankingLink(_ call: CAPPluginCall) { walkingCall(call) { try await self.walking.link(code:call.getString("code") ?? "") } }
+    @objc public func rankingConfirm(_ call: CAPPluginCall) { walkingCall(call) { try await self.walking.confirm(consentVersion:call.getString("consentVersion") ?? "",share:call.getBool("shareTodaySteps") == true) } }
+    @objc public func rankingSync(_ call: CAPPluginCall) { walkingCall(call) { try await self.walking.sync() } }
+    @objc public func rankingBoard(_ call: CAPPluginCall) { walkingCall(call) { try await self.walking.board() } }
+    @objc public func rankingDisconnect(_ call: CAPPluginCall) { walkingCall(call) { try await self.walking.disconnect(); return [:] } }
+    @objc public func walkReminderStatus(_ call: CAPPluginCall) { walkingCall(call) { await self.walkReminders.status() } }
+    @objc public func configureWalkReminders(_ call: CAPPluginCall) { walkingCall(call) {
+        guard let times = call.getArray("times",String.self) else { throw WalkingNativeError(code:"invalid_reminder_times") }
+        return try await self.walkReminders.configure(enabled:call.getBool("enabled") == true,times:times,glucose:call.getBool("bloodSugarReminder") == true)
+    } }
+    @objc public func openWalkingWebApp(_ call: CAPPluginCall) { walkingCall(call) {
+        guard let url = URL(string:"https://impact-series.web.app/bapmunna/app/walking/") else { throw WalkingNativeError(code:"invalid_request") }
+        let opened = await UIApplication.shared.open(url)
+        guard opened else { throw WalkingNativeError(code:"browser_unavailable") }; return [:]
+    } }
 
     public override func load() {
         resumeObserver = NotificationCenter.default.addObserver(
@@ -156,7 +196,11 @@ public final class PhoneStepsPlugin: CAPPlugin, CAPBridgedPlugin {
             self.defaults.removeObject(forKey: self.requestedKey)
             self.cancelQueries()
             // Apple's authorization and health store remain under the user's control.
-            call.resolve(self.snapshot("not-connected"))
+            Task { @MainActor in
+                // Offline revoke stays in Keychain as a barrier; no later upload can resume.
+                try? await self.walking.disconnect()
+                call.resolve(self.snapshot("not-connected"))
+            }
         }
     }
 
@@ -236,8 +280,8 @@ public final class PhoneStepsPlugin: CAPPlugin, CAPBridgedPlugin {
 
     private func snapshot(_ status: String, count: Int64? = nil, queried: Bool = false, reason: String? = nil, day: String? = nil, zone: String? = nil) -> JSObject {
         let now = Date()
-        let serializedCount: Any = count.map { NSNumber(value: $0) as Any } ?? NSNull()
-        let updatedAt: Any = queried ? ISO8601DateFormatter().string(from: now) as Any : NSNull()
+        let serializedCount: JSValue = count.map { NSNumber(value: $0) as JSValue } ?? NSNull()
+        let updatedAt: JSValue = queried ? ISO8601DateFormatter().string(from: now) as JSValue : NSNull()
         var result: JSObject = [
             "schemaVersion": 1,
             "status": status,

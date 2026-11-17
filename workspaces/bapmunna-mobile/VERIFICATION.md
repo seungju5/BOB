@@ -1,4 +1,25 @@
-# 현재 검증 — 2026-11-15
+# 현재 검증 — 2026-11-17 걷기 랭킹·산책 알림
+
+이번 소스는 건강 조회에 더해 **선택한 전체 사용자 랭킹 공유**와 **기본 꺼짐인 로컬 알림**을 추가한다. 이전 ‘로컬 조회 전용’ 설명은 아래 과거 릴리스에만 해당한다. Android 버전은 `versionCode 3 / 0.2.0-test.1`이다.
+
+| 확인 | 실제 결과와 범위 |
+| --- | --- |
+| Android Kotlin/Java | 기존 승인 SDK/JDK와 복제한 Gradle 캐시로 `--offline :app:compileReleaseJavaWithJavac :bapmunna-phone-steps:compileReleaseKotlin` 성공. 최종 재검사 56 tasks 중 수정된 4개 실행. 공유 node_modules의 빌드 산출물은 host `.local/native-build/`로 분리 |
+| PhoneSteps 플러그인 | 5개 통과, skip 0. 실제 JDK KST/DST/자정·no-data와 0 구분·알림 시간 계산·초기 미연결과 조회 중 철회 구분, 네트워크/저장 없는 웹 fallback, 실제 Capacitor JSValue 구현을 사용한 macOS Swift 응답 필터 검사 |
+| 모바일 셸 | 13개 통과, skip 0. 링크 허용 경계, copied bundle 일치, CSP, manifest 자산, OS 건강 권한 설명·Apple 수집 선언 회귀 |
+| 웹 번들 | 빈 basePath의 Next static export 성공, `/health/`와 정적 자산 78파일 prepare, Android/iOS cap sync 성공. 최종 웹 변경 후에는 다시 export → prepare → sync가 필요 |
+| Swift / plist | 전체 플러그인 Swift 문법 parse 성공, Info.plist·PrivacyInfo.xcprivacy lint 성공. 순수 `WalkingPayload`는 실제 Capacitor JSValue/coercion 소스로 macOS compile·실행 성공 |
+| 미실행 | iOS 앱 전체 compile·서명·IPA(이 Mac에 Xcode 없음), 실제 휴대폰 권한/HealthKit·Samsung Health 합계/Keychain·Keystore/실제 OS 알림/재부팅/오프라인 해제·실기기 서버 왕복. 위 소스 검사는 이를 증명하지 않음 |
+
+토큰은 Keystore 암호화 저장/Keychain에 남고 JS에는 전달하지 않는다. 8자리 코드 교환은 미확정 상태이며 별명 확인·별도 공유 동의 전 업로드가 없다. 해제는 서버 응답 전부터 영속 대기 장벽으로 추가 업로드를 막는다. 정상적인 최초 건강 미연결·권한 없음은 `ok:false`로 남아 순위판 조회를 계속하고, 조회 도중 동의 변경은 stale로 거절한다. 응답은 공개 필드만 통과하며 빈 기록을 0으로 바꾸지 않는다.
+
+알림은 직접 고른 휴대폰 시각(최대4개)의 OS 로컬 일정이다. Android는 inexact alarm과 재부팅/시간대 변경 재계산, iOS는 반복 calendar trigger를 쓴다. 실제 식사를 감지하거나 혈당을 측정했다고 말하지 않는다. 집중 모드·배터리 최적화·강제 종료·알림 설정에 따른 지연/미표시는 실기기 확인 항목이다.
+
+이 절의 담당 작업에서는 새 서명키 발급·서명·배포·스토어 제출을 수행하지 않았다. 최종 공개 APK와 배포 여부는 부모 작업의 별도 릴리스 증거로 확인한다.
+
+---
+
+# 이전 검증 — 2026-11-15
 
 이번 변경은 기존 앱 전체 셸에서 **로컬 /health/ 화면만 제공하는 건강 연결 모듈**로 범위를 정리했다. 아래 2026-11-14 기록은 과거 상태이며, 현재 완료·미완료는 이 절과 산출물 evidence.json을 기준으로 한다.
 

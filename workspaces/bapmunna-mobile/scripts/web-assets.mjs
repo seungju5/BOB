@@ -40,8 +40,9 @@ export function protectHtml(html, documentPath = 'index.html') {
     }
     if (!source && match[2]) hashes.push(`'sha256-${createHash('sha256').update(match[2]).digest('base64')}'`);
   }
-  // The standalone health module reads native stores only. Remote API/telemetry,
-  // images, frames and workers are blocked; web return uses the native fixed URL.
+  // JS remains local-only. Opted-in ranking transport is implemented by native
+  // code to one fixed backend, with a device token that never reaches JS. Remote
+  // web API/telemetry, frames and workers remain blocked by this CSP.
   const policy = [
     "default-src 'self'", `script-src 'self' ${[...new Set(hashes)].join(' ')}`,
     "style-src 'self' 'unsafe-inline'", "img-src 'self' data: blob:",

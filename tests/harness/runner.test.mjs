@@ -100,6 +100,19 @@ test('unit environment cannot accidentally use ambient emulator credentials', ()
   finally { if (before === undefined) delete process.env.FIRESTORE_EMULATOR_HOST; else process.env.FIRESTORE_EMULATOR_HOST = before; }
 });
 
+test('Auth emulator forwarding requires explicit integration opt-in and a loopback host', () => {
+  const keys=['BAPMUNNA_HARNESS_EMULATOR','FIRESTORE_EMULATOR_HOST','FIREBASE_AUTH_EMULATOR_HOST'];
+  const before=Object.fromEntries(keys.map(key=>[key,process.env[key]]));
+  try {
+    process.env.BAPMUNNA_HARNESS_EMULATOR='1';process.env.FIRESTORE_EMULATOR_HOST='127.0.0.1:18480';process.env.FIREBASE_AUTH_EMULATOR_HOST='127.0.0.1:18499';
+    assert.equal(localEnv().FIREBASE_AUTH_EMULATOR_HOST,undefined);
+    assert.equal(localEnv({allowEmulator:true}).FIREBASE_AUTH_EMULATOR_HOST,'127.0.0.1:18499');
+    for(const host of ['remote.example:9099','127.0.0.1:0','127.0.0.1:65536','https://localhost:9099']){
+      process.env.FIREBASE_AUTH_EMULATOR_HOST=host;assert.throws(()=>localEnv({allowEmulator:true}),/loopback Auth/);
+    }
+  } finally {for(const key of keys){if(before[key]===undefined)delete process.env[key];else process.env[key]=before[key];}}
+});
+
 test('explicit emulator opt-in is scoped to integration checks and strips credentials', () => {
   const keys = ['BAPMUNNA_HARNESS_EMULATOR', 'FIRESTORE_EMULATOR_HOST', 'GOOGLE_APPLICATION_CREDENTIALS'];
   const before = Object.fromEntries(keys.map(key => [key, process.env[key]]));

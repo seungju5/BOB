@@ -1,8 +1,8 @@
 /** Public routes carry navigation only, never account or health data. */
 export const HEALTH_WEB_URL = "https://impact-series.web.app/bapmunna/app/health/";
 export const HEALTH_APP_URL = "bapmunna://health";
-export const HEALTH_ANDROID_APK_URL = "https://github.com/jooji13/bapmunna-downloads/releases/download/android-0.1.0-test.1/bapmunna-health-0.1.0-test.1.apk";
-export const HEALTH_ANDROID_RELEASE_URL = "https://impact-series.web.app/bapmunna/app/downloads/20261115/release.json";
+export const HEALTH_ANDROID_APK_URL = "https://github.com/jooji13/bapmunna-downloads/releases/download/android-0.2.0-test.1/bapmunna-health-0.2.0-test.1.apk";
+export const HEALTH_ANDROID_RELEASE_URL = "https://impact-series.web.app/bapmunna/app/downloads/20261117/release.json";
 
 /** A deliberate tap opens the installed app; absence never means connected. */
 export function healthAppLink(platform: "ios" | "android"): string {

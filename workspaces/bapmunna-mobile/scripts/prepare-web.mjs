@@ -74,7 +74,9 @@ await writeFile(path.join(destination, 'native-build.json'), `${JSON.stringify({
   source: path.relative(repo, source), preparedAt: new Date().toISOString(),
   sourceIndexSha256: createHash('sha256').update(index).digest('hex'),
   htmlPages: pending.filter(entry => entry.html !== null).length, webFiles: pending.length,
-  ui: 'existing-health-route', edition: 'local-only-health', entryPath: '/health/',
-  auth: 'external-production-web-only', healthDataUpload: false,
+  ui: 'existing-health-route', edition: 'opt-in-walking', entryPath: '/health/',
+  auth: 'external-production-web-only', healthDataUpload: 'explicit-ranking-consent-only',
+  nativeRankingOrigin: 'https://bapmunna-smartthings.vercel.app',
+  reminderScheduling: 'device-local-opt-in',
 }, null, 2)}\n`);
 console.log(`Prepared ${pending.length} allowlisted original app files in the local native bundle.`);

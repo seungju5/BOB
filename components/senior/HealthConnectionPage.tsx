@@ -10,6 +10,7 @@ import { healthAppLink } from "@/lib/mobile/links";
 import { PhoneStepsCard } from "./PhoneStepsCard";
 import { HealthPrivacyContent } from "./HealthPrivacyContent";
 import { HealthInstallGuide } from "./HealthInstallGuide";
+import { NativeWalkingPanel } from '@/components/walking/NativeWalkingPanel';
 import "./senior-home.css";
 import "./health-guide.css";
 
@@ -32,7 +33,7 @@ export function HealthConnectionPage() {
       <h1 className="text-[30px] leading-snug font-extrabold text-cocoa">오늘의 걸음도<br />함께 챙겨요</h1>
       <Mascot className="h-[96px] w-[96px] shrink-0" />
     </div>
-    <p className="mt-4 text-2xl leading-relaxed text-muted">내 휴대폰의 걸음수만 확인해요.<br />가족에게 전송하지 않아요.</p>
+    <p className="mt-4 text-2xl leading-relaxed text-muted">내 휴대폰의 오늘 걸음을 확인해요.<br />랭킹 공유는 따로 선택할 수 있어요.</p>
     {native ? <div className="mt-6"><PhoneStepsCard demo={false} localOnly /></div> : <>
       <p className="mt-6 rounded-3xl bg-butter-soft p-5 text-2xl leading-relaxed text-cocoa">웹에서는 건강 기록을 읽을 수 없어요. 휴대폰에 맞는 테스트 방법을 아래에서 확인해 주세요.</p>
       <fieldset className="mt-6">
@@ -56,6 +57,7 @@ export function HealthConnectionPage() {
       <p className="mt-4 text-2xl leading-relaxed text-muted">웹을 홈 화면에 추가하는 것만으로는 건강 앱이 연결되지 않아요.</p>
       </> : null}
     </>}
+    {native ? <NativeWalkingPanel/> : <Link href="/walking" className="mt-5 flex min-h-16 items-center justify-center rounded-full border-2 border-line px-4 py-3 text-center text-2xl font-bold text-cocoa">산책 알림·걸음수 랭킹 안내</Link>}
     {native || phone === "android" ? <details className="mt-5 text-2xl leading-relaxed text-muted">
       <summary className="min-h-12 cursor-pointer py-2 font-bold text-cocoa">기록이 보이지 않을 때</summary>
       <p className="mt-3">{native && Capacitor.getPlatform() === "ios" ? "건강 앱에서 밥뭇나의 걸음수 읽기를 허용해 주세요." : "삼성 헬스의 걸음수 공유와 밥뭇나의 읽기 권한을 모두 확인해 주세요."}</p>

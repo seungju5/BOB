@@ -89,7 +89,8 @@ function LivePhoneStepsCard({ localOnly }: { localOnly: boolean }) {
     {settingsError ? <p role="alert" className="mt-3 text-2xl text-blush-deep">설정을 열지 못했어요. 건강 앱에서 밥뭇나의 걸음수 읽기 권한을 확인해 주세요.</p> : null}
     <details className="mt-3 text-2xl text-muted">
       <summary className="min-h-12 cursor-pointer py-2 underline underline-offset-4">걸음수 이용 안내</summary>
-      <p className="mt-2">동의하시면 Apple 건강 또는 삼성 헬스의 오늘 걸음수만 읽어요. 서버에 저장하거나 가족에게 보내지 않아요.</p>
+      <p className="mt-2">동의하시면 Apple 건강 또는 삼성 헬스의 오늘 걸음수를 이 휴대폰에서 읽어요. 읽기 연결만으로는 서버에 보내지 않아요.</p>
+      <p className="mt-3">랭킹에서 따로 공유에 동의하고 연결한 경우에만, 한국 시간 기준 오늘 걸음수 합계를 별명과 함께 전체 참여자에게 보여 드려요.</p>
       <p className="mt-3">걷지 않은 날과 기록을 확인할 수 없는 날은 다르게 표시해요.</p>
       {!nativeShell ? <p className="mt-3">웹브라우저에서는 건강 앱을 직접 읽을 수 없어요. ‘내 휴대폰 걸음수 연결’에서 설치한 앱을 열 수 있어요.</p> : null}
       <p className="mt-3">삼성 헬스의 설정에서 Health Connect에 걸음수 공유를 켜 주세요. 아이폰은 건강 앱 → 공유 → 앱에서 밥뭇나의 걸음수 읽기 권한을 확인해 주세요.</p>
@@ -103,7 +104,7 @@ function LivePhoneStepsCard({ localOnly }: { localOnly: boolean }) {
     </details>
     <SeniorSheet open={consent} onClose={() => setConsent(false)} label="걸음수 연결 안내">
       <h2 className="text-[28px] font-extrabold text-cocoa">오늘의 걸음을<br />휴대폰으로 확인할까요?</h2>
-      <p className="mt-4 text-2xl text-muted">Apple 건강 또는 삼성 헬스의 오늘 걸음수만 읽어 보여 드려요. 서버 저장과 가족 공유는 하지 않아요.</p>
+      <p className="mt-4 text-2xl text-muted">Apple 건강 또는 삼성 헬스의 오늘 걸음수를 읽어 보여 드려요. 이 연결만으로는 서버에 보내지 않아요. 랭킹 공유는 별도로 동의하고 연결할 때만 시작해요.</p>
       <p className="mt-3 text-2xl text-muted">{localOnly ? "연결하지 않아도 밥뭇나 웹앱을 사용할 수 있어요." : "연결하지 않아도 세 가지 소식 버튼은 그대로 쓸 수 있어요."}</p>
       <Button className="mt-6 min-h-16 text-2xl" onClick={() => { setConsent(false); void session.current?.run("connect"); }}>동의하고 연결하기</Button>
       <Button variant="outline" className="mt-3 min-h-16 text-2xl" onClick={() => setConsent(false)}>다음에 할게요</Button>

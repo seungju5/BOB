@@ -7,8 +7,8 @@ export function HealthInstallGuide({ phone }: { phone: "ios" | "android" }) {
     <h2 id="health-install-title" className="text-[26px] font-extrabold">{phone === "android" ? "갤럭시 테스트 앱 설치" : "아이폰 앱은 준비 중이에요"}</h2>
     {phone === "android" ? <>
       <p className="mt-3">걸음수 전용 테스트 앱이에요. 아직 실제 휴대폰 검증을 마치지 않았어요.</p>
-      <p className="mt-3 text-muted">Android 10 이상 · 0.1.0-test.1<br />Play 스토어 정식 배포본은 아니에요.</p>
-      <a href={HEALTH_ANDROID_APK_URL} download="bapmunna-health-0.1.0-test.1.apk" className="mt-5 flex min-h-16 items-center justify-center rounded-full bg-butter px-4 py-4 text-center font-bold text-cocoa">갤럭시 테스트 앱 받기</a>
+      <p className="mt-3 text-muted">Android 10 이상 · 0.2.0-test.1<br />Play 스토어 정식 배포본은 아니에요.</p>
+      <a href={HEALTH_ANDROID_APK_URL} download="bapmunna-health-0.2.0-test.1.apk" className="mt-5 flex min-h-16 items-center justify-center rounded-full bg-butter px-4 py-4 text-center font-bold text-cocoa">갤럭시 테스트 앱 받기</a>
       <details className="mt-4">
         <summary className="min-h-12 cursor-pointer py-2 font-bold">설치 방법 보기</summary>
         <ol className="mt-3 list-decimal space-y-3 pl-6">

@@ -9,11 +9,12 @@ export const CHECKS = {
   'domain-sync': {title: 'Canonical domain matches Firebase', args: ['scripts/sync-firebase.mjs', '--check'], prerequisites: ['node_modules/typescript/package.json']},
   'design-sync': {title: 'Approved bunny and design match', args: ['scripts/sync-design.mjs', '--check']},
   'root-tests': {title: 'Root unit tests', args: ['node_modules/vitest/vitest.mjs', 'run', '--reporter=json', '--outputFile', '{reportFile}'], format: 'vitest', prerequisites: ['node_modules/vitest/vitest.mjs']},
+  'power-pattern-tests': {title: 'Power pattern algorithms, local file input and chart gaps', args: ['--test', '--test-reporter=tap', 'packages/power-pattern/adapter.test.mjs', 'packages/power-pattern/research/prism.test.mjs', 'packages/power-pattern/research/independent-review.test.mjs', 'packages/power-pattern/research/hardening.test.mjs', 'packages/power-pattern/research/reviewer-v2.test.mjs', 'packages/power-pattern/research/scenarios.test.mjs', 'components/power/presentation.test.mjs'], format: 'tap'},
   'backend-privacy-tests': {title: 'Server consent and private response boundaries', args: ['--test', '--test-reporter=tap', 'tests/privacy-consent-boundary.test.mjs'], format: 'tap', prerequisites: ['node_modules/typescript/package.json']},
   'types': {title: 'TypeScript', args: ['node_modules/typescript/bin/tsc', '--noEmit'], prerequisites: ['node_modules/typescript/bin/tsc']},
   'firebase-contracts': {title: 'Firebase scenarios and worksheet', args: ['tests/check.mjs'], cwd: 'integrations/bapmunna-firebase'},
   'firebase-tests': {title: 'Firebase roles, management, parity, experience and Kakao client', args: ['--test', '--test-reporter=tap', 'tests/editions.test.mjs', 'tests/manage.test.mjs', 'tests/parity.test.mjs', 'tests/experience.test.mjs', 'tests/kakao-client.test.mjs'], cwd: 'integrations/bapmunna-firebase', format: 'tap'},
-  'smartthings-tests': {title: 'SmartThings and Kakao server; store tests need emulator', args: ['--test', '--test-reporter=tap', 'test/service.test.mjs', 'test/store.test.mjs', 'test/deployment.test.mjs', 'test/http-adapter.test.mjs', 'test/retention.test.mjs', 'test/cors.test.mjs', 'test/vercel-runtime.test.mjs', 'test/state-lifecycle.test.mjs', 'test/kakao-service.test.mjs', 'test/kakao-runtime.test.mjs', 'test/kakao-store.test.mjs'], cwd: 'integrations/bapmunna-firebase/server', format: 'tap', emulator: true, prerequisites: ['integrations/bapmunna-firebase/server/node_modules/firebase-admin/package.json']},
+  'smartthings-tests': {title: 'SmartThings, Kakao and walking server; stores need local Auth/Firestore', args: ['--test', '--test-reporter=tap', 'test/service.test.mjs', 'test/store.test.mjs', 'test/deployment.test.mjs', 'test/http-adapter.test.mjs', 'test/retention.test.mjs', 'test/cors.test.mjs', 'test/vercel-runtime.test.mjs', 'test/state-lifecycle.test.mjs', 'test/kakao-service.test.mjs', 'test/kakao-runtime.test.mjs', 'test/kakao-store.test.mjs', 'test/walking-service.test.mjs', 'test/walking-store.test.mjs', 'test/walking-runtime.test.mjs', 'test/walking-e2e.test.mjs'], cwd: 'integrations/bapmunna-firebase/server', format: 'tap', emulator: true, prerequisites: ['integrations/bapmunna-firebase/server/node_modules/firebase-admin/package.json']},
   'firebase-editions': {title: 'Build Firebase editions', args: ['scripts/build-editions.mjs'], cwd: 'integrations/bapmunna-firebase', requires: ['domain-sync', 'design-sync']},
   'firebase-portable': {title: 'Build Firebase portable artifact', args: ['scripts/build-portable.mjs'], cwd: 'integrations/bapmunna-firebase', requires: ['firebase-editions']},
   'next-build': {title: 'Build Next.js with Webpack', args: ['node_modules/next/dist/bin/next', 'build', '--webpack'], requires: ['domain-sync', 'design-sync'], prerequisites: ['node_modules/next/dist/bin/next'], timeoutMs: 600000},
@@ -23,12 +24,12 @@ const BASE = ['domain-sync', 'design-sync', 'root-tests', 'types'];
 const FIREBASE = ['firebase-contracts', 'firebase-tests', 'firebase-editions', 'firebase-portable'];
 export const PROFILES = {
   baseline: BASE,
-  domain: [...BASE, ...FIREBASE],
+  domain: [...BASE, ...FIREBASE, 'power-pattern-tests'],
   experience: [...BASE, ...FIREBASE, 'next-build'],
   data: [...BASE, ...FIREBASE, 'backend-privacy-tests'],
   smartthings: [...BASE, ...FIREBASE, 'backend-privacy-tests', 'smartthings-tests'],
   harness: ['harness-tests'],
-  full: [...BASE, ...FIREBASE, 'backend-privacy-tests', 'smartthings-tests', 'next-build', 'harness-tests'],
+  full: [...BASE, ...FIREBASE, 'backend-privacy-tests', 'smartthings-tests', 'power-pattern-tests', 'next-build', 'harness-tests'],
 };
 
 const PROFILE_MEMBERS = {
@@ -46,6 +47,8 @@ export function sensitivePath(file) {
 export function classifyPath(file) {
   if (sensitivePath(file)) return ['full'];
   if (/^(harness\/|\.codex\/|scripts\/harness(?:\/|\.mjs$)|tests\/harness\/)/.test(file)) return ['harness'];
+  if (file.startsWith('packages/power-pattern/')) return ['domain'];
+  if (/^(components\/power\/|app\/power\/)/.test(file)) return ['domain', 'experience'];
   if (/^(lib\/judge\/|config\/detection\.ts$|lib\/data\/view\.ts$|scripts\/sync-firebase\.mjs$|tests\/unit\/(?:detectEvents|resolveMealSlots|evaluateAlerts|firebaseParity)|integrations\/bapmunna-firebase\/docs\/shared\/)/.test(file)) return ['domain'];
   if (/^integrations\/bapmunna-firebase\/(?:server\/|scripts\/check-smartthings-readiness\.mjs$|docs\/smartthings)/.test(file)) return ['smartthings'];
   if (/^(lib\/(?:data|demo)\/|lib\/supabase\.ts$|supabase\/|app\/(?:auth|api)\/|proxy\.|integrations\/bapmunna-firebase\/(?:cloud\/|firebase\/|supabase\/|tests\/cloud\.test\.mjs$))/.test(file)) return ['data'];

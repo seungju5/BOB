@@ -16,7 +16,7 @@ for(const args of [['scripts/sync-design.mjs','--check'],['node_modules/next/dis
 }
 // In export mode Next uses distDir as the export directory (its intermediate cache is .next).
 const exported=path.join(root,'tmp/impact-final/build');
-const routes=['','login','auth/callback','auth/kakao','start','tutorial','onboarding','connect','home','records','report','alerts','settings','more','s','health','health/privacy','privacy'];
+const routes=['','login','auth/callback','auth/kakao','start','tutorial','onboarding','connect','home','records','report','alerts','settings','more','s','health','health/privacy','privacy','walking','walking/demo','power'];
 for(const route of routes){
   const html=await readFile(path.join(exported,route,'index.html'),'utf8');
   if(!html.includes('name="viewport"'))throw Error('Missing mobile viewport: '+route);

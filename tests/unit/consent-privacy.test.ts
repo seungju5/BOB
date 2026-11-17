@@ -55,7 +55,7 @@ describe("public privacy and honest device availability", () => {
   });
   it("preserves the approved Android test APK and its physical-device limitation", () => {
     const html = renderToStaticMarkup(createElement(HealthInstallGuide, { phone: "android" }));
-    expect(html).toContain("bapmunna-health-0.1.0-test.1.apk");
+    expect(html).toContain("bapmunna-health-0.2.0-test.1.apk");
     expect(html).toContain("아직 실제 휴대폰 검증을 마치지 않았어요");
     expect(html).not.toContain("아이폰에서 웹 테스트하기");
   });

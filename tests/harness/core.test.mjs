@@ -27,6 +27,18 @@ test('auth and IoT changes require integration evidence beyond unit tests', () =
   assert.ok(plan.evidence.some(item => item.kind === 'live' && item.status === 'not_run'));
 });
 
+test('power changes and full checks retain the imported algorithm and file-input regressions', () => {
+  const plan=buildPlan({files:['packages/power-pattern/index.mjs']});
+  assert.ok(plan.checks.includes('power-pattern-tests'));
+  assert.ok(buildPlan({profile:'full'}).checks.includes('power-pattern-tests'));
+  assert.ok(plan.evidence.some(item=>item.id==='care-semantics'));
+  for (const file of ['components/power/presentation.mjs', 'components/power/presentation.test.mjs', 'app/power/page.tsx']) {
+    const visual = buildPlan({files:[file]});
+    assert.ok(visual.checks.includes('power-pattern-tests'), file);
+    assert.ok(visual.checks.includes('next-build'), file);
+  }
+});
+
 test('explicit narrow profile cannot hide broader changed-file requirements', () => {
   const plan = buildPlan({files: ['integrations/bapmunna-firebase/server/service.mjs'], profile: 'harness'});
   assert.ok(plan.checks.includes('smartthings-tests'));

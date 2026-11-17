@@ -18,6 +18,11 @@ buildscript {
 apply from: "variables.gradle"
 
 allprojects {
+    // Installed dependencies can be shared read-only across worktrees. Keep
+    // generated library outputs in this host, never inside node_modules.
+    if (project.name != 'app' && project != rootProject) {
+        layout.buildDirectory = rootProject.file("../.local/native-build/${project.name}")
+    }
     repositories {
         google()
         mavenCentral()

@@ -14,7 +14,7 @@ let package = Package(
             dependencies: [.product(name: "Capacitor", package: "capacitor-swift-pm")],
             path: "ios/Sources/PhoneStepsPlugin",
             resources: [.process("PrivacyInfo.xcprivacy")],
-            linkerSettings: [.linkedFramework("HealthKit")]
+            linkerSettings: [.linkedFramework("HealthKit"), .linkedFramework("Security"), .linkedFramework("UserNotifications")]
         )
     ]
 )

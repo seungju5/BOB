@@ -22,9 +22,14 @@ test('native Android time/empty-data rules run on the local JDK without an Andro
   try {
     await execute(compiler, ['-d', output,
       path.join(root, 'android/src/main/java/com/bapmunna/phonesteps/StepWindow.java'),
+      path.join(root, 'android/src/main/java/com/bapmunna/phonesteps/WalkReminderTime.java'),
+      path.join(root, 'android/src/main/java/com/bapmunna/phonesteps/RankingReadDecision.java'),
       path.join(root, 'tests/StepWindowCheck.java'),
+      path.join(root, 'tests/WalkReminderCheck.java'),
     ]);
     const result = await execute(path.join(javaRoot, 'bin/java'), ['-cp', output, 'com.bapmunna.phonesteps.StepWindowCheck']);
     assert.match(result.stdout, /passed/);
+    const reminders = await execute(path.join(javaRoot, 'bin/java'), ['-cp', output, 'com.bapmunna.phonesteps.WalkReminderCheck']);
+    assert.match(reminders.stdout, /passed/);
   } finally { await rm(output, { recursive: true, force: true }); }
 });

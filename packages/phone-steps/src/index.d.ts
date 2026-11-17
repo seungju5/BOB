@@ -40,7 +40,28 @@ export interface PhoneStepsPlugin {
   addListener(eventName: 'appResumed', listenerFunc: () => void): Promise<PluginListenerHandle>;
 }
 
-export declare const PhoneSteps: PhoneStepsPlugin;
+export interface WalkingBoardEntry { publicId: string; nickname: string; count: number; rank: number; }
+export interface WalkingBoard {
+  date: string; timeZone: 'Asia/Seoul'; updatedAt: string;
+  entries: WalkingBoardEntry[]; total: number; limit: number;
+  me: { publicId: string; nickname: string; count: number|null; rank: number|null; lastSyncedAt: string|null };
+}
+export interface RankingLinkStatus { linked: boolean; confirmed: boolean; revokePending: boolean; nickname?: string; publicId?: string; expiresAt?: string; }
+export interface WalkReminderStatus { enabled: boolean; times: string[]; bloodSugarReminder: boolean; permission: string; }
+/** Native-only network. No bearer credential is exposed through this interface. */
+export interface WalkingNativePlugin {
+  readRankingToday(): Promise<PhoneStepsSnapshot>;
+  rankingLink(input: {code: string}): Promise<RankingLinkStatus>;
+  rankingConfirm(input: {consentVersion: '2026-11-17'; shareTodaySteps: true}): Promise<RankingLinkStatus>;
+  rankingStatus(): Promise<RankingLinkStatus>;
+  rankingSync(): Promise<{ok: boolean; date?: string; count?: number; syncedAt?: string; reason?: string}>;
+  rankingBoard(): Promise<WalkingBoard>;
+  rankingDisconnect(): Promise<void>;
+  walkReminderStatus(): Promise<WalkReminderStatus>;
+  configureWalkReminders(input: {enabled: boolean; times: string[]; bloodSugarReminder: boolean}): Promise<WalkReminderStatus>;
+  openWalkingWebApp(): Promise<void>;
+}
+export declare const PhoneSteps: PhoneStepsPlugin & WalkingNativePlugin;
 /** Browser/SSR-safe; a native platform and installed plugin are both required. */
 export declare function isPhoneStepsNativeAvailable(): boolean;
 import type { PluginListenerHandle } from '@capacitor/core';

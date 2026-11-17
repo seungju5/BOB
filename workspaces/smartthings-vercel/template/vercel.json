@@ -17,6 +17,9 @@
     },
     "api/kakao/*.mjs": {
       "maxDuration": 30
+    },
+    "api/walking/*.mjs": {
+      "maxDuration": 30
     }
   },
   "crons": [

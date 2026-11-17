@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "sourceBranch": "codex/power-brand-20261117",
+  "appSource": "b7e2aed17c873cd46f67fb75263e88b00652453d",
+  "url": "https://impact-series.web.app/bapmunna/app/power/",
+  "hosting": {
+    "at": "2026-11-17T11:47:54.123Z",
+    "site": "impact-series",
+    "url": "https://impact-series.web.app/bapmunna/final/",
+    "version": "sites/impact-series/versions/463ddb07e9e843de",
+    "previous": "sites/impact-series/versions/6c378b63da7d8c9a",
+    "release": "sites/impact-series/releases/1794916073274000",
+    "source": "b7e2aed17c873cd46f67fb75263e88b00652453d",
+    "changed": 163,
+    "preserved": 2758,
+    "totalFiles": 2921,
+    "uploads": 133,
+    "hostingConfig": "unchanged",
+    "billingEnabled": false
+  },
+  "publicVerification": {
+    "at": "2026-11-17T11:49:13.066Z",
+    "version": "sites/impact-series/versions/463ddb07e9e843de",
+    "publicFilesVerified": 163,
+    "existingPathsMissing": 0,
+    "project": "impact-series",
+    "billingEnabled": false
+  },
+  "change": "Bapmunna cooker mascot and cream/yellow status screen; removed effects and analysis process",
+  "checks": {
+    "root": 298,
+    "power": 141,
+    "firebase": 85,
+    "skipped": 0,
+    "harness": ".harness/runs/2026-11-17T11-37-05-640Z-8267/report.md",
+    "independentReview": "passed-no-actionable-findings",
+    "localWidths": [
+      320,
+      390
+    ],
+    "publicWidth": 390,
+    "horizontalOverflow": false,
+    "allEightExampleStates": true,
+    "keyboardDisclosure": true,
+    "publicConsoleErrors": 0,
+    "publicConsoleWarnings": 0,
+    "fileSelectionRetested": false,
+    "zoom200Percent": "not-tested"
+  },
+  "unchanged": {
+    "researchFunction": true,
+    "actualSmartThingsFeedEnabled": false,
+    "deviceModeCalibrated": false,
+    "automaticMealAlertsEnabled": false,
+    "billingEnabled": false
+  },
+  "screenshots": "output/bapmunna-power-brand-20261117/public-brand.jpg"
+}

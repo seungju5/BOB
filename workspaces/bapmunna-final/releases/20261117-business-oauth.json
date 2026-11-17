@@ -1,0 +1,143 @@
+{
+  "schemaVersion": 1,
+  "checkedAt": "2026-11-17T03:31:19.589Z",
+  "source": "077233e422f1d7645cdc07b65aab6dff7fad82af",
+  "sourceBranch": "codex/consent-feedback-20261116",
+  "pushed": true,
+  "appUrl": "https://impact-series.web.app/bapmunna/app/connect/",
+  "hosting": {
+    "at": "2026-11-17T03:29:52.035Z",
+    "site": "impact-series",
+    "url": "https://impact-series.web.app/bapmunna/final/",
+    "version": "sites/impact-series/versions/32111bb72b9a0a15",
+    "previous": "sites/impact-series/versions/0a649e4f0c650e57",
+    "release": "sites/impact-series/releases/1794886191313000",
+    "source": "077233e422f1d7645cdc07b65aab6dff7fad82af",
+    "changed": 126,
+    "preserved": 2675,
+    "totalFiles": 2801,
+    "uploads": 101,
+    "hostingConfig": "unchanged",
+    "billingEnabled": false
+  },
+  "hostingVerification": {
+    "at": "2026-11-17T03:31:19.589Z",
+    "version": "sites/impact-series/versions/32111bb72b9a0a15",
+    "publicFilesVerified": 126,
+    "existingPathsMissing": 0,
+    "project": "impact-series",
+    "billingEnabled": false
+  },
+  "backend": {
+    "project": "bapmunna-smartthings",
+    "origin": "https://bapmunna-smartthings.vercel.app",
+    "newVersionPublished": false,
+    "previousDeploymentId": "dpl_8RCTuTfvmD4SCSJho4E3YEUGvrBH",
+    "status": "awaiting_vercel_email_identity_verification",
+    "archive": {
+      "fileCount": 24,
+      "bytes": 552077,
+      "sha256": "150a068ec306df8f78a77d86ab649e5c0b8895c65c913b841ba8a652f9b990b0",
+      "files": [
+        ".vercelignore",
+        "api/kakao/callback.mjs",
+        "api/kakao/config.mjs",
+        "api/kakao/exchange.mjs",
+        "api/kakao/start.mjs",
+        "api/smartthings/[...path].mjs",
+        "package-lock.json",
+        "package.json",
+        "public/connect/bunny.png",
+        "public/connect/connect.mjs",
+        "public/connect/index.html",
+        "public/connect/style.css",
+        "runtime/http-adapter.mjs",
+        "runtime/index.mjs",
+        "runtime/kakao-handler.mjs",
+        "runtime/kakao-runtime.mjs",
+        "runtime/kakao-security.mjs",
+        "runtime/kakao-service.mjs",
+        "runtime/kakao-store.mjs",
+        "runtime/security.mjs",
+        "runtime/service.mjs",
+        "runtime/smartthings.mjs",
+        "runtime/store.mjs",
+        "vercel.json"
+      ],
+      "credentialsIncluded": false
+    },
+    "privateKeyMarkersWereValidationCode": true,
+    "actualCredentialsDetected": false,
+    "reviewRejectionResolvedByInspection": true
+  },
+  "smartthingsRegistration": {
+    "at": "2026-11-16T11:36:16.948Z",
+    "appId": "f1b8149d-45c5-4f4b-8136-2ad518faf4ec",
+    "beforeTarget": "https://impact-series.web.app/api/smartthings/events",
+    "beforeStatus": "PENDING",
+    "requestedTarget": "https://bapmunna-smartthings.vercel.app/api/smartthings/events",
+    "updateAccepted": false,
+    "paidPlanMessage": true,
+    "http403": false,
+    "reason": "provider_plan_or_permission_required"
+  },
+  "localChecks": {
+    "report": ".harness/runs/2026-11-16T11-42-23-873Z-62716/report.md",
+    "harnessTests": 528,
+    "sharedViewAndPopupTests": 52,
+    "failed": 0,
+    "skipped": 0,
+    "staticRoutes": 18,
+    "independentReview": "completed; findings fixed; no remaining actionable findings",
+    "browser": "synthetic 320/390px select/check/unlink; keyboard consent/button; no horizontal overflow"
+  },
+  "publicChecks": {
+    "at": "2026-11-17T03:33:54.134Z",
+    "checks": [
+      {
+        "name": "smartthings-config",
+        "status": 200,
+        "cacheControl": "no-store",
+        "enabled": true,
+        "connectionReady": null
+      },
+      {
+        "name": "kakao-config",
+        "status": 200,
+        "cacheControl": "no-store",
+        "enabled": true,
+        "connectionReady": null
+      },
+      {
+        "name": "app-connect",
+        "status": 200,
+        "cacheControl": "no-cache",
+        "expectedContent": true
+      },
+      {
+        "name": "privacy",
+        "status": 200,
+        "cacheControl": "no-cache",
+        "expectedContent": true
+      }
+    ],
+    "backendRelease": "previous deployment; Vercel identity verification pending",
+    "actualSmartThingsOAuthVerified": false
+  },
+  "boundaries": {
+    "actualSmartThingsOAuthVerified": false,
+    "actualPlugAutomaticEventVerified": false,
+    "physicalMobileVerified": false,
+    "businessContractActivated": false,
+    "businessBillingChanged": false,
+    "firebaseBillingChanged": false,
+    "firebaseRulesChanged": false,
+    "iamChanged": false,
+    "kakaoRuntimeChanged": false
+  },
+  "remaining": [
+    "Vercel existing account email identity verification and final backend publication",
+    "SmartThings Business eligibility/contract and registration update",
+    "Live Samsung consent, plug selection, automatic event, refresh, unlink and multi-household isolation"
+  ]
+}

@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "sourceBranch": "codex/power-signature-20261117",
+  "appSource": "f746117e912ac197da796012bd63fae6f7dd08a1",
+  "url": "https://impact-series.web.app/bapmunna/app/power/",
+  "hosting": {
+    "at": "2026-11-17T12:09:02.823Z",
+    "site": "impact-series",
+    "url": "https://impact-series.web.app/bapmunna/final/",
+    "version": "sites/impact-series/versions/e120723dfc85bd01",
+    "previous": "sites/impact-series/versions/463ddb07e9e843de",
+    "release": "sites/impact-series/releases/1794917341925000",
+    "source": "f746117e912ac197da796012bd63fae6f7dd08a1",
+    "changed": 116,
+    "preserved": 2809,
+    "totalFiles": 2925,
+    "uploads": 90,
+    "hostingConfig": "unchanged",
+    "billingEnabled": false
+  },
+  "publicVerification": {
+    "at": "2026-11-17T12:10:02.105Z",
+    "version": "sites/impact-series/versions/e120723dfc85bd01",
+    "publicFilesVerified": 116,
+    "existingPathsMissing": 0,
+    "project": "impact-series",
+    "billingEnabled": false
+  },
+  "change": "Bapmunna paper-style cooker news card, rice-grain motif, source labels, scalable text and restrained press feedback; existing forms and functions preserved",
+  "checks": {
+    "root": 298,
+    "power": 141,
+    "firebase": 85,
+    "skipped": 0,
+    "harness": ".harness/runs/2026-11-17T12-03-52-756Z-12785/report.md",
+    "independentReview": "reduced-motion-specificity-fixed-and-rereviewed",
+    "localWidths": [
+      320,
+      390
+    ],
+    "publicWidth": 390,
+    "horizontalOverflow": false,
+    "allEightExampleStates": true,
+    "keyboardDisclosure": true,
+    "publicConsoleErrors": 0,
+    "publicConsoleWarnings": 0,
+    "largeText": "200% root-font local HTML copy at 320px; not an OS setting test",
+    "actualOsReducedMotion": "not-tested; CSS cascade independently reviewed",
+    "fileSelectionRetested": false
+  },
+  "unchanged": {
+    "researchFunction": true,
+    "actualSmartThingsFeedEnabled": false,
+    "deviceModeCalibrated": false,
+    "automaticMealAlertsEnabled": false,
+    "billingEnabled": false
+  },
+  "screenshot": "output/bapmunna-power-signature-20261117/public-mobile.jpg"
+}

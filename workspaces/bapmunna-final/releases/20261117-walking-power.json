@@ -1,0 +1,113 @@
+{
+  "schemaVersion": 1,
+  "checkedAt": "2026-11-17T10:32:29.642895+00:00",
+  "sourceBranch": "codex/walking-ranking-20261117",
+  "appSource": "2b2d90acdde2b1ff3a67fb8e067c8f4cfaadd243",
+  "hosting": {
+    "at": "2026-11-17T09:16:57.830Z",
+    "site": "impact-series",
+    "url": "https://impact-series.web.app/bapmunna/final/",
+    "version": "sites/impact-series/versions/6c378b63da7d8c9a",
+    "previous": "sites/impact-series/versions/32111bb72b9a0a15",
+    "release": "sites/impact-series/releases/1794907017062000",
+    "source": "2cb253f1f5be41a58c56278c8a00f167bbd66dbc",
+    "changed": 166,
+    "preserved": 2704,
+    "totalFiles": 2870,
+    "uploads": 137,
+    "hostingConfig": "unchanged",
+    "billingEnabled": false
+  },
+  "publicVerification": {
+    "at": "2026-11-17T09:18:15.738Z",
+    "version": "sites/impact-series/versions/6c378b63da7d8c9a",
+    "publicFilesVerified": 166,
+    "existingPathsMissing": 0,
+    "project": "impact-series",
+    "billingEnabled": false
+  },
+  "links": {
+    "power": "https://impact-series.web.app/bapmunna/app/power/",
+    "walking": "https://impact-series.web.app/bapmunna/app/walking/",
+    "walkingExample": "https://impact-series.web.app/bapmunna/app/walking/demo/"
+  },
+  "power": {
+    "algorithm": "prism-research-0.2",
+    "checks": 141,
+    "additionalIndependentAdapterChecks": 23,
+    "sourceFilesCopiedUnchanged": 10,
+    "input": "local-only-single-window-json",
+    "actualSmartThingsFeed": false,
+    "deviceModeCalibrated": false,
+    "automaticMealAlertEnabled": false,
+    "browser": {
+      "localWidths": [
+        320,
+        390
+      ],
+      "publicWidth": 390,
+      "horizontalOverflow": false,
+      "fileSelectionAndReset": true,
+      "keyboardTimeChange": true,
+      "playPause": true,
+      "consoleErrors": 0,
+      "consoleWarnings": 0,
+      "zoom200Percent": "not-performed",
+      "osReducedMotion": "source-verified-not-device-tested"
+    }
+  },
+  "walking": {
+    "globalOptIn": true,
+    "nativeAndroid": {
+      "schemaVersion": 1,
+      "status": "public-test",
+      "applicationId": "com.bapmunna.senior",
+      "versionName": "0.2.0-test.1",
+      "versionCode": 3,
+      "minAndroidVersion": "10",
+      "minSdk": 29,
+      "metadataPath": "/bapmunna/app/downloads/20261117/release.json",
+      "downloadUrl": "https://github.com/jooji13/bapmunna-downloads/releases/download/android-0.2.0-test.1/bapmunna-health-0.2.0-test.1.apk",
+      "bytes": 21147069,
+      "sha256": "fef35102c44bcaaae93aca07545cdfeb198a04c3f2881acb117a331c6c30a9bb",
+      "certificateSha256": "9db8fa66280f1cb6a29d0b5148a01105904e25e1d15a210cd3a4ea158fdaf1e5",
+      "debuggable": false,
+      "signatureVerified": true,
+      "nativeSourceCommit": "2b2d90acdde2b1ff3a67fb8e067c8f4cfaadd243",
+      "nativeSourceSnapshot": "12f923f5588030baa8e2d854729c4bd000060d0edb4bcb4587f62159f93fe509",
+      "realDeviceVerified": false,
+      "deviceVerificationStatus": "not-tested-no-device-available",
+      "iosInstallAvailable": false,
+      "healthDataUpload": true,
+      "storeRelease": false,
+      "privacyUrl": "https://impact-series.web.app/bapmunna/app/health/privacy/",
+      "healthDataUploadMode": "explicit-ranking-consent-only",
+      "sharedHealthFields": [
+        "KST daily step total"
+      ],
+      "reminders": "device-local-opt-in"
+    },
+    "serverPublication": "pending-vercel-email-identity-verification",
+    "serverProject": "bapmunna-smartthings",
+    "archiveSha256": "2eeef4a47e2256b16f0c9cd070dfa6d179b1b20b691947ffa70f97eeeceb5f0f",
+    "archiveFileCount": 30,
+    "serverChangesAreLive": false,
+    "deviceHealthAndNotificationsTested": false
+  },
+  "checks": {
+    "harnessReport": ".harness/runs/2026-11-17T09-05-29-970Z-98850/report.md",
+    "root": 298,
+    "power": 141,
+    "privacy": 48,
+    "firebase": 85,
+    "smartthingsKakaoWalkingServer": 109,
+    "harness": 27,
+    "skipped": 0
+  },
+  "constraints": {
+    "billingEnabled": false,
+    "rulesOrIamChanged": false,
+    "syntheticProductionRankingRecordsCreated": false,
+    "iosSignedBuildAvailable": false
+  }
+}

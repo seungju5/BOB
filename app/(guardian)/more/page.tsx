@@ -18,7 +18,7 @@ export default function MorePage() {
     <div className="mt-6 overflow-hidden rounded-[1.75rem] border border-line">
       {[
         { href: view?.mode === 'demo' ? '/walking/demo' : '/walking', label: '산책·걸음수 랭킹', detail: '식후 산책 알림과 함께 걷는 오늘의 순위', Icon: IconChart },
-        { href: '/power', label: '밥솥 전력 분석', detail: '에너지 흐름과 판단 이유를 살펴봐요', Icon: IconChart },
+        { href: '/power', label: '밥솥 소식', detail: '밥솥의 작은 소식을 편하게 살펴봐요', Icon: IconChart },
         { href: "/alerts", label: "받은 알림", detail: count ? `확인할 소식 ${count}개` : "지나간 소식도 함께 봐요", Icon: IconBell },
         { href: "/report", label: "패턴 리포트", detail: "평소와 어떻게 달라졌는지 살펴요", Icon: IconChart },
         { href: "/settings", label: "생활·알림 설정", detail: "식사 시간, 가족 연결과 계정", Icon: IconSettings },

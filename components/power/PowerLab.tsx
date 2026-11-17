@@ -89,10 +89,13 @@ export function PowerLab() {
   return <main className={styles.page}>
     <header className={styles.header}><Logo/><Link href="/more" className={styles.menuLink}>더보기 <span aria-hidden="true">›</span></Link></header>
     <div className={styles.intro}><p className={styles.eyebrow}>작은 소식, 다정한 안부</p><h1>밥솥의 소식을<br/>살펴봐요</h1></div>
-    <p className={styles.sourceNote}><span className={styles.sourceDot} aria-hidden="true"/>{reading ? '새 기록을 불러오고 있어요' : imported ? '직접 불러온 기록 · 실시간 연결 아님' : '예시 화면 · 실제 기기와 연결되지 않았어요'}</p>
+    <p className={styles.sourceNote}><span className={styles.sourceLabel}>{reading ? '확인 중' : imported ? '내 기록' : '예시'}</span><span>{reading ? '새 기록을 불러오고 있어요' : imported ? '직접 불러온 기록 · 실시간 연결 아님' : '실제 기기와 연결되지 않았어요'}</span></p>
 
     <section className={styles.statusCard} data-state={frame.state} aria-labelledby="power-state-title" aria-busy={reading}>
-      <span className={styles.cardLabel}>밥솥이 전하는 소식</span>
+      <div className={styles.cardHeading}>
+        <span className={styles.cardLabel}>밥솥이 전하는 소식</span>
+        <svg className={styles.riceMark} viewBox="0 0 40 40" aria-hidden="true" focusable="false"><path d="M13 26c-5-2-7-7-5-10 5 0 9 4 9 8M21 21c-4-4-4-10 0-13 4 3 4 9 0 13ZM25 26c5-2 7-7 5-10-5 0-9 4-9 8"/><path d="M12 30c5 3 11 3 16 0"/></svg>
+      </div>
       <div className={styles.mascotScene}><span className={styles.mascotCircle} aria-hidden="true"/><Mascot className={styles.mascot}/></div>
       <div className={styles.statusMessage} aria-live="polite" aria-atomic="true">
         <span className={styles.statusBadge}>{reading ? '기록 확인 중' : status.label}</span>

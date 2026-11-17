@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 1,
+  "sourceBranch": "codex/power-internal-20261117",
+  "appSource": "c9460b347d36cf333976a9047d8cc6c6c6879f90",
+  "url": "https://impact-series.web.app/bapmunna/app/",
+  "hosting": {
+    "at": "2026-11-17T14:26:30.527Z",
+    "site": "impact-series",
+    "url": "https://impact-series.web.app/bapmunna/final/",
+    "version": "sites/impact-series/versions/866325c2873fdd25",
+    "previous": "sites/impact-series/versions/e120723dfc85bd01",
+    "release": "sites/impact-series/releases/1794925589650000",
+    "source": "c9460b347d36cf333976a9047d8cc6c6c6879f90",
+    "changed": 137,
+    "preserved": 2813,
+    "totalFiles": 2950,
+    "uploads": 111,
+    "hostingConfig": "unchanged",
+    "billingEnabled": false
+  },
+  "publicVerification": {
+    "at": "2026-11-17T14:28:27.719Z",
+    "version": "sites/impact-series/versions/866325c2873fdd25",
+    "publicFilesVerified": 137,
+    "existingPathsMissing": 0,
+    "project": "impact-series",
+    "billingEnabled": false
+  },
+  "change": "Keep cooker analysis as an internal module; remove its menu entry and reuse the existing account/onboarding/home flow for old /power bookmarks.",
+  "archivedUI": {
+    "branch": "codex/power-signature-20261117",
+    "commit": "ed0836072e93d4277e9db6564da0331c49af8a86"
+  },
+  "checks": {
+    "root": 298,
+    "power": 141,
+    "firebase": 85,
+    "harness": 27,
+    "failed": 0,
+    "skipped": 0,
+    "report": ".harness/runs/2026-11-17T14-18-01-469Z-17286/report.md",
+    "independentReview": "Two changed route/menu files reviewed by the coordinating chat; no findings.",
+    "localWidths": [
+      320,
+      390
+    ],
+    "publicWidth": 390,
+    "horizontalOverflow": false,
+    "publicAnalysisLinks": 0,
+    "publicConsoleErrors": 0,
+    "publicConsoleWarnings": 0,
+    "localRoutes": [
+      "signed-out /power -> login",
+      "demo tutorial -> onboarding -> home -> more",
+      "onboarded demo /power -> home"
+    ],
+    "publicRoutes": [
+      "old open /power reload -> existing incomplete demo onboarding",
+      "demo onboarding -> home -> more"
+    ],
+    "freshExportAnalysisUIReferences": 0
+  },
+  "unchanged": {
+    "researchFunctions": true,
+    "researchSourceHashes": true,
+    "existingMealJudgment": true,
+    "walkingFeature": true,
+    "loginOnboardingConsent": true,
+    "serverCode": true,
+    "vercelDeployment": true,
+    "billingEnabled": false
+  },
+  "notVerified": [
+    "live SmartThings feed",
+    "real-device classifier calibration",
+    "automatic meal alerts",
+    "fresh real-account sign-in",
+    "OS large text/reduced motion",
+    "native physical devices"
+  ],
+  "screenshot": "output/bapmunna-power-internal-20261117/public-menu.jpg"
+}

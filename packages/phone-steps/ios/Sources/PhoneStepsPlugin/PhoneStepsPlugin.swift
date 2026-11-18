@@ -22,6 +22,7 @@ public final class PhoneStepsPlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "rankingSync", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "rankingBoard", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "rankingDisconnect", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "heartsRequest", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "walkReminderStatus", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "configureWalkReminders", returnType: CAPPluginReturnPromise)
     ]
@@ -49,8 +50,16 @@ public final class PhoneStepsPlugin: CAPPlugin, CAPBridgedPlugin {
     }
     @objc public func readRankingToday(_ call: CAPPluginCall) { walkingCall(call) { try await self.walking.readToday() } }
     @objc public func rankingStatus(_ call: CAPPluginCall) { walkingCall(call) { try self.walking.status() } }
+    @objc public func heartsRequest(_ call: CAPPluginCall) { walkingCall(call) {
+        let options = call.jsObjectRepresentation
+        guard Set(options.keys).isSubset(of:["action", "body"]), options["body"] == nil || call.getObject("body") != nil else { throw WalkingNativeError(code:"invalid_heart_request") }
+        return try await self.walking.hearts(action:call.getString("action") ?? "",body:call.getObject("body"))
+    } }
     @objc public func rankingLink(_ call: CAPPluginCall) { walkingCall(call) { try await self.walking.link(code:call.getString("code") ?? "") } }
-    @objc public func rankingConfirm(_ call: CAPPluginCall) { walkingCall(call) { try await self.walking.confirm(consentVersion:call.getString("consentVersion") ?? "",share:call.getBool("shareTodaySteps") == true) } }
+    @objc public func rankingConfirm(_ call: CAPPluginCall) { walkingCall(call) {
+        let values = call.jsObjectRepresentation
+        return try await self.walking.confirm(consentVersion:call.getString("consentVersion") ?? "",share:WalkingPayload.isBoolean(values["shareTodaySteps"]) && values["shareTodaySteps"] as? Bool == true,shareRanking:values["shareRanking"])
+    } }
     @objc public func rankingSync(_ call: CAPPluginCall) { walkingCall(call) { try await self.walking.sync() } }
     @objc public func rankingBoard(_ call: CAPPluginCall) { walkingCall(call) { try await self.walking.board() } }
     @objc public func rankingDisconnect(_ call: CAPPluginCall) { walkingCall(call) { try await self.walking.disconnect(); return [:] } }

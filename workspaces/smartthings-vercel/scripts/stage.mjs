@@ -4,10 +4,10 @@ import {join} from 'node:path';
 
 const workspace=fileURLToPath(new URL('../',import.meta.url));
 const repository=fileURLToPath(new URL('../../../',import.meta.url));
-const sourceRuntimeFiles=Object.freeze(['index.mjs','http-adapter.mjs','security.mjs','service.mjs','smartthings.mjs','store.mjs','kakao-security.mjs','kakao-store.mjs','kakao-service.mjs','kakao-runtime.mjs','walking-security.mjs','walking-store.mjs','walking-service.mjs','walking-runtime.mjs']);
-export const runtimeFiles=Object.freeze([...sourceRuntimeFiles,'kakao-handler.mjs','walking-handler.mjs']);
+const sourceRuntimeFiles=Object.freeze(['index.mjs','http-adapter.mjs','security.mjs','service.mjs','smartthings.mjs','store.mjs','kakao-security.mjs','kakao-store.mjs','kakao-service.mjs','kakao-runtime.mjs','walking-security.mjs','walking-store.mjs','walking-service.mjs','walking-runtime.mjs','heart-security.mjs','heart-store.mjs']);
+export const runtimeFiles=Object.freeze([...sourceRuntimeFiles,'kakao-handler.mjs','walking-handler.mjs','heart-core.mjs']);
 export const kakaoRoutes=Object.freeze(['config','start','callback','exchange']);
-export const walkingRoutes=Object.freeze(['config','profile','join','leave','pairing','pair','confirm','unpair','sync','board']);
+export const walkingRoutes=Object.freeze(['config','profile','join','leave','pairing','pair','confirm','unpair','sync','board','hearts','heartjoin','heartsettings','heartbuy','heartequip','heartmessage','heartgift','heartread','heartleave','heartleague']);
 export const portalFiles=Object.freeze(['connect/index.html','connect/connect.mjs','connect/style.css']);
 
 export async function stage({destination=join(workspace,'.stage')}={}){
@@ -17,6 +17,11 @@ export async function stage({destination=join(workspace,'.stage')}={}){
     for(const folder of ['api/smartthings','api/kakao','api/walking','runtime','public/connect'])await mkdir(join(temporary,folder),{recursive:true});
     const server=join(repository,'integrations/bapmunna-firebase/server');
     for(const name of sourceRuntimeFiles)await copyFile(join(server,name),join(temporary,'runtime',name));
+    const heartStore=await readFile(join(temporary,'runtime/heart-store.mjs'),'utf8');
+    const coreImport="../../../packages/walking-hearts/core.mjs";
+    if(!heartStore.includes(coreImport))throw Error('Heart core import changed; review staging before release.');
+    await writeFile(join(temporary,'runtime/heart-store.mjs'),heartStore.replaceAll(coreImport,'./heart-core.mjs'));
+    await copyFile(join(repository,'packages/walking-hearts/core.mjs'),join(temporary,'runtime/heart-core.mjs'));
     await copyFile(join(workspace,'template/runtime/kakao-handler.mjs'),join(temporary,'runtime/kakao-handler.mjs'));
     await copyFile(join(workspace,'template/runtime/walking-handler.mjs'),join(temporary,'runtime/walking-handler.mjs'));
     for(const name of portalFiles)await copyFile(join(workspace,'public',name),join(temporary,'public',name));

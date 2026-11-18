@@ -6,6 +6,24 @@ struct WalkingNativeError: Error { let code: String; var status: Int = 0 }
 
 /** The JSON-to-JS boundary emits only the documented public ranking fields. */
 enum WalkingPayload {
+    static func sharingScope(_ value: JSValue?) throws -> String {
+        guard let value else { return "public" } // Legacy connections were public.
+        guard let scope = value as? String, ["private", "public"].contains(scope) else { throw WalkingNativeError(code:"invalid_response") }
+        return scope
+    }
+    static func isBoolean(_ value: JSValue?) -> Bool {
+        guard let number = value as? NSNumber else { return false }
+        return CFGetTypeID(number) == CFBooleanGetTypeID()
+    }
+    static func confirmationBody(scope: String, version: String, share: Bool, shareRanking: JSValue?) throws -> JSObject {
+        guard share else { throw WalkingNativeError(code:"consent_required") }
+        if scope == "private" {
+            guard version == "2026-11-17-private", isBoolean(shareRanking), shareRanking as? Bool == false else { throw WalkingNativeError(code:"consent_required") }
+            return ["consentVersion":version,"shareTodaySteps":true,"shareRanking":false]
+        }
+        guard scope == "public", version == "2026-11-17", shareRanking == nil || (isBoolean(shareRanking) && shareRanking as? Bool == true) else { throw WalkingNativeError(code:"consent_required") }
+        return ["consentVersion":version,"shareTodaySteps":true]
+    }
     enum ReadAction { case upload, skip, stale }
     static func afterRead(status: String, sameRevision: Bool, consent: Bool, foreground: Bool) -> ReadAction {
         guard sameRevision else { return .stale }
@@ -24,12 +42,13 @@ enum WalkingPayload {
         guard decimal.isFinite, decimal >= 0, decimal <= 9_007_199_254_740_991, decimal.rounded(.towardZero) == decimal else { return nil }
         return number.intValue
     }
-    static func cleanBoard(_ value: JSObject, now: Date) throws -> JSObject {
+    static func cleanBoard(_ value: JSObject, now: Date, sharingScope: String = "public") throws -> JSObject {
         let formatter = DateFormatter(); formatter.calendar = Calendar(identifier:.gregorian)
         formatter.locale = Locale(identifier:"en_US_POSIX"); formatter.timeZone = TimeZone(identifier:"Asia/Seoul"); formatter.dateFormat = "yyyy-MM-dd"
         guard let date = value["date"] as? String, date == formatter.string(from:now), value["timeZone"] as? String == "Asia/Seoul",
               let entries = value["entries"] as? [JSObject], entries.count <= 50, let me = value["me"] as? JSObject,
               let total = integer(value["total"]), let updated = value["updatedAt"] as? String, validTime(updated) else { throw WalkingNativeError(code:"invalid_response") }
+        guard sharingScope == "public" || (sharingScope == "private" && entries.isEmpty && total == 0 && me["count"] is NSNull && me["rank"] is NSNull) else { throw WalkingNativeError(code:"invalid_response") }
         func row(_ input: JSObject, own: Bool) throws -> JSObject {
             guard let id = input["publicId"] as? String, !id.isEmpty, id.count <= 100, let nickname = input["nickname"] as? String, !nickname.isEmpty, nickname.count <= 30 else { throw WalkingNativeError(code:"invalid_response") }
             let count = integer(input["count"]), rank = integer(input["rank"])

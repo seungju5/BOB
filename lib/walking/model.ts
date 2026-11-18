@@ -3,7 +3,7 @@ export const WALKING_TIME_ZONE = 'Asia/Seoul';
 export type WalkingEntry = {publicId:string;nickname:string;count:number;rank:number};
 export type WalkingMe = {publicId:string;nickname:string;count:number|null;rank:number|null;lastSyncedAt:string|null};
 export type WalkingBoard = {date:string;timeZone:string;updatedAt:string;entries:WalkingEntry[];me:WalkingMe;total:number;limit:number};
-export type WalkingProfile = {joined:boolean;nickname?:string;publicId?:string;deviceConnected?:boolean;deviceExpiresAt?:string|null;lastSyncedAt?:string|null;date?:string|null;count?:number|null};
+export type WalkingProfile = {joined:boolean;nickname?:string;publicId?:string;sharingScope?:'private'|'public';deviceConnected?:boolean;deviceExpiresAt?:string|null;lastSyncedAt?:string|null;date?:string|null;count?:number|null};
 export type WalkingPairing = {code:string;expiresAt:string};
 
 export function walkingDate(now=new Date()) {
@@ -26,7 +26,9 @@ export function validateWalkingProfile(value:unknown):WalkingProfile {
   if(value.lastSyncedAt!=null&&!timestamp(value.lastSyncedAt))return invalid();
   if(value.date!=null&&!date(value.date))return invalid();
   if(value.count!=null&&!whole(value.count))return invalid();
+  if(value.sharingScope!=null&&value.sharingScope!=='private'&&value.sharingScope!=='public')return invalid();
   return {joined:true,nickname:value.nickname,publicId:value.publicId,deviceConnected:value.deviceConnected,
+    ...(value.sharingScope?{sharingScope:value.sharingScope as 'private'|'public'}:{}),
     deviceExpiresAt:value.deviceExpiresAt as string|null|undefined,lastSyncedAt:value.lastSyncedAt as string|null|undefined,
     date:value.date as string|null|undefined,count:value.count as number|null|undefined};
 }

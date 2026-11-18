@@ -92,7 +92,7 @@ function Pairing({ pair, startDemo, canPair }: { pair: (code: string) => Promise
       <div className="mt-6">
         <p className="text-2xl leading-relaxed text-muted">가족 연결과 별개로 내 휴대폰의 걸음수를 확인할 수 있어요.</p>
         <HealthConnectionLink />
-        <Link href="/walking" className="mt-3 flex min-h-16 items-center justify-center rounded-2xl border-2 border-line px-4 py-3 text-center text-2xl font-bold text-cocoa">산책·걸음수 랭킹</Link>
+        <Link href="/walking" className="mt-3 flex min-h-16 items-center justify-center rounded-2xl border-2 border-line px-4 py-3 text-center text-2xl font-bold text-cocoa">오늘의 산책·하트</Link>
       </div>
       <div className="mt-auto pt-8">
         <p className="mb-3 text-2xl text-muted">예시 체험은 가족에게 소식을 보내지 않아요.</p>
@@ -182,7 +182,7 @@ function SeniorHome({ status, now, act, isDemo, endDemo }: { status: SeniorStatu
         </div>
       </div>
       <PhoneStepsCard demo={isDemo} />
-      <Link href={isDemo?'/walking/demo':'/walking'} className="mt-4 flex min-h-16 items-center justify-center rounded-2xl bg-butter-soft px-4 py-3 text-center text-2xl font-bold text-cocoa">산책·걸음수 랭킹 보기</Link>
+      <Link href={isDemo?'/walking/demo':'/walking'} className="mt-4 flex min-h-16 items-center justify-center rounded-2xl bg-butter-soft px-4 py-3 text-center text-2xl font-bold text-cocoa">오늘의 산책·하트 보기</Link>
       <Link href="/privacy" className="mt-5 block min-h-12 py-3 text-center text-2xl text-muted underline underline-offset-4">개인정보 이용·제공 안내</Link>
 
       <Sheet open={sheet === "eat_out"} onClose={close} label="외식했어요">

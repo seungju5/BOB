@@ -55,6 +55,7 @@ internal class WalkingClient(context: Context) {
             }
             JSONObject(String(cipher.doFinal(Base64.decode(parts[1], Base64.NO_WRAP)), Charsets.UTF_8)).also {
                 if (!it.optString("token").matches(Regex("^walk_[A-Za-z0-9_-]{43}$"))) throw WalkingFailure("secure_storage")
+                sharingScope(it)
                 if (Instant.parse(it.getString("expiresAt")).isBefore(Instant.now()) && !it.optBoolean("revokePending")) { save(null); return null }
             }
         } catch (_: Exception) { throw WalkingFailure("secure_storage") }
@@ -63,7 +64,7 @@ internal class WalkingClient(context: Context) {
         put("linked", value != null && !value.optBoolean("revokePending"))
         put("confirmed", value?.optBoolean("confirmed") == true && !value.optBoolean("revokePending"))
         put("revokePending", value?.optBoolean("revokePending") == true)
-        if (value != null) { put("nickname", value.optString("nickname")); put("publicId", value.optString("publicId")); put("expiresAt", value.optString("expiresAt")) }
+        if (value != null) { put("nickname", value.optString("nickname")); put("publicId", value.optString("publicId")); put("expiresAt", value.optString("expiresAt")); put("sharingScope", sharingScope(value)) }
     }
     suspend fun status(): JSObject = mutex.withLock { visible(load()) }
     suspend fun link(code: String): JSObject = mutex.withLock {
@@ -77,17 +78,22 @@ internal class WalkingClient(context: Context) {
         if (!expires.isAfter(Instant.now()) || result.optString("nickname").isBlank() || result.optString("publicId").isBlank()) throw WalkingFailure("invalid_response")
         val record = JSONObject().put("token", result.getString("token")).put("nickname", result.getString("nickname"))
             .put("publicId", result.getString("publicId")).put("expiresAt", expires.toString()).put("confirmed", false).put("revokePending", false)
+            .put("sharingScope", sharingScope(result))
         if (expected != revision) { try { request("unpair", JSONObject(), record.getString("token")) } catch (_: Exception) {} ; throw WalkingFailure("stale_request") }
         try { save(record) } catch (error: Exception) { try { request("unpair", JSONObject(), record.getString("token")) } catch (_: Exception) {} ; throw error }
         visible(record)
     }
-    suspend fun confirm(consentVersion: String, share: Boolean): JSObject = mutex.withLock {
-        if (consentVersion != "2026-11-17" || !share) throw WalkingFailure("consent_required")
+    suspend fun confirm(consentVersion: String, share: Boolean, shareRanking: Any?): JSObject = mutex.withLock {
         val saved = requireSession(false)
+        val scope = sharingScope(saved)
+        try { WalkingSharingPolicy.confirm(scope, consentVersion, share, shareRanking) }
+        catch (_: IllegalArgumentException) { throw WalkingFailure("consent_required") }
         val expected = revision
-        val result = authenticated("confirm", JSONObject().put("consentVersion", consentVersion).put("shareTodaySteps", true), saved)
+        val body = JSONObject().put("consentVersion", consentVersion).put("shareTodaySteps", true)
+        if (scope == "private") body.put("shareRanking", false)
+        val result = authenticated("confirm", body, saved)
         if (expected != revision) throw WalkingFailure("stale_request")
-        if (!result.optBoolean("ok") || !result.optBoolean("confirmed") || result.optString("publicId") != saved.optString("publicId") || result.optString("nickname") != saved.optString("nickname")) throw WalkingFailure("invalid_response")
+        if (!result.optBoolean("ok") || !result.optBoolean("confirmed") || result.optString("publicId") != saved.optString("publicId") || result.optString("nickname") != saved.optString("nickname") || sharingScope(result) != scope) throw WalkingFailure("invalid_response")
         val expiry = Instant.parse(result.getString("expiresAt"))
         if (!expiry.isAfter(Instant.now())) throw WalkingFailure("invalid_response")
         saved.put("confirmed", true).put("expiresAt", expiry.toString()); save(saved); ++revision
@@ -113,7 +119,25 @@ internal class WalkingClient(context: Context) {
         JSObject().put("ok", true).put("date", result.getString("date"))
             .put("count", result.getLong("count")).put("syncedAt", result.getString("syncedAt"))
     }
-    suspend fun board(): JSObject = mutex.withLock { cleanBoard(authenticated("board", null, requireSession())) }
+    suspend fun board(): JSObject = mutex.withLock {
+        val saved = requireSession(); val expected = revision
+        val result = authenticated("board", null, saved)
+        if (expected != revision || requireSession().getString("token") != saved.getString("token")) throw WalkingFailure("stale_request")
+        val clean = cleanBoard(result)
+        if (sharingScope(saved) == "private" && (clean.getJSONArray("entries").length() != 0 || clean.getLong("total") != 0L || !clean.getJSONObject("me").isNull("count") || !clean.getJSONObject("me").isNull("rank"))) throw WalkingFailure("invalid_response")
+        clean
+    }
+    suspend fun hearts(action: String, body: JSONObject?): JSObject = mutex.withLock {
+        val fields = body?.let { value -> value.keys().asSequence().associateWith { value.opt(it) } }
+        try { HeartsRequestPolicy.validate(action, fields) }
+        catch (_: IllegalArgumentException) { throw WalkingFailure("invalid_heart_request") }
+        if (body != null && body.toString().toByteArray(Charsets.UTF_8).size > 2048) throw WalkingFailure("invalid_heart_request")
+        val expected = revision
+        val saved = requireSession()
+        val result = authenticated(action, body, saved, { expected == revision })
+        if (expected != revision || requireSession().getString("token") != saved.getString("token")) throw WalkingFailure("stale_request")
+        return@withLock HeartsPayload.clean(action, result)
+    }
     suspend fun disconnect() {
         ++revision // Stop an outstanding health read before it can submit.
         // Persist before waiting for an in-flight network operation. Process death
@@ -127,6 +151,7 @@ internal class WalkingClient(context: Context) {
             catch (error: WalkingFailure) { if (error.status == 401) save(null) else throw error }
         }
     }
+    private fun sharingScope(value: JSONObject): String = try { WalkingSharingPolicy.scope(value.opt("sharingScope")) } catch (_: IllegalArgumentException) { throw WalkingFailure("invalid_response") }
     private fun validTime(value: Any?): Boolean = value is String && try { Instant.parse(value); true } catch (_: Exception) { false }
     private fun integer(value: JSONObject, key: String): Long? {
         val number = value.opt(key)
@@ -161,12 +186,12 @@ internal class WalkingClient(context: Context) {
     private suspend fun authenticated(path: String, body: JSONObject?, saved: JSONObject, allowed: () -> Boolean = { true }): JSONObject {
         try { return request(path, body, saved.getString("token"), allowed) }
         catch (error: WalkingFailure) {
-            if ((error.status == 401 || error.status == 403) && error.code != "device_confirmation_required") { save(null); ++revision }
+            if (error.status == 401 || error.status == 403 && error.code != "device_confirmation_required" && error.code !in HeartsPayload.nonRevokingErrors) { save(null); ++revision }
             throw error
         }
     }
     private suspend fun request(path: String, body: JSONObject? = null, token: String? = null, allowed: () -> Boolean = { true }): JSONObject = withContext(Dispatchers.IO) {
-        if (path !in setOf("pair", "confirm", "sync", "board", "unpair")) throw WalkingFailure("invalid_request")
+        if (path !in setOf("pair", "confirm", "sync", "board", "unpair") && !HeartsRequestPolicy.permits(path)) throw WalkingFailure("invalid_request")
         val connection = URL("https://bapmunna-smartthings.vercel.app/api/walking/$path").openConnection() as HttpURLConnection
         try {
             connection.instanceFollowRedirects = false
@@ -181,14 +206,16 @@ internal class WalkingClient(context: Context) {
                 if (!allowed()) throw WalkingFailure("stale_request")
                 connection.outputStream.use { it.write(body.toString().toByteArray(Charsets.UTF_8)) }
             }
+            if (!allowed()) throw WalkingFailure("stale_request")
             val status = connection.responseCode
+            val maximum = if (HeartsRequestPolicy.permits(path)) HeartsPayload.MAX_RESPONSE_BYTES else 65536
             val stream = if (status in 200..299) connection.inputStream else connection.errorStream
             val bytes = stream?.use { input ->
                 val output = java.io.ByteArrayOutputStream(); val buffer = ByteArray(4096)
-                while (output.size() <= 65536) { val length = input.read(buffer); if (length < 0) break; output.write(buffer, 0, length) }
+                while (output.size() <= maximum) { val length = input.read(buffer); if (length < 0) break; output.write(buffer, 0, length) }
                 output.toByteArray()
             } ?: ByteArray(0)
-            if (bytes.size > 65536) throw WalkingFailure("invalid_response")
+            if (bytes.size > maximum) throw WalkingFailure("invalid_response")
             val result = try { JSONObject(String(bytes, Charsets.UTF_8)) } catch (_: Exception) { JSONObject() }
             if (status !in 200..299) {
                 val code = result.optString("error").takeIf { it.matches(Regex("^[a-z_]{1,64}$")) } ?: "server_error"

@@ -8,7 +8,9 @@ export function createWalkingVercelHandler({env=process.env,runtimeFactory=creat
       if(env.VERCEL&&env.NODEJS_HELPERS!=='0')throw Error('Raw body helpers configuration required.');
       if(!handler){
         const runtime=runtimeFactory(env);
-        handler=createNodeHandler({origin:runtime.config.origin,maxBodyBytes:2048,handle:request=>{
+        // Only heartmessage accepts this photo envelope. The service retains a
+        // 2 KiB cap for every other route and validates decoded photo bytes.
+        handler=createNodeHandler({origin:runtime.config.origin,maxBodyBytes:220000,handle:request=>{
           const url=new URL(request.url);
           // One bundled walking function keeps the Hobby deployment below its
           // function limit. Vercel adds [action] metadata; remove only exactly

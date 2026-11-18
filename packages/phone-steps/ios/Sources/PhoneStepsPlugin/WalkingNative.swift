@@ -8,6 +8,8 @@ private struct WalkingDevice: Codable {
     let token: String
     let nickname: String
     let publicId: String
+    let sharingScope: String?
+    var scope: String { sharingScope ?? "public" }
     var expiresAt: String
     var confirmed: Bool
     var revokePending: Bool
@@ -57,6 +59,7 @@ private final class WalkingNoRedirect: NSObject, URLSessionTaskDelegate {
         if status == errSecItemNotFound { return nil }
         guard status == errSecSuccess, let data = result as? Data,
               let value = try? JSONDecoder().decode(WalkingDevice.self, from:data),
+              ["private", "public"].contains(value.scope),
               value.token.range(of:"^walk_[A-Za-z0-9_-]{43}$", options:.regularExpression) != nil,
               let expiry = parseISO(value.expiresAt) else { throw WalkingNativeError(code:"secure_storage") }
         if expiry <= Date() && !value.revokePending { try save(nil); return nil }
@@ -65,7 +68,7 @@ private final class WalkingNoRedirect: NSObject, URLSessionTaskDelegate {
     private func visible(_ value: WalkingDevice?) -> JSObject {
         guard let value else { return ["linked":false,"confirmed":false,"revokePending":false] }
         return ["linked":!value.revokePending,"confirmed":value.confirmed && !value.revokePending,
-                "revokePending":value.revokePending,"nickname":value.nickname,"publicId":value.publicId,"expiresAt":value.expiresAt]
+                "revokePending":value.revokePending,"nickname":value.nickname,"publicId":value.publicId,"expiresAt":value.expiresAt,"sharingScope":value.scope]
     }
     func status() throws -> JSObject { visible(try load()) }
     func link(code: String) async throws -> JSObject {
@@ -78,17 +81,19 @@ private final class WalkingNoRedirect: NSObject, URLSessionTaskDelegate {
               let nickname = response["nickname"] as? String, !nickname.isEmpty, let publicId = response["publicId"] as? String, !publicId.isEmpty,
               let expiresAt = response["expiresAt"] as? String, let expiry = parseISO(expiresAt), expiry > Date(), response["confirmed"] as? Bool == false else { throw WalkingNativeError(code:"invalid_response") }
         guard expected == revision else { _ = try? await request("unpair",body:[:],token:token); throw WalkingNativeError(code:"stale_request") }
-        let saved = WalkingDevice(token:token,nickname:nickname,publicId:publicId,expiresAt:expiresAt,confirmed:false,revokePending:false)
+        let scope = try WalkingPayload.sharingScope(response["sharingScope"])
+        let saved = WalkingDevice(token:token,nickname:nickname,publicId:publicId,sharingScope:scope,expiresAt:expiresAt,confirmed:false,revokePending:false)
         do { try save(saved) } catch { _ = try? await request("unpair",body:[:],token:token); throw error }
         return visible(saved)
     }
-    func confirm(consentVersion: String, share: Bool) async throws -> JSObject {
+    func confirm(consentVersion: String, share: Bool, shareRanking: JSValue?) async throws -> JSObject {
         guard !busy else { throw WalkingNativeError(code:"request_busy") }
-        guard consentVersion == "2026-11-17", share else { throw WalkingNativeError(code:"consent_required") }
         busy = true; defer { busy = false }; let expected = revision
         var saved = try requireDevice(confirmed:false)
-        let response = try await authenticated("confirm",body:["consentVersion":consentVersion,"shareTodaySteps":true],device:saved)
+        let body = try WalkingPayload.confirmationBody(scope:saved.scope,version:consentVersion,share:share,shareRanking:shareRanking)
+        let response = try await authenticated("confirm",body:body,device:saved)
         guard expected == revision else { throw WalkingNativeError(code:"stale_request") }
+        guard try WalkingPayload.sharingScope(response["sharingScope"]) == saved.scope else { throw WalkingNativeError(code:"invalid_response") }
         guard response["ok"] as? Bool == true, response["confirmed"] as? Bool == true,
               response["nickname"] as? String == saved.nickname, response["publicId"] as? String == saved.publicId,
               let expires = response["expiresAt"] as? String, let expiry = parseISO(expires), expiry > Date() else { throw WalkingNativeError(code:"invalid_response") }
@@ -136,9 +141,19 @@ private final class WalkingNoRedirect: NSObject, URLSessionTaskDelegate {
     func board() async throws -> JSObject {
         guard !busy else { throw WalkingNativeError(code:"request_busy") }
         busy = true; defer { busy = false }; let expected = revision
-        let response = try await authenticated("board",body:nil,device:try requireDevice())
-        guard expected == revision else { throw WalkingNativeError(code:"stale_request") }
-        return try WalkingPayload.cleanBoard(response, now: Date())
+        let device = try requireDevice()
+        let response = try await authenticated("board",body:nil,device:device)
+        guard expected == revision, try requireDevice().token == device.token else { throw WalkingNativeError(code:"stale_request") }
+        return try WalkingPayload.cleanBoard(response, now: Date(), sharingScope:device.scope)
+    }
+    func hearts(action: String, body: JSObject?) async throws -> JSObject {
+        try HeartsPayload.validate(action:action,body:body)
+        guard !busy else { throw WalkingNativeError(code:"request_busy") }
+        busy = true; defer { busy = false }; let expected = revision
+        let device = try requireDevice()
+        let response = try await authenticated(action,body:body,device:device)
+        guard expected == revision, try requireDevice().token == device.token else { throw WalkingNativeError(code:"stale_request") }
+        return try HeartsPayload.clean(action:action,value:response)
     }
     func readToday() async throws -> JSObject {
         guard !reading else { throw WalkingNativeError(code:"request_busy") }
@@ -181,20 +196,20 @@ private final class WalkingNoRedirect: NSObject, URLSessionTaskDelegate {
     private func authenticated(_ path: String, body: JSObject?, device: WalkingDevice) async throws -> JSObject {
         do { return try await request(path,body:body,token:device.token) }
         catch let failure as WalkingNativeError {
-            if (failure.status == 401 || failure.status == 403) && failure.code != "device_confirmation_required", try load()?.token == device.token { try save(nil); revision &+= 1 }
+            if failure.status == 401 || (failure.status == 403 && failure.code != "device_confirmation_required" && !HeartsPayload.nonRevokingErrors.contains(failure.code)), try load()?.token == device.token { try save(nil); revision &+= 1 }
             throw failure
         }
     }
     private func request(_ path: String, body: JSObject?, token: String? = nil) async throws -> JSObject {
-        guard ["pair","confirm","sync","board","unpair"].contains(path), let url = URL(string:"https://bapmunna-smartthings.vercel.app/api/walking/"+path) else { throw WalkingNativeError(code:"invalid_request") }
+        guard (["pair","confirm","sync","board","unpair"].contains(path) || HeartsPayload.permits(path)), let url = URL(string:"https://bapmunna-smartthings.vercel.app/api/walking/"+path) else { throw WalkingNativeError(code:"invalid_request") }
         var request = URLRequest(url:url); request.httpMethod = body == nil ? "GET" : "POST"
         request.setValue("capacitor://localhost", forHTTPHeaderField:"Origin"); request.setValue("application/json",forHTTPHeaderField:"Accept")
         if let token { request.setValue("Bearer "+token,forHTTPHeaderField:"Authorization") }
         if let body { request.setValue("application/json",forHTTPHeaderField:"Content-Type"); request.httpBody = try JSONSerialization.data(withJSONObject:body) }
         do {
             let (bytes, response) = try await network.data(for:request)
-            guard let response = response as? HTTPURLResponse, bytes.count <= 65536 else { throw WalkingNativeError(code:"invalid_response") }
-            let object = (try? WalkingPayload.decode(bytes)) ?? [:]
+            guard let response = response as? HTTPURLResponse, bytes.count <= (HeartsPayload.permits(path) ? HeartsPayload.maxResponseBytes : 65536) else { throw WalkingNativeError(code:"invalid_response") }
+            let object = (try? (HeartsPayload.permits(path) ? HeartsPayload.decode(bytes) : WalkingPayload.decode(bytes))) ?? [:]
             guard (200...299).contains(response.statusCode) else {
                 let code = object["error"] as? String ?? "server_error"
                 throw WalkingNativeError(code:code.range(of:"^[a-z_]{1,64}$",options:.regularExpression) == nil ? "server_error" : code,status:response.statusCode)

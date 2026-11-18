@@ -64,9 +64,13 @@ class PhoneStepsPlugin : Plugin() {
     @PluginMethod fun readRankingToday(call: PluginCall) = launchWalking(call) { rankReads.withLock { call.resolve(readRankSnapshot()) } }
     @PluginMethod fun rankingStatus(call: PluginCall) = launchWalking(call) { call.resolve(walking.status()) }
     @PluginMethod fun rankingLink(call: PluginCall) = launchWalking(call) { call.resolve(walking.link(call.getString("code") ?: "")) }
-    @PluginMethod fun rankingConfirm(call: PluginCall) = launchWalking(call) { call.resolve(walking.confirm(call.getString("consentVersion") ?: "", call.getBoolean("shareTodaySteps") == true)) }
+    @PluginMethod fun rankingConfirm(call: PluginCall) = launchWalking(call) { call.resolve(walking.confirm(call.getString("consentVersion") ?: "", call.data.opt("shareTodaySteps") == true, call.data.opt("shareRanking"))) }
     @PluginMethod fun rankingBoard(call: PluginCall) = launchWalking(call) { call.resolve(walking.board()) }
     @PluginMethod fun rankingDisconnect(call: PluginCall) = launchWalking(call) { walking.disconnect(); call.resolve() }
+    @PluginMethod fun heartsRequest(call: PluginCall) = launchWalking(call) {
+        if (call.data.keys().asSequence().any { it !in setOf("action", "body") } || call.data.has("body") && call.getObject("body") == null) throw WalkingFailure("invalid_heart_request")
+        call.resolve(walking.hearts(call.getString("action") ?: "", call.getObject("body")))
+    }
     @PluginMethod fun rankingSync(call: PluginCall) = launchWalking(call) {
         rankReads.withLock {
             if (!walking.isReady()) {

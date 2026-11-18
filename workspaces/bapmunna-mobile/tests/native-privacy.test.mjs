@@ -10,11 +10,11 @@ const execute = promisify(execFile);
 const workspace = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const repo = path.resolve(workspace, '../..');
 
-test('OS health permission explanations disclose separate global ranking sharing', async () => {
+test('OS health permission explanations disclose family sharing and separate optional public ranking', async () => {
   for (const filename of ['ios/App/App/Info.plist','android/app/src/main/java/com/bapmunna/senior/HealthPermissionsRationaleActivity.java']) {
     const source = await readFile(path.join(workspace,filename),'utf8');
-    assert.match(source,/별도로 랭킹 참여와 이 휴대폰의 공유에 동의/);
-    assert.match(source,/전체 랭킹 참여자/);
+    assert.match(source,/가족 연결과 이 휴대폰의 공유에 동의/);
+    assert.match(source,/공개 순위는 따로 선택한 경우에만 별명과 합계를 다른 참여자에게 보여드려요/);
     assert.match(source,/건강 조회만으로 공유되지는 않아요/);
     assert.doesNotMatch(source,/걸음수[는를] 서버[나·]가족에게 보내지 않아요/);
   }

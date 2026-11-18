@@ -1,8 +1,9 @@
-import {ACCOUNT_CONSENT,WALKING_CONSENT,WalkingError,PAIR_LIFETIME,DEVICE_LIFETIME,BOARD_LIMIT,hash,randomId,koreanDay,nextKoreanMidnight,rankKey,dayRange,iso} from './walking-security.mjs';
+import {heartFirestoreStore} from './heart-store.mjs';
+import {ACCOUNT_CONSENT,WALKING_CONSENT,PRIVATE_WALKING_CONSENT,walkingMemberJoined,walkingSharingScope,requireShare,WalkingError,PAIR_LIFETIME,DEVICE_LIFETIME,BOARD_LIMIT,hash,randomId,koreanDay,nextKoreanMidnight,rankKey,dayRange,iso} from './walking-security.mjs';
 
 export const WALKING_COLLECTIONS=Object.freeze(Object.fromEntries(['Members','Devices','Pairings','Limits'].map(kind=>[kind,'bapmunnaSystem/walking/'+kind])));
 const live=(value,time)=>value&&Number.isFinite(value.until)&&value.until>time;
-const joined=value=>value?.consentVersion===WALKING_CONSENT&&value?.shareTodaySteps===true;
+const joined=walkingMemberJoined;
 const isToday=(member,time)=>joined(member)&&member.date===koreanDay(time)&&Number.isSafeInteger(member.count)&&member.count>=0;
 
 // Only the server's dedicated Firebase credential reads this namespace.
@@ -18,20 +19,27 @@ export function walkingFirestoreStore(db,now=()=>Date.now()){
   function requireMember(member){if(!joined(member))throw new WalkingError(403,'participation_required');return member;}
   function profile(member,time=now()){
     if(!joined(member))return {joined:false};
-    return {joined:true,nickname:member.nickname,publicId:member.publicId,deviceConnected:!!member.deviceKey&&member.deviceUntil>time,deviceExpiresAt:member.deviceKey&&member.deviceUntil>time?iso(member.deviceUntil):null,lastSyncedAt:isToday(member,time)?iso(member.syncedAt):null,date:koreanDay(time),count:isToday(member,time)?member.count:null};
+    return {joined:true,sharingScope:walkingSharingScope(member),nickname:member.nickname,publicId:member.publicId,deviceConnected:!!member.deviceKey&&member.deviceUntil>time,deviceExpiresAt:member.deviceKey&&member.deviceUntil>time?iso(member.deviceUntil):null,lastSyncedAt:isToday(member,time)?iso(member.syncedAt):null,date:koreanDay(time),count:isToday(member,time)?member.count:null};
   }
   async function memberForDevice(tx,key,{pending=false}={}){
     const device=(await tx.get(direct('Devices',key))).data(),time=now();
     if(!live(device,time))throw new WalkingError(401,'device_expired');
     const member=(await tx.get(ref('Members',device.uid))).data();
     requireMember(member);await consent(tx,device.uid);
+    if(walkingSharingScope(device)!==walkingSharingScope(member))throw new WalkingError(409,'destination_changed');
     if(device.generation!==member.generation||(device.confirmed?member.deviceKey:member.pendingDeviceKey)!==key)throw new WalkingError(401,'device_revoked');
     if(!device.confirmed&&!pending)throw new WalkingError(403,'device_confirmation_required');
     return {device,member};
   }
   const removeLinks=(tx,member)=>{for(const [field,kind]of[['deviceKey','Devices'],['pendingDeviceKey','Devices'],['pairingKey','Pairings']])if(member?.[field])tx.delete(direct(kind,member[field]));};
 
+  const hearts=heartFirestoreStore(db,{now,resolveIdentity:async(tx,{uid,token})=>{
+    if(token){const {device,member}=await memberForDevice(tx,hash(token));return {uid:device.uid,member};}
+    await consent(tx,uid);const member=requireMember((await tx.get(ref('Members',uid))).data());return {uid,member};
+  }});
+
   return {
+    hearts,
     async rateLimit(buckets){
       return db.runTransaction(async tx=>{
         const time=now(),refs=buckets.map(bucket=>ref('Limits',bucket.key)),saved=await Promise.all(refs.map(target=>tx.get(target)));
@@ -45,21 +53,24 @@ export function walkingFirestoreStore(db,now=()=>Date.now()){
       });
     },
     async profile(uid){return db.runTransaction(async tx=>{await consent(tx,uid);return profile((await tx.get(ref('Members',uid))).data());},{readOnly:true});},
-    async join(uid,name){
+    async join(uid,name,{sharingScope='public'}={}){
+      if(!['public','private'].includes(sharingScope))throw new WalkingError(400,'consent_required');
       return db.runTransaction(async tx=>{
         await consent(tx,uid);const target=ref('Members',uid),member=(await tx.get(target)).data();
         if(joined(member)){
           // Pair preview and confirm must refer to the same visible destination.
           if(member.nickname!==name)throw new WalkingError(409,'nickname_locked');
+          if(walkingSharingScope(member)!==sharingScope)throw new WalkingError(409,'sharing_scope_locked');
           return profile(member);
         }
-        const next={uid,nickname:name,publicId:randomId(),generation:randomId(),consentVersion:WALKING_CONSENT,shareTodaySteps:true,joinedAt:now()};
+        const next={uid,nickname:name,publicId:randomId(),generation:randomId(),consentVersion:sharingScope==='private'?PRIVATE_WALKING_CONSENT:WALKING_CONSENT,sharingScope,shareTodaySteps:true,...(sharingScope==='private'?{shareRanking:false}:{}),joinedAt:now()};
         tx.set(target,next);return profile(next);
       });
     },
     async leave(uid){return db.runTransaction(async tx=>{
       // Withdrawal remains possible if the optional profile was removed.
       const target=ref('Members',uid),member=(await tx.get(target)).data();
+      await hearts.deleteInTransaction(tx,uid);
       removeLinks(tx,member);tx.delete(target);return {ok:true};
     });},
     async issuePairing(uid,authTime,code){
@@ -83,11 +94,11 @@ export function walkingFirestoreStore(db,now=()=>Date.now()){
         await consent(tx,pending.uid);await verifyAccount(pending.uid,pending.authTime);
         if(member.generation!==pending.generation||member.pairingKey!==pairRef.id||collision.exists)throw new WalkingError(400,'invalid_pairing_code');
         const until=now()+PAIR_LIFETIME;
-        const device={uid:pending.uid,generation:member.generation,authTime:pending.authTime,confirmed:false,nickname:member.nickname,until,expiresAt:new Date(until)};
+        const device={uid:pending.uid,sharingScope:walkingSharingScope(member),generation:member.generation,authTime:pending.authTime,confirmed:false,nickname:member.nickname,until,expiresAt:new Date(until)};
         const next={...member,pendingDeviceKey:deviceRef.id};delete next.pairingKey;
         if(member.pendingDeviceKey)tx.delete(direct('Devices',member.pendingDeviceKey));
         tx.delete(pairRef);tx.set(deviceRef,device);tx.set(target,next);
-        return {token,expiresAt:iso(until),nickname:member.nickname,publicId:member.publicId,confirmed:false};
+        return {token,expiresAt:iso(until),sharingScope:walkingSharingScope(member),nickname:member.nickname,publicId:member.publicId,confirmed:false};
       });
     },
     async deviceIdentity(token,{pending=false}={}){
@@ -96,9 +107,10 @@ export function walkingFirestoreStore(db,now=()=>Date.now()){
         return {uid:device.uid,authTime:device.authTime};
       },{readOnly:true});
     },
-    async confirm(token){
+    async confirm(token,choice={consentVersion:WALKING_CONSENT,shareTodaySteps:true}){
       return db.runTransaction(async tx=>{
         const key=hash(token),{device,member}=await memberForDevice(tx,key,{pending:true});
+        if(requireShare(choice)!==walkingSharingScope(member))throw new WalkingError(400,'consent_required');
         if(device.nickname!==member.nickname)throw new WalkingError(409,'destination_changed');
         const until=device.confirmed?device.until:now()+DEVICE_LIFETIME;
         if(!device.confirmed){
@@ -106,7 +118,7 @@ export function walkingFirestoreStore(db,now=()=>Date.now()){
           const next={...member,deviceKey:key,deviceUntil:until};delete next.pendingDeviceKey;
           tx.set(ref('Members',device.uid),next);tx.set(direct('Devices',key),{...device,confirmed:true,until,expiresAt:new Date(until)});
         }
-        return {ok:true,confirmed:true,nickname:member.nickname,publicId:member.publicId,expiresAt:iso(until)};
+        return {ok:true,confirmed:true,sharingScope:walkingSharingScope(member),nickname:member.nickname,publicId:member.publicId,expiresAt:iso(until)};
       });
     },
     async unpair(token){
@@ -131,7 +143,9 @@ export function walkingFirestoreStore(db,now=()=>Date.now()){
           if(input.queriedAt<member.queriedAt||input.queriedAt===member.queriedAt&&input.count!==member.count)throw new WalkingError(409,'stale_snapshot');
           if(input.queriedAt===member.queriedAt)return {ok:true,date:member.date,count:member.count,syncedAt:iso(member.syncedAt)};
         }
-        const next={...member,...input,syncedAt:time,rankKey:rankKey(input.date,input.count),stepsExpireAt:new Date(nextKoreanMidnight(time))};
+        const next={...member,...input,syncedAt:time,stepsExpireAt:new Date(nextKoreanMidnight(time))};
+        if(walkingSharingScope(member)==='public')next.rankKey=rankKey(input.date,input.count);else delete next.rankKey;
+        await hearts.syncInTransaction(tx,device.uid,next);
         tx.set(ref('Members',device.uid),next);
         return {ok:true,date:input.date,count:input.count,syncedAt:iso(time)};
       });
@@ -142,6 +156,7 @@ export function walkingFirestoreStore(db,now=()=>Date.now()){
         if(token)member=(await memberForDevice(tx,hash(token))).member;
         else{await consent(tx,uid);member=requireMember((await tx.get(ref('Members',uid))).data());}
         const time=now(),date=koreanDay(time),{start,end}=dayRange(date);
+        if(walkingSharingScope(member)==='private')return {date,timeZone:'Asia/Seoul',updatedAt:iso(time),sharingScope:'private',entries:[],me:{publicId:member.publicId,nickname:member.nickname,count:null,rank:null,lastSyncedAt:isToday(member,time)?iso(member.syncedAt):null},total:0,limit:BOARD_LIMIT};
         const query=db.collection(WALKING_COLLECTIONS.Members).where('rankKey','>=',start).where('rankKey','<',end).orderBy('rankKey','desc');
         const current=isToday(member,time);
         const ahead=current?db.collection(WALKING_COLLECTIONS.Members).where('rankKey','>',rankKey(date,member.count)).where('rankKey','<',end).count():null;
@@ -150,7 +165,7 @@ export function walkingFirestoreStore(db,now=()=>Date.now()){
         const [top,total,above]=await Promise.all([tx.get(query.limit(BOARD_LIMIT)),tx.get(query.count()),ahead?tx.get(ahead):null]);
         let lastCount=null,lastRank=0;
         const entries=top.docs.map((doc,index)=>{
-          const value=doc.data();if(!isToday(value,time)||value.rankKey!==rankKey(date,value.count))throw new WalkingError(503,'temporarily_unavailable');
+          const value=doc.data();if(walkingSharingScope(value)!=='public'||!isToday(value,time)||value.rankKey!==rankKey(date,value.count))throw new WalkingError(503,'temporarily_unavailable');
           if(lastCount!==value.count){lastCount=value.count;lastRank=index+1;}
           return {publicId:value.publicId,nickname:value.nickname,count:value.count,rank:lastRank};
         });
@@ -190,6 +205,7 @@ export function walkingFirestoreStore(db,now=()=>Date.now()){
           if(change)result[change]++;
         }
       }
+      if(result.scanned<limit){const heartCleanup=await hearts.cleanup({limit:limit-result.scanned});result.hearts=heartCleanup;result.scanned+=heartCleanup.scanned;}
       result.limitReached=result.scanned===limit;return result;
     },
   };

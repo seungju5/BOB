@@ -11,6 +11,7 @@ function message(error: unknown) {
   const code = typeof error === "object" && error && "code" in error ? String(error.code) : "";
   if (/invalid_code|expired_code|pairing|invalid_pair/.test(code)) return "연결 숫자를 다시 확인해 주세요. 시간이 지났다면 웹앱에서 새 숫자를 받아 주세요.";
   if (/confirmation_required/.test(code)) return "연결할 별명을 확인하고 공유에 동의해 주세요.";
+  if (/sharing_scope|scope_changed|destination_changed/.test(code)) return "연결할 계정이나 공유 범위가 바뀌었어요. 이 휴대폰 연결을 끊고 웹앱에서 새 연결 숫자를 받아 다시 확인해 주세요.";
   if (/expired|revoked|unauthorized|consent_required/.test(code)) return "연결이 끝났어요. 웹앱에서 새 연결 숫자를 받아 주세요.";
   if (/revocation_pending|network/.test(code)) return "인터넷 연결을 확인해 주세요. 해제 중인 기기는 걸음수를 보내지 않아요.";
   if (/secure_storage/.test(code)) return "휴대폰의 보안 저장소를 열지 못했어요. 휴대폰 잠금을 푼 뒤 다시 확인해 주세요.";
@@ -20,7 +21,7 @@ function message(error: unknown) {
 }
 
 /** The bridge performs requests and protects credentials. This UI never sees a token. */
-export function NativeWalkingPanel() {
+export function NativeWalkingPanel({onLinkChange}:{onLinkChange?:(link:RankingLinkStatus)=>void}) {
   const [link, setLink] = useState<RankingLinkStatus>(emptyLink);
   const [board, setBoard] = useState<WalkingBoard | null>(null);
   const [reminders, setReminders] = useState<WalkReminderStatus>(emptyReminders);
@@ -32,6 +33,8 @@ export function NativeWalkingPanel() {
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
   const alive = useRef(false), locked = useRef(false), revision = useRef(0), reminderLoaded = useRef(false);
+  const reportLink=useCallback((next:RankingLinkStatus)=>{setLink(next);onLinkChange?.(next);},[onLinkChange]);
+  const privateSharing = link.sharingScope === "private";
 
   const refresh = useCallback(async (sync: boolean) => {
     const id = revision.current;
@@ -40,21 +43,21 @@ export function NativeWalkingPanel() {
     setReminders(currentReminders);
     let current = await PhoneSteps.rankingStatus();
     if (current.revokePending) {
-      try { await PhoneSteps.rankingDisconnect(); current = await PhoneSteps.rankingStatus(); }
+      try { onLinkChange?.(emptyLink); await PhoneSteps.rankingDisconnect(); current = await PhoneSteps.rankingStatus(); }
       catch { if (alive.current && id === revision.current) setNotice("서버에 연결 해제를 요청하고 있어요. 끝날 때까지 걸음수는 보내지 않아요."); }
     }
     if (!alive.current || id !== revision.current) return;
-    setLink(current);
+    reportLink(current);
     if (!current.linked || !current.confirmed || current.revokePending) { setBoard(null); return; }
     if (sync) {
       const result = await PhoneSteps.rankingSync();
       if (!alive.current || id !== revision.current) return;
       if (!result.ok) setNotice("걸음 기록을 아직 보내지 못했어요. 위의 건강 앱 연결과 권한을 확인해 주세요. 기록 없음은 0걸음으로 보내지 않아요.");
-      else setNotice("오늘의 걸음을 보내고 순위를 다시 확인했어요.");
+      else setNotice(current.sharingScope === "private" ? "오늘의 걸음을 연결된 가족 계정에만 보냈어요." : "오늘의 걸음을 보내고 공개 순위를 다시 확인했어요.");
     }
     const next = await PhoneSteps.rankingBoard();
     if (alive.current && id === revision.current) setBoard(next);
-  }, []);
+  }, [reportLink,onLinkChange]);
 
   const run = useCallback(async (operation: () => Promise<void>) => {
     if (locked.current) return;
@@ -62,9 +65,9 @@ export function NativeWalkingPanel() {
     try { await operation(); }
     catch (reason) {
       if (alive.current) { setError(message(reason)); setBoard(null); }
-      try { const current = await PhoneSteps.rankingStatus(); if (alive.current) setLink(current); } catch { /* Keep the error visible. */ }
+      try { const current = await PhoneSteps.rankingStatus(); if (alive.current) reportLink(current); } catch { /* Keep the error visible. */ }
     } finally { locked.current = false; if (alive.current) setBusy(false); }
-  }, []);
+  }, [reportLink,onLinkChange]);
 
   useEffect(() => {
     alive.current = true;
@@ -86,15 +89,15 @@ export function NativeWalkingPanel() {
 
   return <div className="mt-6 space-y-6 text-2xl leading-relaxed text-cocoa">
     <section aria-labelledby="native-ranking-title" className="rounded-3xl border border-line bg-paper p-5">
-      <h2 id="native-ranking-title" className="text-[28px] font-extrabold">함께 걷는 오늘의 순위</h2>
-      <p className="mt-3 text-muted">원하는 분만 참여해요. 별명과 한국 시간 기준 오늘 걸음수만 전체 참여자에게 보여요.</p>
+      <h2 id="native-ranking-title" className="text-[28px] font-extrabold">{link.linked && !privateSharing ? "함께 걷는 오늘의 순위" : "오늘의 걸음 연결"}</h2>
+      <p className="mt-3 text-muted">{!link.linked ? "가족 계정에 걸음을 연결해 함께 산책을 이어가요. 전체 랭킹 공개는 따로 선택할 수 있어요." : privateSharing ? "한국 시간 기준 오늘 걸음수를 연결된 가족 계정에만 공유해요. 전체 랭킹에는 공개하지 않아요." : "선택한 공개 연결이에요. 별명과 한국 시간 기준 오늘 걸음수가 전체 랭킹 참여자에게 보여요."}</p>
       {error ? <p role="alert" className="mt-4 rounded-2xl bg-blush p-4">{error}</p> : null}
       {notice ? <p role="status" className="mt-4 rounded-2xl bg-butter-soft p-4">{notice}</p> : null}
-      {link.revokePending ? <div className="mt-4"><p>연결 해제를 마치는 중이에요. 지금은 걸음수를 보내지 않아요.</p><Button disabled={busy} variant="outline" className="mt-3 min-h-16 text-2xl" onClick={() => void run(async () => { await PhoneSteps.rankingDisconnect(); await refresh(false); setNotice("이 휴대폰 연결을 해제했어요."); })}>연결 해제 다시 확인</Button></div>
+      {link.revokePending ? <div className="mt-4"><p>연결 해제를 마치는 중이에요. 지금은 걸음수를 보내지 않아요.</p><Button disabled={busy} variant="outline" className="mt-3 min-h-16 text-2xl" onClick={() => void run(async () => { onLinkChange?.(emptyLink); await PhoneSteps.rankingDisconnect(); await refresh(false); setNotice("이 휴대폰 연결을 해제했어요."); })}>연결 해제 다시 확인</Button></div>
       : !link.linked ? <>
-        <Button variant="outline" className="mt-4 min-h-16 text-2xl" disabled={busy} onClick={() => void run(async () => { await PhoneSteps.openWalkingWebApp(); })}>웹앱에서 랭킹 참여하기</Button>
-        <p className="mt-4 text-muted">가입한 웹앱에서 랭킹 참여를 선택하고, 받은 연결 숫자 8개를 아래에 적어 주세요.</p>
-        <form className="mt-4" onSubmit={event => { event.preventDefault(); void run(async () => { setConsent(false); setNotice(""); const next = await PhoneSteps.rankingLink({code}); if (alive.current) { setLink(next); setCode(""); } }); }}>
+        <Button variant="outline" className="mt-4 min-h-16 text-2xl" disabled={busy} onClick={() => void run(async () => { await PhoneSteps.openWalkingWebApp(); })}>웹앱에서 가족 계정 연결하기</Button>
+        <p className="mt-4 text-muted">웹앱에 로그인해 걸음 연결을 선택하고, 받은 연결 숫자 8개를 아래에 적어 주세요. 다음 화면에서 공유 범위를 확인할 수 있어요.</p>
+        <form className="mt-4" onSubmit={event => { event.preventDefault(); void run(async () => { setConsent(false); setNotice(""); const next = await PhoneSteps.rankingLink({code}); if (alive.current) { reportLink(next); setCode(""); } }); }}>
           <label htmlFor="rank-device-code" className="block font-bold">연결 숫자 8개</label>
           <input id="rank-device-code" value={code} onChange={event => setCode(event.target.value.replace(/\D/g, "").slice(0, 8))} inputMode="numeric" autoComplete="off" pattern="[0-9]{8}" minLength={8} maxLength={8} required className="mt-2 min-h-16 w-full rounded-2xl border-2 border-line bg-cream px-4 text-[28px] tracking-widest outline-offset-4" placeholder="00000000" />
           <Button disabled={busy || code.length !== 8} className="mt-4 min-h-16 text-2xl" type="submit">연결할 별명 확인</Button>
@@ -103,23 +106,26 @@ export function NativeWalkingPanel() {
         <h3 className="font-bold">이 별명으로 연결할까요?</h3>
         <p className="mt-2 break-words text-[30px] font-extrabold">{link.nickname}</p>
         <p className="mt-3">이 휴대폰의 오늘 걸음수를 위 별명으로 보내요. 아직 걸음수는 보내지 않았어요. 다른 분의 별명이면 연결하지 마세요.</p>
+        <p className="mt-3 rounded-2xl border-2 border-cocoa/20 bg-paper p-3 font-bold">{privateSharing ? "공유 범위: 연결된 가족 계정에만 공유" : "공유 범위: 전체 랭킹 참여자에게 공개"}</p>
         <p className="mt-3">연결된 동안 앱을 열면 매일 그날의 걸음수를 보내요. 연결은 최대 30일이며, 언제든 끊을 수 있어요.</p>
-        <label className="mt-4 flex items-start gap-3"><input type="checkbox" checked={consent} onChange={event => setConsent(event.target.checked)} className="mt-2 h-6 w-6 shrink-0" /><span>이 휴대폰 소유자로서, 오늘 걸음수와 별명이 전체 랭킹 참여자에게 공개되는 데 동의해요.</span></label>
-        <Button className="mt-4 min-h-16 text-2xl" disabled={busy || !consent} onClick={() => void run(async () => { const next = await PhoneSteps.rankingConfirm({consentVersion:"2026-11-17",shareTodaySteps:true}); if (!alive.current) return; setLink(next); setConsent(false); await refresh(true); })}>동의하고 랭킹 연결</Button>
-        <Button variant="outline" className="mt-3 min-h-16 text-2xl" disabled={busy} onClick={() => void run(async () => { await PhoneSteps.rankingDisconnect(); await refresh(false); setNotice("연결을 취소했어요."); })}>다른 별명이에요</Button>
+        <label className="mt-4 flex items-start gap-3"><input type="checkbox" checked={consent} onChange={event => setConsent(event.target.checked)} className="mt-2 h-6 w-6 shrink-0" /><span>{privateSharing ? "이 휴대폰 소유자로서, 오늘 걸음수를 위 별명의 가족 계정에만 공유하는 데 동의해요." : "이 휴대폰 소유자로서, 오늘 걸음수와 별명이 전체 랭킹 참여자에게 공개되는 데 동의해요."}</span></label>
+        <Button className="mt-4 min-h-16 text-2xl" disabled={busy || !consent} onClick={() => void run(async () => { const next = await PhoneSteps.rankingConfirm(privateSharing ? {consentVersion:"2026-11-17-private",shareTodaySteps:true,shareRanking:false} : {consentVersion:"2026-11-17",shareTodaySteps:true}); if (!alive.current) return; reportLink(next); setConsent(false); await refresh(true); })}>{privateSharing ? "동의하고 가족 계정에 연결" : "동의하고 공개 랭킹 연결"}</Button>
+        <Button variant="outline" className="mt-3 min-h-16 text-2xl" disabled={busy} onClick={() => void run(async () => { onLinkChange?.(emptyLink); await PhoneSteps.rankingDisconnect(); await refresh(false); setNotice("연결을 취소했어요."); })}>다른 별명이에요</Button>
       </div> : <>
         <p className="mt-4 break-words font-bold">{link.nickname} 님으로 연결했어요.</p>
-        <p className="mt-2 text-muted">앱을 열거나 보고 계실 때 1분마다 자동으로 순위를 갱신해요. 앱을 닫으면 걸음수를 보내지 않아요.</p>
+        <p className="mt-2 text-muted">앱을 열거나 보고 계실 때 1분마다 오늘 걸음을 갱신해요. 앱을 닫으면 걸음수를 보내지 않아요.</p>
         {board ? <div className="mt-4">
           <p className="font-bold">{board.date} · 한국 시간</p>
-          <p className="mt-2 rounded-2xl bg-butter-soft p-4">내 순위 {board.me.rank == null ? "— 기록을 기다려요" : `${number(board.me.rank)}등`}<br />{board.me.count == null ? "아직 오늘 기록이 없어요." : `${number(board.me.count)}걸음`}</p>
-          {board.entries.length ? <ol aria-label="오늘 상위 세 순위" className="mt-4 space-y-3">{board.entries.filter(entry => entry.rank <= 3).map(entry => <li key={entry.publicId} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-line p-3"><strong>{entry.rank}등 · {entry.nickname}</strong><span>{number(entry.count)}걸음</span></li>)}</ol> : <p className="mt-4">아직 오늘 걸음 기록이 없어요. 숫자가 도착하면 순위가 생겨요.</p>}
-          <p className="mt-3 text-muted">같은 걸음수는 공동 순위예요. 많이 걷는 날도, 쉬어가는 날도 괜찮아요.</p>
+          {privateSharing ? <p className="mt-2 rounded-2xl bg-butter-soft p-4">가족 계정에만 연결되어 있어요. 오늘 걸음과 하트는 ‘오늘의 산책’에서 확인해 주세요.</p> : <>
+            <p className="mt-2 rounded-2xl bg-butter-soft p-4">내 순위 {board.me.rank == null ? "— 기록을 기다려요" : `${number(board.me.rank)}등`}<br />{board.me.count == null ? "아직 오늘 기록이 없어요." : `${number(board.me.count)}걸음`}</p>
+            {board.entries.length ? <ol aria-label="오늘 상위 세 순위" className="mt-4 space-y-3">{board.entries.filter(entry => entry.rank <= 3).map(entry => <li key={entry.publicId} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-line p-3"><strong>{entry.rank}등 · {entry.nickname}</strong><span>{number(entry.count)}걸음</span></li>)}</ol> : <p className="mt-4">아직 오늘 걸음 기록이 없어요. 숫자가 도착하면 순위가 생겨요.</p>}
+            <p className="mt-3 text-muted">같은 걸음수는 공동 순위예요. 많이 걷는 날도, 쉬어가는 날도 괜찮아요.</p>
+          </>}
           {board.me.lastSyncedAt ? <p className="mt-3 text-[20px] text-muted">마지막 전송: {new Date(board.me.lastSyncedAt).toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })} · 한국 시간</p> : null}
         </div> : null}
-        <Button disabled={busy} className="mt-4 min-h-16 text-2xl" onClick={() => void run(() => refresh(true))}>걸음수·순위 다시 확인</Button>
-        <Button variant="outline" disabled={busy} className="mt-3 min-h-16 text-2xl" onClick={() => void run(async () => { revision.current++; setBoard(null); await PhoneSteps.rankingDisconnect(); await refresh(false); setNotice("이 휴대폰 연결을 해제했어요. 랭킹 참여 자체는 웹앱에서 그만할 수 있어요."); })}>이 휴대폰 연결 끊기</Button>
-        <p className="mt-3 text-muted">참여를 완전히 그만하고 별명·걸음수를 지우려면 웹앱의 ‘랭킹 참여 그만하기’를 눌러 주세요.</p>
+        <Button disabled={busy} className="mt-4 min-h-16 text-2xl" onClick={() => void run(() => refresh(true))}>{privateSharing ? "오늘 걸음 다시 보내기" : "걸음수·순위 다시 확인"}</Button>
+        <Button variant="outline" disabled={busy} className="mt-3 min-h-16 text-2xl" onClick={() => void run(async () => { revision.current++; setBoard(null); onLinkChange?.(emptyLink); await PhoneSteps.rankingDisconnect(); await refresh(false); setNotice("이 휴대폰 연결을 해제했어요. 계정에 보낸 기록은 웹앱에서 관리할 수 있어요."); })}>이 휴대폰 연결 끊기</Button>
+        <p className="mt-3 text-muted">{privateSharing ? "계정에 저장된 별명·걸음수를 지우려면 웹앱에서 걸음 연결을 그만해 주세요." : "참여를 완전히 그만하고 별명·걸음수를 지우려면 웹앱의 ‘랭킹 참여 그만하기’를 눌러 주세요."}</p>
       </>}
     </section>
 

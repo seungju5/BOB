@@ -25,10 +25,21 @@ async function invoke(handler,{path='/api/walking/config',method='GET',headers={
   await handler(req,response);return {...response,json:response.body?.length?JSON.parse(String(response.body)):null};
 }
 
-test('walking bundles ten API actions in one function while preserving four fixed Kakao functions and SmartThings',async()=>{
+test('walking and hearts share one function while preserving four fixed Kakao functions and SmartThings',async()=>{
   assert.deepEqual(await readdir(join(destination,'api/walking')),['[action].mjs']);
   assert.equal((await readdir(join(destination,'api/kakao'))).length,4);assert.equal((await readdir(join(destination,'api/smartthings'))).length,1);
   const entry=await import(pathToFileURL(join(destination,'api/walking/[action].mjs')).href),shared=await import(pathToFileURL(join(destination,'runtime/walking-handler.mjs')).href);assert.equal(entry.default,shared.default);
+});
+test('staged heart core resolves and the wrapper carries bounded family photos unchanged',async()=>{
+  const {heartSummary,createHeartState}=await import(pathToFileURL(join(destination,'runtime/heart-core.mjs')).href);
+  const {heartFirestoreStore}=await import(pathToFileURL(join(destination,'runtime/heart-store.mjs')).href);
+  assert.equal(typeof heartFirestoreStore,'function');assert.equal(heartSummary(createHeartState({date:'2026-11-18'}),'2026-11-18').count,null);
+  const config=readWalkingConfig();let seen;
+  const handler=createWalkingVercelHandler({env:{VERCEL:'1',NODEJS_HELPERS:'0'},runtimeFactory:()=>({config,handle:async request=>{seen=await request.json();return new Response('{"ok":true}');}})});
+  const body={text:'합성 테스트 사진',photo:'data:image/jpeg;base64,'+'A'.repeat(200000)};
+  const result=await invoke(handler,{path:'/api/walking/heartmessage?action=heartmessage',method:'POST',headers:{authorization:'Bearer synthetic','content-type':'application/json',origin:'https://impact-series.web.app'},body});
+  assert.equal(result.status,200);assert.deepEqual(seen,body);
+  assert.equal((await invoke(handler,{path:'/api/walking/heartmessage',method:'POST',body:{text:'A'.repeat(220001)}})).status,413);
 });
 test('Vercel metadata is removed only when one action matches the path; query/duplicate/mismatch remain rejected',async()=>{
   const config=readWalkingConfig(),handle=createWalkingService({config}),handler=createWalkingVercelHandler({env:{VERCEL:'1',NODEJS_HELPERS:'0'},runtimeFactory:()=>({config,handle})});

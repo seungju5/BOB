@@ -12,6 +12,7 @@ const messages:Record<string,string>={
   participation_required:'랭킹에 참여한 뒤 사용할 수 있어요.',not_joined:'랭킹에 참여한 뒤 사용할 수 있어요.',
   invalid_nickname:'별명을 다시 확인해 주세요. 실명·전화번호 대신 짧은 별명을 써 주세요.',
   nickname_locked:'참여 중인 별명은 유지돼요. 바꾸려면 참여를 마친 뒤 다시 시작해 주세요.',
+  sharing_scope_locked:'현재 공유 범위는 그대로 유지돼요. 연결을 마친 뒤 원하는 범위로 다시 시작해 주세요.',
   rate_limited:'요청이 잠시 많아요. 조금 뒤 다시 시도해 주세요.',quota_exceeded:'요청이 잠시 많아요. 조금 뒤 다시 시도해 주세요.',
   invalid_request:'입력한 내용을 다시 확인해 주세요.',forbidden:'이 계정으로 진행할 수 없어요. 로그인과 참여 상태를 확인해 주세요.',
 };
@@ -46,6 +47,7 @@ export function createWalkingClient(options:{provider?:()=>Promise<Pick<Firebase
     profile:async(uid:string,signal?:AbortSignal)=>validateWalkingProfile(await request('profile',uid,undefined,signal)),
     board:async(uid:string,signal?:AbortSignal)=>validateWalkingBoard(await request('board',uid,undefined,signal)),
     join:async(uid:string,nickname:string,signal?:AbortSignal)=>validateWalkingProfile(await request('join',uid,{nickname:nickname.trim(),consentVersion:WALKING_CONSENT_VERSION,shareTodaySteps:true},signal)),
+    joinPrivate:async(uid:string,nickname:string,signal?:AbortSignal)=>validateWalkingProfile(await request('join',uid,{nickname:nickname.trim(),consentVersion:'2026-11-17-private',shareTodaySteps:true,shareRanking:false},signal)),
     pairing:async(uid:string,signal?:AbortSignal)=>validateWalkingPairing(await request('pairing',uid,{},signal)),
     leave:async(uid:string,signal?:AbortSignal)=>{const value=await request('leave',uid,{},signal);if(!value||typeof value!=='object'||!('ok'in value)||value.ok!==true)throw Error('invalid_response');},
   };

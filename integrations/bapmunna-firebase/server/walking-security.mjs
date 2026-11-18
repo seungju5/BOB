@@ -3,6 +3,12 @@ import {isIP} from 'node:net';
 
 export const WALKING_PREFIX='/api/walking';
 export const WALKING_CONSENT='2026-11-17';
+export const PRIVATE_WALKING_CONSENT='2026-11-17-private';
+export const walkingSharingScope=member=>member?.sharingScope==='private'?'private':'public';
+export function walkingMemberJoined(member){
+  if(member?.shareTodaySteps!==true)return false;
+  return walkingSharingScope(member)==='private'?member.consentVersion===PRIVATE_WALKING_CONSENT&&member.shareRanking===false:member.consentVersion===WALKING_CONSENT;
+}
 export const ACCOUNT_CONSENT='2026-10-16';
 export const WALKING_ZONE='Asia/Seoul';
 export const PAIR_LIFETIME=10*60*1000;
@@ -43,7 +49,10 @@ export function exactFields(value,fields){
   return value;
 }
 export function requireShare(value){
-  if(value.consentVersion!==WALKING_CONSENT||value.shareTodaySteps!==true)throw new WalkingError(400,'consent_required');
+  if(value.shareTodaySteps!==true)throw new WalkingError(400,'consent_required');
+  if(value.consentVersion===PRIVATE_WALKING_CONSENT&&value.shareRanking===false)return 'private';
+  if(value.consentVersion===WALKING_CONSENT&&!Object.hasOwn(value,'shareRanking'))return 'public';
+  throw new WalkingError(400,'consent_required');
 }
 export function syncInput(value,time){
   exactFields(value,['date','count','source','queriedAt','timeZone']);
@@ -58,12 +67,12 @@ export function networkKey(request,secret,time){
   const address=isIP(raw)?raw:'unknown';
   return createHmac('sha256',secret).update('walking:'+koreanDay(time)+':'+address).digest('hex');
 }
-export async function requestJson(request){
+export async function requestJson(request,maxBytes=2048){
   if(!/^application\/json(?:\s*;|$)/i.test(request.headers.get('content-type')||''))throw new WalkingError(400,'invalid_request');
   const reader=request.body?.getReader();if(!reader)throw new WalkingError(400,'invalid_request');
   const chunks=[];let size=0;
   try{
-    for(;;){const {done,value}=await reader.read();if(done)break;size+=value.byteLength;if(size>2048){await reader.cancel();throw Error();}chunks.push(value);}
+    for(;;){const {done,value}=await reader.read();if(done)break;size+=value.byteLength;if(size>maxBytes){await reader.cancel();throw Error();}chunks.push(value);}
     return JSON.parse(Buffer.concat(chunks,size).toString('utf8'));
   }catch{throw new WalkingError(400,'invalid_request');}finally{reader.releaseLock();}
 }

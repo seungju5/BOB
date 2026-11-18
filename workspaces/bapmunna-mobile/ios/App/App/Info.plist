@@ -9,7 +9,7 @@
         <key>CFBundleTypeRole</key><string>Viewer</string>
     </dict></array>
     <key>NSHealthShareUsageDescription</key>
-    <string>건강 앱의 오늘 걸음수를 읽어 본인 화면에 보여드려요. 별도로 랭킹 참여와 이 휴대폰의 공유에 동의하면, 한국 시간 오늘 총걸음수를 서버에 보내 별명과 함께 전체 랭킹 참여자에게 보여드려요. 건강 조회만으로 공유되지는 않아요.</string>
+    <string>건강 앱의 오늘 걸음수를 읽어 본인 화면에 보여드려요. 가족 연결과 이 휴대폰의 공유에 동의하면, 한국 시간 오늘 총걸음수를 연결된 가족 계정에 보내요. 공개 순위는 따로 선택한 경우에만 별명과 합계를 다른 참여자에게 보여드려요. 건강 조회만으로 공유되지는 않아요.</string>
   <key>CAPACITOR_DEBUG</key>
 	<string>$(CAPACITOR_DEBUG)</string>
 	<key>CFBundleDevelopmentRegion</key>

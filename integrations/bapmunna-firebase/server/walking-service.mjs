@@ -1,10 +1,11 @@
-import {WalkingError,WALKING_PREFIX,WALKING_CONSENT,WALKING_ZONE,NATIVE_ORIGINS,nickname,exactFields,requireShare,syncInput,randomCode,randomToken,validDeviceToken,networkKey,requestJson,hash} from './walking-security.mjs';
+import {heartSettings,heartItem,heartMessage,heartMessageId,HEART_MESSAGE_BODY_BYTES} from './heart-security.mjs';
+import {WalkingError,WALKING_PREFIX,WALKING_CONSENT,PRIVATE_WALKING_CONSENT,WALKING_ZONE,NATIVE_ORIGINS,nickname,exactFields,requireShare,syncInput,randomCode,randomToken,validDeviceToken,networkKey,requestJson,hash} from './walking-security.mjs';
 
 const baseHeaders={'Cache-Control':'no-store','Pragma':'no-cache','Referrer-Policy':'no-referrer','X-Content-Type-Options':'nosniff','X-Frame-Options':'DENY'};
 const json=(data,status=200,headers={})=>new Response(JSON.stringify(data),{status,headers:{...baseHeaders,'Content-Type':'application/json; charset=utf-8',...headers}});
-const methods=Object.freeze({config:'GET',profile:'GET',join:'POST',leave:'POST',pairing:'POST',pair:'POST',confirm:'POST',unpair:'POST',sync:'POST',board:'GET'});
-const nativePaths=new Set(['pair','confirm','unpair','sync','board']);
-const webPaths=new Set(['profile','join','leave','pairing','board']);
+const methods=Object.freeze({config:'GET',profile:'GET',join:'POST',leave:'POST',pairing:'POST',pair:'POST',confirm:'POST',unpair:'POST',sync:'POST',board:'GET',hearts:'GET',heartjoin:'POST',heartsettings:'POST',heartbuy:'POST',heartequip:'POST',heartgift:'POST',heartmessage:'POST',heartread:'POST',heartleave:'POST',heartleague:'GET'});
+const nativePaths=new Set(['pair','confirm','unpair','sync','board','hearts','heartjoin','heartsettings','heartbuy','heartequip','heartread','heartleave','heartleague']);
+const webPaths=new Set(['profile','join','leave','pairing','board','hearts','heartjoin','heartsettings','heartbuy','heartequip','heartgift','heartmessage','heartread','heartleave','heartleague']);
 
 export function createWalkingService({config,ready=false,store,auth,rateSecret='',now=()=>Date.now()}){
   async function verifyAccount(uid,authTime){
@@ -36,12 +37,27 @@ export function createWalkingService({config,ready=false,store,auth,rateSecret='
   }
   async function limit(key,count=120,windowMs=600000){await store.rateLimit([{key,limit:count,windowMs}]);}
 
+  async function heartRoute(path,identity,body){
+    if(!store.hearts)throw new WalkingError(503,'setup_required');
+    if(path==='hearts')return store.hearts.get(identity);
+    if(path==='heartleague')return store.hearts.league(identity);
+    if(path==='heartjoin')return store.hearts.join(identity,heartSettings(body,{join:true}));
+    if(path==='heartsettings')return store.hearts.settings(identity,heartSettings(body));
+    if(path==='heartbuy')return store.hearts.buy(identity,heartItem(body));
+    if(path==='heartequip')return store.hearts.equip(identity,heartItem(body,{equip:true}));
+    if(path==='heartgift')return store.hearts.gift(identity,heartItem(body));
+    if(path==='heartmessage')return store.hearts.message(identity,heartMessage(body));
+    if(path==='heartread')return store.hearts.read(identity,heartMessageId(body));
+    if(path==='heartleave'){exactFields(body,[]);return store.hearts.leave(identity);}
+    throw new WalkingError(404,'not_found');
+  }
+
   async function route(request,path,origin){
     if(path==='config')return json({enabled:ready,consentVersion:WALKING_CONSENT,timeZone:WALKING_ZONE});
     if(!ready)throw new WalkingError(503,'setup_required');
     const native=NATIVE_ORIGINS.includes(origin);
     if(native&&!nativePaths.has(path)||!native&&!webPaths.has(path))throw new WalkingError(403,'invalid_origin');
-    const body=request.method==='POST'?await requestJson(request):null;
+    const body=request.method==='POST'?await requestJson(request,path==='heartmessage'?HEART_MESSAGE_BODY_BYTES:2048):null;
     if(path==='pair'){
       exactFields(body,['code']);if(typeof body.code!=='string'||!/^\d{8}$/.test(body.code))throw new WalkingError(400,'invalid_pairing_code');
       const time=now();
@@ -59,16 +75,17 @@ export function createWalkingService({config,ready=false,store,auth,rateSecret='
     if(native){
       const token=await device(request,{pending:path==='confirm'});
       await limit('device:'+hash(token));
-      if(path==='confirm'){exactFields(body,['consentVersion','shareTodaySteps']);requireShare(body);return json(await store.confirm(token));}
+      if(path==='confirm'){exactFields(body,body?.consentVersion===PRIVATE_WALKING_CONSENT?['consentVersion','shareTodaySteps','shareRanking']:['consentVersion','shareTodaySteps']);requireShare(body);return json(await store.confirm(token,body));}
       if(path==='sync')return json(await store.sync(token,syncInput(body,now())));
       if(path==='board')return json(await store.board({token}));
+      if(path.startsWith('heart'))return json(await heartRoute(path,{token},body));
     }
     const claims=await user(request),uid=claims.uid;
     await limit('user:'+hash(uid));
     if(path==='profile')return json(await store.profile(uid));
     if(path==='join'){
-      exactFields(body,['nickname','consentVersion','shareTodaySteps']);requireShare(body);
-      return json(await store.join(uid,nickname(body.nickname)));
+      exactFields(body,body?.consentVersion===PRIVATE_WALKING_CONSENT?['nickname','consentVersion','shareTodaySteps','shareRanking']:['nickname','consentVersion','shareTodaySteps']);const sharingScope=requireShare(body);
+      return json(await store.join(uid,nickname(body.nickname),{sharingScope}));
     }
     if(path==='leave'){exactFields(body,[]);return json(await store.leave(uid));}
     if(path==='pairing'){
@@ -80,6 +97,7 @@ export function createWalkingService({config,ready=false,store,auth,rateSecret='
       throw new WalkingError(503,'temporarily_unavailable');
     }
     if(path==='board')return json(await store.board({uid}));
+    if(path.startsWith('heart'))return json(await heartRoute(path,{uid},body));
     throw new WalkingError(404,'not_found');
   }
   return async request=>{

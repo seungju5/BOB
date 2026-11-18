@@ -40,6 +40,8 @@ test('browser ranking/reminder fallbacks neither request permission nor send or 
       () => PhoneSteps.rankingBoard(),
       () => PhoneSteps.configureWalkReminders({enabled:true,times:['13:00'],bloodSugarReminder:true}),
       () => PhoneSteps.openWalkingWebApp(),
+      () => PhoneSteps.heartsRequest({action:'hearts'}),
+      () => PhoneSteps.heartsRequest({action:'heartjoin',body:{consentVersion:'2026-11-17-hearts',enabled:true,goal:5000,leagueEnabled:false,region:''}}),
     ]) await assert.rejects(operation(), /휴대폰 앱/);
     await PhoneSteps.rankingDisconnect();
     assert.equal(networkCalls, 0);

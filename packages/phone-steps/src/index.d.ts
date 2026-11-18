@@ -46,17 +46,26 @@ export interface WalkingBoard {
   entries: WalkingBoardEntry[]; total: number; limit: number;
   me: { publicId: string; nickname: string; count: number|null; rank: number|null; lastSyncedAt: string|null };
 }
-export interface RankingLinkStatus { linked: boolean; confirmed: boolean; revokePending: boolean; nickname?: string; publicId?: string; expiresAt?: string; }
+export type WalkingSharingScope = 'private' | 'public';
+export interface RankingLinkStatus { linked: boolean; confirmed: boolean; revokePending: boolean; nickname?: string; publicId?: string; expiresAt?: string; sharingScope?: WalkingSharingScope; }
+export type WalkingConfirmation =
+  | {consentVersion: '2026-11-17-private'; shareTodaySteps: true; shareRanking: false}
+  | {consentVersion: '2026-11-17'; shareTodaySteps: true; shareRanking?: true};
 export interface WalkReminderStatus { enabled: boolean; times: string[]; bloodSugarReminder: boolean; permission: string; }
+/** Fixed native routes only. Family message/gift creation is guardian-web-only. */
+export type HeartsAction = 'hearts' | 'heartjoin' | 'heartsettings' | 'heartbuy' | 'heartequip' | 'heartread' | 'heartleave' | 'heartleague';
+export interface HeartsRequest { action: HeartsAction; body?: Record<string, unknown>; }
 /** Native-only network. No bearer credential is exposed through this interface. */
 export interface WalkingNativePlugin {
   readRankingToday(): Promise<PhoneStepsSnapshot>;
   rankingLink(input: {code: string}): Promise<RankingLinkStatus>;
-  rankingConfirm(input: {consentVersion: '2026-11-17'; shareTodaySteps: true}): Promise<RankingLinkStatus>;
+  rankingConfirm(input: WalkingConfirmation): Promise<RankingLinkStatus>;
   rankingStatus(): Promise<RankingLinkStatus>;
   rankingSync(): Promise<{ok: boolean; date?: string; count?: number; syncedAt?: string; reason?: string}>;
   rankingBoard(): Promise<WalkingBoard>;
   rankingDisconnect(): Promise<void>;
+  /** Uses the confirmed native walking link; never reads health data or prompts. Validate the response in the UI before use. */
+  heartsRequest(input: HeartsRequest): Promise<unknown>;
   walkReminderStatus(): Promise<WalkReminderStatus>;
   configureWalkReminders(input: {enabled: boolean; times: string[]; bloodSugarReminder: boolean}): Promise<WalkReminderStatus>;
   openWalkingWebApp(): Promise<void>;

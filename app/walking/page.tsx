@@ -1,4 +1,4 @@
 import type {Metadata} from 'next';
-import {WalkingPage} from '@/components/walking/WalkingPage';
-export const metadata:Metadata={title:'산책·걸음수 랭킹 · 밥뭇나',description:'내 속도로 걷고, 동의한 참여자들과 오늘의 발걸음을 나눠요.'};
-export default function Page(){return <WalkingPage/>;}
+import {HeartsEntry} from '@/components/walking/HeartsEntry';
+export const metadata:Metadata={title:'오늘의 산책 · 밥뭇나',description:'한 걸음씩 하트를 채우고, 가족의 따뜻한 응원을 만나보세요.'};
+export default function Page(){return <HeartsEntry/>;}

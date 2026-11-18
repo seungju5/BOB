@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useSyncExternalStore } from "react";
+import { useCallback, useState, useSyncExternalStore } from "react";
 import { Capacitor } from "@capacitor/core";
-import { PhoneSteps } from "@bapmunna/phone-steps";
+import { PhoneSteps, type RankingLinkStatus } from "@bapmunna/phone-steps";
 import { Logo, Mascot } from "@/components/Mascot";
 import { Button } from "@/components/ui";
 import { healthAppLink } from "@/lib/mobile/links";
@@ -11,6 +11,7 @@ import { PhoneStepsCard } from "./PhoneStepsCard";
 import { HealthPrivacyContent } from "./HealthPrivacyContent";
 import { HealthInstallGuide } from "./HealthInstallGuide";
 import { NativeWalkingPanel } from '@/components/walking/NativeWalkingPanel';
+import { HeartsNative } from '@/components/walking/HeartsEntry';
 import "./senior-home.css";
 import "./health-guide.css";
 
@@ -26,6 +27,8 @@ export function HealthConnectionPage() {
   const [selectedPhone, setPhone] = useState<"ios" | "android" | null>(null);
   const phone = selectedPhone ?? preferredPhone;
   const [opening, setOpening] = useState(false);
+  const [walkingSession,setWalkingSession]=useState("disconnected");
+  const onWalkingLink=useCallback((link:RankingLinkStatus)=>setWalkingSession(link.linked&&link.confirmed&&!link.revokePending?`${link.publicId}:${link.expiresAt}:${link.sharingScope}`:"disconnected"),[]);
   const [webError, setWebError] = useState(false);
   return <main className="bapmunna-senior-home bapmunna-health-guide flex flex-1 flex-col px-[24px] py-[24px]">
     <Logo />
@@ -57,7 +60,7 @@ export function HealthConnectionPage() {
       <p className="mt-4 text-2xl leading-relaxed text-muted">웹을 홈 화면에 추가하는 것만으로는 건강 앱이 연결되지 않아요.</p>
       </> : null}
     </>}
-    {native ? <NativeWalkingPanel/> : <Link href="/walking" className="mt-5 flex min-h-16 items-center justify-center rounded-full border-2 border-line px-4 py-3 text-center text-2xl font-bold text-cocoa">산책 알림·걸음수 랭킹 안내</Link>}
+    {native ? <><HeartsNative key={walkingSession}/><NativeWalkingPanel onLinkChange={onWalkingLink}/></> : <Link href="/walking" className="mt-5 flex min-h-16 items-center justify-center rounded-full border-2 border-line px-4 py-3 text-center text-2xl font-bold text-cocoa">오늘의 산책·하트 둘러보기</Link>}
     {native || phone === "android" ? <details className="mt-5 text-2xl leading-relaxed text-muted">
       <summary className="min-h-12 cursor-pointer py-2 font-bold text-cocoa">기록이 보이지 않을 때</summary>
       <p className="mt-3">{native && Capacitor.getPlatform() === "ios" ? "건강 앱에서 밥뭇나의 걸음수 읽기를 허용해 주세요." : "삼성 헬스의 걸음수 공유와 밥뭇나의 읽기 권한을 모두 확인해 주세요."}</p>

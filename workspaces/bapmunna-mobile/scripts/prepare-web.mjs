@@ -75,7 +75,7 @@ await writeFile(path.join(destination, 'native-build.json'), `${JSON.stringify({
   sourceIndexSha256: createHash('sha256').update(index).digest('hex'),
   htmlPages: pending.filter(entry => entry.html !== null).length, webFiles: pending.length,
   ui: 'existing-health-route', edition: 'opt-in-walking', entryPath: '/health/',
-  auth: 'external-production-web-only', healthDataUpload: 'explicit-ranking-consent-only',
+  auth: 'external-production-web-only', healthDataUpload: 'explicit-family-or-ranking-consent-only',
   nativeRankingOrigin: 'https://bapmunna-smartthings.vercel.app',
   reminderScheduling: 'device-local-opt-in',
 }, null, 2)}\n`);

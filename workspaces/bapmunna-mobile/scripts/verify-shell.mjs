@@ -22,7 +22,7 @@ const manifest = JSON.parse(await readFile(path.join(workspace, 'www/native-buil
 assert.equal(manifest.ui, 'existing-health-route');
 assert.equal(manifest.edition, 'opt-in-walking');
 assert.equal(manifest.entryPath, '/health/');
-assert.equal(manifest.healthDataUpload, 'explicit-ranking-consent-only');
+assert.equal(manifest.healthDataUpload, 'explicit-family-or-ranking-consent-only');
 assert.equal(manifest.nativeRankingOrigin, 'https://bapmunna-smartthings.vercel.app');
 assert.equal(manifest.reminderScheduling, 'device-local-opt-in');
 assert.equal(html, await readFile(path.join(workspace, 'www/health/index.html'), 'utf8'));

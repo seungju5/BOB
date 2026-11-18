@@ -32,6 +32,7 @@ export class PhoneStepsWeb extends WebPlugin {
   async rankingSync() { return {ok: false, reason: 'native-unavailable'}; }
   async rankingBoard() { throw this.unavailable('설치한 휴대폰 앱에서 순위를 확인해 주세요.'); }
   async rankingDisconnect() { return; }
+  async heartsRequest() { throw this.unavailable('하트 연결은 설치한 휴대폰 앱에서 확인해 주세요.'); }
   async walkReminderStatus() { return {enabled: false, times: [], bloodSugarReminder: false, permission: 'unsupported'}; }
   async configureWalkReminders() { throw this.unavailable('산책 알림은 설치한 휴대폰 앱에서 설정해 주세요.'); }
   async openWalkingWebApp() { throw this.unavailable('휴대폰 앱에서 웹앱을 열 수 있어요.'); }

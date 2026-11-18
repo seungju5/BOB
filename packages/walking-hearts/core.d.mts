@@ -1,0 +1,34 @@
+export type HeartCategory = 'hat' | 'outfit' | 'accessory' | 'background';
+export type HeartItemId = 'scarf' | 'basket' | 'straw-hat' | 'hiking-cap' | 'vest' | 'hanbok' | 'crown' | 'autumn';
+export type HeartDefaultId = 'default' | `default-${HeartCategory}`;
+export type HeartTimestamp = Date | string | number;
+export type HeartItem = Readonly<{id: HeartItemId; name: string; category: HeartCategory; price: number; icon: string; unlockDays: number | null}>;
+export type HeartEquipment = Record<HeartCategory, HeartItemId | null>;
+export type HeartDay = {date: string; goal: number; count: number | null; cooking: boolean; awarded: number; observedAt: string | null};
+export type HeartState = {version: 1; date: string; goal: number; balance: number; totalEarned: number; owned: HeartItemId[]; equipped: HeartEquipment; days: Record<string, HeartDay>};
+export type HeartMilestone = {id: 'cooking' | '25' | '50' | '100' | '200'; threshold: number | null; achieved: boolean};
+export type HeartProgress = {percent: number | null; weeklyPoints: number; milestones: HeartMilestone[]; filled: number; rewardTotal: number};
+export type HeartSummary = HeartProgress & {
+  date: string; count: number | null; goal: number; configuredGoal: number; cooking: boolean;
+  todayPoints: number; todayEarned: number; balance: number; totalEarned: number; monthEarned: number; streak: number;
+  owned: HeartItemId[]; equipped: HeartEquipment; observedAt: string | null;
+};
+export type HeartLeagueRow = {publicId: string; nickname: string; region?: string; state: HeartState; tier?: number};
+export type HeartLeagueEntry = {publicId: string; nickname: string; region: string; points: number; streak: number; tier: number; rank: number};
+export type HeartLeague = {weekStart: string; weekEnd: string; entries: HeartLeagueEntry[]; total: number};
+export const HEART_POLICY: Readonly<{version: 1; timeZone: 'Asia/Seoul'; defaultGoal: 5000; minGoal: 500; maxGoal: 20000; goalStep: 100; maxCount: 1000000; retentionDays: 35; dailyLeagueCap: 300; rewardThresholds: readonly Readonly<{percent: number; total: number}>[]}>;
+export const HEART_ITEMS: readonly HeartItem[];
+export const HEART_LEAGUE_TIERS: readonly string[];
+export class HeartError extends Error {code: string; constructor(code: string);}
+export function heartDate(now: HeartTimestamp): string;
+export function heartWeek(date: string): {start: string; end: string};
+export function heartProgress(input: {count: number | null; goal: number; cooking?: boolean}): HeartProgress;
+export function validateHeartState(value: unknown): HeartState;
+export function createHeartState(input: {date: string; goal?: number}): HeartState;
+export function advanceHearts(state: HeartState, input: {date: string; count: number | null; cooking?: boolean; now?: HeartTimestamp}): HeartState;
+export function setHeartGoal(state: HeartState, goal: number): HeartState;
+export function buyHeartItem(state: HeartState, itemId: HeartItemId | string): HeartState;
+export function grantHeartItem(state: HeartState, itemId: HeartItemId | string): HeartState;
+export function equipHeartItem(state: HeartState, itemId: HeartItemId | HeartDefaultId | string): HeartState;
+export function heartSummary(state: HeartState, date: string): HeartSummary;
+export function heartLeague(rows: HeartLeagueRow[], date: string): HeartLeague;

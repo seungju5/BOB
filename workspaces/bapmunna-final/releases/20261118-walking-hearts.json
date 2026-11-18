@@ -1,32 +1,32 @@
 {
   "schemaVersion": 1,
   "sourceBranch": "codex/walking-hearts-20261117",
-  "appSource": "a9bffcf7d222659cd51f48c10dd69bb5f3eeb2f8",
+  "appSource": "0865444f709581e8ef407fcb41a3672d82231ce5",
   "url": "https://impact-series.web.app/bapmunna/app/",
   "hosting": {
-    "at": "2026-11-18T07:03:46.825Z",
+    "at": "2026-11-18T07:18:21.094Z",
     "site": "impact-series",
     "url": "https://impact-series.web.app/bapmunna/final/",
-    "version": "sites/impact-series/versions/ff3f4b09cdb3cf4c",
-    "previous": "sites/impact-series/versions/cfe6a8eccd84cb2f",
-    "release": "sites/impact-series/releases/1794985425952000",
-    "source": "a9bffcf7d222659cd51f48c10dd69bb5f3eeb2f8",
-    "changed": 139,
-    "preserved": 2873,
-    "totalFiles": 3012,
-    "uploads": 109,
+    "version": "sites/impact-series/versions/e4b9e4916976b3c2",
+    "previous": "sites/impact-series/versions/ff3f4b09cdb3cf4c",
+    "release": "sites/impact-series/releases/1794986300304000",
+    "source": "0865444f709581e8ef407fcb41a3672d82231ce5",
+    "changed": 132,
+    "preserved": 2885,
+    "totalFiles": 3017,
+    "uploads": 103,
     "hostingConfig": "unchanged",
     "billingEnabled": false
   },
   "publicVerification": {
-    "at": "2026-11-18T07:04:41.758Z",
-    "version": "sites/impact-series/versions/ff3f4b09cdb3cf4c",
-    "publicFilesVerified": 139,
+    "at": "2026-11-18T07:19:11.686Z",
+    "version": "sites/impact-series/versions/e4b9e4916976b3c2",
+    "publicFilesVerified": 132,
     "existingPathsMissing": 0,
     "project": "impact-series",
     "billingEnabled": false
   },
-  "change": "Upgrade Option B neighborhood walk with articulated walking plush bunny rig, scrolling park trail wonders (cooker steam stop, acorn squirrel, red mailbox, pinwheel, butterflies, birds, sunbeams), 3D-shaded storybook accessories (jeweled pearl crown, ribbon straw hat, clover hiking cap, sherpa vest, silk hanbok, fringed scarf, rattan picnic basket), and two-tier editorial copywriting.",
+  "change": "Scroll seamless 2-scene park panorama (Bench & Trees -> Tulip Garden, Wooden Signpost, Red Postbox & Squirrel) behind the articulated walking bunny, keep 3D storybook accessories, and separate the original two-sentence copy cleanly.",
   "checks": {
     "root": 314,
     "walkingHeartsCore": 39,
@@ -36,10 +36,5 @@
     "firebase": 85,
     "failed": 0,
     "skipped": 10
-  },
-  "notVerified": [
-    "live Vercel deployment of new heart/private-walking server endpoints (awaiting Vercel account verification)",
-    "live SmartThings feed and new account OAuth app registration (HTTP 403 blocker)",
-    "physical Android/iOS device health permission and step sync"
-  ]
+  }
 }

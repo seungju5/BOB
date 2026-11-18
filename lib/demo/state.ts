@@ -68,6 +68,7 @@ function seedHistory(now: Date): { events: StoredEvent[]; seniorActions: SeniorA
   }
   push("cook", at(today, "07:38"), 34);
   push("lid_open", at(today, "11:42"), 2);
+  push("cook", at(today, "16:28"), 35);
   return { events, seniorActions };
 }
 
@@ -75,7 +76,7 @@ export function createDemoState(now: Date): DemoState {
   return {
     version: 1,
     onboardingStep: 1,
-    plug: { deviceId: "", online: true, offlineSince: null },
+    plug: { deviceId: "54fac45c-5a59-449e-8db1-2613c1bf5ec6", online: true, offlineSince: null },
     senior: { name: "정숙", relation: "어머니", phone: "" },
     household: { residentCount: 1, hasPet: false },
     mealProfile: { windows: DEFAULT_WINDOWS, eatOutPerWeek: 1, usesKeepWarm: true, cooksPerWeek: 7 },

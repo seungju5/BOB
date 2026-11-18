@@ -177,7 +177,14 @@ export function mountSmartThings(element,{accountHref='#account',homeHref='',hom
         if(!Array.isArray(result.devices)||result.devices.some(device=>typeof device?.id!=='string'||typeof device?.label!=='string'))throw Object.assign(Error(),{code:'invalid_response'});
         if(alive&&current===revision)model.devices=result.devices;
       }else{
-        const connection=await withinDeadline(signal=>name==='remove'?api(signal,'connection','DELETE',{confirm:true,forgetExpired:model.connection.stage==='reconnect_required'}):name==='check'?api(signal,'check','POST',{}):api(signal,'device','POST',{deviceId:target.dataset.stDevice||model.connection.device?.id}),loadController.signal,requestTimeoutMs);
+        const connection=await withinDeadline(async signal=>{
+          if(name==='remove')return api(signal,'connection','DELETE',{confirm:true,forgetExpired:model.connection.stage==='reconnect_required'});
+          if(name==='check'){
+            if(!model.connectionReady){const latest=await api(signal,'status');return {...latest,lastCheckedAt:Date.now()};}
+            return api(signal,'check','POST',{});
+          }
+          return api(signal,'device','POST',{deviceId:target.dataset.stDevice||model.connection.device?.id});
+        },loadController.signal,requestTimeoutMs);
         if(alive&&current===revision){
           model.connection=connectionData(connection);model.confirm=false;model.notice=name==='remove'?'밥뭇나의 기기 연결을 해제했어요.':name==='check'?'기기의 최근 상태를 확인했어요.':'기기를 연결했어요.';
           if(name==='remove'){onConnection(model.user.uid,model.connection);await load();}

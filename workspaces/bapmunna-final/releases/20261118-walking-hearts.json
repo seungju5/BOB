@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "sourceBranch": "codex/walking-hearts-20261117",
+  "appSource": "e740ac8a889d4f3e8d368d4b8e6eb2bdd6c0df13",
+  "url": "https://impact-series.web.app/bapmunna/app/",
+  "hosting": {
+    "at": "2026-11-18T06:29:20.253Z",
+    "site": "impact-series",
+    "url": "https://impact-series.web.app/bapmunna/final/",
+    "version": "sites/impact-series/versions/cfe6a8eccd84cb2f",
+    "previous": "sites/impact-series/versions/866325c2873fdd25",
+    "release": "sites/impact-series/releases/1794983359472000",
+    "source": "e740ac8a889d4f3e8d368d4b8e6eb2bdd6c0df13",
+    "changed": 162,
+    "preserved": 2838,
+    "totalFiles": 3000,
+    "uploads": 133,
+    "hostingConfig": "unchanged",
+    "billingEnabled": false
+  },
+  "publicVerification": {
+    "at": "2026-11-18T06:30:24.467Z",
+    "version": "sites/impact-series/versions/cfe6a8eccd84cb2f",
+    "publicFilesVerified": 162,
+    "existingPathsMissing": 0,
+    "project": "impact-series",
+    "billingEnabled": false
+  },
+  "change": "Publish Option B neighborhood walk ('오늘의 산책' park bunny, 5-stage progress, automatic 50/100/200% hearts, 8-item bunny closet, family cheers/locked treasure boxes) as primary walking experience with Option A ('밥심 리그') as optional secondary tab, while separating private family step connection from public ranking.",
+  "checks": {
+    "root": 314,
+    "walkingHeartsCore": 39,
+    "phoneSteps": 7,
+    "mobileShell": 13,
+    "serverHeartsAndWalkingUnit": 46,
+    "firebase": 85,
+    "failed": 0,
+    "skipped": 10
+  },
+  "notVerified": [
+    "live Vercel deployment of new heart/private-walking server endpoints (awaiting Vercel account verification)",
+    "live SmartThings feed and new account OAuth app registration (HTTP 403 blocker)",
+    "physical Android/iOS device health permission and step sync"
+  ]
+}

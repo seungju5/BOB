@@ -1,8 +1,8 @@
 /**
- * [EN] 3D-shaded storybook accessories and animated park trail wonders for Bapmunna Walking Hearts.
- * [KR] 밥뭇나 산책 하트용 입체 동화풍 꾸미기 액세서리 및 살아 움직이는 산책길 풍경 컴포넌트입니다.
+ * [EN] 3D-shaded storybook accessories and ambient sky/butterfly elements for Bapmunna Walking Hearts.
+ * [KR] 밥뭇나 산책 하트용 입체 동화풍 꾸미기 액세서리 및 하늘·나비 자연 연출 컴포넌트입니다.
  */
-import type {HeartEquipment,HeartSummary} from '@/packages/walking-hearts/core.mjs';
+import type {HeartEquipment} from '@/packages/walking-hearts/core.mjs';
 
 export function WearDefs(){
   return <defs>
@@ -131,45 +131,12 @@ export function BunnyWearOverlay({equipped}:{equipped:HeartEquipment}){
 }
 
 /**
- * [EN] Renders animated roadside wonders and ambient nature elements along the walking trail.
- * [KR] 이동하는 산책길 주변의 신기하고 다정한 자연·안부 요소들을 조화롭게 렌더링합니다.
+ * [EN] Renders subtle ambient sunbeams, drifting clouds, and fluttering butterflies over the scrolling park panorama.
+ * [KR] 흐르는 파노라마 공원 배경 위로 햇살·구름·나비만 자연스럽게 더합니다.
  */
-export function ParkTrailWonders({summary,compact=false}:{summary?:HeartSummary;compact?:boolean}){
-  const cooking=Boolean(summary?.cooking);
-  const pct=summary?.percent??0;
+export function ParkTrailWonders(){
   return <div className="hearts-wonders" aria-hidden="true">
     <div className="hearts-sunbeams"/>
-    <div className="hearts-cloud hearts-cloud-a"/>
-    <div className="hearts-cloud hearts-cloud-b"/>
-    {!compact?<div className="hearts-sky-bird"><span>🐦</span><i className="hearts-bird-note">♪</i></div>:null}
-    <div className="hearts-ground-stream">
-      <div className="hearts-ground-belt">
-        <span className="hearts-pebble"/>
-        <span className="hearts-tuft">🍀</span>
-        <span className={`hearts-landmark ${cooking?'is-lit':''}`} title="따뜻한 밥김 쉼터">🍚<i>♥</i></span>
-        <span className="hearts-pebble is-warm"/>
-        <span className="hearts-tuft">🌼</span>
-        <span className={`hearts-landmark ${pct>=25?'is-lit':''}`} title="도토리 다람쥐">🐿️</span>
-        <span className="hearts-pebble"/>
-        <span className="hearts-tuft">🌱</span>
-        <span className={`hearts-landmark ${pct>=50?'is-lit':''}`} title="산책길 우체통">📮<i>💌</i></span>
-        <span className="hearts-pebble is-warm"/>
-        <span className="hearts-tuft">🌷</span>
-        <span className={`hearts-landmark ${pct>=100?'is-lit':''}`} title="꽃길 바람개비">🎡<i>✨</i></span>
-        <span className="hearts-pebble"/>
-        <span className="hearts-tuft">🍀</span>
-        <span className={`hearts-landmark ${cooking?'is-lit':''}`}>🍚<i>♥</i></span>
-        <span className="hearts-pebble is-warm"/>
-        <span className="hearts-tuft">🌼</span>
-        <span className={`hearts-landmark ${pct>=25?'is-lit':''}`}>🐿️</span>
-        <span className="hearts-pebble"/>
-        <span className="hearts-tuft">🌱</span>
-        <span className={`hearts-landmark ${pct>=50?'is-lit':''}`}>📮<i>💌</i></span>
-        <span className="hearts-pebble is-warm"/>
-        <span className="hearts-tuft">🌷</span>
-        <span className={`hearts-landmark ${pct>=100?'is-lit':''}`}>🎡<i>✨</i></span>
-      </div>
-    </div>
     <span className="hearts-butterfly hearts-butterfly-a">🦋</span>
     <span className="hearts-butterfly hearts-butterfly-b">🦋</span>
     <span className="hearts-dandelion hearts-dandelion-a">✦</span>

@@ -1,0 +1,2381 @@
+{
+  "schemaVersion": 1,
+  "checkedAt": "2026-11-19T08:10:47.029Z",
+  "repository": "https://github.com/seungju5/-1",
+  "baseBranch": "main",
+  "baseCommit": "d0f40da8862e3968459e501f36c6b1cc2b14038b",
+  "integrationBranch": "codex/firebase-github-sync-20261119",
+  "preservedSource": "efbdd94b82a53dc9611f017bde0dd397c4845a3a",
+  "preservedSmartThingsAudit": "06942b0415eaabf2f563832dedc00ce6e3c9e566",
+  "hosting": {
+    "url": "https://impact-series.web.app/bapmunna/app/",
+    "version": "sites/impact-series/versions/c6ac5c6b3663fc35",
+    "release": "sites/impact-series/releases/1794988676683000",
+    "releaseTime": "2026-11-18T07:57:56.683Z",
+    "declaredSourceInHistoricalReceipt": "887ebf62a4825cd926fc00c22bf414e5c5c0ea6e",
+    "sourceProvenanceNote": "The historical receipt records the pre-commit HEAD. f69279a subsequently committed the connection-view changes. Do not treat the historical HEAD alone as an exact clean-source deployment hash.",
+    "unchangedDuringCheck": true,
+    "readOnly": true
+  },
+  "publicArtifactVerification": {
+    "recentlyPublishedFilesFetchedAndByteMatched": 150,
+    "snapshotFilesMatchedAgainstHosting": 381,
+    "htmlRoutes": 26,
+    "totalSnapshotBytes": 38753228,
+    "scope": "Reconstructed active /bapmunna artifact from matching current staged assets plus verified frozen last-release overlay; historical unused Hosting chunks are not copied.",
+    "files": [
+      {
+        "path": "/bapmunna/account-view.mjs",
+        "sha256": "3a045d8bc8e627bc288d3f6acaecee0d3d58564a6fc675fe292fa5a2bd30fcbc",
+        "hostingGzipSha256": "aabe381e3981434bec1e2a59991a4c8eed067077f60842c87df921e70106341e",
+        "bytes": 21769
+      },
+      {
+        "path": "/bapmunna/app.mjs",
+        "sha256": "b1e8465319e23ac59bb8dd1322902ab2bc0015bdcf6030b2b9c6e854aafdc983",
+        "hostingGzipSha256": "80c6ea427d3fb868216e82c37dafc123044d752fb5d01247e65a8f46157bd85a",
+        "bytes": 86189
+      },
+      {
+        "path": "/bapmunna/app/__next.__PAGE__.txt",
+        "sha256": "8306dad8bae2d0657e8ef45bed3962eef4edb0f37f00ea1a2747ec2a617113fa",
+        "hostingGzipSha256": "8c5f2c28e5a7852361f52a78f33166f90ae0b0503e1da619902e5104ec082c8a",
+        "bytes": 7853
+      },
+      {
+        "path": "/bapmunna/app/__next._full.txt",
+        "sha256": "3c91d7ce78bce91d21b5d0aad75dbdb81464989456f3162a7d6bb6b4e3fcdf1e",
+        "hostingGzipSha256": "bff0a428122a78f64ea5e33de5af6db4a008ee914357521baf22d872a63f25ee",
+        "bytes": 8263
+      },
+      {
+        "path": "/bapmunna/app/__next._tree.txt",
+        "sha256": "a5ad74bfff70b9c896ef195a7c56aeffc2607d16fece956bc01a4f0e6db0e572",
+        "hostingGzipSha256": "7e195d5039827b876ce08ba57e9d43b102ce1877db1fb4908cd2662297d2b914",
+        "bytes": 244
+      },
+      {
+        "path": "/bapmunna/app/_next/static/2bo4Y93xGP5OtSgfBOw2h/_buildManifest.js",
+        "sha256": "8551122ba12b665dc3d5a0b2d7a344ad2eedf1c1a66fb69adf62ac0a88ca98b6",
+        "hostingGzipSha256": "57c8bcc43af15d9e8b1c09d3ade9fe6be24484dbdd5d90b2ab2caa843c0eb1fb",
+        "bytes": 1399
+      },
+      {
+        "path": "/bapmunna/app/_next/static/2bo4Y93xGP5OtSgfBOw2h/_ssgManifest.js",
+        "sha256": "678f6ce2cb80b1fe72fc67e7412be6e2ab6ada083111b64f7c40d35e3cba5e00",
+        "hostingGzipSha256": "02dbc1aeab6ef0a6ff2ff9a1643158cf9bb38929945eaa343a3627dee9ba6778",
+        "bytes": 80
+      },
+      {
+        "path": "/bapmunna/app/_next/static/chunks/1462-d2e64085937ac82b.js",
+        "sha256": "e1d3d907c3cefbb6c04b9b9597182515494f3d569d077f4ec4956355be1310f3",
+        "hostingGzipSha256": "557081d0b105c460276b80c402ee6d9b8d124c81645e9a58ee62843b6dda32bd",
+        "bytes": 17359
+      },
+      {
+        "path": "/bapmunna/app/_next/static/chunks/2080-20a4da74c65b8b05.js",
+        "sha256": "b95cb210ed7be3b05be5f24d6a6611b37fa1b0cf21c695d128df225f7547f9a4",
+        "hostingGzipSha256": "198703ba42fdc771b21c220bd39cf42abf27fe94683a92f725d213d5e7bcd965",
+        "bytes": 15185
+      },
+      {
+        "path": "/bapmunna/app/_next/static/chunks/22-e507acf593357929.js",
+        "sha256": "ff16e01dee6e7fe04b57defee595d4fc5f8ef8ae6a6c3e89277e132df01631d6",
+        "hostingGzipSha256": "ab80129088010bf3471864fc1167ba94c56bb318655278885d3a827b316e53ed",
+        "bytes": 242347
+      },
+      {
+        "path": "/bapmunna/app/_next/static/chunks/2724.e63cd7e96b2f3849.js",
+        "sha256": "797e9087f89d903cb38dbee36c4b8517ad8dc9b7ac0c83a5e298090825b78f4b",
+        "hostingGzipSha256": "b6b9f70cf5bed83485536fcda3f9aa600862fb702e04ba9cb0ec0072f52b42aa",
+        "bytes": 1807
+      },
+      {
+        "path": "/bapmunna/app/_next/static/chunks/2803-7849a9cccb7cd443.js",
+        "sha256": "22c760b17a95896a05eb3cb58901af73dd3d2214dfcab70829f44e501889ab4b",
+        "hostingGzipSha256": "65fef6b1deb9083b4a527dc3100e305c9f91fb23a52ccad6b0f9e6d61a5a41a7",
+        "bytes": 14400
+      },
+      {
+        "path": "/bapmunna/app/_next/static/chunks/4925-8dc7be7b1a637c68.js",
+        "sha256": "dcd57deb757c225884b6cbf2b00d733dd0cee0e4373a8b5574a2602c70cc05d5",
+        "hostingGzipSha256": "05618db083c57d36fa668e534454fbb6fa796ca2a0ddca1514d080b6c02c89ff",
+        "bytes": 179697
+      },
+      {
+        "path": "/bapmunna/app/_next/static/chunks/5903-ed8d782f095fc1d2.js",
+        "sha256": "dcf2dfa3adf925e7a9bcb965814a20fae6284225ec3cf978bed47c38aea9d97b",
+        "hostingGzipSha256": "65aa663cacdd32307485a7dee40a7f5b32f8a191c93157261c8a163bc5dddb00",
+        "bytes": 8094
+      },
+      {
+        "path": "/bapmunna/app/_next/static/chunks/6344-a7ba47a7bc18a10e.js",
+        "sha256": "ae2de959d547460b96bb169949f51936eb04a3ef2b37d3438e7371ed51c5a387",
+        "hostingGzipSha256": "aca01d0240bf77af5fbaaac786c5b37ad56d3c8e07f0faa81d67ffe86b2faf5a",
+        "bytes": 9862
+      },
+      {
+        "path": "/bapmunna/app/_next/static/chunks/6479-e884ef555b8141e6.js",
+        "sha256": "f45a634ef26d226f683288e7f0a1e05e8c55eff90367e25f2d9e61e5f17e3b78",
+        "hostingGzipSha256": "4918190dfa554d4ea38067578da3c0b82bdd869c3d3d307274f797d4f41e481f",
+        "bytes": 62969
+      },
+      {
+        "path": "/bapmunna/app/_next/static/chunks/6654-a21f3fa106198ba5.js",
+        "sha256": "fc6a357c29e49971eefa02ee43ce046ccd5736deb54b072525c3da7bb47bb1af",
+        "hostingGzipSha256": "bcae05e5cd334e15555a25d7fda35fc2e692e6e49c660ea225921d3a231c88e6",
+        "bytes": 19599
+      },
+      {
+        "path": "/bapmunna/app/_next/static/chunks/67a1f862-43b62e1bc2162466.js",
+        "sha256": "06ed59bfd2f89f381300dd5d214d72667e217fae3604f66e1f0dbbd41daad30c",
+        "hostingGzipSha256": "c73faa577414e64aa310a52568224531c943cc90a256558be5e882c44a3d27ac",
+        "bytes": 203721
+      },
+      {
+        "path": "/bapmunna/app/_next/static/chunks/6830-49247e938a9eb616.js",
+        "sha256": "13639a50515be4f16a79cc27aaf516ed743e191b3eb8f411260be97a0dd70c4c",
+        "hostingGzipSha256": "b2f70eb8c578bfdf3d6f73e80456fea00ba20076c772ba0671370163d2486928",
+        "bytes": 7651
+      },
+      {
+        "path": "/bapmunna/app/_next/static/chunks/8152-767f48ffbe3fc5aa.js",
+        "sha256": "cfaa86f3e562f5ebacf8e1e148a7846612904fb2b49bea99d4b4bf708727276b",
+        "hostingGzipSha256": "7f30b556668c7bdb1d84da5c9fe4cef5cb6988fb9654166d1c01b3012fce1768",
+        "bytes": 17533
+      },
+      {
+        "path": "/bapmunna/app/_next/static/chunks/ae270f3e-fa57b204a4bf37d2.js",
+        "sha256": "dc3e2a4ec4eec50c5f854cad45478ec6bc36ffa3e8ed612ebfc24e322e0034e8",
+        "hostingGzipSha256": "a0d70a6adee0158e1c218bf035bd971c61ff388bd83efc8dca777f014a9b6c0b",
+        "bytes": 67449
+      },
+      {
+        "path": "/bapmunna/app/_next/static/chunks/app/_global-error/page-575e591838af1805.js",
+        "sha256": "3aea5abc7004c093d7f58fa3cfbc35d13c4fa4767a9822bbec844a49ebf0fac5",
+        "hostingGzipSha256": "af57596447586f9fca258e24329ac23231f1aaf880d345355449a3c94db3f31c",
+        "bytes": 153
+      },
+      {
+        "path": "/bapmunna/app/_next/static/chunks/app/_not-found/page-284763f4fdd5b10f.js",
+        "sha256": "f6555237cbe7680b4cfde7884d738c3dbdc6b4ce67fd409f893afdb1c5d13329",
+        "hostingGzipSha256": "44194ba3a53150b14e90d915e660ec82121cdc01ce4b48e554590d722200efe3",
+        "bytes": 2669
+      },
+      {
+        "path": "/bapmunna/app/_next/static/chunks/app/(guardian)/alerts/page-4d3b9da70a01afda.js",
+        "sha256": "94277322562befb6676bf174e24bfe05de46bae33653cad62b7d0a60792c275f",
+        "hostingGzipSha256": "eedacc9975e1505e562769f011c84756f8ddc014e5a8fb34759861e3fcba20a2",
+        "bytes": 11660
+      },
+      {
+        "path": "/bapmunna/app/_next/static/chunks/app/(guardian)/home/page-bc9d50090e45dd2e.js",
+        "sha256": "0e7100d567d925c9d0db7ab06a9f31ab157a969024e4d661f738f956da1dd45d",
+        "hostingGzipSha256": "c08ea5062ad8b45b2d994b39feee7d8fda3307900e0dcae93b37acc5e88ea703",
+        "bytes": 14183
+      },
+      {
+        "path": "/bapmunna/app/_next/static/chunks/app/(guardian)/layout-9dd318f4db7717d8.js",
+        "sha256": "af58f63a13b08dcb5fe1e96cbf0bc1339eef896356080bd9229b917f6512e9e8",
+        "hostingGzipSha256": "9ab44396c25608c015dbd99a3daa9a75c4b4495fbafaf8d1473059da0acfe102",
+        "bytes": 6313
+      },
+      {
+        "path": "/bapmunna/app/_next/static/chunks/app/(guardian)/more/page-e13a0820172b7881.js",
+        "sha256": "874a01ff03c45fc67fa29ded9eef74441214aa2a405f1ec380586171dd4a3bd0",
+        "hostingGzipSha256": "dc9d90879075aad48ee2d3f28be8f9c88949b9c84b9674c3766a16205aac0f8b",
+        "bytes": 6508
+      },
+      {
+        "path": "/bapmunna/app/_next/static/chunks/app/(guardian)/records/page-0ff169c8f1064a8a.js",
+        "sha256": "9949ca95478ecc8afd9034632b7d329ff903807bbebaff063940901301476c09",
+        "hostingGzipSha256": "d6229c8a2d1abdf5f9207dd6b06c33e5174d9c4a5a5f33fccd3237a62fbb86f1",
+        "bytes": 19337
+      },
+      {
+        "path": "/bapmunna/app/_next/static/chunks/app/(guardian)/report/page-4dc35517643251c0.js",
+        "sha256": "a01d2f9af2cb72d91e2621253a15690236c9d0b9e48f761826c69e16c0803122",
+        "hostingGzipSha256": "9d4cb31730dab79c97ff08b8d415d0812747029f18d787abb17f86d7d66de203",
+        "bytes": 19421
+      },
+      {
+        "path": "/bapmunna/app/_next/static/chunks/app/(guardian)/settings/page-cb35bf7f6987fb27.js",
+        "sha256": "f995d504400c2ebc09275f6b0769499c9c28ea858b5babbd9fced7d20aca2222",
+        "hostingGzipSha256": "557a9614bf128a27ca2fdfedf68c13d282e0efc6a3ab47681b9de52532597cde",
+        "bytes": 31546
+      },
+      {
+        "path": "/bapmunna/app/_next/static/chunks/app/auth/callback/page-65bada317084c7d3.js",
+        "sha256": "387ebd41ef0b872d905cac8f19b946175d310ef5f47aab598a8110cd8f5b2111",
+        "hostingGzipSha256": "d6c76e9ba0ad56132791d653d282697b8ad233b37b09521c9140c8aa05dc1064",
+        "bytes": 15170
+      },
+      {
+        "path": "/bapmunna/app/_next/static/chunks/app/auth/kakao/page-0f30f409b0f3cf69.js",
+        "sha256": "dea5d7f07e6bc2fff6b401b15056555918019bb5cecc93a69770098b21ca80dd",
+        "hostingGzipSha256": "382bad2751dadb2b75a325261c31bb00ed552bc0b460ea1d214740141f8841ae",
+        "bytes": 11520
+      },
+      {
+        "path": "/bapmunna/app/_next/static/chunks/app/connect/page-498238dd76df98a1.js",
+        "sha256": "59d70b310d0adf8df52028ce6871300f0a66f2ae3ec8dfac3f29a34cc6a20e71",
+        "hostingGzipSha256": "a1013d5e13dff95db1228d8a51902b1a62328025a69cf9494a3adffab3be6704",
+        "bytes": 3302
+      },
+      {
+        "path": "/bapmunna/app/_next/static/chunks/app/health/page-78934f189d047044.js",
+        "sha256": "56d615d91d02ab795325e0cff60cdc7f1cf2707c7693816f8beda35e3524bd42",
+        "hostingGzipSha256": "89804c82e8a24287b981712cdcf5503ead4db1489f5e5ae69ec4b3c02ceff06a",
+        "bytes": 29884
+      },
+      {
+        "path": "/bapmunna/app/_next/static/chunks/app/health/privacy/page-f65874b1adda008f.js",
+        "sha256": "e7b9e7533047be1aebd233e315a09b0cedb1cf95cf9c3f2d0eb7c8cb58c32dda",
+        "hostingGzipSha256": "daaff6e5ab2b6808beb6c043f5e53a315d307eacfcfe4516ac670749b392412d",
+        "bytes": 295
+      },
+      {
+        "path": "/bapmunna/app/_next/static/chunks/app/layout-14a04399adf4947f.js",
+        "sha256": "02a1bc6d53f8db5ad61610d7407fb6911476356bd1df37af7ff318387a1abc01",
+        "hostingGzipSha256": "238d70e6771447e21a25997410764bf4bb4bf1f35b7d9d7b65e3ed513627877b",
+        "bytes": 1619
+      },
+      {
+        "path": "/bapmunna/app/_next/static/chunks/app/login/page-38f2d94717b2d3c1.js",
+        "sha256": "651ec7901678172d8997f4b5fbe51272bd031f4dc21cf377d9855dd5fbf48872",
+        "hostingGzipSha256": "43c0b158f6fa00923387b44f86b7b0d2051ff7c3ad0e86ebf340557b6e704487",
+        "bytes": 33822
+      },
+      {
+        "path": "/bapmunna/app/_next/static/chunks/app/onboarding/page-8145127c990ede44.js",
+        "sha256": "6ec98a28f3514b9eea114ecb7e09340c8c9b90f171ee5443e0097712d223bb90",
+        "hostingGzipSha256": "c69713f2e687e845cd3ed18a8dee7d35815b5ff0a549f05abb2c03321282557f",
+        "bytes": 19914
+      },
+      {
+        "path": "/bapmunna/app/_next/static/chunks/app/page-2d6515dfc4823fe6.js",
+        "sha256": "55b545ce0eba7d26c765ab7f23134a3610af17042cfbcc5844706b9e5fd7dc99",
+        "hostingGzipSha256": "9c845f4aad497c6e59d7e448058a7fa6a8ebb606c2ba1dbd83c1b763d4918080",
+        "bytes": 8839
+      },
+      {
+        "path": "/bapmunna/app/_next/static/chunks/app/power/page-2a3e5d074e58980b.js",
+        "sha256": "8749d70fd5d0a9c7b9a395c9b4955364d777b231f75c3f18bd62e2ff3494ce15",
+        "hostingGzipSha256": "8465ac4af8a88d128768d98005512de68398225dc165e27baa8935bd88aa4595",
+        "bytes": 3113
+      },
+      {
+        "path": "/bapmunna/app/_next/static/chunks/app/privacy/page-f0a92f98e373a4fe.js",
+        "sha256": "8569ac47e4a4e9fcd11cd2a9577e906d22a732752ab88469c58ec2a6b6234b24",
+        "hostingGzipSha256": "4f044f23d6e3c6bd1a5911c73a3a6fab887b69fbf9420ad76bb82d859e3d0288",
+        "bytes": 235
+      },
+      {
+        "path": "/bapmunna/app/_next/static/chunks/app/s/page-b55e322ad467d10a.js",
+        "sha256": "b6b0a9377ed24a8c7298f000ee406a5538ad20a35c96d862f671b903d964eb56",
+        "hostingGzipSha256": "78a23964a0474aadcd5e5e043b3bbd9103878ff8415ebdb96c384a142ae5f76b",
+        "bytes": 29299
+      },
+      {
+        "path": "/bapmunna/app/_next/static/chunks/app/start/page-c9bae0cda3e36e38.js",
+        "sha256": "ae882995fba3f2312ebea5ccdf75abbbba1256dff34f09c22e80024c607580ad",
+        "hostingGzipSha256": "5ab095aa4e7129f3ad17fb69f7738160b0b10fa19d9c342af30017ef499d570c",
+        "bytes": 3113
+      },
+      {
+        "path": "/bapmunna/app/_next/static/chunks/app/tutorial/page-e3cc404c5a4f664a.js",
+        "sha256": "8cf6afc2e43a94ab22a81fc3369a07920512c190e65c05e62fa7de96e7f06646",
+        "hostingGzipSha256": "b8b41ef5e69d3bca80399cef89682375ee7e44bb607ac16f1e0bccf43dc633ae",
+        "bytes": 21609
+      },
+      {
+        "path": "/bapmunna/app/_next/static/chunks/app/walking/connect/page-78e56acab73f80de.js",
+        "sha256": "1332bd4d0bf5f47cd8398fc46e1f1cccfeb87dd5b859e64c8063b6a8c14cffc1",
+        "hostingGzipSha256": "290a8adab7f3e1a0908d52d109359764dde59c76c6fe20fb8788a66e2d7539bc",
+        "bytes": 24898
+      },
+      {
+        "path": "/bapmunna/app/_next/static/chunks/app/walking/demo/page-b2f6220f177e48a2.js",
+        "sha256": "a8bfdb195af868524158df10d08e12ce4f5d96016b4e5d8a5bd9a7885e622f46",
+        "hostingGzipSha256": "c06590f5e627f37f3ce1458a65b9b3c6e6481ba6ae7a0805e635458015ee82cc",
+        "bytes": 4141
+      },
+      {
+        "path": "/bapmunna/app/_next/static/chunks/app/walking/page-74e872c27846a03e.js",
+        "sha256": "e7ce7952d9c15a04808c7619b0ca23214777079ab6f85d15cf8cc63c76be2748",
+        "hostingGzipSha256": "125a6ba44443d380c1ec393ed1e355c90c7d3d4fb8ef6fb8dea48e19df96ad4f",
+        "bytes": 1444
+      },
+      {
+        "path": "/bapmunna/app/_next/static/chunks/app/walking/ranking-demo/page-a06e4e2d651d8c08.js",
+        "sha256": "48dc0d376df3c37fc4aa6bf8b00d7e8b57eb48327728e7a11c9fb0c2d37c98d7",
+        "hostingGzipSha256": "5e8152a8f0d21919f1579a1cf4de8bd5ba21b22b24a32aba694e10c57a93ddb2",
+        "bytes": 20341
+      },
+      {
+        "path": "/bapmunna/app/_next/static/chunks/app/walking/today/page-74e872c27846a03e.js",
+        "sha256": "e7ce7952d9c15a04808c7619b0ca23214777079ab6f85d15cf8cc63c76be2748",
+        "hostingGzipSha256": "125a6ba44443d380c1ec393ed1e355c90c7d3d4fb8ef6fb8dea48e19df96ad4f",
+        "bytes": 1444
+      },
+      {
+        "path": "/bapmunna/app/_next/static/chunks/framework-ff6851333cfaa2e9.js",
+        "sha256": "60f4345d934ad827589127726124c774c4b9c144dfe79149cfb3de7f06b41f3b",
+        "hostingGzipSha256": "697d6616be7311161931182a783ff7fa97e247826d26a99f8c83d68fc3eb75b4",
+        "bytes": 218915
+      },
+      {
+        "path": "/bapmunna/app/_next/static/chunks/main-050f16a5ae5dee4c.js",
+        "sha256": "709c1cc5eff81918260443b8dde7c46020f04c77bde06c67a79de979d9368e5e",
+        "hostingGzipSha256": "9e31cc247eab7debdd1dc91c0d25674e4e2ead15de45d5e99f849871a4d71a4d",
+        "bytes": 137576
+      },
+      {
+        "path": "/bapmunna/app/_next/static/chunks/main-app-71d054648e6a24b5.js",
+        "sha256": "0034d9f4614536803bcb5a8da972287f22f5b452d77cbcce3a5f5b6151f45076",
+        "hostingGzipSha256": "b3212d36866ec9a1a51697b4da475c052c9021b9fecff5da96142e4823e623f7",
+        "bytes": 512
+      },
+      {
+        "path": "/bapmunna/app/_next/static/chunks/next/dist/client/components/builtin/app-error-575e591838af1805.js",
+        "sha256": "3aea5abc7004c093d7f58fa3cfbc35d13c4fa4767a9822bbec844a49ebf0fac5",
+        "hostingGzipSha256": "af57596447586f9fca258e24329ac23231f1aaf880d345355449a3c94db3f31c",
+        "bytes": 153
+      },
+      {
+        "path": "/bapmunna/app/_next/static/chunks/next/dist/client/components/builtin/forbidden-575e591838af1805.js",
+        "sha256": "3aea5abc7004c093d7f58fa3cfbc35d13c4fa4767a9822bbec844a49ebf0fac5",
+        "hostingGzipSha256": "af57596447586f9fca258e24329ac23231f1aaf880d345355449a3c94db3f31c",
+        "bytes": 153
+      },
+      {
+        "path": "/bapmunna/app/_next/static/chunks/next/dist/client/components/builtin/global-error-1c1d2c59a16c992c.js",
+        "sha256": "d5159285d5ac81a066c0eed3eefa2aa7f9ce45e7ff6008bcb157bafb7a1d3e22",
+        "hostingGzipSha256": "3a2e1567fa51c0273cad76e619ca3f9813dcd8eafd3c5e2a3a21c2d849872049",
+        "bytes": 180
+      },
+      {
+        "path": "/bapmunna/app/_next/static/chunks/next/dist/client/components/builtin/not-found-575e591838af1805.js",
+        "sha256": "3aea5abc7004c093d7f58fa3cfbc35d13c4fa4767a9822bbec844a49ebf0fac5",
+        "hostingGzipSha256": "af57596447586f9fca258e24329ac23231f1aaf880d345355449a3c94db3f31c",
+        "bytes": 153
+      },
+      {
+        "path": "/bapmunna/app/_next/static/chunks/next/dist/client/components/builtin/unauthorized-575e591838af1805.js",
+        "sha256": "3aea5abc7004c093d7f58fa3cfbc35d13c4fa4767a9822bbec844a49ebf0fac5",
+        "hostingGzipSha256": "af57596447586f9fca258e24329ac23231f1aaf880d345355449a3c94db3f31c",
+        "bytes": 153
+      },
+      {
+        "path": "/bapmunna/app/_next/static/chunks/polyfills-42372ed130431b0a.js",
+        "sha256": "0973c1d64c88adc8e3c950410cb58b288f72118d5965b78049438deb8f2f9683",
+        "hostingGzipSha256": "67dee1c02c6a6700d63b5c1898cf2df618101a68a395db469192763d24925a23",
+        "bytes": 112594
+      },
+      {
+        "path": "/bapmunna/app/_next/static/chunks/webpack-952e218cf4c70e38.js",
+        "sha256": "25708532d3a9bef32dece5b7d9f2f53e7668300c6169e681beec17c66d255e97",
+        "hostingGzipSha256": "5605fb663dca3f9ebb52f273b80b706e9215809bdbed978e75fea0d16fea4840",
+        "bytes": 3454
+      },
+      {
+        "path": "/bapmunna/app/_next/static/css/1d8df86629bad61b.css",
+        "sha256": "283cb10d420eeeb091bd4163a60ede748eefef686322447c4118762c600e953f",
+        "hostingGzipSha256": "74060f1e0a29c7a2307697db1d65a064a7b780e243f85c5141e9408dd7d3e55b",
+        "bytes": 4233
+      },
+      {
+        "path": "/bapmunna/app/_next/static/css/665695011bd87beb.css",
+        "sha256": "90bd4a2540c3f920d5f3f2d9459d21ac354eca9ed66f84e4a862d143a800171d",
+        "hostingGzipSha256": "20df182253c6da82d7c943497d6f95b01c18477d9471a2d75b96d741ec81c336",
+        "bytes": 169
+      },
+      {
+        "path": "/bapmunna/app/_next/static/css/6adf4cc755846a19.css",
+        "sha256": "37a117da59460f765f62408895933d3c4dbf4643225de10c18b239dd4f4e27fb",
+        "hostingGzipSha256": "375bc9b3b451807d877386483e07f1e6904df48a51a47702611d8901f4ef4c93",
+        "bytes": 8508
+      },
+      {
+        "path": "/bapmunna/app/_next/static/css/808e0728e435c651.css",
+        "sha256": "2f4389f3e45e8294c66a2322cc4a0f5837abbbc6caf9e8a6bace2f994e7b027b",
+        "hostingGzipSha256": "e4c50082623b18d45a09ee9f68cc1ede82b9fa0758a502f322451192bfe23d36",
+        "bytes": 41922
+      },
+      {
+        "path": "/bapmunna/app/_next/static/css/abcef53212194384.css",
+        "sha256": "29ca80951b501701c1f9a477a464f5ac82df48e4b9f869c3ca1ca084575bc2e0",
+        "hostingGzipSha256": "00b62f5d14dcf23281ef7f571d4c9f1b5ec725a4e0cd773824c5a7de0fbe06e3",
+        "bytes": 23493
+      },
+      {
+        "path": "/bapmunna/app/_next/static/css/b1c72614d792d8c0.css",
+        "sha256": "18da424dd19239a2d82bebd9393b8d20afb4a3e2892e5ae6c4095974969ddaed",
+        "hostingGzipSha256": "88d04edf63a95f6ddb4e02749248ea1bfca04eba13747a9cfd42186ff2882487",
+        "bytes": 1145
+      },
+      {
+        "path": "/bapmunna/app/_next/static/css/f0b6af68341888fc.css",
+        "sha256": "316f7675fc3be538db15b6c5bc25b1e84c090092b401a0e02dd40cead23a6e1f",
+        "hostingGzipSha256": "caa1451f45bb0b1bb03d12caba363142707f67f96aca6efa27522fe973025888",
+        "bytes": 1030
+      },
+      {
+        "path": "/bapmunna/app/_next/static/media/NanumPenScript-Regular.c64fb728.ttf",
+        "sha256": "6f0d1ab29c7894010dc88831fb7a0a51edb79136e450344183de5b1a8b52bd43",
+        "hostingGzipSha256": "b3933b3a6b0dd4dfd8bbe9378841e3ed06d883224d0542a332d06959d9b1210c",
+        "bytes": 3201664
+      },
+      {
+        "path": "/bapmunna/app/_next/static/media/PretendardVariable.ff840cfe.woff2",
+        "sha256": "9599f12fd42fc0bce1cd50b47a0c022e108d7aa64dd0d1bb0ed44f3282d900b4",
+        "hostingGzipSha256": "4c5817e39f01f56a2d152ad748825eae888b0a0385ef4843fcec9d209cd87d6b",
+        "bytes": 2057688
+      },
+      {
+        "path": "/bapmunna/app/_not-found/__next._full.txt",
+        "sha256": "c2d8242bc9e62d66cbf29a0900ea5766f0266abde5b36dd2f03e87b9021caf78",
+        "hostingGzipSha256": "88a1651ea2d55d37117205fd046f75b0afb136f6c6fc7dd72442e7ce60245077",
+        "bytes": 6102
+      },
+      {
+        "path": "/bapmunna/app/_not-found/__next._not-found.__PAGE__.txt",
+        "sha256": "37bafb2f389408152516b7241ca6a46d6482d06aa5763b55b5617a5ea4b5a6de",
+        "hostingGzipSha256": "aeaf54f0e49e5e812e29fab72fab3eea069e7ef943e9c550505939d0a98d9d8c",
+        "bytes": 5513
+      },
+      {
+        "path": "/bapmunna/app/_not-found/__next._tree.txt",
+        "sha256": "886d07fe61096bf783bfea46e83b41d4be2cbca48661eb249901897df4e2b615",
+        "hostingGzipSha256": "1dbe896b363fa2e211072df504fbb730d839cca50cd8e5ba8e9a342b5986fe09",
+        "bytes": 230
+      },
+      {
+        "path": "/bapmunna/app/_not-found/index.html",
+        "sha256": "6f269bb1b96f774ebd1dee692fdb80eaf02680c6e064793f10419e7f4ed3f6dc",
+        "hostingGzipSha256": "ae3f9a5ae1f5ab3686ec14de5c2b6dc2b59c2d593360e92c366c033164b8370e",
+        "bytes": 11956
+      },
+      {
+        "path": "/bapmunna/app/_not-found/index.txt",
+        "sha256": "c2d8242bc9e62d66cbf29a0900ea5766f0266abde5b36dd2f03e87b9021caf78",
+        "hostingGzipSha256": "88a1651ea2d55d37117205fd046f75b0afb136f6c6fc7dd72442e7ce60245077",
+        "bytes": 6102
+      },
+      {
+        "path": "/bapmunna/app/404.html",
+        "sha256": "6f269bb1b96f774ebd1dee692fdb80eaf02680c6e064793f10419e7f4ed3f6dc",
+        "hostingGzipSha256": "ae3f9a5ae1f5ab3686ec14de5c2b6dc2b59c2d593360e92c366c033164b8370e",
+        "bytes": 11956
+      },
+      {
+        "path": "/bapmunna/app/404/index.html",
+        "sha256": "6f269bb1b96f774ebd1dee692fdb80eaf02680c6e064793f10419e7f4ed3f6dc",
+        "hostingGzipSha256": "ae3f9a5ae1f5ab3686ec14de5c2b6dc2b59c2d593360e92c366c033164b8370e",
+        "bytes": 11956
+      },
+      {
+        "path": "/bapmunna/app/alerts/__next._full.txt",
+        "sha256": "cf1c9fd9a206d2070731622875a1b25a3b059f21e837f0233a442f608b664b08",
+        "hostingGzipSha256": "2712ca0bb565b775ae8e281c028ad99a67e2c192eebfd5adcf57e9b0cd313be6",
+        "bytes": 8551
+      },
+      {
+        "path": "/bapmunna/app/alerts/__next._tree.txt",
+        "sha256": "e174dbf40bd65d959fdff45184869492c02a70b765e961f9897f52daa7457fea",
+        "hostingGzipSha256": "71d202d678ae3c72eddbb4bdbfbaa9b358f1c7f44bb3aa1e213e7f417eaf9859",
+        "bytes": 279
+      },
+      {
+        "path": "/bapmunna/app/alerts/__next.!KGd1YXJkaWFuKQ.alerts.__PAGE__.txt",
+        "sha256": "f90a57b79965978acf6cc86aac8929048c82e06e5a7ccfbd73ac9f53cd64b5db",
+        "hostingGzipSha256": "426fb94f2ae167a5d07ed4079dcb004dd1d7c2c708b75a5d1337fe1e32cf8568",
+        "bytes": 7825
+      },
+      {
+        "path": "/bapmunna/app/alerts/index.html",
+        "sha256": "290c63d38dede2e3cd9e4ac224709c8804356aec0dd1cc0f0d6924aad0f957e3",
+        "hostingGzipSha256": "c3ba3fb68471095ee25d8d3e9a692b3d6f1e61eace2e1e573d9649993dc8d369",
+        "bytes": 16281
+      },
+      {
+        "path": "/bapmunna/app/alerts/index.txt",
+        "sha256": "cf1c9fd9a206d2070731622875a1b25a3b059f21e837f0233a442f608b664b08",
+        "hostingGzipSha256": "2712ca0bb565b775ae8e281c028ad99a67e2c192eebfd5adcf57e9b0cd313be6",
+        "bytes": 8551
+      },
+      {
+        "path": "/bapmunna/app/auth/callback/__next._full.txt",
+        "sha256": "201538f495e2c1aab2f4fa58c8d0f3e2f1db5109182ca9012464a039216e39f6",
+        "hostingGzipSha256": "e085d0f6ccea778b7a18f22ea259fbc5acc242dabe9708039cfb017eaa562bee",
+        "bytes": 6896
+      },
+      {
+        "path": "/bapmunna/app/auth/callback/__next._tree.txt",
+        "sha256": "8c1b9f05f842d9fd0d585727e3eac2afdd0d6038663bfce1e9d9192a979876c9",
+        "hostingGzipSha256": "7731bcbd5b046f1b25a926834fe275190e7f0988306fe60f79fa8a3167f621c9",
+        "bytes": 275
+      },
+      {
+        "path": "/bapmunna/app/auth/callback/__next.auth.callback.__PAGE__.txt",
+        "sha256": "798424495ee9c2442c98bf3f92dab81daf5b29b733303c13a8c5aba7cd6c0e41",
+        "hostingGzipSha256": "983f83aaffe6acda903954a9231369b91c1bb6129af3ba06b7126738408e72c8",
+        "bytes": 6137
+      },
+      {
+        "path": "/bapmunna/app/auth/callback/index.html",
+        "sha256": "774226663cde032b0ba87da4e46e2d16cc7e6a859e8cf1f149a1a110960b96a7",
+        "hostingGzipSha256": "6af0131e51fcbc30db59e34e56b62d5650eae955943278e049904b31c9ec99a0",
+        "bytes": 12101
+      },
+      {
+        "path": "/bapmunna/app/auth/callback/index.txt",
+        "sha256": "201538f495e2c1aab2f4fa58c8d0f3e2f1db5109182ca9012464a039216e39f6",
+        "hostingGzipSha256": "e085d0f6ccea778b7a18f22ea259fbc5acc242dabe9708039cfb017eaa562bee",
+        "bytes": 6896
+      },
+      {
+        "path": "/bapmunna/app/auth/kakao/__next._full.txt",
+        "sha256": "8b9d6f0d83f7072d51fc153f130f4d079677a0c75ec6f0ac270a21721795262e",
+        "hostingGzipSha256": "657056f3c3c1833afc6e507da078708af4a23adbcb3325319e1a53ec606507e7",
+        "bytes": 7070
+      },
+      {
+        "path": "/bapmunna/app/auth/kakao/__next._tree.txt",
+        "sha256": "4b7475ad7694d6172f9476a53dcca0f84fa845aa5e8dd300ab7dbfe48e76eb68",
+        "hostingGzipSha256": "e9868eea25474b2f9912d0fbb4cfb2fe48ccbffeba720d9a62ed2a01d545af31",
+        "bytes": 272
+      },
+      {
+        "path": "/bapmunna/app/auth/kakao/__next.auth.kakao.__PAGE__.txt",
+        "sha256": "d4940e129794d381123efa80d14671c63202525e5a5969ced002ab4a95e7cf6d",
+        "hostingGzipSha256": "d64d48ba303046bb7a277b7c8a4a78bbb058717591e89ab4f8154e6d1bd5761b",
+        "bytes": 6314
+      },
+      {
+        "path": "/bapmunna/app/auth/kakao/index.html",
+        "sha256": "aefe45071457138bee2228d19b7a7d963bbc9ac62f310abc1836152f82c56f35",
+        "hostingGzipSha256": "b24b464b3190a3e2b01b7076dc8ced1bc83fdd3c373da2db88fc46bbc6d3f055",
+        "bytes": 13205
+      },
+      {
+        "path": "/bapmunna/app/auth/kakao/index.txt",
+        "sha256": "8b9d6f0d83f7072d51fc153f130f4d079677a0c75ec6f0ac270a21721795262e",
+        "hostingGzipSha256": "657056f3c3c1833afc6e507da078708af4a23adbcb3325319e1a53ec606507e7",
+        "bytes": 7070
+      },
+      {
+        "path": "/bapmunna/app/bapmunna-app-qr.png",
+        "sha256": "5a5b0a2074339a550f1ce3311db046c892ce85f6766470810ca15d76d0e5df46",
+        "hostingGzipSha256": "87f0fe46f389b7374e03142b62c644bb21784afa54882d28724e042a75f330e7",
+        "bytes": 20469
+      },
+      {
+        "path": "/bapmunna/app/bapmunna-app-qr.svg",
+        "sha256": "16063226d91045394abece9dc282dfad195ec9b90a3c1f6301a14301212bd7b4",
+        "hostingGzipSha256": "5fb1b870b63816840c5cca91e44176d4f763333b517241bf229fb442f5a4d58f",
+        "bytes": 17966
+      },
+      {
+        "path": "/bapmunna/app/brand/bapmunna-share-v2.png",
+        "sha256": "867dee0a907acba2167da5ede323dc8b24fba02ff0adb0017ff19f7c5fc294fe",
+        "hostingGzipSha256": "71f0fef45e90757e30acdcc3a89264f13838340f6fe6734d21b2bf972642b221",
+        "bytes": 89605
+      },
+      {
+        "path": "/bapmunna/app/brand/bunny-greeting.webp",
+        "sha256": "76891f00f8fa4602664abd2881ad346482711e100c0fe6f4ed0cb4efb6093571",
+        "hostingGzipSha256": "d4de9c9e17072028646a9f4df6bfab0c703e764dbbc8e352de5a15913f7cf251",
+        "bytes": 570674
+      },
+      {
+        "path": "/bapmunna/app/brand/bunny-underlay.webp",
+        "sha256": "910701b6351d1e600e776ed240c1406388b9d73b9c7c8af4284a543454a7d82a",
+        "hostingGzipSha256": "aea4a1a34b53b57401152a3434448fc83a46538dd836a351e041195f89aed763",
+        "bytes": 46562
+      },
+      {
+        "path": "/bapmunna/app/brand/bunny.png",
+        "sha256": "87d86ce95e85f69168a6720419fd0cc3a22f32a67f13db2dea37e96e626f19f6",
+        "hostingGzipSha256": "dddee35dfb207fe4e4df9b9c876a4ee8863700a8a7def8a1fbb2271790a27d03",
+        "bytes": 186115
+      },
+      {
+        "path": "/bapmunna/app/brand/NanumPenScript-Regular.ttf",
+        "sha256": "6f0d1ab29c7894010dc88831fb7a0a51edb79136e450344183de5b1a8b52bd43",
+        "hostingGzipSha256": "b3933b3a6b0dd4dfd8bbe9378841e3ed06d883224d0542a332d06959d9b1210c",
+        "bytes": 3201664
+      },
+      {
+        "path": "/bapmunna/app/brand/OFL-NanumPenScript.txt",
+        "sha256": "90f6a909ffb2af7f6422ea20042a26180fe5520cba80bbbf75a5e660320d7924",
+        "hostingGzipSha256": "ddb0f943b6f8653f17a59d3557b3f7b88fef86af89194671b056c4da71ffae42",
+        "bytes": 4532
+      },
+      {
+        "path": "/bapmunna/app/brand/OFL-Pretendard.txt",
+        "sha256": "85fce85e25260b03777bf10373d3bd9363b9da96d9e0ca86a280dd37ed7667a0",
+        "hostingGzipSha256": "47e61d0bea69b7ea7038b3e7100a038eb757e6dc810371ecae59dc95613ab3a7",
+        "bytes": 4418
+      },
+      {
+        "path": "/bapmunna/app/brand/PretendardVariable.woff2",
+        "sha256": "9599f12fd42fc0bce1cd50b47a0c022e108d7aa64dd0d1bb0ed44f3282d900b4",
+        "hostingGzipSha256": "4c5817e39f01f56a2d152ad748825eae888b0a0385ef4843fcec9d209cd87d6b",
+        "bytes": 2057688
+      },
+      {
+        "path": "/bapmunna/app/brand/rice-cooker-companion.png",
+        "sha256": "cde39496d40d85b1c370d895d057d7b288bae3bb5abd0b60c639f0e131995d86",
+        "hostingGzipSha256": "655842e3c103859a8662582d049bac1c824190c7223dcef09d30ea6d9172f56c",
+        "bytes": 577917
+      },
+      {
+        "path": "/bapmunna/app/brand/rice-logo.png",
+        "sha256": "feff84d1a626d270bb6e914898bbc3ebb2cdaf5ddff6a57247583893903dee03",
+        "hostingGzipSha256": "f5b8a3a340b2517837b29a23946a434ecd079cf78880f170a85ff61c8f2c3b72",
+        "bytes": 20864
+      },
+      {
+        "path": "/bapmunna/app/connect/__next._full.txt",
+        "sha256": "ac7eee969fd781da5f889aa87032ebae1fc7fbfebf89143ee88f86f3237b9023",
+        "hostingGzipSha256": "d1a49c1473392e52dd268fdff9efea7ddc8f65cb4c87a7fdd4ac1d79acad7b16",
+        "bytes": 7000
+      },
+      {
+        "path": "/bapmunna/app/connect/__next._tree.txt",
+        "sha256": "e3a6b3be898e5aa4dd5cc0eabe2bb87785f203ac692d92f5e61f46b7005190c7",
+        "hostingGzipSha256": "9a7eedce36a7b13f667be7648cd9d20980892b5da92f9c66824be15bd4753805",
+        "bytes": 294
+      },
+      {
+        "path": "/bapmunna/app/connect/__next.connect.__PAGE__.txt",
+        "sha256": "3ef12157580a78d237235454d5cb3b3582ae45979ca8ea11401848947c61d140",
+        "hostingGzipSha256": "fc134bb8e6d28ba6002c93a6e45a58bee20be8ea4e5b5ab105a64c65e19c8931",
+        "bytes": 6390
+      },
+      {
+        "path": "/bapmunna/app/connect/index.html",
+        "sha256": "2cf4dfc8d0aaf626e21fa32daf592ed126b86456ad8378c8a8c717d861503118",
+        "hostingGzipSha256": "0dc6c516d17babb005caa2e18a711f8d97c5441258d71505dacf61930cdbfde9",
+        "bytes": 13836
+      },
+      {
+        "path": "/bapmunna/app/connect/index.txt",
+        "sha256": "ac7eee969fd781da5f889aa87032ebae1fc7fbfebf89143ee88f86f3237b9023",
+        "hostingGzipSha256": "d1a49c1473392e52dd268fdff9efea7ddc8f65cb4c87a7fdd4ac1d79acad7b16",
+        "bytes": 7000
+      },
+      {
+        "path": "/bapmunna/app/downloads/20261117/release.json",
+        "sha256": "e3c5fc863032f8e63083c60ea7f35b682bcca1aa4160b23d9b3fcbcf9da16fbc",
+        "hostingGzipSha256": "f9d6c18762fa16f483a6f91b268adaf29a4d1eff6b9d5da9443e356702f92ce0",
+        "bytes": 1216
+      },
+      {
+        "path": "/bapmunna/app/health/__next._full.txt",
+        "sha256": "c032281ab096e3ce253f21dbb25f2ad7beb3f4ac8b42c6d947f199f32c013423",
+        "hostingGzipSha256": "c805bf0c903735fd681516e53ed5cf946f766f3aa5f5c5809f833b058fa3d004",
+        "bytes": 7163
+      },
+      {
+        "path": "/bapmunna/app/health/__next._tree.txt",
+        "sha256": "84ab201c08bf34610e594f06138fb80d0a831e1d7514a26ade8d6ba42c4d496d",
+        "hostingGzipSha256": "505c39a0ae86d18e4693ce1e6c366a429f474c8c4d3b83e4f2cc7975e714df83",
+        "bytes": 427
+      },
+      {
+        "path": "/bapmunna/app/health/__next.health.__PAGE__.txt",
+        "sha256": "f812fbb5d0136a5e30d1711f71d43fe79e5d200f03859529ecbbf60810dbe7e4",
+        "hostingGzipSha256": "7cd70d3281a2e163b1b2583287e814f2e499db3583eb271f3253d964d98daac0",
+        "bytes": 6458
+      },
+      {
+        "path": "/bapmunna/app/health/index.html",
+        "sha256": "f586043a0d57742041657d90a5388c87a5bf6507e91e41b35c38ed95a4b7564c",
+        "hostingGzipSha256": "65fff6a6ec50a0b7fcb4ba701f3393c339e041b58d5d7d1ef43a1a92fbb9e54e",
+        "bytes": 16367
+      },
+      {
+        "path": "/bapmunna/app/health/index.txt",
+        "sha256": "c032281ab096e3ce253f21dbb25f2ad7beb3f4ac8b42c6d947f199f32c013423",
+        "hostingGzipSha256": "c805bf0c903735fd681516e53ed5cf946f766f3aa5f5c5809f833b058fa3d004",
+        "bytes": 7163
+      },
+      {
+        "path": "/bapmunna/app/health/privacy/__next._full.txt",
+        "sha256": "72fb6784d1633ba783e610739c81bdb2cbbec58fb344980574df84c36eed251d",
+        "hostingGzipSha256": "e8c91f04da98e470f4a7746aa576a8a0a374f92bc56a04f2e98c1a8573d342eb",
+        "bytes": 12644
+      },
+      {
+        "path": "/bapmunna/app/health/privacy/__next._tree.txt",
+        "sha256": "222303f4ac74e15c76e477dc820cb75965c62e475d517af1426141de684b1341",
+        "hostingGzipSha256": "71e0a12116c6da71c30e4fd703de978f5e63a85293663cdad2281cca031774ca",
+        "bytes": 343
+      },
+      {
+        "path": "/bapmunna/app/health/privacy/__next.health.privacy.__PAGE__.txt",
+        "sha256": "5dc5fe6f3675080f5337266ed149f8000a69d6797cd6ec1f4868c3708f900a37",
+        "hostingGzipSha256": "b84a9566624656bb79cdf896118a3a4af6c7d7b1c673039c774d05bb0165fecb",
+        "bytes": 11827
+      },
+      {
+        "path": "/bapmunna/app/health/privacy/index.html",
+        "sha256": "9f0bbf8de00880d1041067bf9540e608e1a5bb9c70927d5075e0e398db3206a9",
+        "hostingGzipSha256": "7d3e5ba713f075e313ec133b346820096cee3bac0328eee4bbf7a59c19b2cada",
+        "bytes": 22922
+      },
+      {
+        "path": "/bapmunna/app/health/privacy/index.txt",
+        "sha256": "72fb6784d1633ba783e610739c81bdb2cbbec58fb344980574df84c36eed251d",
+        "hostingGzipSha256": "e8c91f04da98e470f4a7746aa576a8a0a374f92bc56a04f2e98c1a8573d342eb",
+        "bytes": 12644
+      },
+      {
+        "path": "/bapmunna/app/home/__next._full.txt",
+        "sha256": "515da97fab7c57eca637e15aef7d1b3ede83852589b41977cac4f2b9c030c9de",
+        "hostingGzipSha256": "4462bc91fcd4f9620d7ed381b11f1964cfe39c507aa6db2ba2f005a06a48010a",
+        "bytes": 8659
+      },
+      {
+        "path": "/bapmunna/app/home/__next._tree.txt",
+        "sha256": "9f1380ae468509bae0505d714861bfd9cb83e819c6ab7fd948bd1a98d71d4e6c",
+        "hostingGzipSha256": "333bca2d93fa5dad2533aef053b0866964c721aad2269066ad65dd9141f0624a",
+        "bytes": 277
+      },
+      {
+        "path": "/bapmunna/app/home/__next.!KGd1YXJkaWFuKQ.home.__PAGE__.txt",
+        "sha256": "20d6c4ebcf08082657b8f4a086ba7162746716a257547024bb493d23cbef3f76",
+        "hostingGzipSha256": "8875d6fb11dd8497206ec46443e61a9dac9165ad3f6228e90ee2eaedbf980b2c",
+        "bytes": 7935
+      },
+      {
+        "path": "/bapmunna/app/home/index.html",
+        "sha256": "04805eba2372a1ad8de8d004caf6799d462960050ea31e0a46cdb75f542eccec",
+        "hostingGzipSha256": "f10c07dd796474433638eed680a6779223e28b2acc4ea364e861559841b9ecfc",
+        "bytes": 16581
+      },
+      {
+        "path": "/bapmunna/app/home/index.txt",
+        "sha256": "515da97fab7c57eca637e15aef7d1b3ede83852589b41977cac4f2b9c030c9de",
+        "hostingGzipSha256": "4462bc91fcd4f9620d7ed381b11f1964cfe39c507aa6db2ba2f005a06a48010a",
+        "bytes": 8659
+      },
+      {
+        "path": "/bapmunna/app/icon.svg",
+        "sha256": "db418cedb10b7c6b62ef0bb1681b7eb51d1040744669a8954bad9cd0ce62a65f",
+        "hostingGzipSha256": "0cefe4ba3392267e2869f3f16477ce8fac5da1bbef5c2317ec44a488da1cfc56",
+        "bytes": 27982
+      },
+      {
+        "path": "/bapmunna/app/index.html",
+        "sha256": "c8e63156c669b8698fcd64192bfd74bab5968dba54118d636231bd3aae46b125",
+        "hostingGzipSha256": "b533f1f4e86e1dafcda686c96b6fde635d02ca95b8d416ba5ab6b2a383d3f374",
+        "bytes": 15726
+      },
+      {
+        "path": "/bapmunna/app/index.txt",
+        "sha256": "3c91d7ce78bce91d21b5d0aad75dbdb81464989456f3162a7d6bb6b4e3fcdf1e",
+        "hostingGzipSha256": "bff0a428122a78f64ea5e33de5af6db4a008ee914357521baf22d872a63f25ee",
+        "bytes": 8263
+      },
+      {
+        "path": "/bapmunna/app/login/__next._full.txt",
+        "sha256": "66b578e4f16650468781871fabf74bb86134f98ee3cdc47d851a75ce746057fa",
+        "hostingGzipSha256": "34d6163ed6a3eff80b29176f9627da7d1bd934a1ae2f09b986a0aba69fb553a8",
+        "bytes": 6705
+      },
+      {
+        "path": "/bapmunna/app/login/__next._tree.txt",
+        "sha256": "4439b394c2623461284257a6487789d897f7b634847185a32c9031bd344d2a65",
+        "hostingGzipSha256": "0181613af73952e62cdd32cc90f8ff3c72faeec898ec416d5851188a9f4960cb",
+        "bytes": 225
+      },
+      {
+        "path": "/bapmunna/app/login/__next.login.__PAGE__.txt",
+        "sha256": "4f39642c40567cdd179b83178e38f453817912e07b5de2ac36868caa3ab4fbd8",
+        "hostingGzipSha256": "f273a3474610757bcf88dc5b13528c8d60a8647d1e425d25b9f0d786b7534967",
+        "bytes": 6145
+      },
+      {
+        "path": "/bapmunna/app/login/index.html",
+        "sha256": "8f3c2c59abe67f808261198ce5b856c43cdc740ce91b4dfcdee8c215e9c53844",
+        "hostingGzipSha256": "b31fe687c796b1e51e4364192c88776448b7dfc26fd9c63d7e7dabb87585887b",
+        "bytes": 14624
+      },
+      {
+        "path": "/bapmunna/app/login/index.txt",
+        "sha256": "66b578e4f16650468781871fabf74bb86134f98ee3cdc47d851a75ce746057fa",
+        "hostingGzipSha256": "34d6163ed6a3eff80b29176f9627da7d1bd934a1ae2f09b986a0aba69fb553a8",
+        "bytes": 6705
+      },
+      {
+        "path": "/bapmunna/app/manifest.webmanifest",
+        "sha256": "a2b76366cbe723778328fea154918d336d5a6e2e119ade66504712efe9e1867d",
+        "hostingGzipSha256": "1ef0a24184ead80c5a2917dc3313c3e205364f168af561960c48c6c4534fbbdc",
+        "bytes": 369
+      },
+      {
+        "path": "/bapmunna/app/more/__next._full.txt",
+        "sha256": "f262172dcb2362d5ed38a2d59762758e1ce6c0a4e6576ac624f455911fffae83",
+        "hostingGzipSha256": "cfe63c3ae2c21a3fb315d335d7e1086b428e5e020976763d6c6e34203d74c8be",
+        "bytes": 8659
+      },
+      {
+        "path": "/bapmunna/app/more/__next._tree.txt",
+        "sha256": "3c2ed5aa7fba9a17645524814c4fa8efa77707ee0934d7d3caed2963815ab196",
+        "hostingGzipSha256": "df4bd5ec60f0c3974e32c08e9fe05898d7b1711200061cb730a2ee489d16527d",
+        "bytes": 277
+      },
+      {
+        "path": "/bapmunna/app/more/__next.!KGd1YXJkaWFuKQ.more.__PAGE__.txt",
+        "sha256": "fb75774ce5a6ad01dc7acf666740f8cade25c984a756535a9a29de835334a62d",
+        "hostingGzipSha256": "ee10bf169166abfe062a7c19eb9c789560890b781f850bf8d38c3af0f619b931",
+        "bytes": 7935
+      },
+      {
+        "path": "/bapmunna/app/more/index.html",
+        "sha256": "e1429f683c819c9de5577655e308f322513cf00e1746ef57abb204be1ddee61b",
+        "hostingGzipSha256": "6856c802d36510a932a6387f377d89824f5e1ca99e45c7bd5f63a047d750898b",
+        "bytes": 16581
+      },
+      {
+        "path": "/bapmunna/app/more/index.txt",
+        "sha256": "f262172dcb2362d5ed38a2d59762758e1ce6c0a4e6576ac624f455911fffae83",
+        "hostingGzipSha256": "cfe63c3ae2c21a3fb315d335d7e1086b428e5e020976763d6c6e34203d74c8be",
+        "bytes": 8659
+      },
+      {
+        "path": "/bapmunna/app/onboarding/__next._full.txt",
+        "sha256": "490efdd04cb96b4d9af6a3114c3d43819ce125f9c8ff9bd4b075f06bd90e89f1",
+        "hostingGzipSha256": "1a428529f402bb69c6c604f68c7720857b58ef7484eb9e2bc229269102b7bf87",
+        "bytes": 6778
+      },
+      {
+        "path": "/bapmunna/app/onboarding/__next._tree.txt",
+        "sha256": "9df9b9a6b7061eb0371fb5dd24cad825c8100344d48c960839f8ce94702d2292",
+        "hostingGzipSha256": "1f527c1cdf8e71964f954f4b92bf78128486d40fe7050d9b1a1891bc0a89c102",
+        "bytes": 230
+      },
+      {
+        "path": "/bapmunna/app/onboarding/__next.onboarding.__PAGE__.txt",
+        "sha256": "094beb50f12616f98254a0597c119d393f28668f9531d3e17f63548a0e3a50ca",
+        "hostingGzipSha256": "c72a05345a067d381ad871e88e62955c99f7e45edb1d07121cff388c799ea82b",
+        "bytes": 6213
+      },
+      {
+        "path": "/bapmunna/app/onboarding/index.html",
+        "sha256": "bd29a43a1856c9ce4bd919c821131e20e0dba7aa07e5a8767c6babbf121c81bf",
+        "hostingGzipSha256": "22caef08ebf733ed75520aec97e004503e4c10b32c840c1451c732bfe4019583",
+        "bytes": 12360
+      },
+      {
+        "path": "/bapmunna/app/onboarding/index.txt",
+        "sha256": "490efdd04cb96b4d9af6a3114c3d43819ce125f9c8ff9bd4b075f06bd90e89f1",
+        "hostingGzipSha256": "1a428529f402bb69c6c604f68c7720857b58ef7484eb9e2bc229269102b7bf87",
+        "bytes": 6778
+      },
+      {
+        "path": "/bapmunna/app/power/__next._full.txt",
+        "sha256": "301c97da473bbf5f87d86acbd1c7f592ff705ecf8d224cc86f41469f0cca680c",
+        "hostingGzipSha256": "b9b7ac5045bd2d552d4bf65c63f1874274389f818350003df70214293e59c763",
+        "bytes": 6649
+      },
+      {
+        "path": "/bapmunna/app/power/__next._tree.txt",
+        "sha256": "3219172b925e56869083bdf0cd3202c9fb12331f4728d1304f98a5ef58f6290a",
+        "hostingGzipSha256": "71c9dd877cd469864e53729d0fe2424a85848980f848f1ed923b2591e33f43f2",
+        "bytes": 225
+      },
+      {
+        "path": "/bapmunna/app/power/__next.power.__PAGE__.txt",
+        "sha256": "d607f3c2f13765b00e961e1a2d837bbe66eb1ab8112c032c49ea4e74139803cf",
+        "hostingGzipSha256": "73c1eb123b091334b5782bcd16672b3f0b14278ca8db19848555e302e35789d3",
+        "bytes": 6089
+      },
+      {
+        "path": "/bapmunna/app/power/index.html",
+        "sha256": "34f80c1cf2c444e949bba810cec2fa2d120978e43ed834c852dc3a105f7b5c48",
+        "hostingGzipSha256": "75c234105c32f87738aa5a20bcdfc81e3f77cb22deca8a6f82fc01174d452023",
+        "bytes": 11970
+      },
+      {
+        "path": "/bapmunna/app/power/index.txt",
+        "sha256": "301c97da473bbf5f87d86acbd1c7f592ff705ecf8d224cc86f41469f0cca680c",
+        "hostingGzipSha256": "b9b7ac5045bd2d552d4bf65c63f1874274389f818350003df70214293e59c763",
+        "bytes": 6649
+      },
+      {
+        "path": "/bapmunna/app/privacy/__next._full.txt",
+        "sha256": "4111dd2d6f93d2296117db4b633d22518b5037eb321f8016fd505c29d2b4a017",
+        "hostingGzipSha256": "378e2603a89b4ac3a67b4410da6054484e21819eacebf429a72755bdbe1a6b74",
+        "bytes": 13500
+      },
+      {
+        "path": "/bapmunna/app/privacy/__next._tree.txt",
+        "sha256": "a5dd9b1b6d27d5d9eab7369699b21023084c4b09719dbad025a1eff5e1088fee",
+        "hostingGzipSha256": "2c92af1616efba989ac5bb3200beb5c1d116c6afcc7a4c5e6c8f2eb24bde48a3",
+        "bytes": 227
+      },
+      {
+        "path": "/bapmunna/app/privacy/__next.privacy.__PAGE__.txt",
+        "sha256": "bcf0b3d9cb14e69266941f7203a97724c4d542e7c1eb23a7d8cc5984c102838b",
+        "hostingGzipSha256": "fa96601e7d7dec37ac04c656d60495b40cd9390c70468df5564c04e583616445",
+        "bytes": 12918
+      },
+      {
+        "path": "/bapmunna/app/privacy/index.html",
+        "sha256": "21d22734426467de041fccac41bf94521c921ba54974d2c5132a437b462c9933",
+        "hostingGzipSha256": "eed523f9b6db92105fa77cd7da6c99a032998bba04d684eb86225cd9803efc90",
+        "bytes": 25437
+      },
+      {
+        "path": "/bapmunna/app/privacy/index.txt",
+        "sha256": "4111dd2d6f93d2296117db4b633d22518b5037eb321f8016fd505c29d2b4a017",
+        "hostingGzipSha256": "378e2603a89b4ac3a67b4410da6054484e21819eacebf429a72755bdbe1a6b74",
+        "bytes": 13500
+      },
+      {
+        "path": "/bapmunna/app/records/__next._full.txt",
+        "sha256": "ec8c55e97a395a8e0abdad41df7661c8a448bcf62384a688d96204562821347b",
+        "hostingGzipSha256": "a815a45deb750be7ce270d162a6f0875570d5a9d1c3e24ca4444c2caf1f6cd69",
+        "bytes": 8554
+      },
+      {
+        "path": "/bapmunna/app/records/__next._tree.txt",
+        "sha256": "d10bb6e1319181a24abc738a432885375c9a56882f95b4ac83d65a9a229e1d09",
+        "hostingGzipSha256": "4194ad9fe252fb81b15756d303be35848f0df27963a88062277e2bf62113b2a9",
+        "bytes": 280
+      },
+      {
+        "path": "/bapmunna/app/records/__next.!KGd1YXJkaWFuKQ.records.__PAGE__.txt",
+        "sha256": "4686af82db41d63473e0d4fafc68e744c1d8a21b37f4a211aceed5fe66055158",
+        "hostingGzipSha256": "ea5b1f1e22e56faf88f66c0f887614381ab7d969489168f07c537f832a9e4f64",
+        "bytes": 7827
+      },
+      {
+        "path": "/bapmunna/app/records/index.html",
+        "sha256": "6070c89055509830598f644be5e5b29bfbc3c660a1240d47f0f7f437820d6a21",
+        "hostingGzipSha256": "7ace8f9c94c362305605cf7f946be5efd9575070b56d5b0792084445a8b08a7b",
+        "bytes": 16286
+      },
+      {
+        "path": "/bapmunna/app/records/index.txt",
+        "sha256": "ec8c55e97a395a8e0abdad41df7661c8a448bcf62384a688d96204562821347b",
+        "hostingGzipSha256": "a815a45deb750be7ce270d162a6f0875570d5a9d1c3e24ca4444c2caf1f6cd69",
+        "bytes": 8554
+      },
+      {
+        "path": "/bapmunna/app/report/__next._full.txt",
+        "sha256": "e05dd2b3788530490902807a17e0862d3bc2c67071e6d015bd7a01dd7cab420a",
+        "hostingGzipSha256": "4bf929dcd9a27d2d153aa122e9a26a56df5321377efa8cc44b55249336d55b48",
+        "bytes": 8608
+      },
+      {
+        "path": "/bapmunna/app/report/__next._tree.txt",
+        "sha256": "065cf95439af9115737c835171e9e26c0cb18361a3ea7f386cef54a7227ebdc4",
+        "hostingGzipSha256": "a6f49c24b0ce8179962066afbd319d96c4e8d3a7077dff01cbb911d0ed112fa7",
+        "bytes": 279
+      },
+      {
+        "path": "/bapmunna/app/report/__next.!KGd1YXJkaWFuKQ.report.__PAGE__.txt",
+        "sha256": "ae9b8ec9b78ce8cfca34e20b5de3957cb1d2e33e6d9131ca0f4535ba1ab7d86b",
+        "hostingGzipSha256": "8f48d435cb9f3294be11b791fc681bd6e634d779994aa3a94133e39796bba283",
+        "bytes": 7882
+      },
+      {
+        "path": "/bapmunna/app/report/index.html",
+        "sha256": "e5d5d294fe0afcb8cf93937967ec70b4b01108335888e141c41105315edfcbd8",
+        "hostingGzipSha256": "acb38e6672d2cc7d88a8450745cd59c99bee27dbc27dff97bbadd9e47c34296c",
+        "bytes": 16436
+      },
+      {
+        "path": "/bapmunna/app/report/index.txt",
+        "sha256": "e05dd2b3788530490902807a17e0862d3bc2c67071e6d015bd7a01dd7cab420a",
+        "hostingGzipSha256": "4bf929dcd9a27d2d153aa122e9a26a56df5321377efa8cc44b55249336d55b48",
+        "bytes": 8608
+      },
+      {
+        "path": "/bapmunna/app/s/__next._full.txt",
+        "sha256": "93646abc362d99b8953329fe27ce878fd51acd8264f942e8b6a2e13d1775b830",
+        "hostingGzipSha256": "74e1b0188df3bc3f15f516b0f13dd5a2b909951474734fc707a0d5afdf85a5f2",
+        "bytes": 6867
+      },
+      {
+        "path": "/bapmunna/app/s/__next._tree.txt",
+        "sha256": "470da3e3faed320d02d9da9627f0b81ba64bc596ecbb2983d596b65fe48aab46",
+        "hostingGzipSha256": "40ca7211e6f0771d92d4657a55e65f54c2c8c21ddbfa2c30e2920ce0f3700e1a",
+        "bytes": 288
+      },
+      {
+        "path": "/bapmunna/app/s/__next.s.__PAGE__.txt",
+        "sha256": "0e15b29bedbc991a7f2c8dbcf3ce0681589f05bd93be5dcde8e9be8be7113618",
+        "hostingGzipSha256": "3f775e30cecd0a433470867b142414c481afa666c302d0a87c830cdda5d7ffc2",
+        "bytes": 6263
+      },
+      {
+        "path": "/bapmunna/app/s/index.html",
+        "sha256": "8ded0157cd60870fe38cc9f679996f98816b9c50bbf008c57d5d1d1518c3dd61",
+        "hostingGzipSha256": "bc094c2d8573e2d04bdb5e82b78955a2052adb07080bb5ca2f58f0cf0e363f82",
+        "bytes": 12847
+      },
+      {
+        "path": "/bapmunna/app/s/index.txt",
+        "sha256": "93646abc362d99b8953329fe27ce878fd51acd8264f942e8b6a2e13d1775b830",
+        "hostingGzipSha256": "74e1b0188df3bc3f15f516b0f13dd5a2b909951474734fc707a0d5afdf85a5f2",
+        "bytes": 6867
+      },
+      {
+        "path": "/bapmunna/app/settings/__next._full.txt",
+        "sha256": "b654a013f9b840deaceb734d3708b58050954c6796582206b069e1a87a60cc6e",
+        "hostingGzipSha256": "3f28558de0f9ba670dc051b539128c2eabca93372e193f3ec4b1b636075feda2",
+        "bytes": 8845
+      },
+      {
+        "path": "/bapmunna/app/settings/__next._tree.txt",
+        "sha256": "d6770202fb10091537d457a57538b334443ac575fa537c62a6829748bdf0be01",
+        "hostingGzipSha256": "a7b3da920fd7b8820c02809b0215483ffe979da76609515e4cd418bf8897e114",
+        "bytes": 348
+      },
+      {
+        "path": "/bapmunna/app/settings/__next.!KGd1YXJkaWFuKQ.settings.__PAGE__.txt",
+        "sha256": "5841ba0f679f393bf2217956dec943647ec12197ac97931742e50583370ac0df",
+        "hostingGzipSha256": "d5a3f4ddbe35ec06a87acbbfc4f2725d025fa1be115254adad744281d25ad649",
+        "bytes": 8069
+      },
+      {
+        "path": "/bapmunna/app/settings/index.html",
+        "sha256": "1fc72ff5ee95bf2ce45d880ba381c0f86faa511456369805a5bfee28a141e63b",
+        "hostingGzipSha256": "fc25665722a6a4ed528723ff5eb7f0f340e124f82e51012e1bb0ba7c77c6e6d4",
+        "bytes": 16799
+      },
+      {
+        "path": "/bapmunna/app/settings/index.txt",
+        "sha256": "b654a013f9b840deaceb734d3708b58050954c6796582206b069e1a87a60cc6e",
+        "hostingGzipSha256": "3f28558de0f9ba670dc051b539128c2eabca93372e193f3ec4b1b636075feda2",
+        "bytes": 8845
+      },
+      {
+        "path": "/bapmunna/app/start/__next._full.txt",
+        "sha256": "5902e191385304af9e814425840b0d7d7878caa365e788153b6751b2e5ef3733",
+        "hostingGzipSha256": "813e4149963a6c2bf54f827179de5ef74bac3ca9398267e559dffa2975b7facd",
+        "bytes": 6649
+      },
+      {
+        "path": "/bapmunna/app/start/__next._tree.txt",
+        "sha256": "dc20fff75824d5099ebf9b7993ccad519deb3a398f26f63dd5b53335b272e4f4",
+        "hostingGzipSha256": "fd1a569853da9f87f5e5d4637a34d4c8fb4ded24bee9193a751371cdfb512b53",
+        "bytes": 225
+      },
+      {
+        "path": "/bapmunna/app/start/__next.start.__PAGE__.txt",
+        "sha256": "fc6e8fd66b82475a257f046b41a87501157ca07b84a80926e517fa3a48c24ba6",
+        "hostingGzipSha256": "556bf2adc343b5adc1684c5a9c80086e3089d34de4abe91448684cefac892688",
+        "bytes": 6089
+      },
+      {
+        "path": "/bapmunna/app/start/index.html",
+        "sha256": "d5a016f39ef14ba69af22e9bcdca44efcba437e466f974774ab1554cd3e3b8f3",
+        "hostingGzipSha256": "dae344998203321927b18588a1e3fa90cb8ef582b2d51cbd493b3d60be2aacf2",
+        "bytes": 11970
+      },
+      {
+        "path": "/bapmunna/app/start/index.txt",
+        "sha256": "5902e191385304af9e814425840b0d7d7878caa365e788153b6751b2e5ef3733",
+        "hostingGzipSha256": "813e4149963a6c2bf54f827179de5ef74bac3ca9398267e559dffa2975b7facd",
+        "bytes": 6649
+      },
+      {
+        "path": "/bapmunna/app/sw.js",
+        "sha256": "77498763a3a058e2b8b9379766f2b2be16773f36dd10ac0d3204955daa9cf341",
+        "hostingGzipSha256": "3f25bd349756868a23e889d2d040b366e5dc498ff60aff89ed7f19d32ec86478",
+        "bytes": 2125
+      },
+      {
+        "path": "/bapmunna/app/tutorial/__next._full.txt",
+        "sha256": "aac6a76ab7712fc97f75a3341f4b3c72b6962e675ee1324f8099a0145c5a286c",
+        "hostingGzipSha256": "1fabbc97234ffe1a2587de69ea9c1592d00285d8925840a82f61a7cecefead85",
+        "bytes": 6715
+      },
+      {
+        "path": "/bapmunna/app/tutorial/__next._tree.txt",
+        "sha256": "ffbbb16bd7e4a9ecf4a5f73527f145cd8cb8e3ce80c3b3564a51ad0deb7ad0f7",
+        "hostingGzipSha256": "77795bb474eb3cb0e803ab0e3db73459cfe8230e5175463f1debc06aa5673a01",
+        "bytes": 228
+      },
+      {
+        "path": "/bapmunna/app/tutorial/__next.tutorial.__PAGE__.txt",
+        "sha256": "7f5d6f60ee0c29a59136f74f1126c8185e2504653271123f789dbbb20c4fa96e",
+        "hostingGzipSha256": "cd379524f3a063175d76f96db3a6e7b2551507bc13d2fc0246f50124728f3c01",
+        "bytes": 6152
+      },
+      {
+        "path": "/bapmunna/app/tutorial/index.html",
+        "sha256": "b4c1098ed9a2c7ee0b2a0414380cc13919a32ddf5499a83765f941c74b3972ea",
+        "hostingGzipSha256": "a0267f06e558f71160670206edd07a5ef6435fe5e3d62c6b25ace7f425c9f1f8",
+        "bytes": 12132
+      },
+      {
+        "path": "/bapmunna/app/tutorial/index.txt",
+        "sha256": "aac6a76ab7712fc97f75a3341f4b3c72b6962e675ee1324f8099a0145c5a286c",
+        "hostingGzipSha256": "1fabbc97234ffe1a2587de69ea9c1592d00285d8925840a82f61a7cecefead85",
+        "bytes": 6715
+      },
+      {
+        "path": "/bapmunna/app/walking/__next._full.txt",
+        "sha256": "1a009d9536ff3ec13ee83c8c3996fc93bd3b9157429867cedb0c38dccb40095a",
+        "hostingGzipSha256": "50b86f297e0bd796d78477d39fe172c59397888d26b61753133049366e760bfd",
+        "bytes": 6621
+      },
+      {
+        "path": "/bapmunna/app/walking/__next._tree.txt",
+        "sha256": "39cc483db9b20c900725570a4e7c4b463d2add8b12cb75ca13108aa83656857c",
+        "hostingGzipSha256": "46d4cedf8df4e75c896791e8ba790eaa928e6370994e029d96dfca2d6617faa8",
+        "bytes": 294
+      },
+      {
+        "path": "/bapmunna/app/walking/__next.walking.__PAGE__.txt",
+        "sha256": "13ac48c5b20c5c319fca829722cdfc1731b4874e75808ce12fa59d7f2a6cb4f4",
+        "hostingGzipSha256": "a1c5d78381e550512b624709ab65fcf81379306295591e005bb609cb7398a355",
+        "bytes": 6011
+      },
+      {
+        "path": "/bapmunna/app/walking/bunny-leg-back.png",
+        "sha256": "b786fb15e99d1bffd18fda5b4d863f366c155909d3b62dcc50e55216865aa937",
+        "hostingGzipSha256": "4f68bf3047b404a6f9322116cdbb6d2e35ab68ba0e3bb3eb386057049f2d1528",
+        "bytes": 9334
+      },
+      {
+        "path": "/bapmunna/app/walking/bunny-leg-front.png",
+        "sha256": "6e7ece803e0a148117f8455f3ddf2225f8b64f2f9dd4ee12b4714633baa05312",
+        "hostingGzipSha256": "0a984a476063087d80f82fe48f0453bebb8b0b591e58039f8c41205f84b384fd",
+        "bytes": 24098
+      },
+      {
+        "path": "/bapmunna/app/walking/bunny-upper.png",
+        "sha256": "4ca4f9265af79159beecfb4756f54716e5d62f04d5718013268c12c4965873c1",
+        "hostingGzipSha256": "fba4b86e4c124103580584e9c479e33cdefe5a32e9d88c6fd27b4720ab037ea6",
+        "bytes": 185526
+      },
+      {
+        "path": "/bapmunna/app/walking/connect/__next._full.txt",
+        "sha256": "2c11c88e771668873aa84d15ed0325f39b97b6b48577bc29ab16796944827f16",
+        "hostingGzipSha256": "8e6636806874c81a8b4c8ca208bde562e05ae6703f3db20160ced7babc51790f",
+        "bytes": 6999
+      },
+      {
+        "path": "/bapmunna/app/walking/connect/__next._tree.txt",
+        "sha256": "eac212199eef30045ac8e890c96ceabddff370caffa9fc52ec29c3eead84e0fd",
+        "hostingGzipSha256": "c2222cdac028a4ca670a78a7dc47c2f9969fdedfe2be0ddfaa3d8f972701c2ba",
+        "bytes": 344
+      },
+      {
+        "path": "/bapmunna/app/walking/connect/__next.walking.connect.__PAGE__.txt",
+        "sha256": "04a039476a4c5b2708fa3260ee8775ada5b60f400179a6dd040f345c80cd2747",
+        "hostingGzipSha256": "5475efd419c34d656403012747d4e5e91250c91ecf813084df09a0f884d92a14",
+        "bytes": 6190
+      },
+      {
+        "path": "/bapmunna/app/walking/connect/index.html",
+        "sha256": "37004dce33265b90e0bd6beeceec5d7bfdf629cbb5f6ee8c9612747b8cd86a85",
+        "hostingGzipSha256": "f98198d8718d4ee9fdc433feee94a70b7295c6194b249432c63cc491afa449a4",
+        "bytes": 13419
+      },
+      {
+        "path": "/bapmunna/app/walking/connect/index.txt",
+        "sha256": "2c11c88e771668873aa84d15ed0325f39b97b6b48577bc29ab16796944827f16",
+        "hostingGzipSha256": "8e6636806874c81a8b4c8ca208bde562e05ae6703f3db20160ced7babc51790f",
+        "bytes": 6999
+      },
+      {
+        "path": "/bapmunna/app/walking/demo/__next._full.txt",
+        "sha256": "844489d74f5cefefc5c490ea51a718c47d8b9d770c17033829b5b7ea0b22d942",
+        "hostingGzipSha256": "aeef6dc27f95df2a234da7859cd15720be1cfe8f13c7ae02b31980d302fc5ec5",
+        "bytes": 7014
+      },
+      {
+        "path": "/bapmunna/app/walking/demo/__next._tree.txt",
+        "sha256": "5436429a31b48745906e76d7d29be7f67d6c78abe480fcbe679840a4dbe7288f",
+        "hostingGzipSha256": "21f2eed2b3977f2855a0e3a099f18ddaf857b77ffafbbf0d581e8ebc919954c2",
+        "bytes": 341
+      },
+      {
+        "path": "/bapmunna/app/walking/demo/__next.walking.demo.__PAGE__.txt",
+        "sha256": "cbf51ad0fac689534ba1ccdbf0099504b1187164e32c8985ed517ba8befb627f",
+        "hostingGzipSha256": "e2ace2c057669c2286dc72aef0d1057055d4668ea991c3c05ad4774b4fbae904",
+        "bytes": 6208
+      },
+      {
+        "path": "/bapmunna/app/walking/demo/index.html",
+        "sha256": "c592de25d00ca2c383ee806b9651a507cf528c2904175a4988ec9061b1eb8186",
+        "hostingGzipSha256": "83388127b8c0d5887ca3a72ab3ba7a455414ff7134e0911db9c50d343a314d2e",
+        "bytes": 20237
+      },
+      {
+        "path": "/bapmunna/app/walking/demo/index.txt",
+        "sha256": "844489d74f5cefefc5c490ea51a718c47d8b9d770c17033829b5b7ea0b22d942",
+        "hostingGzipSha256": "aeef6dc27f95df2a234da7859cd15720be1cfe8f13c7ae02b31980d302fc5ec5",
+        "bytes": 7014
+      },
+      {
+        "path": "/bapmunna/app/walking/index.html",
+        "sha256": "5b9a84a21034ac2a959f481c358fc847d6d98ed56b3d7d3a90b22fbc8ad2cdd4",
+        "hostingGzipSha256": "8d21f8d78bc6e3677e62ceed2d5d04f9ed841888e3e2da95d3d639bcdbd86e05",
+        "bytes": 19735
+      },
+      {
+        "path": "/bapmunna/app/walking/index.txt",
+        "sha256": "1a009d9536ff3ec13ee83c8c3996fc93bd3b9157429867cedb0c38dccb40095a",
+        "hostingGzipSha256": "50b86f297e0bd796d78477d39fe172c59397888d26b61753133049366e760bfd",
+        "bytes": 6621
+      },
+      {
+        "path": "/bapmunna/app/walking/park-bunny.png",
+        "sha256": "e935c6db35402e98616c6ec053639d7ee01e6f621728084b2801229b0286b6ab",
+        "hostingGzipSha256": "69adf88966dae9b666ae09b160d6a9857701aa6809fe5a7c72853762cdbf7e01",
+        "bytes": 1988229
+      },
+      {
+        "path": "/bapmunna/app/walking/park-panorama.jpg",
+        "sha256": "dc8cf5b67241515bf7592238ceab6d101d5f2588e24143eba68baf7bd9d79363",
+        "hostingGzipSha256": "8853ae83e2acb0a7f0ea5bebd5e0d616784cf6085de6fd6d18d1a517bca80b70",
+        "bytes": 382036
+      },
+      {
+        "path": "/bapmunna/app/walking/park-stage-bg.jpg",
+        "sha256": "7b82a319ec4ffaf2efd81a52df4859fee0789e81ae582c6e874b6b66867d22ba",
+        "hostingGzipSha256": "5c281586149833e1818471ecf0b3753e1161411da7782ac369c16e4202d4b789",
+        "bytes": 207565
+      },
+      {
+        "path": "/bapmunna/app/walking/ranking-demo/__next._full.txt",
+        "sha256": "44d40893677d36be0dc3045e4138218ad40d2ec069f078652060c7b1975c2e6b",
+        "hostingGzipSha256": "24b9ebcf438982d4dde771f37a8dc839482382efcdd30c05998590d517bf9fc2",
+        "bytes": 6899
+      },
+      {
+        "path": "/bapmunna/app/walking/ranking-demo/__next._tree.txt",
+        "sha256": "79b80496a7d2d8aa103953ac0d9d00acf5338f786ce240eff52ac8163091531d",
+        "hostingGzipSha256": "be07d5ba4c95a2cb6c2c36aa2adf9a408bc912030641b7ef5f02a9633dee6dfd",
+        "bytes": 349
+      },
+      {
+        "path": "/bapmunna/app/walking/ranking-demo/__next.walking.ranking-demo.__PAGE__.txt",
+        "sha256": "af47d2fd95dfa37f5eabd7c72f88225cb76230a43b189e3723a9a699a7f45c67",
+        "hostingGzipSha256": "83a114a312fa82d9d2d58ed4ab234d9d57d05a0a98ff359ced38530ac989dbdd",
+        "bytes": 6086
+      },
+      {
+        "path": "/bapmunna/app/walking/ranking-demo/index.html",
+        "sha256": "c5dffc2f8739f9ba965f93c8cce231a935d945ad3a15b4a07f648acb33597c2b",
+        "hostingGzipSha256": "a77337b9445e64d057a1cd5e4afb54857a4f6d3c8d86624da45098072b0d2d80",
+        "bytes": 13588
+      },
+      {
+        "path": "/bapmunna/app/walking/ranking-demo/index.txt",
+        "sha256": "44d40893677d36be0dc3045e4138218ad40d2ec069f078652060c7b1975c2e6b",
+        "hostingGzipSha256": "24b9ebcf438982d4dde771f37a8dc839482382efcdd30c05998590d517bf9fc2",
+        "bytes": 6899
+      },
+      {
+        "path": "/bapmunna/app/walking/today/__next._full.txt",
+        "sha256": "6b91a41a0804214089629cd052ae0c156a9c1c737f4d021d744b3e6d848a4e70",
+        "hostingGzipSha256": "90add997620974bc78a59203deb98fe1fa5781c5c1f4a5558943cb621e9350d5",
+        "bytes": 7050
+      },
+      {
+        "path": "/bapmunna/app/walking/today/__next._tree.txt",
+        "sha256": "6ec26e2023cef5cd160ef575c5c1033e52abfb901d87be075f197438d989c020",
+        "hostingGzipSha256": "98165f359b472ba64a8ca70e88a3b5c701cafb77d52343bd8563c3da6702311e",
+        "bytes": 342
+      },
+      {
+        "path": "/bapmunna/app/walking/today/__next.walking.today.__PAGE__.txt",
+        "sha256": "c67961bb55f33380f869f9b35ea98c5e13c7086a7fb720d3f2c5cb2101aededb",
+        "hostingGzipSha256": "bd01882b9e32fdf3214452404d52aec075b8a562d8e95fcad23e9fdff8ffaf4a",
+        "bytes": 6243
+      },
+      {
+        "path": "/bapmunna/app/walking/today/index.html",
+        "sha256": "fad41e70196ce740fe9bb3bcde97933eda3b75a4c62043bf227c5c3dff354a1a",
+        "hostingGzipSha256": "5d7a537550075d47c870be25b27f36f80e17523329277c4bfede12dc6ba21fcc",
+        "bytes": 20254
+      },
+      {
+        "path": "/bapmunna/app/walking/today/index.txt",
+        "sha256": "6b91a41a0804214089629cd052ae0c156a9c1c737f4d021d744b3e6d848a4e70",
+        "hostingGzipSha256": "90add997620974bc78a59203deb98fe1fa5781c5c1f4a5558943cb621e9350d5",
+        "bytes": 7050
+      },
+      {
+        "path": "/bapmunna/assets/away.svg",
+        "sha256": "1dd9c3bdbda1cb73cc2a2efee43acb1eac262cae847ee6ec3f2d164ac339285c",
+        "hostingGzipSha256": "81ece5158f9a83324a0b82a7f3bf8249db1a00a2c4a726b9e62c970b2e2fd062",
+        "bytes": 409
+      },
+      {
+        "path": "/bapmunna/assets/bapmunna-hero-poster.png",
+        "sha256": "36f1d6afc0ec458d63062f11a2e7b43603eed0b3af6949e4be44c8a2aca1bff6",
+        "hostingGzipSha256": "abf67116923ffa06e169c0666390d42fbcaf1075b7dbfb47ca64a48f5fd26a0c",
+        "bytes": 296623
+      },
+      {
+        "path": "/bapmunna/assets/bapmunna-hero.mp4",
+        "sha256": "02f0f98997ea561024285de94cb496af26e556cb788aac865cd5761514767e57",
+        "hostingGzipSha256": "bf1777b041c11c739bfe4f2cf1930eba1cc26678d11cbf8680c79e59c5b5f3b1",
+        "bytes": 256603
+      },
+      {
+        "path": "/bapmunna/assets/bapmunna-share-v2.png",
+        "sha256": "867dee0a907acba2167da5ede323dc8b24fba02ff0adb0017ff19f7c5fc294fe",
+        "hostingGzipSha256": "71f0fef45e90757e30acdcc3a89264f13838340f6fe6734d21b2bf972642b221",
+        "bytes": 89605
+      },
+      {
+        "path": "/bapmunna/assets/bunny-greeting.webp",
+        "sha256": "76891f00f8fa4602664abd2881ad346482711e100c0fe6f4ed0cb4efb6093571",
+        "hostingGzipSha256": "d4de9c9e17072028646a9f4df6bfab0c703e764dbbc8e352de5a15913f7cf251",
+        "bytes": 570674
+      },
+      {
+        "path": "/bapmunna/assets/bunny-natural.png",
+        "sha256": "553bf689b391038b283904a1babaaf195c56f789c294c3b9dc1cf5c057809af4",
+        "hostingGzipSha256": "ceac773fc614d0a0e78c6dd0fdf731466dde0bc7418a187b49c761753a6dcaa4",
+        "bytes": 1116019
+      },
+      {
+        "path": "/bapmunna/assets/bunny-underlay.webp",
+        "sha256": "910701b6351d1e600e776ed240c1406388b9d73b9c7c8af4284a543454a7d82a",
+        "hostingGzipSha256": "aea4a1a34b53b57401152a3434448fc83a46538dd836a351e041195f89aed763",
+        "bytes": 46562
+      },
+      {
+        "path": "/bapmunna/assets/bunny.png",
+        "sha256": "87d86ce95e85f69168a6720419fd0cc3a22f32a67f13db2dea37e96e626f19f6",
+        "hostingGzipSha256": "dddee35dfb207fe4e4df9b9c876a4ee8863700a8a7def8a1fbb2271790a27d03",
+        "bytes": 186115
+      },
+      {
+        "path": "/bapmunna/assets/eatout.svg",
+        "sha256": "079ff77cddb6ea780abc83733a968dba39f0e16f9b17a75f5a6b6995f2bfb17c",
+        "hostingGzipSha256": "e0b4095255b6f62762d5803a1429246b592bcf9593393bb850ace9f7bf94ad1e",
+        "bytes": 451
+      },
+      {
+        "path": "/bapmunna/assets/family.svg",
+        "sha256": "b8f6eeae98fc548bc29dafb75085d3ce2a589240541aa49ac69430cadcb3a544",
+        "hostingGzipSha256": "ac41f6de77c6b119a6bfd2f38db08dd6077339f1b0bbe7308d97c1b4cda0a02a",
+        "bytes": 1106
+      },
+      {
+        "path": "/bapmunna/assets/heart.svg",
+        "sha256": "ca94aa25821b666c20d57371c7b81ffa0453fe349e83966127d185664069fb3a",
+        "hostingGzipSha256": "1e220290e0e929d7f5a965921c50e56109b39fceb783c639616aa864157c7086",
+        "bytes": 950
+      },
+      {
+        "path": "/bapmunna/assets/help.svg",
+        "sha256": "5a6c912fd673bf20e26e7884f1f37bef8974b7812a5080d50d75152a3183ea27",
+        "hostingGzipSha256": "4ed85e49f7309a593632bff38a74de653c0ce582f242dc6edccd9e1a1c55789a",
+        "bytes": 949
+      },
+      {
+        "path": "/bapmunna/assets/history.svg",
+        "sha256": "b53911c5f0637876adae787476cc49b3857fc407a6be09b862f2bf00979f46e1",
+        "hostingGzipSha256": "acc316bf7c643ce1984b8c546b36936bb5bd541aff5a4693722a4f6114fd9f23",
+        "bytes": 620
+      },
+      {
+        "path": "/bapmunna/assets/info.svg",
+        "sha256": "7fffa3fbafe6f6d7435d7ecafcfda5a0be5c8fd20978d1fd5e591b0db2cdf392",
+        "hostingGzipSha256": "c097002a5abeb2b667413218db31334522d14599a9c617c59bddf27db04e8f81",
+        "bytes": 594
+      },
+      {
+        "path": "/bapmunna/assets/NanumPenScript-Regular.ttf",
+        "sha256": "6f0d1ab29c7894010dc88831fb7a0a51edb79136e450344183de5b1a8b52bd43",
+        "hostingGzipSha256": "b3933b3a6b0dd4dfd8bbe9378841e3ed06d883224d0542a332d06959d9b1210c",
+        "bytes": 3201664
+      },
+      {
+        "path": "/bapmunna/assets/OFL-NanumPenScript.txt",
+        "sha256": "90f6a909ffb2af7f6422ea20042a26180fe5520cba80bbbf75a5e660320d7924",
+        "hostingGzipSha256": "ddb0f943b6f8653f17a59d3557b3f7b88fef86af89194671b056c4da71ffae42",
+        "bytes": 4532
+      },
+      {
+        "path": "/bapmunna/assets/OFL-Pretendard.txt",
+        "sha256": "85fce85e25260b03777bf10373d3bd9363b9da96d9e0ca86a280dd37ed7667a0",
+        "hostingGzipSha256": "47e61d0bea69b7ea7038b3e7100a038eb757e6dc810371ecae59dc95613ab3a7",
+        "bytes": 4418
+      },
+      {
+        "path": "/bapmunna/assets/partner.png",
+        "sha256": "eda278d37217702984b897d307f8246383f93ed2e101b78aeb097b48d5d22fab",
+        "hostingGzipSha256": "632d98845f7dab635e7598a38845d642145aac9613317f6c99595a4d2b5cef1a",
+        "bytes": 32089
+      },
+      {
+        "path": "/bapmunna/assets/phone.svg",
+        "sha256": "f13fa89e732c8c2f8a0fce86f80344a327ed88ba0972d3a1ff9effb57fba1e81",
+        "hostingGzipSha256": "8593268f1e1797cb540164996f1e13270c9087660de062b9c86f2baefd870584",
+        "bytes": 1402
+      },
+      {
+        "path": "/bapmunna/assets/PretendardVariable.woff2",
+        "sha256": "9599f12fd42fc0bce1cd50b47a0c022e108d7aa64dd0d1bb0ed44f3282d900b4",
+        "hostingGzipSha256": "4c5817e39f01f56a2d152ad748825eae888b0a0385ef4843fcec9d209cd87d6b",
+        "bytes": 2057688
+      },
+      {
+        "path": "/bapmunna/assets/rice-companion.svg",
+        "sha256": "60792779e85d5ad34f30b8f74b430698e2a8bbca5dec503ce146fb52cff6d368",
+        "hostingGzipSha256": "7d7547320d4e75814803133cc430169dab2db5a4ec48b862fe0d211b5eed90d9",
+        "bytes": 1304
+      },
+      {
+        "path": "/bapmunna/assets/rice-cooker-companion.png",
+        "sha256": "cde39496d40d85b1c370d895d057d7b288bae3bb5abd0b60c639f0e131995d86",
+        "hostingGzipSha256": "655842e3c103859a8662582d049bac1c824190c7223dcef09d30ea6d9172f56c",
+        "bytes": 577917
+      },
+      {
+        "path": "/bapmunna/assets/rice-empty.webp",
+        "sha256": "135b3130f20c7addcd23c76fbb3ed4eb9f730927111b2cbe38fea207eff40619",
+        "hostingGzipSha256": "f58b097100fa7c9ffa17db66f9bf4896883e5ed198bb4ee042789686888e8116",
+        "bytes": 106708
+      },
+      {
+        "path": "/bapmunna/assets/rice-full.png",
+        "sha256": "1d481017c8cb62f765956301748a43429559f9c053c9dacb20f5f8876f2f0fa3",
+        "hostingGzipSha256": "68baa3eb30fc2c921e3d0a05aef0ce4003ec7d5e7fcc4d62cbdc552d41e61526",
+        "bytes": 517864
+      },
+      {
+        "path": "/bapmunna/assets/rice-half.webp",
+        "sha256": "f6e2cb668df83bad40039ff70961209965ae31bdbe11b134b2c692d4950ec6fe",
+        "hostingGzipSha256": "70677622dd8366d2ad195979e0a43b289d27ddf2c4bc3cfaf204f9dd1fcacd53",
+        "bytes": 128384
+      },
+      {
+        "path": "/bapmunna/assets/rice-logo.png",
+        "sha256": "feff84d1a626d270bb6e914898bbc3ebb2cdaf5ddff6a57247583893903dee03",
+        "hostingGzipSha256": "f5b8a3a340b2517837b29a23946a434ecd079cf78880f170a85ff61c8f2c3b72",
+        "bytes": 20864
+      },
+      {
+        "path": "/bapmunna/auth-utils.mjs",
+        "sha256": "e11b6bfdcfd23680e6c06b95120932b3f16e8822b26d8dd32ed71e66be1062b4",
+        "hostingGzipSha256": "3f5f7064434190165f8c43e33d38992ffdc3f7d904c3418e725c74a0c28e1915",
+        "bytes": 3212
+      },
+      {
+        "path": "/bapmunna/brand-mark.svg",
+        "sha256": "616081ac6e76472bdf486608377c7fe159fa362c8bddc3ba9b1b35d8a5e6c966",
+        "hostingGzipSha256": "a2d4a7c70fbf6cc3239b5d41ec4ce2c56a3a7189a9186f21aa02ec958464d015",
+        "bytes": 938
+      },
+      {
+        "path": "/bapmunna/brand.css",
+        "sha256": "84afd33295385bd99a6cfe81207cd2c4ae9bb019fe6da6ef9420ff4a70b2a603",
+        "hostingGzipSha256": "7cdaa12f9663ba82f735d2f42ee03731db5e1f1ff6a0d86449f34fbda8f7d7a1",
+        "bytes": 1586
+      },
+      {
+        "path": "/bapmunna/bunny-greeting.css",
+        "sha256": "2430e6a75ef1f0c1ad55d7c05fcb2156a0e7625a4141fa16e936217a82d8e68f",
+        "hostingGzipSha256": "bf6f8d231b39d0623c938008269fce578a53e3d02fb721afbbdaf9c78139fcd7",
+        "bytes": 1242
+      },
+      {
+        "path": "/bapmunna/bunny-greeting.mjs",
+        "sha256": "ef6c3b52215cdc7ae41d6e54eb59765e13c4a2bae429dde4a11e5cd9566d0544",
+        "hostingGzipSha256": "050d523c06897a93029b2e020f0089d10d90d2779d4c81f3d351f1067bf0eb31",
+        "bytes": 12320
+      },
+      {
+        "path": "/bapmunna/carer/index.html",
+        "sha256": "bd811b4d66a7a0c1de51673c70522e5f109da216711ed3a0c49c804dc0bf2118",
+        "hostingGzipSha256": "88b8b1ac3394854c2c5a6da3f1d51afcf48e09aec3cb5f802f48fbae6f58ab16",
+        "bytes": 4695
+      },
+      {
+        "path": "/bapmunna/character.css",
+        "sha256": "cd195ad4bc24b6b412f80dc332a811b50b5e00990778bbac1fa8367b97942f64",
+        "hostingGzipSha256": "77dc1ead375a09c9ac0799a3e9b483f0c4e9455938689d63616c5ec034cbced4",
+        "bytes": 1535
+      },
+      {
+        "path": "/bapmunna/checks.mjs",
+        "sha256": "38952c0b39ce7a3441ee2d4c7aa9b37a29cbb1bb960154d883e726e50c39926e",
+        "hostingGzipSha256": "67c5b285f8e18cd0f9633192486dfd52092c44e79af28bfbfcc758687597a60c",
+        "bytes": 12841
+      },
+      {
+        "path": "/bapmunna/cloud-api.mjs",
+        "sha256": "edd0c94317b35fc39978d653f143ac0a7f372af98d70d6af1fa42d61a8ae7b4a",
+        "hostingGzipSha256": "0fa27a5ba9519443180e8ad5d74d507c93494369f5c0bf4adb77b663de17f1ae",
+        "bytes": 860
+      },
+      {
+        "path": "/bapmunna/cloud-config.mjs",
+        "sha256": "063f387f7571fd28f1932deef7bb71864381def5188d6f9d74841eec19bab88b",
+        "hostingGzipSha256": "85787100d326d877a2679f6836dc1ad271edef398cd25948df88f8689e500d13",
+        "bytes": 51
+      },
+      {
+        "path": "/bapmunna/cloud/firebase-provider.mjs",
+        "sha256": "f7c02b3918323eb0b924a0b87f54f3fc29e642e53e8ed6bbb7dde985c9c2e641",
+        "hostingGzipSha256": "f22b3a4ec211292d98fd11f7b2db87d76e3fdfec7616b0a27307b76d2e5a9f89",
+        "bytes": 586318
+      },
+      {
+        "path": "/bapmunna/cloud/firebase-provider.mjs.LEGAL.txt",
+        "sha256": "7990cfc2f6f4d13c5a40179453f7e9db6ff282e58ded23d312eb28c33a878f7f",
+        "hostingGzipSha256": "fbc8436dd25aa55dac196b1fb7fb4b52b0d2a5d1cd64e6362d3c925127eeb9ab",
+        "bytes": 60977
+      },
+      {
+        "path": "/bapmunna/cloud/LICENSE-Firebase.txt",
+        "sha256": "065e45b5674f9bf76670496e5472611b3fbd87fbeaf99336725430a9909cb687",
+        "hostingGzipSha256": "7e9f5fb9e21ad6326f27fcfad239a79b7bb64e8f0fd039fa37818c81046d6cf4",
+        "bytes": 14096
+      },
+      {
+        "path": "/bapmunna/cloud/LICENSE-Supabase.txt",
+        "sha256": "334dd6820e2eaeab2064e7c59001b810566728a28a41a7c1dbf69bbee17d0936",
+        "hostingGzipSha256": "291a2144513fbf8410524bcf02a5e6bc4faf2bfea36190a6367c69cc2b611e16",
+        "bytes": 1065
+      },
+      {
+        "path": "/bapmunna/cloud/supabase-provider.mjs",
+        "sha256": "daa6c85ae99325ae083758ca282ec0df04940e5ec33d82d5bb1ba3050cb5add7",
+        "hostingGzipSha256": "020cdbbd82af17fc60f2329402cc46bbfe8282bd8e2f8c7dea4a05efc6bf6096",
+        "bytes": 229660
+      },
+      {
+        "path": "/bapmunna/connection.css",
+        "sha256": "15a54d274c76c91567f4e6929cbb4b194b58aeb8c0ca90366595b06eb3942ce2",
+        "hostingGzipSha256": "34862d2bbdefc9093bd9d78573a43c3b2c08d9dd8903624fe642ea5d10f9201a",
+        "bytes": 5632
+      },
+      {
+        "path": "/bapmunna/editions.css",
+        "sha256": "19e880e3b73b86280dc4311dc5afc988bcf11ea04704e8825f30ebd9287add28",
+        "hostingGzipSha256": "b3bb9861fcbb4e9947976cbdf50dccf2cb39e90ac4479b4a4acec8331bffd8c3",
+        "bytes": 9009
+      },
+      {
+        "path": "/bapmunna/editions.mjs",
+        "sha256": "d327e1fc8ff6de5781e4ddaba99706ddd06f3b58d9a0fdd98269caee1eaad661",
+        "hostingGzipSha256": "afd91ae601e670ebf331eb5eb1a51398e80b9fe60d4098e8b2cbe03c1eaef606",
+        "bytes": 2675
+      },
+      {
+        "path": "/bapmunna/engine.mjs",
+        "sha256": "47014701a477745a6776eb39aa5cbd33c03d50f421e044548fd741f92aaf4094",
+        "hostingGzipSha256": "b2c94216da7eeeba48175ddcaa95ee031b7d3568a7f18a821d3495946bf76458",
+        "bytes": 19544
+      },
+      {
+        "path": "/bapmunna/experience.css",
+        "sha256": "695fc5c16574fd1298b7580cd75344573faeb4f2a301c95a292f184111836788",
+        "hostingGzipSha256": "abf2dca65b8d2b5fcebdccbe3dd126f75b781ed4529445cae5c16c9340fb1a6c",
+        "bytes": 18228
+      },
+      {
+        "path": "/bapmunna/experience.mjs",
+        "sha256": "fd7eec90d964e73b64e84f76ccdb70c260f64924aae45131bfdec0ae5f28d4d1",
+        "hostingGzipSha256": "f0f2d127b1ddfc64e03cf5ffdef1d4710247adbada8e5db2a7aef2de1f548c0d",
+        "bytes": 6188
+      },
+      {
+        "path": "/bapmunna/family.mjs",
+        "sha256": "d9bccd37417d6e695f466ed84ee14abfd01e637c624e6d81c52967fafd7eedd9",
+        "hostingGzipSha256": "802c1b7795b853e6139e7e97ab127dec7ea0c2af7dcac274b7474d4c93268b06",
+        "bytes": 2572
+      },
+      {
+        "path": "/bapmunna/final/index.html",
+        "sha256": "cc41d7f4987a683670fbddc0379c0547ded055d7638569a48184f6dce2a31e7c",
+        "hostingGzipSha256": "d42fd09d0bf8f554fe3f424af93711d76189c584768fc0822ec3e475a1dcc847",
+        "bytes": 6266
+      },
+      {
+        "path": "/bapmunna/final/style.css",
+        "sha256": "f6cac933eb742431bb2afd6f13e4c12519cbbdb8a774af63c6105785cc4e11ee",
+        "hostingGzipSha256": "c9f404c35adcc1e190041528d269c3e1585695e17ddd58659fa18f90dfeda5d4",
+        "bytes": 5391
+      },
+      {
+        "path": "/bapmunna/firebase-config.mjs",
+        "sha256": "4e367cebcec5405a59ab8dba04234bbfd1248bc1c3f6e48795c0906c910db62a",
+        "hostingGzipSha256": "4073d83c1706cf9d1149cca293f8289747fd02a793e5ce8f33921f2dcabae278",
+        "bytes": 252
+      },
+      {
+        "path": "/bapmunna/guardian-entry.mjs",
+        "sha256": "7a481267f2e0ac58a5d49efe75d9200cfac5e87ec5cda5835ec240e8684b9fe4",
+        "hostingGzipSha256": "bde1aca8eaf708fd542af2d5e42e7ca1530ab97b79967dd6476401c1c474a2a2",
+        "bytes": 763
+      },
+      {
+        "path": "/bapmunna/household-view.mjs",
+        "sha256": "ca8b68aabdd7b4b444ddcce83cbd744d3c0a065b050f3529d1f878bcdacba990",
+        "hostingGzipSha256": "65e0d3fde97e3f260a15a1fb8bfbef00caf3bdfefa747efe595a88576c070cfe",
+        "bytes": 12034
+      },
+      {
+        "path": "/bapmunna/index.html",
+        "sha256": "00282c26e60ad719b651d7c87be4d0d08a4b033214a4df4d1fe017833d54c7a6",
+        "hostingGzipSha256": "b24dd6074f7ce9d3309881433c84a22e3847f05421a6dd83cc2aa07f64fb7567",
+        "bytes": 4610
+      },
+      {
+        "path": "/bapmunna/interface.css",
+        "sha256": "4983676bcf2842c13a2fa8b63d53d6df1756bde56b81b2e1b0054399045eef13",
+        "hostingGzipSha256": "b3b2b52e00d930d7349295b4247520d4b0454c99a9a557503cbf40c4dacc63db",
+        "bytes": 12640
+      },
+      {
+        "path": "/bapmunna/LICENSE",
+        "sha256": "956acdf6c93857cd44e60edd5e66a798437a7501c09101fa08ecf404e88fadbd",
+        "hostingGzipSha256": "ae243e960eab70bc7d48a7b20d731ff549b4e8d5e8c4641e43ed31461ac17bde",
+        "bytes": 1064
+      },
+      {
+        "path": "/bapmunna/live-view.mjs",
+        "sha256": "579f34bb87f23487aeb14c985fccf517eaa6f3f12b0f1c5bda5761b582c81fc2",
+        "hostingGzipSha256": "5f7c38e4db8b82c238e8d36edbe8746f98b764ded8d9185bc0e6542ea63608ee",
+        "bytes": 9361
+      },
+      {
+        "path": "/bapmunna/manage/crm.mjs",
+        "sha256": "f4bf3ce18fb315d86af760f4952f4da9176c65e1272fd0cf9ba306156318842c",
+        "hostingGzipSha256": "6bb237620c2522a6c2f3faa095ba1755a0aedd0efb7e2095ee04aad860e2f93d",
+        "bytes": 262
+      },
+      {
+        "path": "/bapmunna/manage/dashboard.mjs",
+        "sha256": "04708637abe278dde0d53db0f84995bc2045de21e6b87f1afdfeacc3ed0a9547",
+        "hostingGzipSha256": "5b62eaae1dd4808491ea055391292abd0bcb315530ca40da86026913a3c3653c",
+        "bytes": 22121
+      },
+      {
+        "path": "/bapmunna/manage/index.html",
+        "sha256": "f3ae55900a1f51acf6f076bae21020afef29d8d54f0c9f9f58b69857c8b806ce",
+        "hostingGzipSha256": "3a4a6795d61255b73b87da5ae65070ebc74611e4ead713dd1aea2e3301df0598",
+        "bytes": 2006
+      },
+      {
+        "path": "/bapmunna/manage/manage.css",
+        "sha256": "8b715fa8205f5026fd2f18a6eb17f4147b8999ac74dddb53185ec1a11657c2aa",
+        "hostingGzipSha256": "72679af618f436644dd72e1e12a22bc30f768986b555321652078c6674360bcc",
+        "bytes": 28491
+      },
+      {
+        "path": "/bapmunna/manage/metrics.mjs",
+        "sha256": "3758efbd932bceb7f39c35de36383a56b72c07da51661b3ed48eba6a59982a81",
+        "hostingGzipSha256": "bf90600ee302b51395dc305becaf96bd1fc100790f949286b99c5693f38f229a",
+        "bytes": 2077
+      },
+      {
+        "path": "/bapmunna/parity.mjs",
+        "sha256": "c91afc466c7b5021c716af2bdb8f7d38102b9c96b649e050673f7e545fce67c3",
+        "hostingGzipSha256": "5f63ad51c0037f4cffbcc3961726e97a2e61a6b3bff1a4dba6a933dc6d5bbe5f",
+        "bytes": 4889
+      },
+      {
+        "path": "/bapmunna/power.mjs",
+        "sha256": "530f11060cc11fa5503188fff936f81b55be56453a1f2f279d8e75896b58e729",
+        "hostingGzipSha256": "443f613d73dbac7ea1084a988a975aee22e70bb64e098375eb2d245cfd740752",
+        "bytes": 2262
+      },
+      {
+        "path": "/bapmunna/presentation.mjs",
+        "sha256": "b4fdcca48e2ca72c622ef3456b53eca13264ae2c59447a2126a8ed7d50d830bf",
+        "hostingGzipSha256": "8903ea7a8e3db5ad3d5ae0ecad8b50acc8fe908bc1dac21b2fbc8a27a2e51a64",
+        "bytes": 2210
+      },
+      {
+        "path": "/bapmunna/refinement.css",
+        "sha256": "6fd2b913022c190fa9515972f40eb462a18dfbf32c3694cd79c48bad49023efe",
+        "hostingGzipSha256": "1025d35a810a43196cfab49dce4c93097b040b060882c52bf42166cfce8ac31d",
+        "bytes": 19026
+      },
+      {
+        "path": "/bapmunna/runtime-mode.mjs",
+        "sha256": "ce89b482d517d7acb673c42bdba255e8192480fe01e67a498cfd1c170ebb2cf3",
+        "hostingGzipSha256": "ff12953128c7e534bda5161c0d37eb57a6ac4549a4ae0552b4ceb2688160fd08",
+        "bytes": 3079
+      },
+      {
+        "path": "/bapmunna/senior/index.html",
+        "sha256": "f2c8ea6b15cc9d0deb709848866d32ad7349f41b05a7d078e275ca46d906fa93",
+        "hostingGzipSha256": "b95416381df0f1c0eb4e144abc40801ca15a29312b13b99d57df6b92b7050820",
+        "bytes": 4657
+      },
+      {
+        "path": "/bapmunna/share/index.html",
+        "sha256": "b5776f9f69f299d28a5ab0f7ec85e940ff5eea5aaeec43cd2f24d245bb66cc27",
+        "hostingGzipSha256": "4594a2d77a4a0f5258057a3059b4fc1ae07976ddcb78a7960c40ed2938d24ad8",
+        "bytes": 4695
+      },
+      {
+        "path": "/bapmunna/shared/config/detection.mjs",
+        "sha256": "b284692e008b056b4cd69ba247dde8a3a07754d063d5a01fd9fd0530fc33b964",
+        "hostingGzipSha256": "46927f98ea7456e493735673fabc3f4d2b7954acb8263cbe7b903bac6d9ceb1c",
+        "bytes": 1997
+      },
+      {
+        "path": "/bapmunna/shared/lib/data/view.mjs",
+        "sha256": "3515c0ac1cf18167db8be836c7a28dde85a96c195604caa98abeba3215850e00",
+        "hostingGzipSha256": "fec4b370e37e20a642a8fa2b8bfadd2a3d50b5506e9c487175f27c9d9288c6f4",
+        "bytes": 6241
+      },
+      {
+        "path": "/bapmunna/shared/lib/judge/detectEvents.mjs",
+        "sha256": "62631daf45bfe717b418ba591c7492f66f21844e33d67b7b32d47de5da04e507",
+        "hostingGzipSha256": "e8c88bf3b23514f8d5a9629629c238cda05a8b9116351c05156ca54df406922d",
+        "bytes": 4605
+      },
+      {
+        "path": "/bapmunna/shared/lib/judge/evaluateAlerts.mjs",
+        "sha256": "aa7a4574962e549126ae27e00429e39cd288ea82c6404a424b71bf5344b0124a",
+        "hostingGzipSha256": "41168cf52cdb40012af334e6640f9483c4a0b51e2d2368918800e39a0139fcab",
+        "bytes": 2765
+      },
+      {
+        "path": "/bapmunna/shared/lib/judge/resolveMealSlots.mjs",
+        "sha256": "42172c75b853760f22d15b95a39efa6b24e670082b4eb96a67fb8708e9a32b45",
+        "hostingGzipSha256": "ae2ae2949bc77dd36ddd51b12e5b8f3615624f02c212e40423949327dca48d88",
+        "bytes": 2113
+      },
+      {
+        "path": "/bapmunna/shared/lib/judge/time.mjs",
+        "sha256": "5d79266026baff83d90877ef098725d4159f7a09bae1f225bd85d9f8136d12ad",
+        "hostingGzipSha256": "fac69df934540fbda79d360c38aa950cf90764ef1858610b83704f59b1137ea8",
+        "bytes": 1059
+      },
+      {
+        "path": "/bapmunna/shared/lib/judge/types.mjs",
+        "sha256": "79a394f6fb83645e372afa273861eb2ca24e69548851c233d9393164498956e2",
+        "hostingGzipSha256": "a58b590f0663cab234d53c3ab9c4d24fb84a422c155204465362fdd5ab8c61ad",
+        "bytes": 95
+      },
+      {
+        "path": "/bapmunna/shared/source-manifest.json",
+        "sha256": "d3ba083259a40316c583ee44c601eeaadf01439d2f1af7526d169dc1996068c6",
+        "hostingGzipSha256": "82476d601eb662e12e39ff3cfcc4c408f4efc8d826b9e113f1baa2d52eb640e2",
+        "bytes": 755
+      },
+      {
+        "path": "/bapmunna/smartthings-config.mjs",
+        "sha256": "146bdc48bec3709d8ece2e01e4cbd31ef3c91948dacb09468db7f170f2823bde",
+        "hostingGzipSha256": "be79718696020db59da0e615f9bcdd88d6cc8b00c6d9b13504fcea162e3e0a19",
+        "bytes": 230
+      },
+      {
+        "path": "/bapmunna/smartthings-popup.mjs",
+        "sha256": "72d3fd7510d6024633bcafbd8a1646f8b2bb1ea34a14df8f4b25c0b0cf86ffb1",
+        "hostingGzipSha256": "efd47c7509f6967ba851f5b86b1d2301b7c6ba42dd64fd4aa305cd7f1b612692",
+        "bytes": 3149
+      },
+      {
+        "path": "/bapmunna/smartthings-view.mjs",
+        "sha256": "ec7c99549ced57567eba72f545ed18a7fa98e91db7645267e57a36cbc4ffb69d",
+        "hostingGzipSha256": "4cee830580612f0a7ceeb0f292e1a71380286ee11b475117a3eaf7c1e8a42c75",
+        "bytes": 24843
+      },
+      {
+        "path": "/bapmunna/style.css",
+        "sha256": "5eb8bc98f947aa48c479567e2f82f2959786599815fb92f3b52be13ab3482602",
+        "hostingGzipSha256": "071fd86c74333f4e4963392884dfd83f71a6c66b23888eab71f269b0a818d3eb",
+        "bytes": 20973
+      },
+      {
+        "path": "/bapmunna/supabase-config.mjs",
+        "sha256": "0638ef2304dd48d8ffba0a0209c4ded04a9752cd7b628304e025db55f7d71a90",
+        "hostingGzipSha256": "cc2c04cfe8eeab31e8e4d58e7442e77337df3f5cbb9f7640dbe477a15fb274e3",
+        "bytes": 276
+      },
+      {
+        "path": "/bapmunna/supabase/account-view.mjs",
+        "sha256": "3a045d8bc8e627bc288d3f6acaecee0d3d58564a6fc675fe292fa5a2bd30fcbc",
+        "hostingGzipSha256": "aabe381e3981434bec1e2a59991a4c8eed067077f60842c87df921e70106341e",
+        "bytes": 21769
+      },
+      {
+        "path": "/bapmunna/supabase/app.mjs",
+        "sha256": "b1e8465319e23ac59bb8dd1322902ab2bc0015bdcf6030b2b9c6e854aafdc983",
+        "hostingGzipSha256": "80c6ea427d3fb868216e82c37dafc123044d752fb5d01247e65a8f46157bd85a",
+        "bytes": 86189
+      },
+      {
+        "path": "/bapmunna/supabase/assets/away.svg",
+        "sha256": "1dd9c3bdbda1cb73cc2a2efee43acb1eac262cae847ee6ec3f2d164ac339285c",
+        "hostingGzipSha256": "81ece5158f9a83324a0b82a7f3bf8249db1a00a2c4a726b9e62c970b2e2fd062",
+        "bytes": 409
+      },
+      {
+        "path": "/bapmunna/supabase/assets/bapmunna-hero-poster.png",
+        "sha256": "36f1d6afc0ec458d63062f11a2e7b43603eed0b3af6949e4be44c8a2aca1bff6",
+        "hostingGzipSha256": "abf67116923ffa06e169c0666390d42fbcaf1075b7dbfb47ca64a48f5fd26a0c",
+        "bytes": 296623
+      },
+      {
+        "path": "/bapmunna/supabase/assets/bapmunna-hero.mp4",
+        "sha256": "02f0f98997ea561024285de94cb496af26e556cb788aac865cd5761514767e57",
+        "hostingGzipSha256": "bf1777b041c11c739bfe4f2cf1930eba1cc26678d11cbf8680c79e59c5b5f3b1",
+        "bytes": 256603
+      },
+      {
+        "path": "/bapmunna/supabase/assets/bapmunna-share-v2.png",
+        "sha256": "867dee0a907acba2167da5ede323dc8b24fba02ff0adb0017ff19f7c5fc294fe",
+        "hostingGzipSha256": "71f0fef45e90757e30acdcc3a89264f13838340f6fe6734d21b2bf972642b221",
+        "bytes": 89605
+      },
+      {
+        "path": "/bapmunna/supabase/assets/bunny-greeting.webp",
+        "sha256": "76891f00f8fa4602664abd2881ad346482711e100c0fe6f4ed0cb4efb6093571",
+        "hostingGzipSha256": "d4de9c9e17072028646a9f4df6bfab0c703e764dbbc8e352de5a15913f7cf251",
+        "bytes": 570674
+      },
+      {
+        "path": "/bapmunna/supabase/assets/bunny-natural.png",
+        "sha256": "553bf689b391038b283904a1babaaf195c56f789c294c3b9dc1cf5c057809af4",
+        "hostingGzipSha256": "ceac773fc614d0a0e78c6dd0fdf731466dde0bc7418a187b49c761753a6dcaa4",
+        "bytes": 1116019
+      },
+      {
+        "path": "/bapmunna/supabase/assets/bunny-underlay.webp",
+        "sha256": "910701b6351d1e600e776ed240c1406388b9d73b9c7c8af4284a543454a7d82a",
+        "hostingGzipSha256": "aea4a1a34b53b57401152a3434448fc83a46538dd836a351e041195f89aed763",
+        "bytes": 46562
+      },
+      {
+        "path": "/bapmunna/supabase/assets/bunny.png",
+        "sha256": "87d86ce95e85f69168a6720419fd0cc3a22f32a67f13db2dea37e96e626f19f6",
+        "hostingGzipSha256": "dddee35dfb207fe4e4df9b9c876a4ee8863700a8a7def8a1fbb2271790a27d03",
+        "bytes": 186115
+      },
+      {
+        "path": "/bapmunna/supabase/assets/eatout.svg",
+        "sha256": "079ff77cddb6ea780abc83733a968dba39f0e16f9b17a75f5a6b6995f2bfb17c",
+        "hostingGzipSha256": "e0b4095255b6f62762d5803a1429246b592bcf9593393bb850ace9f7bf94ad1e",
+        "bytes": 451
+      },
+      {
+        "path": "/bapmunna/supabase/assets/family.svg",
+        "sha256": "b8f6eeae98fc548bc29dafb75085d3ce2a589240541aa49ac69430cadcb3a544",
+        "hostingGzipSha256": "ac41f6de77c6b119a6bfd2f38db08dd6077339f1b0bbe7308d97c1b4cda0a02a",
+        "bytes": 1106
+      },
+      {
+        "path": "/bapmunna/supabase/assets/heart.svg",
+        "sha256": "ca94aa25821b666c20d57371c7b81ffa0453fe349e83966127d185664069fb3a",
+        "hostingGzipSha256": "1e220290e0e929d7f5a965921c50e56109b39fceb783c639616aa864157c7086",
+        "bytes": 950
+      },
+      {
+        "path": "/bapmunna/supabase/assets/help.svg",
+        "sha256": "5a6c912fd673bf20e26e7884f1f37bef8974b7812a5080d50d75152a3183ea27",
+        "hostingGzipSha256": "4ed85e49f7309a593632bff38a74de653c0ce582f242dc6edccd9e1a1c55789a",
+        "bytes": 949
+      },
+      {
+        "path": "/bapmunna/supabase/assets/history.svg",
+        "sha256": "b53911c5f0637876adae787476cc49b3857fc407a6be09b862f2bf00979f46e1",
+        "hostingGzipSha256": "acc316bf7c643ce1984b8c546b36936bb5bd541aff5a4693722a4f6114fd9f23",
+        "bytes": 620
+      },
+      {
+        "path": "/bapmunna/supabase/assets/info.svg",
+        "sha256": "7fffa3fbafe6f6d7435d7ecafcfda5a0be5c8fd20978d1fd5e591b0db2cdf392",
+        "hostingGzipSha256": "c097002a5abeb2b667413218db31334522d14599a9c617c59bddf27db04e8f81",
+        "bytes": 594
+      },
+      {
+        "path": "/bapmunna/supabase/assets/NanumPenScript-Regular.ttf",
+        "sha256": "6f0d1ab29c7894010dc88831fb7a0a51edb79136e450344183de5b1a8b52bd43",
+        "hostingGzipSha256": "b3933b3a6b0dd4dfd8bbe9378841e3ed06d883224d0542a332d06959d9b1210c",
+        "bytes": 3201664
+      },
+      {
+        "path": "/bapmunna/supabase/assets/OFL-NanumPenScript.txt",
+        "sha256": "90f6a909ffb2af7f6422ea20042a26180fe5520cba80bbbf75a5e660320d7924",
+        "hostingGzipSha256": "ddb0f943b6f8653f17a59d3557b3f7b88fef86af89194671b056c4da71ffae42",
+        "bytes": 4532
+      },
+      {
+        "path": "/bapmunna/supabase/assets/OFL-Pretendard.txt",
+        "sha256": "85fce85e25260b03777bf10373d3bd9363b9da96d9e0ca86a280dd37ed7667a0",
+        "hostingGzipSha256": "47e61d0bea69b7ea7038b3e7100a038eb757e6dc810371ecae59dc95613ab3a7",
+        "bytes": 4418
+      },
+      {
+        "path": "/bapmunna/supabase/assets/partner.png",
+        "sha256": "eda278d37217702984b897d307f8246383f93ed2e101b78aeb097b48d5d22fab",
+        "hostingGzipSha256": "632d98845f7dab635e7598a38845d642145aac9613317f6c99595a4d2b5cef1a",
+        "bytes": 32089
+      },
+      {
+        "path": "/bapmunna/supabase/assets/phone.svg",
+        "sha256": "f13fa89e732c8c2f8a0fce86f80344a327ed88ba0972d3a1ff9effb57fba1e81",
+        "hostingGzipSha256": "8593268f1e1797cb540164996f1e13270c9087660de062b9c86f2baefd870584",
+        "bytes": 1402
+      },
+      {
+        "path": "/bapmunna/supabase/assets/PretendardVariable.woff2",
+        "sha256": "9599f12fd42fc0bce1cd50b47a0c022e108d7aa64dd0d1bb0ed44f3282d900b4",
+        "hostingGzipSha256": "4c5817e39f01f56a2d152ad748825eae888b0a0385ef4843fcec9d209cd87d6b",
+        "bytes": 2057688
+      },
+      {
+        "path": "/bapmunna/supabase/assets/rice-companion.svg",
+        "sha256": "60792779e85d5ad34f30b8f74b430698e2a8bbca5dec503ce146fb52cff6d368",
+        "hostingGzipSha256": "7d7547320d4e75814803133cc430169dab2db5a4ec48b862fe0d211b5eed90d9",
+        "bytes": 1304
+      },
+      {
+        "path": "/bapmunna/supabase/assets/rice-cooker-companion.png",
+        "sha256": "cde39496d40d85b1c370d895d057d7b288bae3bb5abd0b60c639f0e131995d86",
+        "hostingGzipSha256": "655842e3c103859a8662582d049bac1c824190c7223dcef09d30ea6d9172f56c",
+        "bytes": 577917
+      },
+      {
+        "path": "/bapmunna/supabase/assets/rice-empty.webp",
+        "sha256": "135b3130f20c7addcd23c76fbb3ed4eb9f730927111b2cbe38fea207eff40619",
+        "hostingGzipSha256": "f58b097100fa7c9ffa17db66f9bf4896883e5ed198bb4ee042789686888e8116",
+        "bytes": 106708
+      },
+      {
+        "path": "/bapmunna/supabase/assets/rice-full.png",
+        "sha256": "1d481017c8cb62f765956301748a43429559f9c053c9dacb20f5f8876f2f0fa3",
+        "hostingGzipSha256": "68baa3eb30fc2c921e3d0a05aef0ce4003ec7d5e7fcc4d62cbdc552d41e61526",
+        "bytes": 517864
+      },
+      {
+        "path": "/bapmunna/supabase/assets/rice-half.webp",
+        "sha256": "f6e2cb668df83bad40039ff70961209965ae31bdbe11b134b2c692d4950ec6fe",
+        "hostingGzipSha256": "70677622dd8366d2ad195979e0a43b289d27ddf2c4bc3cfaf204f9dd1fcacd53",
+        "bytes": 128384
+      },
+      {
+        "path": "/bapmunna/supabase/assets/rice-logo.png",
+        "sha256": "feff84d1a626d270bb6e914898bbc3ebb2cdaf5ddff6a57247583893903dee03",
+        "hostingGzipSha256": "f5b8a3a340b2517837b29a23946a434ecd079cf78880f170a85ff61c8f2c3b72",
+        "bytes": 20864
+      },
+      {
+        "path": "/bapmunna/supabase/auth-utils.mjs",
+        "sha256": "e11b6bfdcfd23680e6c06b95120932b3f16e8822b26d8dd32ed71e66be1062b4",
+        "hostingGzipSha256": "3f5f7064434190165f8c43e33d38992ffdc3f7d904c3418e725c74a0c28e1915",
+        "bytes": 3212
+      },
+      {
+        "path": "/bapmunna/supabase/brand-mark.svg",
+        "sha256": "616081ac6e76472bdf486608377c7fe159fa362c8bddc3ba9b1b35d8a5e6c966",
+        "hostingGzipSha256": "a2d4a7c70fbf6cc3239b5d41ec4ce2c56a3a7189a9186f21aa02ec958464d015",
+        "bytes": 938
+      },
+      {
+        "path": "/bapmunna/supabase/brand.css",
+        "sha256": "84afd33295385bd99a6cfe81207cd2c4ae9bb019fe6da6ef9420ff4a70b2a603",
+        "hostingGzipSha256": "7cdaa12f9663ba82f735d2f42ee03731db5e1f1ff6a0d86449f34fbda8f7d7a1",
+        "bytes": 1586
+      },
+      {
+        "path": "/bapmunna/supabase/bunny-greeting.css",
+        "sha256": "2430e6a75ef1f0c1ad55d7c05fcb2156a0e7625a4141fa16e936217a82d8e68f",
+        "hostingGzipSha256": "bf6f8d231b39d0623c938008269fce578a53e3d02fb721afbbdaf9c78139fcd7",
+        "bytes": 1242
+      },
+      {
+        "path": "/bapmunna/supabase/bunny-greeting.mjs",
+        "sha256": "ef6c3b52215cdc7ae41d6e54eb59765e13c4a2bae429dde4a11e5cd9566d0544",
+        "hostingGzipSha256": "050d523c06897a93029b2e020f0089d10d90d2779d4c81f3d351f1067bf0eb31",
+        "bytes": 12320
+      },
+      {
+        "path": "/bapmunna/supabase/carer/index.html",
+        "sha256": "cbdb2b5623882a26e0e154895a4acb2e5c417a812b92fdb0558d619e3052f409",
+        "hostingGzipSha256": "f0454813955909f3720bcbe5e29237e99afbbf8e89c953ea5d34bb9df0a6c358",
+        "bytes": 4722
+      },
+      {
+        "path": "/bapmunna/supabase/character.css",
+        "sha256": "cd195ad4bc24b6b412f80dc332a811b50b5e00990778bbac1fa8367b97942f64",
+        "hostingGzipSha256": "77dc1ead375a09c9ac0799a3e9b483f0c4e9455938689d63616c5ec034cbced4",
+        "bytes": 1535
+      },
+      {
+        "path": "/bapmunna/supabase/checks.mjs",
+        "sha256": "38952c0b39ce7a3441ee2d4c7aa9b37a29cbb1bb960154d883e726e50c39926e",
+        "hostingGzipSha256": "67c5b285f8e18cd0f9633192486dfd52092c44e79af28bfbfcc758687597a60c",
+        "bytes": 12841
+      },
+      {
+        "path": "/bapmunna/supabase/cloud-api.mjs",
+        "sha256": "edd0c94317b35fc39978d653f143ac0a7f372af98d70d6af1fa42d61a8ae7b4a",
+        "hostingGzipSha256": "0fa27a5ba9519443180e8ad5d74d507c93494369f5c0bf4adb77b663de17f1ae",
+        "bytes": 860
+      },
+      {
+        "path": "/bapmunna/supabase/cloud-config.mjs",
+        "sha256": "03102d9270dccfc606afb1f3e0c698c10436db635d316846749a9cf840334c2a",
+        "hostingGzipSha256": "fc32db2f018e007c39c69f5aaa4cfe3d2b19bb5e8d90e4f139ab99ace45bbce5",
+        "bytes": 51
+      },
+      {
+        "path": "/bapmunna/supabase/cloud/firebase-provider.mjs",
+        "sha256": "f7c02b3918323eb0b924a0b87f54f3fc29e642e53e8ed6bbb7dde985c9c2e641",
+        "hostingGzipSha256": "f22b3a4ec211292d98fd11f7b2db87d76e3fdfec7616b0a27307b76d2e5a9f89",
+        "bytes": 586318
+      },
+      {
+        "path": "/bapmunna/supabase/cloud/firebase-provider.mjs.LEGAL.txt",
+        "sha256": "7990cfc2f6f4d13c5a40179453f7e9db6ff282e58ded23d312eb28c33a878f7f",
+        "hostingGzipSha256": "fbc8436dd25aa55dac196b1fb7fb4b52b0d2a5d1cd64e6362d3c925127eeb9ab",
+        "bytes": 60977
+      },
+      {
+        "path": "/bapmunna/supabase/cloud/LICENSE-Firebase.txt",
+        "sha256": "065e45b5674f9bf76670496e5472611b3fbd87fbeaf99336725430a9909cb687",
+        "hostingGzipSha256": "7e9f5fb9e21ad6326f27fcfad239a79b7bb64e8f0fd039fa37818c81046d6cf4",
+        "bytes": 14096
+      },
+      {
+        "path": "/bapmunna/supabase/cloud/LICENSE-Supabase.txt",
+        "sha256": "334dd6820e2eaeab2064e7c59001b810566728a28a41a7c1dbf69bbee17d0936",
+        "hostingGzipSha256": "291a2144513fbf8410524bcf02a5e6bc4faf2bfea36190a6367c69cc2b611e16",
+        "bytes": 1065
+      },
+      {
+        "path": "/bapmunna/supabase/cloud/supabase-provider.mjs",
+        "sha256": "daa6c85ae99325ae083758ca282ec0df04940e5ec33d82d5bb1ba3050cb5add7",
+        "hostingGzipSha256": "020cdbbd82af17fc60f2329402cc46bbfe8282bd8e2f8c7dea4a05efc6bf6096",
+        "bytes": 229660
+      },
+      {
+        "path": "/bapmunna/supabase/connection.css",
+        "sha256": "15a54d274c76c91567f4e6929cbb4b194b58aeb8c0ca90366595b06eb3942ce2",
+        "hostingGzipSha256": "34862d2bbdefc9093bd9d78573a43c3b2c08d9dd8903624fe642ea5d10f9201a",
+        "bytes": 5632
+      },
+      {
+        "path": "/bapmunna/supabase/editions.css",
+        "sha256": "19e880e3b73b86280dc4311dc5afc988bcf11ea04704e8825f30ebd9287add28",
+        "hostingGzipSha256": "b3bb9861fcbb4e9947976cbdf50dccf2cb39e90ac4479b4a4acec8331bffd8c3",
+        "bytes": 9009
+      },
+      {
+        "path": "/bapmunna/supabase/editions.mjs",
+        "sha256": "d327e1fc8ff6de5781e4ddaba99706ddd06f3b58d9a0fdd98269caee1eaad661",
+        "hostingGzipSha256": "afd91ae601e670ebf331eb5eb1a51398e80b9fe60d4098e8b2cbe03c1eaef606",
+        "bytes": 2675
+      },
+      {
+        "path": "/bapmunna/supabase/engine.mjs",
+        "sha256": "47014701a477745a6776eb39aa5cbd33c03d50f421e044548fd741f92aaf4094",
+        "hostingGzipSha256": "b2c94216da7eeeba48175ddcaa95ee031b7d3568a7f18a821d3495946bf76458",
+        "bytes": 19544
+      },
+      {
+        "path": "/bapmunna/supabase/experience.css",
+        "sha256": "695fc5c16574fd1298b7580cd75344573faeb4f2a301c95a292f184111836788",
+        "hostingGzipSha256": "abf2dca65b8d2b5fcebdccbe3dd126f75b781ed4529445cae5c16c9340fb1a6c",
+        "bytes": 18228
+      },
+      {
+        "path": "/bapmunna/supabase/experience.mjs",
+        "sha256": "fd7eec90d964e73b64e84f76ccdb70c260f64924aae45131bfdec0ae5f28d4d1",
+        "hostingGzipSha256": "f0f2d127b1ddfc64e03cf5ffdef1d4710247adbada8e5db2a7aef2de1f548c0d",
+        "bytes": 6188
+      },
+      {
+        "path": "/bapmunna/supabase/family.mjs",
+        "sha256": "d9bccd37417d6e695f466ed84ee14abfd01e637c624e6d81c52967fafd7eedd9",
+        "hostingGzipSha256": "802c1b7795b853e6139e7e97ab127dec7ea0c2af7dcac274b7474d4c93268b06",
+        "bytes": 2572
+      },
+      {
+        "path": "/bapmunna/supabase/firebase-config.mjs",
+        "sha256": "4e367cebcec5405a59ab8dba04234bbfd1248bc1c3f6e48795c0906c910db62a",
+        "hostingGzipSha256": "4073d83c1706cf9d1149cca293f8289747fd02a793e5ce8f33921f2dcabae278",
+        "bytes": 252
+      },
+      {
+        "path": "/bapmunna/supabase/guardian-entry.mjs",
+        "sha256": "7a481267f2e0ac58a5d49efe75d9200cfac5e87ec5cda5835ec240e8684b9fe4",
+        "hostingGzipSha256": "bde1aca8eaf708fd542af2d5e42e7ca1530ab97b79967dd6476401c1c474a2a2",
+        "bytes": 763
+      },
+      {
+        "path": "/bapmunna/supabase/household-view.mjs",
+        "sha256": "ca8b68aabdd7b4b444ddcce83cbd744d3c0a065b050f3529d1f878bcdacba990",
+        "hostingGzipSha256": "65e0d3fde97e3f260a15a1fb8bfbef00caf3bdfefa747efe595a88576c070cfe",
+        "bytes": 12034
+      },
+      {
+        "path": "/bapmunna/supabase/index.html",
+        "sha256": "e2c2c78b6e5900ae6f6401fa89e47932ed8176bb951e8495d55f641079aaebd7",
+        "hostingGzipSha256": "3c3c7a061a15275c98d066107b96412d01df0df843eb6d85967c4833f55488b7",
+        "bytes": 4637
+      },
+      {
+        "path": "/bapmunna/supabase/interface.css",
+        "sha256": "4983676bcf2842c13a2fa8b63d53d6df1756bde56b81b2e1b0054399045eef13",
+        "hostingGzipSha256": "b3b2b52e00d930d7349295b4247520d4b0454c99a9a557503cbf40c4dacc63db",
+        "bytes": 12640
+      },
+      {
+        "path": "/bapmunna/supabase/live-view.mjs",
+        "sha256": "579f34bb87f23487aeb14c985fccf517eaa6f3f12b0f1c5bda5761b582c81fc2",
+        "hostingGzipSha256": "5f7c38e4db8b82c238e8d36edbe8746f98b764ded8d9185bc0e6542ea63608ee",
+        "bytes": 9361
+      },
+      {
+        "path": "/bapmunna/supabase/manage/crm.mjs",
+        "sha256": "f4bf3ce18fb315d86af760f4952f4da9176c65e1272fd0cf9ba306156318842c",
+        "hostingGzipSha256": "6bb237620c2522a6c2f3faa095ba1755a0aedd0efb7e2095ee04aad860e2f93d",
+        "bytes": 262
+      },
+      {
+        "path": "/bapmunna/supabase/manage/dashboard.mjs",
+        "sha256": "04708637abe278dde0d53db0f84995bc2045de21e6b87f1afdfeacc3ed0a9547",
+        "hostingGzipSha256": "5b62eaae1dd4808491ea055391292abd0bcb315530ca40da86026913a3c3653c",
+        "bytes": 22121
+      },
+      {
+        "path": "/bapmunna/supabase/manage/index.html",
+        "sha256": "cfc029b60b180fd8e9e055a5b0ce5e2c60529e2922ea1a383c8c0d35c4bbf590",
+        "hostingGzipSha256": "05a453ffdf4567563bffe0a86606c9dc061ebdaae3c542f35472f37d9f22e6c2",
+        "bytes": 2015
+      },
+      {
+        "path": "/bapmunna/supabase/manage/manage.css",
+        "sha256": "8b715fa8205f5026fd2f18a6eb17f4147b8999ac74dddb53185ec1a11657c2aa",
+        "hostingGzipSha256": "72679af618f436644dd72e1e12a22bc30f768986b555321652078c6674360bcc",
+        "bytes": 28491
+      },
+      {
+        "path": "/bapmunna/supabase/manage/metrics.mjs",
+        "sha256": "3758efbd932bceb7f39c35de36383a56b72c07da51661b3ed48eba6a59982a81",
+        "hostingGzipSha256": "bf90600ee302b51395dc305becaf96bd1fc100790f949286b99c5693f38f229a",
+        "bytes": 2077
+      },
+      {
+        "path": "/bapmunna/supabase/parity.mjs",
+        "sha256": "c91afc466c7b5021c716af2bdb8f7d38102b9c96b649e050673f7e545fce67c3",
+        "hostingGzipSha256": "5f63ad51c0037f4cffbcc3961726e97a2e61a6b3bff1a4dba6a933dc6d5bbe5f",
+        "bytes": 4889
+      },
+      {
+        "path": "/bapmunna/supabase/power.mjs",
+        "sha256": "530f11060cc11fa5503188fff936f81b55be56453a1f2f279d8e75896b58e729",
+        "hostingGzipSha256": "443f613d73dbac7ea1084a988a975aee22e70bb64e098375eb2d245cfd740752",
+        "bytes": 2262
+      },
+      {
+        "path": "/bapmunna/supabase/presentation.mjs",
+        "sha256": "b4fdcca48e2ca72c622ef3456b53eca13264ae2c59447a2126a8ed7d50d830bf",
+        "hostingGzipSha256": "8903ea7a8e3db5ad3d5ae0ecad8b50acc8fe908bc1dac21b2fbc8a27a2e51a64",
+        "bytes": 2210
+      },
+      {
+        "path": "/bapmunna/supabase/refinement.css",
+        "sha256": "6fd2b913022c190fa9515972f40eb462a18dfbf32c3694cd79c48bad49023efe",
+        "hostingGzipSha256": "1025d35a810a43196cfab49dce4c93097b040b060882c52bf42166cfce8ac31d",
+        "bytes": 19026
+      },
+      {
+        "path": "/bapmunna/supabase/runtime-mode.mjs",
+        "sha256": "ce89b482d517d7acb673c42bdba255e8192480fe01e67a498cfd1c170ebb2cf3",
+        "hostingGzipSha256": "ff12953128c7e534bda5161c0d37eb57a6ac4549a4ae0552b4ceb2688160fd08",
+        "bytes": 3079
+      },
+      {
+        "path": "/bapmunna/supabase/senior/index.html",
+        "sha256": "81d16d6c2d99168a7160d41e2487cfff7865a6f45ae8dbae7ca8e00152fdda2f",
+        "hostingGzipSha256": "0c31a427e309810eee34515f351448a5fdadad5f8c366344fec87071ddeebd54",
+        "bytes": 4684
+      },
+      {
+        "path": "/bapmunna/supabase/share/index.html",
+        "sha256": "696466296a52e980c4d8d2beb1f17f664774da63671dca8eb8646227d00b5de0",
+        "hostingGzipSha256": "ad96e20b6f78cf9a2d9051c93fcec3fd8ac0af51cddecae1133c540696cefbaa",
+        "bytes": 4722
+      },
+      {
+        "path": "/bapmunna/supabase/shared/config/detection.mjs",
+        "sha256": "b284692e008b056b4cd69ba247dde8a3a07754d063d5a01fd9fd0530fc33b964",
+        "hostingGzipSha256": "46927f98ea7456e493735673fabc3f4d2b7954acb8263cbe7b903bac6d9ceb1c",
+        "bytes": 1997
+      },
+      {
+        "path": "/bapmunna/supabase/shared/lib/data/view.mjs",
+        "sha256": "3515c0ac1cf18167db8be836c7a28dde85a96c195604caa98abeba3215850e00",
+        "hostingGzipSha256": "fec4b370e37e20a642a8fa2b8bfadd2a3d50b5506e9c487175f27c9d9288c6f4",
+        "bytes": 6241
+      },
+      {
+        "path": "/bapmunna/supabase/shared/lib/judge/detectEvents.mjs",
+        "sha256": "62631daf45bfe717b418ba591c7492f66f21844e33d67b7b32d47de5da04e507",
+        "hostingGzipSha256": "e8c88bf3b23514f8d5a9629629c238cda05a8b9116351c05156ca54df406922d",
+        "bytes": 4605
+      },
+      {
+        "path": "/bapmunna/supabase/shared/lib/judge/evaluateAlerts.mjs",
+        "sha256": "aa7a4574962e549126ae27e00429e39cd288ea82c6404a424b71bf5344b0124a",
+        "hostingGzipSha256": "41168cf52cdb40012af334e6640f9483c4a0b51e2d2368918800e39a0139fcab",
+        "bytes": 2765
+      },
+      {
+        "path": "/bapmunna/supabase/shared/lib/judge/resolveMealSlots.mjs",
+        "sha256": "42172c75b853760f22d15b95a39efa6b24e670082b4eb96a67fb8708e9a32b45",
+        "hostingGzipSha256": "ae2ae2949bc77dd36ddd51b12e5b8f3615624f02c212e40423949327dca48d88",
+        "bytes": 2113
+      },
+      {
+        "path": "/bapmunna/supabase/shared/lib/judge/time.mjs",
+        "sha256": "5d79266026baff83d90877ef098725d4159f7a09bae1f225bd85d9f8136d12ad",
+        "hostingGzipSha256": "fac69df934540fbda79d360c38aa950cf90764ef1858610b83704f59b1137ea8",
+        "bytes": 1059
+      },
+      {
+        "path": "/bapmunna/supabase/shared/lib/judge/types.mjs",
+        "sha256": "79a394f6fb83645e372afa273861eb2ca24e69548851c233d9393164498956e2",
+        "hostingGzipSha256": "a58b590f0663cab234d53c3ab9c4d24fb84a422c155204465362fdd5ab8c61ad",
+        "bytes": 95
+      },
+      {
+        "path": "/bapmunna/supabase/shared/source-manifest.json",
+        "sha256": "d3ba083259a40316c583ee44c601eeaadf01439d2f1af7526d169dc1996068c6",
+        "hostingGzipSha256": "82476d601eb662e12e39ff3cfcc4c408f4efc8d826b9e113f1baa2d52eb640e2",
+        "bytes": 755
+      },
+      {
+        "path": "/bapmunna/supabase/smartthings-config.mjs",
+        "sha256": "146bdc48bec3709d8ece2e01e4cbd31ef3c91948dacb09468db7f170f2823bde",
+        "hostingGzipSha256": "be79718696020db59da0e615f9bcdd88d6cc8b00c6d9b13504fcea162e3e0a19",
+        "bytes": 230
+      },
+      {
+        "path": "/bapmunna/supabase/smartthings-popup.mjs",
+        "sha256": "72d3fd7510d6024633bcafbd8a1646f8b2bb1ea34a14df8f4b25c0b0cf86ffb1",
+        "hostingGzipSha256": "efd47c7509f6967ba851f5b86b1d2301b7c6ba42dd64fd4aa305cd7f1b612692",
+        "bytes": 3149
+      },
+      {
+        "path": "/bapmunna/supabase/smartthings-view.mjs",
+        "sha256": "ec7c99549ced57567eba72f545ed18a7fa98e91db7645267e57a36cbc4ffb69d",
+        "hostingGzipSha256": "4cee830580612f0a7ceeb0f292e1a71380286ee11b475117a3eaf7c1e8a42c75",
+        "bytes": 24843
+      },
+      {
+        "path": "/bapmunna/supabase/style.css",
+        "sha256": "5eb8bc98f947aa48c479567e2f82f2959786599815fb92f3b52be13ab3482602",
+        "hostingGzipSha256": "071fd86c74333f4e4963392884dfd83f71a6c66b23888eab71f269b0a818d3eb",
+        "bytes": 20973
+      },
+      {
+        "path": "/bapmunna/supabase/supabase-config.mjs",
+        "sha256": "0638ef2304dd48d8ffba0a0209c4ded04a9752cd7b628304e025db55f7d71a90",
+        "hostingGzipSha256": "cc2c04cfe8eeab31e8e4d58e7442e77337df3f5cbb9f7640dbe477a15fb274e3",
+        "bytes": 276
+      },
+      {
+        "path": "/bapmunna/supabase/worksheet.css",
+        "sha256": "a22d97ba0cf1dbb77fe5fb77e4e3a1db8d17f10328214f83981583e41a73c3a9",
+        "hostingGzipSha256": "d706a4c39bce6cefc3bcc783413104bc3539b22ed11182d60311adbd9c72d441",
+        "bytes": 6490
+      },
+      {
+        "path": "/bapmunna/supabase/worksheet.mjs",
+        "sha256": "06f39ef1ed0684e999cd273d966ed10611bac74d19d2197d594195a07cfedd5f",
+        "hostingGzipSha256": "f2ce3bfbac8783640d5983042ffeca1ecf365afa3dc4f74fac6d0e100b212adc",
+        "bytes": 8958
+      },
+      {
+        "path": "/bapmunna/worksheet.css",
+        "sha256": "a22d97ba0cf1dbb77fe5fb77e4e3a1db8d17f10328214f83981583e41a73c3a9",
+        "hostingGzipSha256": "d706a4c39bce6cefc3bcc783413104bc3539b22ed11182d60311adbd9c72d441",
+        "bytes": 6490
+      },
+      {
+        "path": "/bapmunna/worksheet.mjs",
+        "sha256": "06f39ef1ed0684e999cd273d966ed10611bac74d19d2197d594195a07cfedd5f",
+        "hostingGzipSha256": "f2ce3bfbac8783640d5983042ffeca1ecf365afa3dc4f74fac6d0e100b212adc",
+        "bytes": 8958
+      }
+    ]
+  },
+  "sourceAheadOfPublishedApp": {
+    "commit": "efbdd94b82a53dc9611f017bde0dd397c4845a3a",
+    "description": "Power transcription and progressive interpretation UI/code are present in GitHub source but are not in the current Firebase release.",
+    "localStageFiles": 381,
+    "unchangedHostingHashMatches": 245,
+    "newUnpublishedPaths": [
+      "/bapmunna/app/_next/static/KFvNcDf7vOAa6bl0i1BLq/_buildManifest.js",
+      "/bapmunna/app/_next/static/KFvNcDf7vOAa6bl0i1BLq/_ssgManifest.js",
+      "/bapmunna/app/_next/static/chunks/492-11b6cff953801e01.js",
+      "/bapmunna/app/_next/static/chunks/app/(guardian)/home/page-cb612d519776c473.js",
+      "/bapmunna/app/_next/static/chunks/app/(guardian)/more/page-c642fb0f753ae9cf.js",
+      "/bapmunna/app/_next/static/chunks/app/(guardian)/records/page-797abc254b428ad1.js",
+      "/bapmunna/app/_next/static/chunks/app/connect/page-5dc60ae3e009c3c7.js",
+      "/bapmunna/app/_next/static/chunks/app/s/page-c733fa062205e303.js",
+      "/bapmunna/app/_next/static/css/f4085c4209e1c1f9.css"
+    ],
+    "changedPathsCount": 127
+  },
+  "smartthingsPublicConfig": {
+    "httpStatus": 200,
+    "enabled": true,
+    "connectionReady": false
+  },
+  "applicationCodeChangedByThisSync": false,
+  "firebaseDeployedByThisSync": false,
+  "mainMergedByThisSync": false,
+  "validation": {
+    "harnessReport": ".harness/runs/2026-11-19T08-14-22-608Z-78198/report.md",
+    "initialHarnessStatus": "failed",
+    "initialFailure": "One localhost HTTP test could not bind 127.0.0.1 due to sandbox EPERM; application source unchanged.",
+    "passedChecks": {
+      "rootTests": 320,
+      "powerPatternTests": 141,
+      "backendPrivacyTests": 48,
+      "firebaseTests": 85,
+      "harnessTests": 27
+    },
+    "types": "passed",
+    "domainSync": "passed",
+    "designSync": "passed",
+    "firebaseContracts": "passed",
+    "nextBuild": "passed",
+    "sourceStability": "passed",
+    "serverRerun": {
+      "result": "passed",
+      "passed": 131,
+      "failed": 0,
+      "skipped": 13,
+      "skippedReason": "Auth/Firestore emulators not running",
+      "log": "tmp/firebase-github-sync-20261119/server-tests-localhost.log",
+      "scope": "Entire server package (144 tests); includes the initially blocked localhost test and additional hearts tests."
+    },
+    "directHtmlAssetReferencesMissing": 0,
+    "publicBrowserScreens": [
+      "more",
+      "walking/demo",
+      "walking/demo closet tab"
+    ],
+    "notVerified": [
+      "actual SmartThings consumer OAuth",
+      "physical plug delivery",
+      "token refresh/disconnect",
+      "2–3-household isolation",
+      "native device health data"
+    ]
+  }
+}

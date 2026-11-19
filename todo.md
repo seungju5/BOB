@@ -1,5 +1,16 @@
 # todo.md — Task List & Progress
 
+## 2026-11-19 GitHub·Firebase 게시본 통합 전달
+
+- [x] 지정 저장소 seungju5/-1의 원격 브랜치·main·미병합 PR 확인. 최신 안티그래비티 소스 efbdd94와 삼성 기록06942b0은 이미 원격에 있음
+- [x] 별도 codex/firebase-github-sync-20261119에서 두 이력 통합, 앱 코드·디자인·자산 보존
+- [x] 현재 Hosting c6ac5c6b3663fc35의 변경150개 공개 바이트 일치, 활성 산출물381개 해시·26개 HTML경로 기록
+- [x] GitHub 최신 전력 전사/해석은 미게시임을 구분하고, 현재 기기 연결 표시·예시 동기화와 실제 OAuth 미검증을 기록
+- [x] 루트320·전력141·개인정보48·Firebase85·하네스27·타입·Next 빌드 통과, 서버 패키지 전체 포트 허용 후131통과/13skip 명시
+- [ ] main 병합·새 Firebase 배포는 이번 전달 범위 밖이며 실연동/시연 데이터 분리 검토 후 별도 진행
+
+팀 확인 경로와 영수증: `documentation/github-firebase-sync-20261119.md`.
+
 ## 2026-11-18 SmartThings 새 소유자 계정 확인
 
 - [x] 새 계정 SMS 인증·사용자 승인한 위치약관·공식 CLI 권한 승인, 이전 계정과 로컬 토큰 분리

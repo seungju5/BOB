@@ -2337,7 +2337,7 @@
   },
   "applicationCodeChangedByThisSync": false,
   "firebaseDeployedByThisSync": false,
-  "mainMergedByThisSync": false,
+  "githubTargetRef": "refs/heads/main",
   "validation": {
     "harnessReport": ".harness/runs/2026-11-19T08-14-22-608Z-78198/report.md",
     "initialHarnessStatus": "failed",

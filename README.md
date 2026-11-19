@@ -5,7 +5,7 @@
 
 ## 최신 소스와 Firebase 게시본 — 2026-11-19
 
-현재 팀 전달 브랜치는 **[`codex/firebase-github-sync-20261119`](https://github.com/seungju5/-1/tree/codex/firebase-github-sync-20261119)** 입니다. 안티그래비티 보강 소스 `efbdd94`와 삼성 계정 검증 기록을 함께 보존했습니다. 기본 `main`에는 아직 병합되지 않았습니다.
+팀 소스는 기본 브랜치 `main`에서 확인할 수 있습니다. 안티그래비티 보강 소스 `efbdd94`와 삼성 계정 검증 기록 `06942b0`을 함께 반영했습니다. [GitHub main](https://github.com/seungju5/-1/tree/main)
 
 [현재 Firebase 앱](https://impact-series.web.app/bapmunna/app/)에는 산책 하트·공원 파노라마·토끼 꾸미기·기기 정보 카드가 게시되어 있습니다. 최신 소스의 전력 전사/해석 추가 화면은 아직 미게시이며, 연결 완료 표시와 실제 소비자 OAuth 검증도 구분해야 합니다. [소스·게시본 대조 및 검토 사항](documentation/github-firebase-sync-20261119.md)과 [파일별 검증 영수증](workspaces/bapmunna-final/releases/20261119-github-sync.json)을 먼저 확인하세요. 아래 실행/과거 디자인 설명보다 이 최신 상태를 우선합니다.
 

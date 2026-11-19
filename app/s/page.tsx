@@ -181,6 +181,7 @@ function SeniorHome({ status, now, act, isDemo, endDemo }: { status: SeniorStatu
           <BigButton label="도와줘요" lines={["도와", "줘요"]} icon={<IconHeart className="h-9 w-9" />} onClick={() => setSheet("help")} tone="help" />
         </div>
       </div>
+      <CookerBadge lastCookerAt={status.lastCookerAt} today={today} />
       <PhoneStepsCard demo={isDemo} />
       <Link href={isDemo?'/walking/demo':'/walking'} className="mt-4 flex min-h-16 items-center justify-center rounded-2xl bg-butter-soft px-4 py-3 text-center text-2xl font-bold text-cocoa">오늘의 산책·하트 보기</Link>
       <Link href="/privacy" className="mt-5 block min-h-12 py-3 text-center text-2xl text-muted underline underline-offset-4">개인정보 이용·제공 안내</Link>
@@ -235,6 +236,29 @@ function SeniorHome({ status, now, act, isDemo, endDemo }: { status: SeniorStatu
         )}
       </Sheet>
     </main>
+  );
+}
+
+/**
+ * [EN] Rice cooker status badge for seniors showing meal signal or waiting state.
+ * [KR] 어르신 화면에서 밥솥 취사 소식이 도착했는지 따뜻하게 보여주는 배지입니다.
+ */
+function CookerBadge({ lastCookerAt, today }: { lastCookerAt: string | null; today: string }) {
+  const cookedToday = lastCookerAt ? kstDate(new Date(lastCookerAt)) === today : false;
+  return (
+    <div className={`mt-4 flex items-center gap-3.5 rounded-2xl border-2 p-4 ${
+      cookedToday ? "border-butter-deep bg-cream text-cocoa" : "border-line bg-paper text-muted"
+    }`}>
+      <span className="text-3xl" aria-hidden="true">{cookedToday ? "🍚" : "⏳"}</span>
+      <div className="min-w-0 flex-1">
+        <p className="text-2xl font-bold text-cocoa">
+          {cookedToday ? "오늘 밥솥 취사 소식이 전해졌어요" : "오늘 밥솥 취사 소식을 기다려요"}
+        </p>
+        <p className="text-xl text-muted">
+          {cookedToday ? "산책길 첫 번째 하트가 채워졌어요." : "취사 소식이 도착하면 첫 번째 하트가 켜져요."}
+        </p>
+      </div>
+    </div>
   );
 }
 

@@ -10,6 +10,7 @@ import { MEAL_DAY_LABEL, MEAL_STATUS_LABEL, mealDayClass, mealStatusClass, useMe
 import { kstDate } from "@/lib/judge/time";
 import { useApp } from "@/lib/data/useApp";
 import { careDataAvailable, mealDaySummary, mealSlotLabel, slotsForDate, type AppView } from "@/lib/data/view";
+import { PowerTranscriptionSection } from "@/components/power/PowerTranscriptionSection";
 
 const RANGES = [{ id: "day", label: "일" }, { id: "week", label: "주" }, { id: "month", label: "월" }] as const;
 
@@ -60,6 +61,7 @@ export default function RecordsPage() {
                 {range === "month" ? <MonthLegend /> : <MealStatusLegend />}
                 <p className="mt-2 text-[12px] leading-relaxed text-muted">소식 확인은 밥솥 사용이나 어르신의 외식 알림을 뜻해요. 실제 식사·건강 상태의 판단은 아니에요.</p>
                 <CookerUsage view={view} dates={period.dates} now={now} day={range === "day"} />
+                <PowerTranscriptionSection selectedDate={anchor} />
               </div>
             )}
           </>

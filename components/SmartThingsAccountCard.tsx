@@ -128,6 +128,12 @@ export function SmartThingsAccountCard({ compact = false }: { compact?: boolean 
             산책길 밥김 하트 보기
           </Link>
         </div>
+        <Link
+          href="/records#power-transcription"
+          className="flex min-h-11 items-center justify-center gap-1.5 rounded-full bg-butter-soft/80 px-3 py-2 text-[14px] font-bold text-cocoa transition-colors hover:bg-butter-soft"
+        >
+          <span>⚡ 밥솥 전력 데이터 전사 & AI 해석 과정 보기</span>
+        </Link>
       </div>
     </section>
   );

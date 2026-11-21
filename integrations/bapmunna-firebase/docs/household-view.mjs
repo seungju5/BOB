@@ -1,7 +1,8 @@
 import {connectCloud} from './cloud-api.mjs';
+import {deploymentConfig} from './deployment-config.mjs';
 
 const RELATIONS={mother:'어머니',father:'아버지',parents:'부모님',other:'그 밖의 소중한 분'};
-const PRIVACY_URL='https://impact-series.web.app/bapmunna/app/privacy/';
+const PRIVACY_URL=`${deploymentConfig.webOrigin}/bapmunna/app/privacy/`;
 const safe=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const emptyDraft=()=>({relation:'',alias:'',residentCount:1,hasPet:false});
 

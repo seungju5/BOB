@@ -1,0 +1,13 @@
+{
+  "hosting": {
+    "public": "tmp/impact-final/site",
+    "ignore": ["**/.*"],
+    "redirects": [
+      { "source": "/", "destination": "/bapmunna/app/", "type": 302 }
+    ]
+  },
+  "firestore": {
+    "rules": "integrations/bapmunna-firebase/firebase/team-firestore.rules",
+    "indexes": "integrations/bapmunna-firebase/firebase/firestore.indexes.json"
+  }
+}

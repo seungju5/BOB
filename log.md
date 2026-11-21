@@ -451,3 +451,11 @@ Firebase 읽기 전용 조회에서 현재 c6ac5c6b3663fc35(11/18 16:57 KST)를 
 - 원격 브랜치 정리: main에 병합된 `codex/*` 12개 삭제. 미병합 `codex/connect-firebase-bapmunna`는 태그 `archive/connect-firebase-bapmunna`로 보존 후 삭제.
 - ADR-014: 판단 기준값을 기록 화면 표기와 통일(취사 700W·15분, 보온 20~70W). Firebase 공유 코드 재생성, 시뮬레이터 문구·예시를 상수에서 읽도록 변경, 경계 테스트 T-DET-08~10 추가. vitest 323, Firebase 142+10+8+43 통과, next build 통과.
 - 남은 일: 기록 화면 `PowerTranscriptionSection`은 고정된 예시 데이터(845W 등)를 실제 계정에도 보여 준다. 배포 전 숨기거나 실제 데이터로 연결해야 한다.
+
+## 2026-11-21 — 팀 계정 이전 준비
+
+- 배포 대상 값(Firebase 웹 설정·웹/서버 주소·문의 메일·APK 주소)을 `config/deployment.json` 한 곳으로 모았다. Next 앱은 `lib/deployment.ts`, Firebase 정적 앱은 `npm run apply:deployment`가 생성하는 설정을 읽는다. 값은 아직 기존(개인) 값 그대로라 동작 변화 없음.
+- `ku-gpa`가 아니면 실패하던 `public-config.mjs` 잠금을 deployment.json 기준으로 바꿨다.
+- 팀 Firebase용 독립 규칙 `firebase/team-firestore.rules`(`npm run rules:team`), 루트 `firebase.json`·`.firebaserc`, `npm run build:team-site`·`deploy:team` 추가. build:team-site 전체 통과(385 파일 스테이징), 로컬 미리보기 확인.
+- CI(`.github/workflows/ci.yml`, Windows·Linux + 규칙 에뮬레이터 + 서버 테스트)와 개인 계정 값 감시(`npm run check:accounts`, 남은 67개 파일 허용 목록) 추가.
+- 이전 순서와 남은 일: `docs/team-migration.md`.

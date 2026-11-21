@@ -1,5 +1,6 @@
 // Browser proof-of-possession only. Kakao credentials and Firebase tokens are
 // never written to URLs, localStorage, or the pending-login record.
+import {deploymentConfig} from './deployment-config.mjs';
 const KEY='bapmunna:kakao:pending:v1';
 const VALUE=/^[A-Za-z0-9_-]{43}$/;
 const MAX_AGE=10*60*1000;
@@ -7,7 +8,7 @@ const fail=code=>Object.assign(new Error('Kakao login could not be completed.'),
 const encode=bytes=>btoa(String.fromCharCode(...new Uint8Array(bytes))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
 
 export function createKakaoClient({config,storage,location,history,crypto,fetch,now=Date.now}){
-  const allowed=config?.enabled===true&&config.apiOrigin==='https://bapmunna-smartthings.vercel.app';
+  const allowed=config?.enabled===true&&config.apiOrigin===deploymentConfig.apiOrigin;
   const endpoint=path=>`${config.apiOrigin}/api/kakao/${path}`;
   let starting=false,completion;
   async function request(path,init={}){

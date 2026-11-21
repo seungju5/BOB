@@ -5,6 +5,7 @@ import {preferenceFields} from './app-preferences.mjs';
 import {CONSENT_VERSION,koreanDay,checkDisplayName,checkMeal,STAGES} from './auth-utils.mjs';
 import {createKakaoClient,requestAccountEmail,completeKakaoSession} from './kakao-client.mjs';
 import {kakaoConfig} from './kakao-config.mjs';
+import {deploymentConfig} from './deployment-config.mjs';
 
 export function createProvider(config){
   const appName='bapmunna-accounts-v3';
@@ -25,7 +26,7 @@ export function createProvider(config){
   }
   const contactRef=uid=>doc(db,'bapmunnaCRMContacts',uid);
   const remember=value=>setPersistence(auth,value?browserLocalPersistence:browserSessionPersistence);
-  const actionSettings={url:'https://impact-series.web.app/bapmunna/#account',handleCodeInApp:false};
+  const actionSettings={url:`${deploymentConfig.webOrigin}/bapmunna/#account`,handleCodeInApp:false};
   function householdFields(input){
     const fields=['relation','alias','residentCount','hasPet'];
     if(!input||typeof input!=='object'||Object.keys(input).length!==fields.length||!fields.every(key=>Object.hasOwn(input,key))
@@ -68,7 +69,7 @@ export function createProvider(config){
       return kakao().begin(keep);
     },
     completeKakaoLogin(fragment,signal){return kakaoCompletion??=completeKakaoSession({auth,client:kakao(),fragment,signal,remember,beforeChange:beforeAuthStateChanged,observe:onAuthStateChanged,signIn:signInWithCustomToken}).then(mapUser);},
-    requestEmail(email,expectedUid){return requestAccountEmail({email,expectedUid,currentUser:()=>auth.currentUser,sendVerification:(user,address)=>verifyBeforeUpdateEmail(user,address,{url:'https://impact-series.web.app/bapmunna/app/login/',handleCodeInApp:false})});},
+    requestEmail(email,expectedUid){return requestAccountEmail({email,expectedUid,currentUser:()=>auth.currentUser,sendVerification:(user,address)=>verifyBeforeUpdateEmail(user,address,{url:`${deploymentConfig.webOrigin}/bapmunna/app/login/`,handleCodeInApp:false})});},
     getIdToken(expectedUid){return withHouseholdUser(expectedUid,async(user,assertCurrent)=>{const token=await user.getIdToken();assertCurrent();return token;});},
     onUser(callback){return onAuthStateChanged(auth,user=>callback(mapUser(user)));},
     async signIn(email,password,keep){await remember(keep);const result=await signInWithEmailAndPassword(auth,email.trim(),password);return mapUser(result.user);},

@@ -14,6 +14,7 @@ import {mountHousehold} from './household-view.mjs';
 import {EDITIONS,editionFromLocation,editionView,initialEditionView,editionLink,rememberEdition,recalledEdition} from './editions.mjs';
 import {SETUP_STEPS,setupDraft,validateSetup,applySetup,readSetupForm,setupContent,dateInput,parseDateInput,patternComparison} from './worksheet.mjs';
 import {mealEvidence,careHeadline,JOURNEY_SCENARIOS,journeyScene,reportDayAfterKey,awayPresetRange} from './experience.mjs';
+import {deploymentConfig} from './deployment-config.mjs';
 
 // Resolve once against the entry document; role switches change the URL without reloading.
 const ASSETS=Object.fromEntries(Object.entries({logo:'./assets/rice-logo.png',partner:'./assets/partner.png',bunny:'./assets/bunny.png',underlay:'./assets/bunny-underlay.webp',companion:'./assets/rice-cooker-companion.png',cooker:'./assets/rice-cooker-companion.png',full:'./assets/rice-full.png',half:'./assets/rice-half.webp',empty:'./assets/rice-empty.webp',eatout:'./assets/eatout.svg',away:'./assets/away.svg',help:'./assets/help.svg',family:'./assets/family.svg',info:'./assets/info.svg',phone:'./assets/phone.svg',heart:'./assets/heart.svg',history:'./assets/history.svg'}).map(([name,path])=>[name,new URL(path,document.baseURI).href]));
@@ -250,7 +251,7 @@ function connectView(){
 }
 function accountView(){
   const isCarer=edition==='carer';
-  return heading(isCarer?'보호자 계정':'내 식사 기록',EDITIONS[edition].label,isCarer?'내 회원 정보를 안전하게 관리해요.':'식사한 뒤 작은 소식 하나를 남겨보세요.')+(CLOUD_AVAILABLE?'<section id="account-surface" data-cloud-surface></section>':`<section class="card"><h2>실제 저장은 온라인에서 이용해 주세요.</h2><p>내려받는 파일은 가상 체험용이에요.</p><a href="https://impact-series.web.app/bapmunna/${edition}/#account">온라인 ${isCarer?'보호자 계정':'내 기록'} 열기 →</a></section>`);
+  return heading(isCarer?'보호자 계정':'내 식사 기록',EDITIONS[edition].label,isCarer?'내 회원 정보를 안전하게 관리해요.':'식사한 뒤 작은 소식 하나를 남겨보세요.')+(CLOUD_AVAILABLE?'<section id="account-surface" data-cloud-surface></section>':`<section class="card"><h2>실제 저장은 온라인에서 이용해 주세요.</h2><p>내려받는 파일은 가상 체험용이에요.</p><a href="${deploymentConfig.webOrigin}/bapmunna/${edition}/#account">온라인 ${isCarer?'보호자 계정':'내 기록'} 열기 →</a></section>`);
 }
 function modalMarkup(){
   if(!modal)return '';

@@ -1,3 +1,4 @@
+import { PRIVACY_SUPPORT_EMAIL } from '@/lib/deployment';
 /** Shared, local policy content; no SDK, analytics or account requests. */
 export function HealthPrivacyContent() {
   return <div className="space-y-5 text-2xl leading-relaxed text-cocoa">
@@ -10,6 +11,6 @@ export function HealthPrivacyContent() {
     <section><h2 className="font-bold">연결과 참여 끄기</h2><p className="mt-2">‘밥뭇나 걸음수 연결 끄기’를 누르면 건강 기록 조회와 새 걸음수 전송이 멈춰요. 이미 공유한 기록을 지우려면 웹앱에서 ‘걸음수 공유·연결 그만하기’를 눌러 주세요. 별명·합계·기기 연결·하트·차림·가족 응원을 지워요. 건강 앱의 원래 기록은 유지돼요.</p><p className="mt-3">휴대폰 연결 정보는 보안 저장소에 보관하고, 서버에는 연결용 비밀값 대신 확인용 해시를 보관해요. 휴대폰 건강 앱의 읽기 권한도 설정에서 언제든 끌 수 있어요.</p></section>
     <section><h2 className="font-bold">산책 알림</h2><p className="mt-2">선택한 식후 시각과 혈당 확인 안내 설정은 이 휴대폰에 보관해요. 알림 허용을 선택한 경우에만 예약하며 언제든 끌 수 있어요. 식사 완료나 혈당을 자동 측정하는 기능은 아니에요.</p></section>
     <section><h2 className="font-bold">내 휴대폰의 기록</h2><p className="mt-2">앱이 설치된 휴대폰 소유자의 건강 기록을 기준으로 해요. 가족 계정이나 연결 숫자를 안다는 이유만으로 다른 분의 건강 기록을 조회하지 않아요. 공유 전에 휴대폰에서 연결할 별명을 직접 확인해 주세요.</p></section>
-    <p className="text-muted">연결은 선택 사항이에요. 연결하지 않아도 밥뭇나 웹앱을 사용할 수 있어요. 문의: peterjang9296@gmail.com</p>
+    <p className="text-muted">연결은 선택 사항이에요. 연결하지 않아도 밥뭇나 웹앱을 사용할 수 있어요. 문의: {PRIVACY_SUPPORT_EMAIL}</p>
   </div>;
 }

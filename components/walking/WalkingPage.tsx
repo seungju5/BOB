@@ -5,6 +5,7 @@ import {useCallback,useEffect,useRef,useState} from 'react';
 import {Logo,Mascot} from '@/components/Mascot';
 import {refreshFirebaseAccount,useFirebaseAccount} from '@/lib/data/firebase';
 import {usesImpactFirebase} from '@/lib/firebase/bridge';
+import {publicUrl} from '@/lib/deployment';
 import {createWalkingClient,walkingError} from '@/lib/walking/client';
 import {walkingDate,type WalkingProfile,type WalkingBoard as Board,type WalkingPairing} from '@/lib/walking/model';
 import {WalkingBoard} from './WalkingBoard';
@@ -16,7 +17,7 @@ export function WalkingPage(){
     <header className="walking-header"><Logo/><Link href="/more" className="walking-back">메뉴로</Link></header>
     <div className="walking-hero"><div><span className="walking-eyebrow">한 걸음씩, 함께</span><h1>내 휴대폰<br/>걸음수 연결</h1><p>가족끼리 나누고,<br/>순위는 따로 선택해요.</p></div><Mascot className="h-28 w-28 shrink-0"/></div>
     <Link className="walking-text-link" href="/walking">오늘의 산책으로 돌아가기</Link>
-    {!usesImpactFirebase?<section className="walking-card"><h2 className="walking-heading">밥뭇나에서 함께 걸어요</h2><p>실제 랭킹은 공개 앱의 내 계정에서 참여할 수 있어요.</p><a className="walking-primary" href="https://impact-series.web.app/bapmunna/app/walking/">공개 앱에서 열기</a><DemoLink/></section>
+    {!usesImpactFirebase?<section className="walking-card"><h2 className="walking-heading">밥뭇나에서 함께 걸어요</h2><p>실제 랭킹은 공개 앱의 내 계정에서 참여할 수 있어요.</p><a className="walking-primary" href={publicUrl("/app/walking/")}>공개 앱에서 열기</a><DemoLink/></section>
     :account.loading?<p role="status" className="walking-card">내 계정을 확인하고 있어요…</p>
     :account.error?<section role="alert" className="walking-card"><h2 className="walking-heading">계정을 확인하지 못했어요</h2><p>{account.error}</p><button type="button" className="walking-primary" onClick={()=>void refreshFirebaseAccount()}>다시 확인</button></section>
     :!account.user||!account.user.verified||!account.profile?<section className="walking-card"><h2 className="walking-heading">내 계정으로 시작해요</h2><p>{account.user?'이메일 확인과 가입 안내를 마친 뒤 참여할 수 있어요.':'로그인한 뒤 참여를 선택하면, 다른 분들과 오늘 걸음수를 나눌 수 있어요.'}</p><Link href="/login" className="walking-primary">{account.user?'가입 확인 마치기':'로그인하고 참여하기'}</Link><DemoLink/></section>

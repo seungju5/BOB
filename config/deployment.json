@@ -1,0 +1,14 @@
+{
+  "_comment": "팀 계정 이전 시 이 파일만 바꾼다. 바꾼 뒤 `npm run apply:deployment` → 빌드. 공개 값만 둔다 (비밀 키 금지). 안내: docs/team-migration.md",
+  "firebase": {
+    "apiKey": "AIzaSyBcziVczLrC36TaeewJw_R_odcUYGl8Xxk",
+    "authDomain": "ku-gpa.firebaseapp.com",
+    "projectId": "ku-gpa",
+    "appId": "1:344037918070:web:a4a06ae7bd3f747f91e657"
+  },
+  "webOrigin": "https://impact-series.web.app",
+  "apiOrigin": "https://bapmunna-smartthings.vercel.app",
+  "privacySupportEmail": "peterjang9296@gmail.com",
+  "androidApkUrl": "https://github.com/jooji13/bapmunna-downloads/releases/download/android-0.2.0-test.1/bapmunna-health-0.2.0-test.1.apk",
+  "androidReleaseJsonPath": "/bapmunna/app/downloads/20261117/release.json"
+}

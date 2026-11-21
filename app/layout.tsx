@@ -2,9 +2,10 @@ import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { RoleSwitcher } from "@/components/RoleSwitcher";
 import { APP_BASE_PATH, appPath } from "@/lib/app-path";
+import { publicUrl } from "@/lib/deployment";
 import "./globals.css";
 
-const SHARE_IMAGE_URL = "https://impact-series.web.app/bapmunna/assets/bapmunna-share-v2.png?v=20261114";
+const SHARE_IMAGE_URL = publicUrl("/assets/bapmunna-share-v2.png?v=20261114");
 const SHARE_IMAGE_ALT = "밥뭇나 로고 · 밥 한 끼로 전하는 안부";
 
 export const metadata: Metadata = {
@@ -14,7 +15,7 @@ export const metadata: Metadata = {
   icons: { icon: appPath("/brand/rice-logo.png"), apple: appPath("/brand/rice-logo.png") },
   openGraph: {
     type: "website",
-    ...(APP_BASE_PATH === "/bapmunna/app" ? { url: "https://impact-series.web.app/bapmunna/app" } : {}),
+    ...(APP_BASE_PATH === "/bapmunna/app" ? { url: publicUrl("/app") } : {}),
     locale: "ko_KR",
     siteName: "밥뭇나",
     title: "밥뭇나 · 밥 한 끼로 전하는 안부",

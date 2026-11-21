@@ -10,6 +10,7 @@ import * as demo from '@/lib/hearts/demo';
 import * as presentation from '@/lib/hearts/presentation';
 import * as native from '@/lib/hearts/native';
 import { healthAppLink } from '@/lib/mobile/links';
+import * as deployment from '@/lib/deployment';
 
 // Execute unchanged TSX, including its forms and the native parent's keyed child.
 // Hooks/effects, time, bridge responses and leaf UI are synthetic. This deliberately
@@ -113,7 +114,7 @@ function fixture({ nativePage = false, mode = 'web' as 'web' | 'native' } = {}) 
     '@/components/walking/NativeWalkingPanel': { NativeWalkingPanel: 'NativeWalkingPanel' },
     '@/lib/hearts/client': client, '@/lib/hearts/demo': demo, '@/lib/hearts/presentation': presentation, '@/lib/hearts/native': native,
     '@/packages/walking-hearts/core.mjs': core, '@/lib/mobile/links': { healthAppLink },
-    '@/lib/firebase/bridge': { usesImpactFirebase: true }, '@/lib/data/firebase': { useFirebaseAccount: () => ({ user: null, loading: false }) },
+    '@/lib/firebase/bridge': { usesImpactFirebase: true }, '@/lib/deployment': deployment, '@/lib/data/firebase': { useFirebaseAccount: () => ({ user: null, loading: false }) },
   };
   function load(file: string): Record<string, unknown> {
     if (cache.has(file)) return cache.get(file)!;

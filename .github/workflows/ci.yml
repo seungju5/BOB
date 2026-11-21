@@ -1,0 +1,81 @@
+# PR과 main 푸시마다 Windows·Linux에서 같은 검사를 돌린다.
+# 실패하면 PR 화면에 빨간 X가 뜬다. main 보호 규칙에서 이 검사를 "필수"로 지정한다 (docs/team-migration.md).
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: check (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            integrations/bapmunna-firebase/package-lock.json
+      - run: npm ci
+      - run: npm ci
+        working-directory: integrations/bapmunna-firebase
+
+      - name: 개인 계정 값이 새로 들어오지 않았는지
+        run: npm run check:accounts
+      - name: 생성 파일이 원본과 같은지 (디자인·판단 로직·배포 설정·팀 규칙)
+        run: |
+          npm run check:design
+          npm run check:firebase-sync
+          npm run check:deployment
+          npm run check:rules-team
+      - run: npx eslint
+      - run: npx tsc --noEmit
+      - run: npm test
+      - name: Firebase 앱 테스트
+        run: npm run test:firebase
+      - run: npm run build
+
+  firebase-rules:
+    # Firestore 규칙을 실제 에뮬레이터로 검사한다 (Java 필요, Linux만).
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: integrations/bapmunna-firebase/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - run: npm ci
+        working-directory: integrations/bapmunna-firebase
+      - run: node scripts/build-team-rules.mjs
+        working-directory: integrations/bapmunna-firebase
+      - run: npm run test:cloud
+        working-directory: integrations/bapmunna-firebase
+
+  server:
+    # Vercel 서버 테스트. Windows는 심볼릭 링크 권한이 없어 Linux에서만 돌린다.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm ci
+        working-directory: integrations/bapmunna-firebase/server
+      - run: npm test
+        working-directory: integrations/bapmunna-firebase/server

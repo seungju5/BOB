@@ -11,6 +11,7 @@ import {BunnyScene,EquippedNames,HeartIcon,HeartsGarden} from './HeartsScene';
 import {validateHeartsLeague} from '@/lib/hearts/presentation';
 import {unlockDemoMessages} from '@/lib/hearts/demo';
 import './hearts.css';
+import {PRIVACY_SUPPORT_EMAIL} from '@/lib/deployment';
 
 type Tab='today'|'family'|'closet'|'league';
 type League=HeartLeague&{myPublicId?:string;practice?:boolean;minimumForPromotion?:number;promotion?:unknown};
@@ -174,7 +175,7 @@ function HeartsConsent({busy,native,onJoin}:{busy:boolean;native:boolean;onJoin:
   return <form onSubmit={event=>{event.preventDefault();if(agreed)onJoin({consentVersion:HEARTS_CONSENT,enabled:true,goal,leagueEnabled:false,region:''});}}>
     <p>{native?'내 휴대폰의 걸음과 가족 응원을':'연결한 휴대폰의 걸음과 가족 응원을'} 하트로 함께 모아요. 주간 순위 공개는 따로 선택해요.</p>
     <label className="hearts-field">내가 정한 하루 목표<input type="number" min="500" max="20000" step="100" value={goal} required onChange={event=>setGoal(Number(event.target.value))}/><small>예시 기본값이에요. 몸 상태에 맞게 정해요.</small></label>
-    <details className="hearts-explainer"><summary>저장·공유 내용을 확인해 주세요</summary><p>하루 걸음·달성 요약은 최대 35일, 응원·사진은 30일 동안 저장해요. 모은 하트·구매 차림은 이용하는 동안 유지돼요. 연결된 가족 계정과 휴대폰에서만 응원을 볼 수 있어요.</p><p>설정에서 끄거나 하트 기록을 삭제할 수 있어요. 건강 앱의 원본은 지우지 않아요. 문의: peterjang9296@gmail.com</p></details>
+    <details className="hearts-explainer"><summary>저장·공유 내용을 확인해 주세요</summary><p>하루 걸음·달성 요약은 최대 35일, 응원·사진은 30일 동안 저장해요. 모은 하트·구매 차림은 이용하는 동안 유지돼요. 연결된 가족 계정과 휴대폰에서만 응원을 볼 수 있어요.</p><p>설정에서 끄거나 하트 기록을 삭제할 수 있어요. 건강 앱의 원본은 지우지 않아요. 문의: {PRIVACY_SUPPORT_EMAIL}</p></details>
     <label className="hearts-check"><input type="checkbox" checked={agreed} onChange={event=>setAgreed(event.target.checked)}/><span>걸음 요약과 하트·가족 응원 이용에 동의해요.</span></label>
     <button className="hearts-primary" disabled={busy||!agreed} type="submit">동의하고 산책 하트 켜기</button>
   </form>;

@@ -7,7 +7,9 @@ export async function syncPublicConfig(root){
   let value=match[2];if(value.startsWith('"'))value=JSON.parse(value);else if(value.startsWith("'")&&value.endsWith("'"))value=value.slice(1,-1);
   values[match[1]]=value;
  }
- if(values.NEXT_PUBLIC_FIREBASE_PROJECT_ID&&values.NEXT_PUBLIC_FIREBASE_PROJECT_ID!=='ku-gpa')throw Error('Environment Firebase target does not match ku-gpa.');
+  // The team target lives in config/deployment.json (npm run apply:deployment); .env.local must agree with it.
+ const target=JSON.parse(await readFile(path.join(root,'../../config/deployment.json'),'utf8')).firebase.projectId;
+ if(values.NEXT_PUBLIC_FIREBASE_PROJECT_ID&&values.NEXT_PUBLIC_FIREBASE_PROJECT_ID!==target)throw Error(`Environment Firebase target does not match config/deployment.json (${target}).`);
  const firebaseFields={apiKey:'API_KEY',authDomain:'AUTH_DOMAIN',projectId:'PROJECT_ID',appId:'APP_ID'};
  if(Object.values(firebaseFields).every(name=>values['NEXT_PUBLIC_FIREBASE_'+name])){
   const config=Object.fromEntries(Object.entries(firebaseFields).map(([name,key])=>[name,values['NEXT_PUBLIC_FIREBASE_'+key]]));

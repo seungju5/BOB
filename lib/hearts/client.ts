@@ -1,4 +1,5 @@
 import {connectFirebase,within} from '@/lib/firebase/bridge';
+import {API_ORIGIN} from '@/lib/deployment';
 import {validateHeartState,type HeartState} from '@/packages/walking-hearts/core.mjs';
 
 export const HEARTS_CONSENT='2026-11-17-hearts';
@@ -33,7 +34,7 @@ export function createHeartsClient(uid:string):HeartTransport{
     const abort=new AbortController(),cancel=()=>abort.abort();signal?.addEventListener('abort',cancel,{once:true});
     const timer=setTimeout(cancel,15000);
     try{
-      const response=await fetch(`https://bapmunna-smartthings.vercel.app/api/walking/${action}`,{method:body?'POST':'GET',headers:{Authorization:`Bearer ${token}`,...(body?{'Content-Type':'application/json'}:{})},body:body?JSON.stringify(body):undefined,credentials:'omit',cache:'no-store',redirect:'error',signal:abort.signal});
+      const response=await fetch(`${API_ORIGIN}/api/walking/${action}`,{method:body?'POST':'GET',headers:{Authorization:`Bearer ${token}`,...(body?{'Content-Type':'application/json'}:{})},body:body?JSON.stringify(body):undefined,credentials:'omit',cache:'no-store',redirect:'error',signal:abort.signal});
       const raw=await response.text();
       if(raw.length>5*1024*1024)throw Error('response_too_large');
       let data:unknown;try{data=JSON.parse(raw);}catch{throw Object.assign(Error('server_unavailable'),{code:response.status===404?'setup_required':'temporarily_unavailable'});}

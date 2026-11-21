@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "npm run check:design && next build",
+    "build": "npm run check:design && npm run check:deployment && next build",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
@@ -24,7 +24,14 @@
     "harness:check": "node scripts/harness.mjs check",
     "test:harness": "node --test --test-reporter=tap tests/harness/*.test.mjs",
     "build:office": "node workspaces/super-members/scripts/build.mjs",
-    "test:office": "npm run build:office && node --test workspaces/super-members/*.test.mjs"
+    "test:office": "npm run build:office && node --test workspaces/super-members/*.test.mjs",
+    "apply:deployment": "node scripts/apply-deployment.mjs",
+    "check:deployment": "node scripts/apply-deployment.mjs --check",
+    "check:accounts": "node scripts/check-personal-accounts.mjs",
+    "rules:team": "node integrations/bapmunna-firebase/scripts/build-team-rules.mjs",
+    "check:rules-team": "node integrations/bapmunna-firebase/scripts/build-team-rules.mjs --check",
+    "build:team-site": "npm run check:deployment && npm run build:firebase && npm --prefix integrations/bapmunna-firebase run stage:firebase && node scripts/build-impact-next.mjs && node workspaces/bapmunna-final/scripts/stage.mjs",
+    "deploy:team": "npm run rules:team && node integrations/bapmunna-firebase/node_modules/firebase-tools/lib/bin/firebase.js deploy --only hosting,firestore"
   },
   "dependencies": {
     "@bapmunna/phone-steps": "file:packages/phone-steps",

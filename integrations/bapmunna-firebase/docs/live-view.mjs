@@ -1,7 +1,8 @@
+import {deploymentConfig} from './deployment-config.mjs';
 // These screens deliberately contain no synthetic meals, alerts, dates or people.
 // Family summaries are not wired to a server in this Firebase edition yet.
 const liveEscape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const livePolicy='https://impact-series.web.app/bapmunna/app/privacy/';
+const livePolicy=`${deploymentConfig.webOrigin}/bapmunna/app/privacy/`;
 const liveHeading=(title,detail='')=>`<header class="page-head"><h1 tabindex="-1">${title}</h1>${detail?`<p class="sub">${detail}</p>`:''}</header>`;
 export function liveTutorialPage({index=0,companion}){
   const slides=[

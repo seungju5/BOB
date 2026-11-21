@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { APP_BASE_PATH, appPath } from "@/lib/app-path";
 import { supabase, supabaseConfigured } from "@/lib/supabase";
+import { publicUrl } from "@/lib/deployment";
 
 type Provider = "kakao" | "google";
 
@@ -45,7 +46,7 @@ export function SocialLogin() {
       </button>
       {useExistingAccount ? (
         <a
-          href="https://impact-series.web.app/bapmunna/carer/#account"
+          href={publicUrl("/carer/#account")}
           className="relative flex min-h-14 w-full items-center justify-center rounded-full border-2 border-line bg-paper px-6 text-[17px] font-bold text-ink transition-colors hover:border-muted/50 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-cocoa"
         >
           <GoogleLogo className="absolute left-6 h-5 w-5" />

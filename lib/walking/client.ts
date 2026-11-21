@@ -1,7 +1,8 @@
 import {connectFirebase,within,type FirebaseProvider} from '@/lib/firebase/bridge';
 import {validateWalkingBoard,validateWalkingPairing,validateWalkingProfile,WALKING_CONSENT_VERSION} from './model';
 
-export const WALKING_API_ORIGIN='https://bapmunna-smartthings.vercel.app';
+import {API_ORIGIN} from '@/lib/deployment';
+export const WALKING_API_ORIGIN=API_ORIGIN;
 type Endpoint='profile'|'board'|'join'|'leave'|'pairing';
 const messages:Record<string,string>={
   setup_required:'랭킹 연결을 준비하고 있어요. 잠시 후 다시 확인해 주세요.',

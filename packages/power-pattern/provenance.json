@@ -1,0 +1,57 @@
+{
+  "version": "prism-research-0.2",
+  "source": "output/bapmunna-power-prism-v2-20261117",
+  "copiedUnchanged": true,
+  "files": [
+    {
+      "file": "research/prism.mjs",
+      "sha256": "5d09c75d28e750218b3e505ad1252fc1f5e8217adb2d75f3680217143b645666",
+      "bytes": 19082
+    },
+    {
+      "file": "research/tracker.mjs",
+      "sha256": "1f41067aa3dcf6b48ce076263696f6ec3e7ef9ec30589d17ffb9127aa28a9785",
+      "bytes": 5483
+    },
+    {
+      "file": "research/validation.mjs",
+      "sha256": "d376fd677953834fd9e96d900b78068231a6e2121c86252791b661318fb49640",
+      "bytes": 5276
+    },
+    {
+      "file": "research/scenarios.mjs",
+      "sha256": "8b0f634f9b2407ebe4bf8ef7129d81f36a31fb6a75fee36a2da6c7aacccb37c7",
+      "bytes": 6227
+    },
+    {
+      "file": "research/fixtures.mjs",
+      "sha256": "7e6eaffee74326fe4ce3e490e95250fffca88a7d322b73511bb79a6691acd7af",
+      "bytes": 1136
+    },
+    {
+      "file": "research/prism.test.mjs",
+      "sha256": "be410c65cca39852ce6e0eacb9a897afe17835f9e14ad64935b8c4b619bf47f5",
+      "bytes": 9299
+    },
+    {
+      "file": "research/independent-review.test.mjs",
+      "sha256": "5e11cee39b851478745fadc97dc7ae6593baa0dede261b4656904eb2eca07390",
+      "bytes": 5140
+    },
+    {
+      "file": "research/hardening.test.mjs",
+      "sha256": "6b801364a5aedd44d9a33800027bc1d4ff917f91e82fb951958f72045cb9d3d4",
+      "bytes": 10854
+    },
+    {
+      "file": "research/reviewer-v2.test.mjs",
+      "sha256": "5d564cac8cbfde723df76e0775ed198456ca2894f14ce219519801135cade7e7",
+      "bytes": 10115
+    },
+    {
+      "file": "research/scenarios.test.mjs",
+      "sha256": "2b41dc12e2e6bf48c2e71db3fb0cf052bf5e202233b1de025f8b14d083073315",
+      "bytes": 1980
+    }
+  ]
+}

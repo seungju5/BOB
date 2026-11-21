@@ -7,16 +7,16 @@ export const DETECTION = {
   /** 이 간격보다 길게 값이 비면 구간을 끊는다. */
   MAX_READING_GAP_MIN: 3,
 
-  /** 취사로 보는 최소 전력(W). 기능정의서 기준 800W 이상. */
-  COOK_MIN_WATTS: 800,
-  /** 취사로 인정하는 최소 지속 시간(분). (가정) */
-  COOK_MIN_MINUTES: 5,
+  /** 취사로 보는 최소 전력(W). 2026-11-21 화면(전력 해석) 기준 700W 이상으로 통일 (ADR-014). */
+  COOK_MIN_WATTS: 700,
+  /** 취사로 인정하는 최소 지속 시간(분). 순간 서지와 구분하려고 15분 (ADR-014, 가정). */
+  COOK_MIN_MINUTES: 15,
   /** 고전력 구간 사이가 이 시간(분) 이하로 끊기면 한 번의 취사로 합친다. (가정) */
   COOK_MERGE_GAP_MIN: 3,
 
-  /** 보온 상태 전력 범위(W). 밥솥 모델마다 다르다. (미확정: 실측) */
-  KEEP_WARM_MIN_WATTS: 30,
-  KEEP_WARM_MAX_WATTS: 60,
+  /** 보온 상태 전력 범위(W). 화면 기준 20~70W, 20W 미만은 절전 대기 (ADR-014, 미확정: 실측). */
+  KEEP_WARM_MIN_WATTS: 20,
+  KEEP_WARM_MAX_WATTS: 70,
   /** 보온 상태로 인정하는 최소 지속 시간(분). */
   KEEP_WARM_MIN_MINUTES: 10,
 

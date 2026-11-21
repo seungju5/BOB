@@ -1,7 +1,7 @@
 {
   "canonical": "repository root: Next.js/Supabase",
   "files": {
-    "config/detection.ts": "3f003d1e2d3ee0166d159a23433777a83884f009ee9053344db108b27d45bb83",
+    "config/detection.ts": "4fcfabc3e9a85aa591910ddf57ca77a9377e6f535f08365de01d6b1c8c8b2fd5",
     "lib/judge/time.ts": "0c0219755ad4ff1b1c1a96fd38f6205c42271a7d266c489e64280f7ffff39c4d",
     "lib/judge/types.ts": "d4309e6f79b65eda114814087b2822ae796919addf1b2f3c4a6c942278625225",
     "lib/judge/detectEvents.ts": "a3ef76c03fb480f61292a502f08103e486a4d5fa5f5e66fcd6f56109a2b132ac",

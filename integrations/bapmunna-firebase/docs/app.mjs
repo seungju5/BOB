@@ -7,6 +7,7 @@ import {MEALS,LABELS,DAY,DEVICES,dayOf,hhmm,dateLabel,key,createState,record,sta
 import {FAMILY_ROLES,createInvite,acceptInvite,revokeMember,familySummary} from './family.mjs';
 import {STATUS_COPY,riceState} from './presentation.mjs';
 import {runChecks} from './checks.mjs';
+import {POWER_RULES} from './power.mjs';
 import {mountAccount} from './account-view.mjs';
 import {mountSmartThings} from './smartthings-view.mjs';
 import {mountHousehold} from './household-view.mjs';
@@ -204,10 +205,10 @@ function devices(){
   return heading('작은 신호를,<br>정확한 소식으로.','센서 시뮬레이터','실제 스마트플러그에 연결되지 않은 가상 실험실이에요.')+`
     <section class="virtual-clock" aria-label="가상 시계"><div><span class="label">${dateLabel(dayOf(state.now))}</span><br><strong>${hhmm(state.now)}</strong></div><div class="buttons"><button data-advance="30">+30분</button><button data-advance="720">+12시간</button><button data-advance="1440">+하루</button></div></section>
     <section class="card power-lab"><div class="row"><h2>밥솥 전력</h2><span class="pill ${deviceOnline(state,'cooker')?'confirmed':'offline'}">${deviceOnline(state,'cooker')?'가상 연결됨':'연결 중단'}</span></div><div class="cooker-lab-reading"><div class="power-reading"><strong>${state.devices.cooker.watts}<small> W</small></strong><span>${mode}</span></div>${bunnyCompanion('bunny-portrait-large')}</div>
-    <p class="caption">취사: 800W 이상 5분 연속 · 보온: 30–60W 10분 연속<br>1분 간격 예시 측정. 5분 취사·3분 허용 간격은 검증 전 가정이에요.</p>
-    <div class="power-presets"><button data-power-preset="cook"><strong>취사해 보기</strong><small>900W · 5분</small></button><button data-power-preset="warm"><strong>보온해 보기</strong><small>45W · 10분</small></button><button data-power-preset="spike"><strong>순간 상승</strong><small>900W · 1분 뒤 종료</small></button><button data-power-preset="rebound"><strong>보온 뒤 변화</strong><small>공통 규칙으로 열림 판단</small></button></div>
+    <p class="caption">취사: ${POWER_RULES.cookWatts}W 이상 ${POWER_RULES.holdMinutes}분 연속 · 보온: ${POWER_RULES.warmMin}–${POWER_RULES.warmMax}W 10분 연속<br>1분 간격 예시 측정. ${POWER_RULES.holdMinutes}분 취사·3분 허용 간격은 검증 전 가정이에요.</p>
+    <div class="power-presets"><button data-power-preset="cook"><strong>취사해 보기</strong><small>900W · ${POWER_RULES.holdMinutes}분</small></button><button data-power-preset="warm"><strong>보온해 보기</strong><small>45W · 10분</small></button><button data-power-preset="spike"><strong>순간 상승</strong><small>900W · 1분 뒤 종료</small></button><button data-power-preset="rebound"><strong>보온 뒤 변화</strong><small>공통 규칙으로 열림 판단</small></button></div>
     <div class="lab-feedback" role="status">${state.power.possibleOpeningAt!==null?'보온 뒤 변화가 Supabase 열림 규칙을 만족했어요. 실측 검증이 필요한 추정이에요.':'각 예시가 밥솥 기록에 어떻게 반영되는지 비교해 보세요.'}</div>
-    <details class="editor-extra"><summary>전력을 직접 입력하기</summary><form class="power-form" data-device="cooker"><div class="field-row"><label class="field">가상 전력 (W)<input type="number" name="watts" min="0" max="3500" step="1" value="900" required></label><label class="field">유지 시간 (분)<input type="number" name="duration" min="1" max="30" step="1" value="5" required></label></div><p class="error" role="alert"></p><button type="submit">1분 간격으로 측정</button></form></details>
+    <details class="editor-extra"><summary>전력을 직접 입력하기</summary><form class="power-form" data-device="cooker"><div class="field-row"><label class="field">가상 전력 (W)<input type="number" name="watts" min="0" max="3500" step="1" value="900" required></label><label class="field">유지 시간 (분)<input type="number" name="duration" min="1" max="30" step="1" value="${POWER_RULES.holdMinutes}" required></label></div><p class="error" role="alert"></p><button type="submit">1분 간격으로 측정</button></form></details>
     </section>
     <section class="card lid-lab"><div class="section-line"><h2>뚜껑 열림</h2><span class="pill">별도 센서 예시</span></div><p>마지막 열림 · <strong>${timeLabel(state.lastLidAt)}</strong></p><button class="full" data-device="cooker" data-signal="lid">뚜껑 열림 신호 만들기</button><p class="caption">가상의 개폐 센서 신호예요. 전력 판정은 Supabase와 같아요. 자이로 대조와 실측 검증은 아직 필요해요.</p></section>
     <section class="card"><h2>48시간 · 72시간, 그다음은?</h2><p>취사·열림·어르신 활동이 없으면 주의 → 가족 재확인 알림이 생겨요. 위 시계를 옮겨 보세요.</p><p class="caption">기본값은 기능정의서의 실험 기준이에요. 오프라인·외출·공유 중지 중에는 미사용으로 판단하지 않아요. 긴급 신고는 연결되어 있지 않아요.</p><button data-connection="cooker">${deviceOnline(state,'cooker')?'가상 연결 끊기':'가상 기기 다시 연결'}</button></section>
@@ -499,7 +500,7 @@ document.addEventListener('click',event=>{
       const preset=button.dataset.powerPreset;
       powerRun(0,1);
       let result;
-      if(preset==='cook')result=powerRun(900,5);
+      if(preset==='cook')result=powerRun(900,POWER_RULES.holdMinutes);
       else if(preset==='warm')result=powerRun(45,10);
       else if(preset==='spike'){powerRun(900,1);result=powerRun(0,1);}
       else {powerRun(45,10);result=powerRun(180,1);}

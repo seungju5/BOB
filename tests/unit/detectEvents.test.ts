@@ -45,6 +45,23 @@ describe("detectEvents (test.md 1.1)", () => {
     expect(detectEvents(series("2026-10-16 00:00", [[0, 24 * 60]]))).toEqual([]);
   });
 
+  // ADR-014: 화면(전력 해석) 기준과 같은 값 — 취사 700W 이상 15분, 보온 20~70W
+  it("T-DET-08: 취사 경계 — 700W는 취사, 699W는 아님", () => {
+    expect(detectEvents(series("2026-10-16 07:00", [[700, 20], [0, 5]])).map((e) => e.type)).toEqual(["cook"]);
+    expect(detectEvents(series("2026-10-16 07:00", [[699, 20], [0, 5]]))).toEqual([]);
+  });
+
+  it("T-DET-09: 취사 시간 경계 — 15분은 취사, 14분은 아님", () => {
+    expect(detectEvents(series("2026-10-16 07:00", [[900, 15], [0, 5]])).map((e) => e.type)).toEqual(["cook"]);
+    expect(detectEvents(series("2026-10-16 07:00", [[900, 14], [0, 5]]))).toEqual([]);
+  });
+
+  it("T-DET-10: 보온 경계 — 20W·70W 보온 중 상승은 열림, 19W는 보온 아님", () => {
+    expect(detectEvents(series("2026-10-16 12:00", [[20, 30], [150, 2], [20, 30]])).map((e) => e.type)).toEqual(["lid_open"]);
+    expect(detectEvents(series("2026-10-16 12:00", [[70, 30], [200, 2], [70, 30]])).map((e) => e.type)).toEqual(["lid_open"]);
+    expect(detectEvents(series("2026-10-16 12:00", [[19, 30], [150, 2], [19, 30]]))).toEqual([]);
+  });
+
   it("열림 상승이 디바운스 시간 안에 반복되면 1건", () => {
     const events = detectEvents(
       series("2026-10-16 12:00", [[45, 20], [150, 1], [45, 3], [150, 1], [45, 20]]),

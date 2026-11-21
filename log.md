@@ -444,3 +444,10 @@ Firebase 읽기 전용 조회에서 현재 c6ac5c6b3663fc35(11/18 16:57 KST)를 
 전달본 로컬 검사: 루트320·전력 패턴141·개인정보48·Firebase85·하네스27와 타입·동기화·계약·정적 산출물·Next 빌드·소스 안정성 통과. 서버군 초기 localhost EPERM 1실패는 서버 패키지 전체를 포트 허용 후131통과/0실패로 확인했으며 emulator 미기동13skip을 별도 기록했다. 보존381파일의26개 HTML 직접 자산 누락0, 공개 산책/꾸미기 화면 증거2개 저장. 앱 실행 코드와 자산은 efbdd94 대비 변경하지 않았다.
 
 사용자의 후속 요청에 따라 안티그래비티 보강 통합본을 기존 d0f40da 이력을 잇는 seungju5/-1 main에 반영한다. 런타임 소스는 검증한 efbdd94와 같으며 이번 커밋은 README와 인계 문서의 GitHub 안내를 최신화한다.
+
+## 2026-11-21 — Windows 빌드 수정, 브랜치 정리, 판단 기준값 통일
+
+- `97f5141`(PR #4, main 반영): 루트 `.gitattributes`(eol=lf)와 sync 검사의 CRLF 무시로 Windows `npm run build` 실패 해결. lint 오류 2개(`app/auth/kakao/page.tsx`, `lib/data/firebase.ts`) 수정.
+- 원격 브랜치 정리: main에 병합된 `codex/*` 12개 삭제. 미병합 `codex/connect-firebase-bapmunna`는 태그 `archive/connect-firebase-bapmunna`로 보존 후 삭제.
+- ADR-014: 판단 기준값을 기록 화면 표기와 통일(취사 700W·15분, 보온 20~70W). Firebase 공유 코드 재생성, 시뮬레이터 문구·예시를 상수에서 읽도록 변경, 경계 테스트 T-DET-08~10 추가. vitest 323, Firebase 142+10+8+43 통과, next build 통과.
+- 남은 일: 기록 화면 `PowerTranscriptionSection`은 고정된 예시 데이터(845W 등)를 실제 계정에도 보여 준다. 배포 전 숨기거나 실제 데이터로 연결해야 한다.

@@ -1,7 +1,7 @@
 // Verify the independent team app before publishing its static export.
 import assert from 'node:assert/strict';
 import { readFile, readdir } from 'node:fs/promises';
-import { extname, join, relative, resolve } from 'node:path';
+import { extname, join, posix, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { TEAM_PROJECT_ID, TEAM_SITE_URL, TEAM_SUPPORT_EMAIL } from '../config/team.ts';
 
@@ -31,6 +31,10 @@ const prohibitedFiles = /(?:^|\/)(?:\.[^/]+|node_modules|service[-_]?account[^/]
 const textFormats = new Set(['.css','.html','.js','.json','.jsx','.kt','.mjs','.rules','.swift','.svg','.ts','.tsx','.txt','.webmanifest','.xml']);
 let checked = 0;
 
+function routeName(directory, file) {
+  return relative(directory, file).split(sep).join('/');
+}
+
 async function* files(directory) {
   for (const entry of await readdir(directory, { withFileTypes: true })) {
     const fullPath = join(directory, entry.name);
@@ -44,7 +48,7 @@ async function* files(directory) {
 }
 
 async function inspectFile(path, directory, publicFile) {
-  const relativePath = relative(directory, path);
+  const relativePath = routeName(directory, path);
   if (publicFile) {
     assert(!prohibitedFiles.test(relativePath) && !relativePath.endsWith('.map'), 'Private or non-distributable file: ' + relativePath);
   }
@@ -54,26 +58,32 @@ async function inspectFile(path, directory, publicFile) {
     assert(hostingDomains.has(match[0].toLowerCase()), 'Unexpected cloud project reference in ' + relativePath);
   }
   for (const match of text.matchAll(gmail)) {
-    assert.equal(match[0].toLowerCase() === TEAM_SUPPORT_EMAIL.toLowerCase(), true, 'Unapproved public contact in ' + relativePath);
+    assert(match[0].toLowerCase() === TEAM_SUPPORT_EMAIL.toLowerCase(), 'Unapproved public contact in ' + relativePath);
   }
   assert(!secret.test(text), 'Private credential in ' + relativePath);
   assert(!/(?:file:\/\/\/|\/Users\/)[^\s"'<>]+\/(?:Documents|Downloads|\.config)\//.test(text), 'Personal filesystem path in ' + relativePath);
   checked++;
 }
 
+const publicAssets = new Set();
 for (const name of ['app', 'components', 'config', 'firebase', 'lib', 'packages', 'public']) {
   for await (const file of files(join(root, name))) {
+    if (name === 'public') {
+      const asset = routeName(join(root, name), file);
+      assert(/^(?:brand\/[^/]+\.(?:png|webp|woff2|ttf|txt)|walking\/[^/]+\.(?:jpg|png)|bapmunna-app-qr\.(?:png|svg)|icon\.svg|sw\.js)$/.test(asset), 'Unexpected public asset: ' + asset);
+      publicAssets.add(asset);
+    }
     await inspectFile(file, root, name === 'public');
   }
 }
 
 if (!sourceOnly) {
   const output = resolve(root, firebase.hosting.public);
-  for await (const file of files(output)) await inspectFile(file, output, true);
   const expectedPages = new Set(['404.html', '404/index.html', '500.html', '500/index.html', '_not-found/index.html', '_global-error/index.html']);
   for await (const file of files(join(root, 'app'))) {
-    if (!file.endsWith('/page.tsx')) continue;
-    const route = relative(join(root, 'app'), file).split('/').filter(segment => !/^\(.+\)$/.test(segment));
+    const nameInApp = routeName(join(root, 'app'), file);
+    if (posix.basename(nameInApp) !== 'page.tsx') continue;
+    const route = nameInApp.split('/').filter(segment => !/^\(.+\)$/.test(segment));
     route[route.length - 1] = 'index.html';
     const name = route.join('/');
     expectedPages.add(name);
@@ -81,7 +91,17 @@ if (!sourceOnly) {
     assert(contents.includes('name="viewport"') && contents.includes('Warming Up</title>'), 'Incorrect mobile page or title: ' + name);
   }
   for await (const file of files(output)) {
-    if (file.endsWith('.html')) assert(expectedPages.has(relative(output,file)), 'Page outside the team app: ' + relative(output,file));
+    const name = routeName(output, file);
+    await inspectFile(file, output, true);
+    if (expectedPages.has(name) || name === 'manifest.webmanifest' || publicAssets.has(name)) continue;
+    if (name.startsWith('_next/static/')) {
+      const compiled = join(root, '.next', name.slice('_next/'.length));
+      assert((await readFile(file)).equals(await readFile(compiled)), 'Unexpected compiled asset: ' + name);
+      continue;
+    }
+    const directory = posix.dirname(name);
+    const page = posix.join(directory, 'index.html');
+    assert(expectedPages.has(page) && /^(?:index|__next\.[^/]+)\.txt$/.test(posix.basename(name)), 'File outside the team app: ' + name);
   }
   const manifest = JSON.parse(await readFile(join(output, 'manifest.webmanifest'), 'utf8'));
   assert.equal(manifest.name, 'Warming Up');

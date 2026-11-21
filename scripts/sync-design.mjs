@@ -8,12 +8,20 @@ const check=process.argv.includes('--check');
 const sha=data=>createHash('sha256').update(data).digest('hex');
 async function output(name,data){
   const target=path.join(root,name);
-  if(check){if(!Buffer.from(await readFile(target)).equals(Buffer.from(data)))throw Error('Design drift: '+name);}
+  // Text outputs ignore CRLF vs LF so a Windows checkout is not reported as design drift.
+  if(check){
+    const same=typeof data==='string'
+      ?(await readFile(target,'utf8')).replace(/\r\n/g,'\n')===data
+      :Buffer.from(await readFile(target)).equals(Buffer.from(data));
+    if(!same)throw Error('Design drift: '+name);
+  }
   else {await mkdir(path.dirname(target),{recursive:true});await writeFile(target,data);}
 }
 const assets={};
 for(const name of ['bunny.png','bunny-underlay.webp','bunny-greeting.webp','rice-logo.png','rice-cooker-companion.png','bapmunna-share-v2.png','PretendardVariable.woff2','NanumPenScript-Regular.ttf','OFL-Pretendard.txt','OFL-NanumPenScript.txt']){
-  const data=await readFile(path.join(source,'assets',name));
+  const raw=await readFile(path.join(source,'assets',name));
+  // License .txt files are text: hash and compare them with LF endings on every OS.
+  const data=name.endsWith('.txt')?raw.toString('utf8').replace(/\r\n/g,'\n'):raw;
   assets[name]=sha(data);await output('public/brand/'+name,data);
 }
 const brand=await readFile(path.join(source,'brand.css'),'utf8');

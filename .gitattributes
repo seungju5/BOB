@@ -1,0 +1,3 @@
+# 모든 텍스트 파일을 OS와 상관없이 LF 줄바꿈으로 받는다.
+# Windows(core.autocrlf=true)에서 CRLF로 바뀌면 check:design·check:firebase-sync가 "내용이 다르다"고 빌드를 멈춘다.
+* text=auto eol=lf

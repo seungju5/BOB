@@ -13,12 +13,13 @@ const manifest = { canonical: 'repository root: Next.js/Supabase', files: {} };
 let stale = false;
 async function output(path, content) {
   if (check) {
-    const actual = await readFile(path, 'utf8').catch(() => null);
+    // Ignore CRLF vs LF so a Windows checkout is not reported as out of sync.
+    const actual = (await readFile(path, 'utf8').catch(() => null))?.replace(/\r\n/g, '\n');
     if (actual !== content) { console.error('Out of sync:', relative(root, path)); stale = true; }
   } else { await mkdir(dirname(path), { recursive: true }); await writeFile(path, content); }
 }
 for (const file of files) {
-  const source = await readFile(resolve(root, file), 'utf8');
+  const source = (await readFile(resolve(root, file), 'utf8')).replace(/\r\n/g, '\n');
   manifest.files[file] = createHash('sha256').update(source).digest('hex');
   const built = ts.transpileModule(source, { compilerOptions: {
     target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ES2022, newLine: ts.NewLineKind.LineFeed,

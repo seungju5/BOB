@@ -40,9 +40,9 @@ export function updateFirebaseConnection(uid:string,connection:SmartThingsConnec
 async function refreshFirebaseConnection(uid:string,at:number) {
   const revision=connectionRevision;
   try {
-    const module=await loadSmartThingsModule();
+    const smartThings=await loadSmartThingsModule();
     if(epoch!==at||state.user?.uid!==uid)return;
-    const connection=await module.readSmartThingsConnection(uid);
+    const connection=await smartThings.readSmartThingsConnection(uid);
     if(epoch===at&&connectionRevision===revision)updateFirebaseConnection(uid,connection);
   } catch { /* Connection outages do not block saved household settings. */ }
 }

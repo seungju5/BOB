@@ -13,9 +13,11 @@ export default function KakaoReturn(){
   const account=useFirebaseAccount();
   const [error,setError]=useState('');
   const [completedUid,setCompletedUid]=useState<string|null>(null);
+  // Derived during render instead of setState inside an effect (react-hooks/set-state-in-effect).
+  const accountChanged=!!completedUid&&!account.loading&&account.user?.uid!==completedUid;
+  const shownError=error||(accountChanged?'계정이 바뀌었어요. 현재 계정으로 다시 확인해 주세요.':'');
   useEffect(()=>{
-    if(!completedUid||account.loading)return;
-    if(account.user?.uid!==completedUid){setError('계정이 바뀌었어요. 현재 계정으로 다시 확인해 주세요.');return;}
+    if(!completedUid||account.loading||account.user?.uid!==completedUid)return;
     router.replace(account.view?'/start':'/login');
   },[account.user?.uid,account.loading,account.view,completedUid,router]);
   useEffect(()=>{
@@ -38,6 +40,6 @@ export default function KakaoReturn(){
     return ()=>{active=false;abort.abort();};
   },[router]);
   return <main className="flex flex-1 flex-col px-6 py-8"><Logo/><Mascot className="mx-auto mt-10 h-28 w-28"/><h1 className="mt-5 text-center text-[26px] font-extrabold text-cocoa">카카오에서 돌아왔어요</h1>
-    {error?<><p role="alert" className="mt-5 rounded-2xl bg-blush p-4 text-[17px] leading-relaxed text-cocoa">{error}</p><Link href="/login" className="mt-6 flex min-h-14 items-center justify-center rounded-full bg-butter px-5 text-[18px] font-bold text-cocoa">로그인 화면으로</Link></>:<p role="status" className="mt-5 text-center text-[17px] text-muted">내 계정을 확인하고 있어요…</p>}
+    {shownError?<><p role="alert" className="mt-5 rounded-2xl bg-blush p-4 text-[17px] leading-relaxed text-cocoa">{shownError}</p><Link href="/login" className="mt-6 flex min-h-14 items-center justify-center rounded-full bg-butter px-5 text-[18px] font-bold text-cocoa">로그인 화면으로</Link></>:<p role="status" className="mt-5 text-center text-[17px] text-muted">내 계정을 확인하고 있어요…</p>}
   </main>;
 }

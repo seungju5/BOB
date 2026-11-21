@@ -457,5 +457,5 @@ Firebase 읽기 전용 조회에서 현재 c6ac5c6b3663fc35(11/18 16:57 KST)를 
 - 배포 대상 값(Firebase 웹 설정·웹/서버 주소·문의 메일·APK 주소)을 `config/deployment.json` 한 곳으로 모았다. Next 앱은 `lib/deployment.ts`, Firebase 정적 앱은 `npm run apply:deployment`가 생성하는 설정을 읽는다. 값은 아직 기존(개인) 값 그대로라 동작 변화 없음.
 - `ku-gpa`가 아니면 실패하던 `public-config.mjs` 잠금을 deployment.json 기준으로 바꿨다.
 - 팀 Firebase용 독립 규칙 `firebase/team-firestore.rules`(`npm run rules:team`), 루트 `firebase.json`·`.firebaserc`, `npm run build:team-site`·`deploy:team` 추가. build:team-site 전체 통과(385 파일 스테이징), 로컬 미리보기 확인.
-- CI(`.github/workflows/ci.yml`, Windows·Linux + 규칙 에뮬레이터 + 서버 테스트)와 개인 계정 값 감시(`npm run check:accounts`, 남은 67개 파일 허용 목록) 추가.
+- CI(`.github/workflows/ci.yml`, Windows·Linux + 규칙 에뮬레이터 + 서버 테스트)와 팀원 개인 정보 감시(`npm run check:personal-info`: 개인 메일·휴대폰·주민번호 형태·내 컴퓨터 경로·개인 Vercel 주소·비밀 키, 기존 9개 파일은 legacyFiles) 추가.
 - 이전 순서와 남은 일: `docs/team-migration.md`.

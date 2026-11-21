@@ -31,8 +31,8 @@ jobs:
       - run: npm ci
         working-directory: integrations/bapmunna-firebase
 
-      - name: 개인 계정 값이 새로 들어오지 않았는지
-        run: npm run check:accounts
+      - name: 팀원 개인 정보(개인 메일·전화번호·내 컴퓨터 경로·비밀 키 등)가 새로 들어오지 않았는지
+        run: npm run check:personal-info
       - name: 생성 파일이 원본과 같은지 (디자인·판단 로직·배포 설정·팀 규칙)
         run: |
           npm run check:design

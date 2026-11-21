@@ -14,7 +14,7 @@
 | 팀 Firebase 배포 설정 | `firebase.json`, `.firebaserc` |
 | 전체 빌드·배포 명령 | `npm run build:team-site` → `npm run deploy:team` |
 | PR 자동 검사 (Windows·Linux, 규칙 에뮬레이터, 서버 테스트) | `.github/workflows/ci.yml` |
-| 개인 계정 값이 새로 들어오면 실패하는 감시 | `npm run check:accounts`, 남은 파일 목록 `config/personal-account-allowlist.txt` |
+| 팀원 개인 정보(개인 메일·휴대폰 번호·내 컴퓨터 경로·개인 Vercel 주소·비밀 키)가 새로 들어오면 실패하는 감시 | `npm run check:personal-info`, 설정 `config/personal-info.json` |
 
 ## 1단계 — GitHub (팀 조직)
 
@@ -57,7 +57,7 @@
 
 ```sh
 npm run apply:deployment     # deployment.json → Firebase 정적 앱 설정
-npm run check:accounts       # 개인 계정 값이 새로 생기지 않았는지
+npm run check:personal-info  # 팀원 개인 정보가 새로 들어오지 않았는지
 npm run build:team-site      # 전체 빌드 (tmp/impact-final/site)
 npx --prefix integrations/bapmunna-firebase firebase login   # 팀 Google 계정으로
 npm run deploy:team          # 팀 Firebase에 Hosting + Firestore 규칙·인덱스 배포
@@ -74,9 +74,9 @@ npm run deploy:team          # 팀 Firebase에 Hosting + Firestore 규칙·인�
 | (선택) 안드로이드 테스트 서명 키 | 없으면 새 키로 다시 시작 — 테스트 설치자는 재설치 필요 |
 | `integrations/bapmunna-firebase/LICENSE` 저작권자 표기 변경 합의 | 지금 "jooji13" 개인 명의 |
 
-## 아직 코드에 남은 개인 계정 값 (`config/personal-account-allowlist.txt`)
+## 아직 코드에 남은 기존 계정 값
 
-새 주소가 정해진 뒤 고친다. 고친 파일은 허용 목록에서 지운다.
+새 주소가 정해진 뒤 고친다. (`npm run check:personal-info`는 개인 정보만 본다. 팀 공용 메일은 `config/personal-info.json`의 `allowed`에 추가한다.)
 
 - **모바일 앱(안드로이드·iOS)**: 서버 주소가 앱 안에 박혀 있음 → 새 주소로 바꾸고 **새로 빌드·배포**해야 함 (`packages/phone-steps`, `workspaces/bapmunna-mobile`).
 - **Vercel 서버 기본값**: 환경변수가 없을 때 쓰는 기본값 (`integrations/bapmunna-firebase/server/*-security.mjs`) — 환경변수를 넣으면 무관하지만 기본값도 바꾸는 게 좋다.

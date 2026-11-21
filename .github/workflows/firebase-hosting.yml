@@ -48,10 +48,14 @@ jobs:
           path: out/
           if-no-files-found: error
           retention-days: 2
+      - name: Record the tested build
+        run: |
+          echo "Verified commit \`$GITHUB_SHA\`. [Open the team app](https://warming-up-bapmunna.web.app/)." >> "$GITHUB_STEP_SUMMARY"
+          echo 'Team owners can publish this exact artifact with `npm run release:hosting`.' >> "$GITHUB_STEP_SUMMARY"
 
   deploy:
     needs: build
-    if: github.event_name == 'push' && github.ref == 'refs/heads/codex/warming-up-firebase' && github.repository_id == '1421511921' && github.repository_owner_id == '342332225'
+    if: vars.WARMING_UP_AUTO_PUBLISH == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/codex/warming-up-firebase' && github.repository_id == '1421511921' && github.repository_owner_id == '342332225'
     runs-on: ubuntu-24.04
     timeout-minutes: 12
     environment:
@@ -84,12 +88,15 @@ jobs:
           project_id: warming-up-bapmunna
           workload_identity_provider: projects/446376297496/locations/global/workloadIdentityPools/github-hosting/providers/github-push
           audience: https://iam.googleapis.com/projects/446376297496/locations/global/workloadIdentityPools/github-hosting/providers/github-push
+          service_account: github-hosting@warming-up-bapmunna.iam.gserviceaccount.com
+          token_format: access_token
+          access_token_lifetime: 600s
           create_credentials_file: false
           export_environment_variables: false
       - name: Publish the checked export to the team's Hosting site
         env:
           GH_TOKEN: ${{ github.token }}
-          HOSTING_ACCESS_TOKEN: ${{ steps.auth.outputs.auth_token }}
+          HOSTING_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
         run: node scripts/publish-hosting.mjs --publish "$RUNNER_TEMP/warming-up-release/out"
       - name: Verify the live homepage matches the build
         working-directory: ${{ runner.temp }}/warming-up-release

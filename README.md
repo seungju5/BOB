@@ -3,13 +3,13 @@
 밥솥 전력 사용 패턴으로 떨어져 사는 부모님의 식사 공백을 파악해, 부양 자녀에게 알려주는 서비스.
 테크포임팩트 · 고려대학교(세종) 팀 워밍업.
 
-## 최신 소스와 Firebase 게시본 — 2026-11-19
+## Warming Up 팀 운영 앱
 
-팀 소스는 기본 브랜치 `main`에서 확인할 수 있습니다. 안티그래비티 보강 소스 `efbdd94`와 삼성 계정 검증 기록 `06942b0`을 함께 반영했습니다. [GitHub main](https://github.com/seungju5/-1/tree/main)
+[밥뭇나 열기](https://warming-up-bapmunna.web.app/) · [보호자 이메일 가입·로그인](https://warming-up-bapmunna.web.app/login/) · [어르신 화면](https://warming-up-bapmunna.web.app/s/) · [개인정보 안내와 팀 문의처](https://warming-up-bapmunna.web.app/privacy/)
 
-[현재 Firebase 앱](https://impact-series.web.app/bapmunna/app/)에는 산책 하트·공원 파노라마·토끼 꾸미기·기기 정보 카드가 게시되어 있습니다. 최신 소스의 전력 전사/해석 추가 화면은 아직 미게시이며, 연결 완료 표시와 실제 소비자 OAuth 검증도 구분해야 합니다. [소스·게시본 대조 및 검토 사항](documentation/github-firebase-sync-20261119.md)과 [파일별 검증 영수증](workspaces/bapmunna-final/releases/20261119-github-sync.json)을 먼저 확인하세요. 아래 실행/과거 디자인 설명보다 이 최신 상태를 우선합니다.
+운영 앱의 소스와 게시 명령은 [Firebase 전용 브랜치](https://github.com/seungju5/BOB/tree/codex/warming-up-firebase)에 있습니다. 이 브랜치의 변경은 [GitHub Actions](https://github.com/seungju5/BOB/actions/workflows/firebase-hosting.yml?query=branch%3Acodex%2Fwarming-up-firebase)가 검사합니다. 보호자는 본인 이메일을 확인한 뒤 가구 설정을 저장할 수 있습니다. 삼성 실기기 연결은 준비 중입니다.
 
-## 실행
+## main의 Next.js 앱 실행
 
 ```bash
 npm install
@@ -32,7 +32,7 @@ CLAUDE.md → brd.md → cps.md → design.md → plan.md → todo.md → test.m
 
 Google·카카오 로그인 콘솔 설정과 검증 순서는 [로그인 연결 가이드](docs/google-kakao-login.md)를 참고하세요.
 
-최신 앱·기존 실제 계정·AI 작업실은 [Impact Series 최종 모음](https://impact-series.web.app/bapmunna/final/)에서 열 수 있습니다. 소스 병합 범위, 모바일 정적 배포, 계정 분리와 복구 방법은 [통합 릴리스 안내](workspaces/bapmunna-final/README.md)에 기록합니다. Supabase CLI나 플러그인 설치는 GitHub 푸시와 Firebase 게시에 필요하지 않습니다.
+11월 19일 당시의 안티그래비티 보강과 삼성 계정 검증 내용은 [이전 소스·게시본 대조 기록](documentation/github-firebase-sync-20261119.md)과 [파일별 검증 기록](workspaces/bapmunna-final/releases/20261119-github-sync.json)에 있습니다.
 
 ## Super Members 개발 하네스
 
@@ -46,14 +46,14 @@ npm run harness:check
 
 검사는 변경 파일에 맞춰 기존 테스트·동기화·타입·빌드를 실행합니다. 결과와 로그는 Git에서 제외된 `.harness/runs/`에 남습니다. `--base <커밋/브랜치>`로 이미 커밋한 변경까지 포함할 수 있습니다. 배포·결제·외부 AI API는 자동 호출하지 않으며, 실기기 연결과 현장 확인은 별도 증거로 남깁니다.
 
-## Firebase 디자인 통합판
+## 이전 Firebase 디자인 통합판
 
 기존 Firebase 밥뭇나는 [integrations/bapmunna-firebase](integrations/bapmunna-firebase/README.md)에 별도로 보존합니다. 루트 Next.js 앱의 실행·배포는 바꾸지 않습니다.
 
 `npm run dev:firebase`로 실행하고 `npm run test:firebase`로 검증합니다. 판단 로직 변경 후 `npm run sync:firebase`로 공통 코드를 갱신합니다. 기능·판단은 Supabase를 기준으로, 노란색·로고·토끼 디자인은 Firebase를 기준으로 유지합니다. 자세한 범위와 계정·DB 분리 조건은 통합판 README를 확인하세요.
 
-## 현재 승인 디자인과 공개 앱
+## 승인된 디자인
 
-[공개 밥뭇나](https://impact-series.web.app/bapmunna/) · [어르신용](https://impact-series.web.app/bapmunna/senior/) · [보호자용](https://impact-series.web.app/bapmunna/carer/) · [Figma 디자인 기준](https://www.figma.com/design/9Io11mLh2rLORVmeyQdg57/?node-id=3328-2)
+[Figma 디자인 기준](https://www.figma.com/design/9Io11mLh2rLORVmeyQdg57/?node-id=3328-2)
 
 2026-11-03의 승인된 3D 토끼·노란 밥솥 로고·서체·색상을 루트 Next.js와 Firebase 통합판에 공통 적용했습니다. `npm run sync:design`으로 생성하고 `npm run check:design`으로 일치를 확인합니다. 두 앱의 로그인·데이터 계층은 별도입니다. 공개 SmartThings 서버는 미배포이며 UI는 준비 상태를 표시합니다. 검증·배포 기록은 `design/2026-11-03-bapmunna/README.md`를 참고하세요.

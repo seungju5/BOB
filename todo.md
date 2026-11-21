@@ -1,5 +1,10 @@
 # todo.md — Task List & Progress
 
+## 2026-11-21 Warming Up 팀 Firebase
+
+- [x] 팀 프로젝트에 이메일 로그인과 본인 전용 가구 설정을 배포하고 GitHub 빌드와 운영 파일이 일치하는지 확인
+- [x] 저장소 첫 화면에 운영 주소와 Firebase 전용 브랜치 연결
+
 ## 2026-11-19 GitHub·Firebase 게시본 통합 전달
 
 - [x] 지정 저장소 seungju5/-1의 원격 브랜치·main·미병합 PR 확인. 최신 안티그래비티 소스 efbdd94와 삼성 기록06942b0은 이미 원격에 있음

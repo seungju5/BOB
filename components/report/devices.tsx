@@ -28,26 +28,30 @@ export type DeviceReport = {
 
 function CookerUsageSection({ view, now }: ReportProps) {
   const u = cookerUsage(view, now);
-  const max = Math.max(1, ...u.perDay.map((d) => d.cook));
-  const vsBefore = u.cookWeeklyBefore ? u.cook - u.cookWeeklyBefore : null;
+  if (u.cook === null || u.lid === null) return <ReportCard title="밥솥 사용" aside="최근 7일">
+    <p className="mt-3 text-sm text-muted">이 기간에 기록된 밥솥 사용 횟수가 없어요.</p>
+  </ReportCard>;
+  const max = Math.max(1, ...u.perDay.map((d) => d.cook ?? 0));
+  const scale = Math.max(u.cook, u.cookWeeklyBefore ?? 0, u.cooksPerWeekTold, 1);
+  const vsBefore = u.recordedDays === 7 && u.cookWeeklyBefore !== null ? u.cook - u.cookWeeklyBefore : null;
   return (
     <ReportCard title="밥솥 사용" aside="최근 7일">
       <div className="mt-3 grid grid-cols-2 gap-2">
         <Stat label="밥 지은 횟수" value={`${u.cook}번`} />
         <Stat label="뚜껑 연 횟수" value={view.mealProfile.usesKeepWarm ? `${u.lid}번` : "—"} hint={view.mealProfile.usesKeepWarm ? undefined : "보온을 안 쓰셔서 알 수 없어요"} />
       </div>
-      {/* 하루별 취사 막대 */}
+      <p className="mt-2 text-xs text-muted">최근 7일 중 기록이 있는 {u.recordedDays}일의 합계예요.</p>
       <div className="mt-4 flex h-20 items-end gap-1.5" aria-label="하루별 밥 지은 횟수">
         {u.perDay.map((d) => (
           <div key={d.date} className="flex flex-1 flex-col items-center gap-1">
-            <div className="w-full rounded-t-md bg-butter-deep" style={{ height: `${(d.cook / max) * 56}px`, minHeight: d.cook ? 4 : 0 }} title={`${d.cook}번`} />
+            {d.cook === null ? <span aria-label="기록 없음" className="text-xs text-muted">–</span> : d.cook === 0 ? <span className="text-xs" aria-label="0번">0</span> : <div className="w-full rounded-t-md bg-butter-deep" style={{ height: `${(d.cook / max) * 56}px`, minHeight: 4 }} title={`${d.cook}번`} />}
             <span className="text-[11px] text-muted">{fmtMonthDay(d.date)}</span>
           </div>
         ))}
       </div>
-      <Bar label="최근 7일" pct={(u.cook / Math.max(u.cook, u.cookWeeklyBefore, u.cooksPerWeekTold, 1)) * 100} value={`${u.cook}번`} strong />
-      <Bar label="평소 (이전 4주 주 평균)" pct={(u.cookWeeklyBefore / Math.max(u.cook, u.cookWeeklyBefore, u.cooksPerWeekTold, 1)) * 100} value={`${u.cookWeeklyBefore}번`} />
-      <Bar label="알려 주신 평소 횟수" pct={(u.cooksPerWeekTold / Math.max(u.cook, u.cookWeeklyBefore, u.cooksPerWeekTold, 1)) * 100} value={`주 ${u.cooksPerWeekTold}번`} />
+      <Bar label={`최근 기록 ${u.recordedDays}일 합계`} pct={(u.cook / scale) * 100} value={`${u.cook}번`} strong />
+      {u.cookWeeklyBefore === null ? <p className="mt-2 text-xs text-muted">이전 4주 기록이 부족해 주 평균을 계산할 수 없어요.</p> : <Bar label="평소 (이전 4주 주 평균)" pct={u.cookWeeklyBefore / scale * 100} value={`${u.cookWeeklyBefore}번`} />}
+      <Bar label="알려 주신 평소 횟수" pct={(u.cooksPerWeekTold / scale) * 100} value={`주 ${u.cooksPerWeekTold}번`} />
       {vsBefore !== null && Math.abs(vsBefore) >= 2 ? (
         <p className="mt-3 text-[14px] text-cocoa/80">
           평소보다 밥을 {Math.abs(Math.round(vsBefore))}번 {vsBefore < 0 ? "덜" : "더"} 지으셨어요.

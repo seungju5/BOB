@@ -43,18 +43,21 @@ export function dailyMeals(v: AppView, now: Date): { date: string; slots: { slot
 
 /** 밥솥 사용 횟수: 최근 7일 vs 이전 4주의 주 평균, 그리고 온보딩에서 알려 준 평소 횟수 */
 export function cookerUsage(v: AppView, now: Date) {
-  const sum = (dates: string[], key: "cook" | "lid") => dates.reduce((n, d) => n + (v.stats[d]?.[key] ?? 0), 0);
+  const sum = (dates: string[], key: "cook" | "lid") => dates.reduce((n, d) => n + v.stats[d][key], 0);
   const recent = daysAgo(now, 1, RECENT_DAYS);
   const before = daysAgo(now, RECENT_DAYS + 1, RECENT_DAYS + BEFORE_DAYS);
-  const weeks = BEFORE_DAYS / 7;
+  const recorded = recent.filter((date) => v.stats[date]);
+  const fullBaseline = before.every((date) => v.stats[date]);
+  const weeklyBefore = (key: "cook" | "lid") => fullBaseline ? Math.round(sum(before, key) / (BEFORE_DAYS / 7) * 10) / 10 : null;
   return {
-    cook: sum(recent, "cook"),
-    lid: sum(recent, "lid"),
-    cookWeeklyBefore: Math.round((sum(before, "cook") / weeks) * 10) / 10,
-    lidWeeklyBefore: Math.round((sum(before, "lid") / weeks) * 10) / 10,
+    recordedDays: recorded.length,
+    cook: recorded.length ? sum(recorded, "cook") : null,
+    lid: recorded.length ? sum(recorded, "lid") : null,
+    cookWeeklyBefore: weeklyBefore("cook"),
+    lidWeeklyBefore: weeklyBefore("lid"),
     cooksPerWeekTold: v.mealProfile.cooksPerWeek,
     /** 하루별 취사 횟수 (막대) */
-    perDay: recent.map((d) => ({ date: d, cook: v.stats[d]?.cook ?? 0 })),
+    perDay: recent.map((d) => ({ date: d, cook: v.stats[d]?.cook ?? null })),
   };
 }
 

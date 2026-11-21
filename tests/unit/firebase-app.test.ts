@@ -44,6 +44,17 @@ describe('actual SmartThings connection summary stays separate from meal care',(
     expect(view.careAvailable).toBe(false);expect(view.slots).toEqual([]);expect(view.lastCookerAt).toBeNull();expect(view.alerts).toEqual([]);
     expect(firebaseView({settings,household},{stage:'connected',device:{id:'synthetic-plug',label:'가상 플러그'},lastReceivedAt:now},now+3*60*60*1000).plug.online).toBe(false);
   });
+  it('requires a selected device and a valid measured timestamp before reporting reception',()=>{
+    const now=Date.now();
+    for (const device of [null,{id:'  ', label:'미선택'}]) {
+      expect(firebaseView({settings,household},{stage:'connected',device,lastReceivedAt:now},now).plug)
+        .toMatchObject({online:false,lastReadingAt:null,deviceId:''});
+    }
+    for (const lastReceivedAt of [null, NaN, Infinity, 0, now+1]) {
+      expect(firebaseView({settings,household},{stage:'connected',device:{id:'unit',label:'테스트'},lastReceivedAt},now).plug)
+        .toMatchObject({online:false,lastReadingAt:null});
+    }
+  });
   it('manual checks never become automatic event evidence; revoked consent clears the summary',()=>{
     const connection={stage:'connected' as const,device:{id:'synthetic-plug',label:'가상 플러그'},lastCheckedAt:Date.now(),lastSignalAt:Date.now()};
     expect(firebaseView({settings,household},connection).plug).toMatchObject({online:false,lastReadingAt:null});

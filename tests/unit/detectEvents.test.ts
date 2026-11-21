@@ -80,6 +80,13 @@ describe("detectEvents (test.md 1.1)", () => {
     expect(detectEvents([...a, ...b])).toEqual([]);
   });
 
+  it("does not combine isolated 4-minute readings or cook runs across an unobserved gap", () => {
+    const sparse = series("2026-10-16 07:00", [[845, 57]]).filter((_, i) => i % 4 === 0);
+    expect(detectEvents(sparse)).toEqual([]);
+    const observed = [...series("2026-10-16 07:00", [[845, 8]]), ...series("2026-10-16 07:11", [[845, 8]])];
+    expect(detectEvents(observed)).toEqual([]);
+  });
+
   it("입력 순서가 섞여 있어도 같은 결과", () => {
     const readings = series("2026-10-16 07:00", [[0, 5], [900, 30], [0, 5]]);
     const shuffled = [...readings].reverse();

@@ -90,8 +90,8 @@ export async function performSeniorAction(token: string | null | undefined, op: 
 
 export function useSenior() {
   const token = useSyncExternalStore(subscribe, readToken, () => undefined);
-  const demo = useDemo();
   const isDemo = token === DEMO;
+  const demo = useDemo(isDemo);
   const status: SeniorStatus | null = isDemo
     ? demo
       ? {

@@ -100,7 +100,7 @@ function HouseholdStep({ state, next }: StepProps) {
       <Field label="대표자 연락처 (선택)" htmlFor="onboarding-senior-phone" hint="전화는 대표자 한 분에게 연결돼요."><TextInput id="onboarding-senior-phone" type="tel" inputMode="tel" autoComplete="off" maxLength={24} value={senior.phone} aria-invalid={!!problems.phone || undefined} aria-describedby={problems.phone ? "onboarding-phone-error" : undefined} onChange={(e) => setSenior({ ...senior, phone: e.target.value })} placeholder="010-0000-0000" />{problems.phone ? <p id="onboarding-phone-error" role="status" className="text-[16px] text-blush-deep">{problems.phone}</p> : null}</Field>
       <Field label="함께 사는 분 (본인 포함)" hint="기록은 가구 단위로 보여요. 한 분 한 분의 실제 식사 여부를 뜻하지는 않아요."><Choice value={household.residentCount} options={[1, 2, 3].map((v) => ({ value: v, label: v === 3 ? "3명 이상" : `${v}명` }))} onChange={(residentCount) => setHousehold({ ...household, residentCount })} /></Field>
       <Field label="반려견이 있나요?"><Choice cols={2} value={household.hasPet} options={[{ value: false, label: "없어요" }, { value: true, label: "있어요" }]} onChange={(hasPet) => setHousehold({ ...household, hasPet })} /></Field>
-      <SeniorConsentField checked={consent} onChange={setConsent} />
+      <SeniorConsentField demo={state.mode === "demo"} checked={consent} onChange={setConsent} />
     </div>
     <Footer>
       <p className="text-[16px] leading-relaxed text-muted">기기 연결과 생활 기준은 홈의 설정에서 이어갈 수 있어요.</p>
@@ -201,7 +201,7 @@ function AlertStep({ state, next }: StepProps) {
             emergency: "안부를 직접 확인할 기준이에요. 지정 연락처·신고 기관에 자동으로 연락하지는 않아요.",
           }}
         />
-        <SeniorConsentField checked={consent} onChange={setConsent} />
+        <SeniorConsentField demo={state.mode === "demo"} checked={consent} onChange={setConsent} />
       </div>
       <Footer>
         <Button disabled={!consent} onClick={() => { if (consent) next({ alertSettings: settings, seniorConsent: consent }); }}>다음</Button>

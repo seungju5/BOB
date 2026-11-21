@@ -1,5 +1,5 @@
 export type SmartThingsConnection = {
-  stage: "disconnected" | "choose_device" | "subscribing" | "connected" | "reconnect_required";
+  stage: "disconnected" | "choose_device" | "subscribing" | "connected" | "reconnect_required" | "read_error";
   device?: { id: string; label: string } | null;
   lastSignalAt?: number | null;
   lastReceivedAt?: number | null;

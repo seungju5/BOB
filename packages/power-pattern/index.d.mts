@@ -78,7 +78,7 @@ export interface ImportedPowerRecording {
   rows: PowerRow[];
   /** One analysis at the supplied asOf. This is not a replay or a confirmed mode. */
   frames: [PowerFrame];
-  dataOrigin: 'USER_SUPPLIED_LOCAL_ONLY';
+  dataOrigin: 'SYNTHETIC_NOT_HOUSEHOLD_DATA' | 'USER_SUPPLIED_LOCAL_ONLY';
   source: 'imported';
   label: string;
   privacy: 'local-only';
@@ -89,6 +89,7 @@ export interface ImportedPowerRecording {
     bins: {[key: string]: JsonValue}[];
     asOf: string;
     timeOrigin: string;
+    dataOrigin: 'SYNTHETIC_NOT_HOUSEHOLD_DATA' | 'USER_SUPPLIED_LOCAL_ONLY';
     profile: {[key: string]: JsonValue};
     observation: {[key: string]: JsonValue};
     energyCheck?: {[key: string]: JsonValue};

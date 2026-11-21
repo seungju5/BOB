@@ -35,7 +35,7 @@ function inspectJson(value) {
 function checkInput(input) {
   if (!object(input)) fail('invalid_input', 'JSON 객체 한 개를 넣어 주세요. 숫자나 목록만으로는 분석할 수 없어요.');
   if (Object.hasOwn(input, 'samples')) fail('replay_not_supported', '이번 화면은 한 시점의 구간 자료를 분석해요. samples 목록 대신 예제처럼 한 개의 자료를 넣어 주세요.');
-  if (Object.keys(input).some(key => !['bins', 'asOf', 'profile', 'observation', 'energyCheck'].includes(key)))
+  if (Object.keys(input).some(key => !['bins', 'asOf', 'profile', 'observation', 'energyCheck', 'dataOrigin'].includes(key)))
     fail('unsupported_shape', '구간 자료 형식이 달라요. SmartThings 순간값을 평균값으로 바꾸지 말고 예제의 입력 형식을 확인해 주세요.');
   if (!Array.isArray(input.bins) || !timestamp(input.asOf) || !object(input.profile) || !object(input.observation))
     fail('malformed_recording', 'bins, 시간대가 있는 asOf, profile, observation 항목을 확인해 주세요.');
@@ -115,13 +115,21 @@ export function parsePowerInput(text) {
   const result = createStateTracker().step(input);
   const {rows, beginning, minutes} = displayRows(input, result);
   const frame = frameFor(result, minutes, rows);
+  // Older downloads have no source tag. Recognize the original file, not every
+  // recording that happens to use the example's calibration profile.
+  const legacySample = input.profile.deviceKey === 'synthetic-cooker' && JSON.stringify(input) === legacySampleJSON;
+  const synthetic = input.dataOrigin === 'SYNTHETIC_NOT_HOUSEHOLD_DATA' || legacySample;
+  const dataOrigin = synthetic ? 'SYNTHETIC_NOT_HOUSEHOLD_DATA' : 'USER_SUPPLIED_LOCAL_ONLY';
   return {id: 'imported', name: '불러온 구간 기록', minutes, selected: minutes,
     maxW: Math.max(1, ...rows.map(row => row.upper ?? 0)), rows, frames: [frame],
-    dataOrigin: 'USER_SUPPLIED_LOCAL_ONLY', source: 'imported', label: '불러온 기록 · 이 기기에서만 분석',
+    dataOrigin, source: 'imported',
+    label: synthetic ? '가져온 합성 예시' : '가져온 파일 · 출처 미확인',
     privacy: 'local-only', analysisMode: 'single-window', result,
-    metadata: {...input, timeOrigin: new Date(beginning * 1000).toISOString()}};
+    metadata: {...input, dataOrigin, timeOrigin: new Date(beginning * 1000).toISOString()}};
 }
 
 // Entirely invented example. It does not contain a household name, appliance
 // model, account identifier, secret or a calibrated device profile.
-export const sampleJSON = JSON.stringify(demoInput(makeBins(30, () => 1050)), null, 2);
+const exampleInput = demoInput(makeBins(30, () => 1050));
+const legacySampleJSON = JSON.stringify(exampleInput);
+export const sampleJSON = JSON.stringify({dataOrigin: 'SYNTHETIC_NOT_HOUSEHOLD_DATA', ...exampleInput}, null, 2);

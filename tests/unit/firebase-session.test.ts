@@ -72,6 +72,20 @@ afterEach(()=>{
 // Synthetic promises and Auth callbacks, with the production 12s timeout.
 // These tests do not claim browser, emulator, network or live account evidence.
 describe('Firebase account store asynchronous session isolation',()=>{
+  it('a failed status read keeps account settings and never introduces device or meal data',async()=>{
+    const f=await fixture();await f.mount();await f.emit(f.user('A'));
+    expect(f.snapshot().view).toMatchObject({mode:'live',dataSource:'firebase',
+      plug:{status:'read_error',deviceId:'',online:false,lastReadingAt:null},slots:[],stats:{},alerts:[]});
+    expect(f.snapshot().error).toBeNull();
+  });
+  it('a stalled status read changes from checking to failure without substituting a sample',async()=>{
+    bridgeMock.smartThings.mockReturnValue(new Promise(()=>{}));
+    const f=await fixture();await f.mount();await f.emit(f.user('A'));
+    expect(f.snapshot().view?.plug.status).toBe('checking');
+    await vi.advanceTimersByTimeAsync(12_001);
+    expect(f.snapshot().view?.plug).toEqual({deviceId:'',online:false,lastReadingAt:null,status:'read_error'});
+  });
+
   it('a delayed initial status cannot overwrite a newer explicit connection change',async()=>{
     const pending=deferred<{stage:'connected';device:{id:string;label:string}}>();
     bridgeMock.smartThings.mockReturnValue(pending.promise);

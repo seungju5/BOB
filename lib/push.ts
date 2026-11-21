@@ -30,8 +30,8 @@ export function usePushState(): PushState {
   return useSyncExternalStore(subscribe, readState, () => "unsupported");
 }
 
-export async function enablePush(_mode: "demo" | "live" | null, alertIds: string[]): Promise<PushState> {
-  if (readState() === "unsupported") return "unsupported";
+export async function enablePush(mode: "demo" | "live" | null, alertIds: string[]): Promise<PushState> {
+  if (mode !== "live" || readState() === "unsupported") return "unsupported";
   const permission = await Notification.requestPermission();
   window.dispatchEvent(new Event(EVENT));
   if (permission !== "granted") return permission as PushState;
@@ -65,12 +65,14 @@ function markSeen(ids: string[]) {
 export function useAlertNotifications(view: AppView | null) {
   const state = usePushState();
   useEffect(() => {
-    if (!view || state !== "granted") return;
+    if (view?.mode !== "live" || view.dataSource !== "firebase" || state !== "granted") return;
     const seen = new Set(readSeen());
     const fresh = view.alerts.filter((a) => !a.acknowledgedAt && !a.resolvedAt && !seen.has(a.id));
     if (!fresh.length) return;
-    markSeen(fresh.map((a) => a.id));
+    let active = true;
     void navigator.serviceWorker.getRegistration(appPath("/")).then((reg) => {
+      if (!active) return;
+      markSeen(fresh.map((a) => a.id));
       for (const a of fresh) {
         const copy = alertCopy(a.type, view.senior.relation, {
           missed: view.alertSettings.missedMealsThreshold,
@@ -83,6 +85,7 @@ export function useAlertNotifications(view: AppView | null) {
         if (reg) void reg.showNotification(copy.title, options);
         else new Notification(copy.title, options);
       }
-    });
+    }).catch(() => {});
+    return () => { active = false; };
   }, [view, state]);
 }

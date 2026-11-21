@@ -225,21 +225,21 @@ function DeviceSettings({ app, view }: { app: App; view: AppView }) {
   return <div className="flex flex-col gap-5">
     <div className="rounded-2xl bg-butter-soft p-4">
       <p className="text-[16px] font-bold text-cocoa">{mode === "demo" ? "예시 기기 상태" : "기기 상태"}</p>
-      <p className="mt-2 text-[16px] text-cocoa">{view.plug.deviceId ? view.plug.online && hasReading ? "신호를 받고 있어요." : "기기 수신을 확인해 주세요." : "아직 연결된 기기가 없어요."}</p>
+      <p className="mt-2 text-[16px] text-cocoa">{view.plug.status === "checking" ? "기기 상태를 확인하고 있어요." : view.plug.status === "read_error" ? "기기 상태를 조회하지 못했어요." : view.plug.deviceId ? view.plug.online && hasReading ? "신호를 받고 있어요." : "기기 수신을 확인해 주세요." : "아직 연결된 기기가 없어요."}</p>
       <p className="mt-4 text-[16px] font-semibold text-cocoa">{mode === "demo" ? "예시 마지막 기기 수신" : "마지막 기기 수신"}</p>
-      <p className="mt-1 break-words text-[16px] leading-relaxed text-muted">{deviceReadingLabel(view.plug.lastReadingAt)}</p>
+      <p className="mt-1 break-words text-[16px] leading-relaxed text-muted">{view.plug.status === "checking" ? "조회 중이에요." : view.plug.status === "read_error" ? "마지막 수신 시각을 확인할 수 없어요." : deviceReadingLabel(view.plug.lastReadingAt)}</p>
       <p className="mt-3 text-[16px] leading-relaxed text-muted">기기 신호가 없는 것만으로 식사나 건강 상태를 판단하지 않아요.</p>
     </div>
     {!view.seniorConsent ? <fieldset disabled={consent.busy} className="min-w-0">
-      <SeniorConsentField checked={consentChecked} onChange={checked => { setConsentChecked(checked); consent.clear(); }} />
-      <Button variant="soft" className="mt-3" disabled={!consentChecked || consent.busy} onClick={() => { if (consentChecked) void consent.run(() => actions.saveOnboarding(view.onboardingStep, { seniorConsent: true }), "동의 확인을 저장했어요."); }}>{consent.busy ? "저장하고 있어요…" : "동의 확인 저장하기"}</Button>
+      <SeniorConsentField demo={mode === "demo"} checked={consentChecked} onChange={checked => { setConsentChecked(checked); consent.clear(); }} />
+      <Button variant="soft" className="mt-3" disabled={!consentChecked || consent.busy} onClick={() => { if (consentChecked) void consent.run(() => actions.saveOnboarding(view.onboardingStep, { seniorConsent: true }), mode === "demo" ? "예시 체험 선택을 저장했어요." : "동의 확인을 저장했어요."); }}>{consent.busy ? "저장하고 있어요…" : mode === "demo" ? "예시 체험 선택 저장하기" : "동의 확인 저장하기"}</Button>
     </fieldset> : <div className="rounded-2xl border border-line p-4">
-      <p className="text-[16px] font-bold text-cocoa">어르신 정보 이용 동의 확인을 저장했어요.</p>
+      <p className="text-[16px] font-bold text-cocoa">{mode === "demo" ? "예시 체험 선택이 이 브라우저에 저장됐어요." : "어르신 정보 이용 동의 확인을 저장했어요."}</p>
       <PrivacyNotice />
-      {firebase || mode === "demo" ? <><p className="text-[16px] leading-relaxed text-muted">취소하면 새 어르신 정보 저장을 멈춰요. 이미 저장한 정보의 삭제는 개인정보 안내에 있는 운영팀에 요청할 수 있어요.</p><Button variant="outline" className="mt-3 text-[16px]" disabled={consent.busy} onClick={() => {
-        if (!confirm("어르신 정보 이용 동의 확인을 취소할까요? 지금까지 저장한 정보는 계정에 남아요.")) return;
-        void consent.run(() => actions.saveOnboarding(view.onboardingStep, { seniorConsent: false }), "동의 확인을 취소했어요.").then(saved => { if (saved) setConsentChecked(false); });
-      }}>동의 확인 취소</Button></> : null}
+      {firebase || mode === "demo" ? <><p className="text-[16px] leading-relaxed text-muted">{mode === "demo" ? "체험 선택을 취소하면 예시 설정 저장을 멈춰요." : "취소하면 새 어르신 정보 저장을 멈춰요. 이미 저장한 정보의 삭제는 개인정보 안내에 있는 운영팀에 요청할 수 있어요."}</p><Button variant="outline" className="mt-3 text-[16px]" disabled={consent.busy} onClick={() => {
+        if (!confirm(mode === "demo" ? "이 브라우저의 예시 체험 선택을 취소할까요?" : "어르신 정보 이용 동의 확인을 취소할까요? 지금까지 저장한 정보는 계정에 남아요.")) return;
+        void consent.run(() => actions.saveOnboarding(view.onboardingStep, { seniorConsent: false }), mode === "demo" ? "예시 체험 선택을 취소했어요." : "동의 확인을 취소했어요.").then(saved => { if (saved) setConsentChecked(false); });
+      }}>{mode === "demo" ? "예시 체험 선택 취소" : "동의 확인 취소"}</Button></> : null}
     </div>}
     <SaveFeedback {...consent} />
     {firebase ? <SmartThingsPanel /> : view.plug.deviceId ? <div className="flex items-center gap-3 rounded-2xl border border-line p-4"><IconPlug className="h-6 w-6 shrink-0 text-cocoa" /><div className="min-w-0"><p className="text-[16px] font-bold text-cocoa">스마트플러그</p><p className="mt-1 break-all text-[16px] text-muted">{view.plug.deviceId}</p></div></div> : <PlugForm onSubmit={actions.registerPlug} consentConfirmed={view.seniorConsent} isDemo={mode === "demo"} />}

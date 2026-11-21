@@ -25,7 +25,7 @@ export default function AlertsPage() {
         }
       />
       <div className="flex flex-col gap-3 px-6">
-        {view?.careAvailable === false ? <p className="rounded-2xl bg-butter-soft p-4 text-[16px]">가족과 기기를 연결하면 실제 알림을 받을 수 있어요. 지금은 설정한 기준만 저장돼요.</p> : <PushCard mode={mode} alertIds={alerts.map((a) => a.id)} />}
+        {view?.mode === "demo" ? <p className="rounded-2xl bg-butter-soft p-4 text-[16px]">예시 알림은 이 체험 화면에서만 볼 수 있어요.</p> : view?.careAvailable === false ? <p className="rounded-2xl bg-butter-soft p-4 text-[16px]">가족과 기기를 연결하면 실제 알림을 받을 수 있어요. 지금은 설정한 기준만 저장돼요.</p> : view && mode === "live" ? <PushCard mode={mode} alertIds={alerts.map((a) => a.id)} /> : null}
         {!view ? (
           <Skeleton className="h-24" />
         ) : alerts.length === 0 ? (

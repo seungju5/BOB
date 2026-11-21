@@ -63,6 +63,14 @@ describe("compatible signup, tutorial, household, home routing", () => {
     expect(mocks.updateDemo).not.toHaveBeenCalled();
   });
 
+  it("labels the simulation choice separately from real household consent", () => {
+    view = { ...view, mode: "demo", dataSource: "demo" };
+    mocks.useApp.mockReturnValue({ view, actions: demoActions, now: NOW, mode: "demo", provider: "demo", needsLogin: false, error: null });
+    const html = renderToStaticMarkup(createElement(OnboardingPage));
+    expect(html).toContain("가상의 가족 정보로 진행할게요.");
+    expect(html).not.toContain("어르신께 안내하고 정보 이용 동의를 확인했어요.");
+  });
+
   it("requires consent and opens the internal reader without an external login", () => {
     const html = renderToStaticMarkup(createElement(OnboardingPage));
     expect(html).toContain('aria-haspopup="dialog"');

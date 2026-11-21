@@ -17,11 +17,11 @@ export type ViewAlert = {
 export type AppView = {
   mode: "demo" | "live";
   /** 실제 계정의 저장소. 데모의 가상 기록과 섞지 않는다. */
-  dataSource?: "firebase";
+  dataSource?: "firebase" | "demo";
   /** 가족·기기 기록을 사용할 수 있는지. 계정 로그인 성공과는 별개다. */
   careAvailable?: boolean;
   onboardingStep: number; // 1~7 진행 중, 8 = 완료
-  plug: { deviceId: string; online: boolean; lastReadingAt: string | null };
+  plug: { deviceId: string; online: boolean; lastReadingAt: string | null; status?: "checking" | "read_error" };
   senior: { name: string; relation: string; phone: string };
   household: { residentCount: number; hasPet: boolean };
   mealProfile: { windows: MealWindow[]; eatOutPerWeek: number; usesKeepWarm: boolean; cooksPerWeek: number };
@@ -104,17 +104,21 @@ export function mealSlotLabel(slot: MealSlotName, windows: Pick<MealWindow, "slo
   return ORDINAL_LABELS[index] ?? SLOT_LABEL[slot];
 }
 
+export function isDemoView(v: Pick<AppView, "mode" | "dataSource"> | null): boolean {
+  return v?.mode === "demo" && v.dataSource !== "firebase";
+}
+
 /** 실제 가족 데이터가 아직 연결되지 않았다면 미확인을 새로 판정하지 않는다. */
 export function careDataAvailable(v: AppView): boolean {
-  return v.careAvailable ?? (v.dataSource !== "firebase");
+  return v.careAvailable ?? isDemoView(v);
 }
 
 const ORDER = { breakfast: 0, lunch: 1, dinner: 2, fourth: 3 } as const;
 
-/** 하루치 끼니. 아직 서버 판정이 없는 오늘은 시간대 기준으로 채운다. */
+/** 실계정은 저장된 끼니 판정만 표시한다. 데모는 오늘의 시간대를 시뮬레이션한다. */
 export function slotsForDate(v: AppView, date: string, now: Date): MealSlot[] {
   const found = v.slots.filter((s) => s.date === date).sort((a, b) => ORDER[a.slot] - ORDER[b.slot]);
-  if (found.length || date !== kstDate(now)) return found;
+  if (!isDemoView(v) || found.length || date !== kstDate(now)) return found;
   if (!careDataAvailable(v)) return [];
   return resolveMealSlots({ date, windows: v.mealProfile.windows, events: [], eatOutChecks: [], absences: v.absences, now });
 }
@@ -144,7 +148,9 @@ export function recentSlots(v: AppView, now: Date, days: number): MealSlot[] {
 
 export function statsRange(v: AppView, from: string, to: string) {
   const out: Record<string, { cook: number; lid: number }> = {};
-  for (let d = from; d <= to; d = addDays(d, 1)) out[d] = v.stats[d] ?? { cook: 0, lid: 0 };
+  for (let d = from; d <= to; d = addDays(d, 1)) {
+    if (v.stats[d]) out[d] = v.stats[d];
+  }
   return out;
 }
 

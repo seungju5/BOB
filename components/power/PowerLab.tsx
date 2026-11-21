@@ -89,7 +89,7 @@ export function PowerLab() {
   return <main className={styles.page}>
     <header className={styles.header}><Logo/><Link href="/more" className={styles.menuLink}>더보기 <span aria-hidden="true">›</span></Link></header>
     <div className={styles.intro}><p className={styles.eyebrow}>작은 소식, 다정한 안부</p><h1>밥솥의 소식을<br/>살펴봐요</h1></div>
-    <p className={styles.sourceNote}><span className={styles.sourceLabel}>{reading ? '확인 중' : imported ? '내 기록' : '예시'}</span><span>{reading ? '새 기록을 불러오고 있어요' : imported ? '직접 불러온 기록 · 실시간 연결 아님' : '실제 기기와 연결되지 않았어요'}</span></p>
+    <p className={styles.sourceNote}><span className={styles.sourceLabel}>{reading ? '확인 중' : imported?.dataOrigin === 'USER_SUPPLIED_LOCAL_ONLY' ? '가져온 파일' : '합성 예시'}</span><span>{reading ? '새 기록을 불러오고 있어요' : imported ? imported.label : '화면 설명을 위해 만든 가상 입력값이에요'}</span></p>
 
     <section className={styles.statusCard} data-state={frame.state} aria-labelledby="power-state-title" aria-busy={reading}>
       <div className={styles.cardHeading}>
@@ -108,19 +108,19 @@ export function PowerLab() {
     <section className={styles.exampleCard} aria-labelledby="power-example-title">
       <h2 id="power-example-title">다른 소식도 볼까요?</h2>
       <label htmlFor="power-scenario" className={styles.fieldLabel}>보고 싶은 예시</label>
-      <div className={styles.selectWrap}><select id="power-scenario" value={imported ? 'imported' : scenarioId} onChange={event => chooseScenario(event.target.value)}>{imported ? <option value="imported" disabled>내 기록을 확인하고 있어요</option> : null}{scenarios.map(scenario => <option value={scenario.id} key={scenario.id}>{exampleNames[scenario.id] ?? scenario.name}</option>)}</select><span aria-hidden="true">⌄</span></div>
+      <div className={styles.selectWrap}><select id="power-scenario" value={imported ? 'imported' : scenarioId} onChange={event => chooseScenario(event.target.value)}>{imported ? <option value="imported" disabled>가져온 파일을 확인하고 있어요</option> : null}{scenarios.map(scenario => <option value={scenario.id} key={scenario.id}>{exampleNames[scenario.id] ?? scenario.name}</option>)}</select><span aria-hidden="true">⌄</span></div>
       <p className={styles.caption}>예시를 고르면 밥솥의 소식이 바뀌어요.</p>
     </section>
 
     <details className={styles.fileCard}>
-      <summary>내 기록으로 확인하기 <span aria-hidden="true">+</span></summary>
+      <summary>JSON 파일로 확인하기 <span aria-hidden="true">+</span></summary>
       <div className={styles.fileContent}>
         <p>JSON 파일을 골라 이 화면에서만 확인해요. 서버에 보내거나 저장하지 않아요.</p>
         <p className={styles.caption}>최대 2 MiB · 구간 2,000개.<br/>구간 평균과 기기별 기준이 있는 자료가 필요해요. SmartThings 순간값만으로는 확인할 수 없어요.</p>
         <input ref={input} type="file" accept=".json,application/json" hidden onChange={event => void openFile(event)}/>
         <button type="button" disabled={reading} className={styles.primaryButton} onClick={() => input.current?.click()}>{reading ? '기록을 불러오는 중이에요…' : 'JSON 파일 고르기'}</button>
         <button type="button" className={styles.secondaryButton} onClick={downloadExample}>예제 파일 내려받기 <span aria-hidden="true">↓</span></button>
-        {imported ? <button type="button" className={styles.textButton} onClick={() => chooseScenario('cycle')}>내 기록 지우고 예시로 돌아가기</button> : null}
+        {imported ? <button type="button" className={styles.textButton} onClick={() => chooseScenario('cycle')}>가져온 파일 지우고 예시로 돌아가기</button> : null}
         {fileError ? <p role="alert" className={styles.fileError}>{fileError}</p> : null}{fileNotice ? <p role="status" className={styles.fileNotice}>{fileNotice}</p> : null}
         <p className={styles.caption}>예제는 합성 자료예요. 실제 밥솥의 보정값으로 사용할 수 없어요.</p>
       </div>

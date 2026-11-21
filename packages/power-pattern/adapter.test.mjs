@@ -29,8 +29,24 @@ test('synthetic scenarios are original computed outputs, freshly returned with r
 });
 test('synthetic download has original input contract, no family data or device model', () => {
   const input = example(); assert.equal(input.profile.deviceKey, 'synthetic-cooker'); assert.equal(input.profile.provenance, 'synthetic_example_not_fitted');
-  assert.equal(input.bins.length, 30); assert.deepEqual(Object.keys(input).sort(), ['asOf', 'bins', 'observation', 'profile']);
-  assert.doesNotMatch(sampleJSON, /CRP-|덕훈|정숙|email|household|token|secret|password/i);
+  assert.equal(input.bins.length, 30); assert.deepEqual(Object.keys(input).sort(), ['asOf', 'bins', 'dataOrigin', 'observation', 'profile']);
+  assert.equal(input.dataOrigin, 'SYNTHETIC_NOT_HOUSEHOLD_DATA');
+  assert.doesNotMatch(JSON.stringify({...input, dataOrigin: undefined}), /CRP-|덕훈|정숙|email|household|token|secret|password/i);
+});
+test('download and legacy download remain synthetic; arbitrary files cannot claim authenticated telemetry', () => {
+  const tagged = example(), legacy = {...tagged};
+  delete legacy.dataOrigin;
+  for (const input of [tagged, legacy]) {
+    const recording = parse(input);
+    assert.equal(recording.dataOrigin, 'SYNTHETIC_NOT_HOUSEHOLD_DATA');
+    assert.equal(recording.source, 'imported');
+    assert.equal(recording.label, '가져온 합성 예시');
+  }
+  const unknown = {...legacy, dataOrigin: 'firebase', bins: legacy.bins.slice(1)};
+  const parsed = parse(unknown);
+  assert.equal(parsed.dataOrigin, 'USER_SUPPLIED_LOCAL_ONLY');
+  assert.equal(parsed.metadata.dataOrigin, parsed.dataOrigin);
+  assert.equal(parsed.label, '가져온 파일 · 출처 미확인');
 });
 test('one imported window is one real causal step; long cooking evidence cannot fabricate later confirmation', () => {
   const input = example(), recording = parse(input);

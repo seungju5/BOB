@@ -24,12 +24,19 @@ export type App = {
   signOut?: () => Promise<void>;
 };
 
+const requireMode = async (): Promise<never> => { throw new Error("먼저 로그인하거나 예시 체험을 선택해 주세요."); };
+const inactiveActions: AppActions = {
+  saveOnboarding: requireMode, registerPlug: requireMode, skipPlug: requireMode, issuePairingCode: requireMode,
+  ackAlert: requireMode, ackAll: requireMode, saveAlertSettings: requireMode, saveWindows: requireMode,
+  saveSenior: requireMode, addAbsence: requireMode, removeAbsence: requireMode,
+};
+
 /** 보호자 화면용 데이터. 모드에 따라 데모 저장소 또는 본인의 Firebase 가구 정보를 쓴다. */
 export function useApp(): App {
   const mode = useMode();
   const firebase = useFirebaseAccount(mode === "live");
   const now = useNow();
-  const demo = useDemo();
+  const demo = useDemo(mode === "demo");
   useAlertSync(mode === "demo" ? now : null);
 
   // 분 단위로만 다시 계산
@@ -43,5 +50,5 @@ export function useApp(): App {
     needsLogin: !firebase.loading && (!!firebase.user ? !firebase.user.verified || !firebase.profile || firebase.profile.consentVersion !== ACCOUNT_CONSENT_VERSION : firebase.user === null),
     error: firebase.error,
   };
-  return { provider: "firebase", view: null, actions: demoActions, now, mode: null, needsLogin: mode === null, error: null };
+  return { provider: "firebase", view: null, actions: inactiveActions, now, mode: null, needsLogin: mode === null, error: null };
 }

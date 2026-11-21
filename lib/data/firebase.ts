@@ -21,16 +21,29 @@ export function defaultPreferences():Preferences {
   return {schemaVersion:1,onboardingStep:1,phone:'',relationLabel:'',windows:DEFAULT_WINDOWS.map(w=>({...w})),eatOutPerWeek:0,usesKeepWarm:true,cooksPerWeek:7,
     missedMealsThreshold:ALERT_DEFAULTS.MISSED_MEALS_THRESHOLD,fastingHours:ALERT_DEFAULTS.FASTING_HOURS,emergencyHours:ALERT_DEFAULTS.EMERGENCY_HOURS,preparationAcknowledged:false};
 }
+function connectionPlug(connection: SmartThingsConnection | null, consent: boolean, at: number): AppView["plug"] {
+  const empty = {deviceId: "", online: false, lastReadingAt: null};
+  if (!consent) return empty;
+  if (!connection) return {...empty, status: "checking"};
+  if (connection.stage === "read_error") return {...empty, status: "read_error"};
+  if (connection.stage !== "connected" || !connection.device?.id.trim()) return empty;
+  const received = connection.lastReceivedAt;
+  if (typeof received !== "number" || !Number.isFinite(received) || received <= 0 || received > at) {
+    return {...empty, deviceId: connection.device.id};
+  }
+  return {
+    deviceId: connection.device.id,
+    online: at - received < ALERT_DEFAULTS.DEVICE_OFFLINE_HOURS * 60 * 60 * 1000,
+    lastReadingAt: new Date(received).toISOString(),
+  };
+}
 export function firebaseView(saved:SavedPreferences,connection:SmartThingsConnection|null=null,at=Date.now()):AppView {
   const p=saved.settings??defaultPreferences(),h=saved.household;
-  const selected=p.preparationAcknowledged&&connection?.stage==='connected'?connection:null;
-  const received=selected?.lastReceivedAt;
-  const lastReadingAt=typeof received==='number'&&Number.isFinite(received)&&received>=0&&received<=at?new Date(received).toISOString():null;
   return {mode:'live',dataSource:'firebase',careAvailable:false,onboardingStep:h?p.onboardingStep:Math.min(p.onboardingStep,3),
     senior:{name:h?.alias??'',relation:h?.relation==='other'&&p.relationLabel?p.relationLabel:relationLabels[h?.relation??'mother'],phone:p.phone},household:{residentCount:h?.residentCount??1,hasPet:h?.hasPet??false},
     mealProfile:{windows:p.windows,eatOutPerWeek:p.eatOutPerWeek,usesKeepWarm:p.usesKeepWarm,cooksPerWeek:p.cooksPerWeek},
     alertSettings:{missedMealsThreshold:p.missedMealsThreshold,fastingHours:p.fastingHours,emergencyHours:p.emergencyHours},seniorConsent:p.preparationAcknowledged,
-    plug:{deviceId:selected?.device?.id??'',online:!!lastReadingAt&&at-received!<ALERT_DEFAULTS.DEVICE_OFFLINE_HOURS*60*60*1000,lastReadingAt},pairingCode:null,seniorPaired:false,slots:[],stats:{},lastCookerAt:null,lastActivityAt:null,absences:[],alerts:[]};
+    plug:connectionPlug(connection,p.preparationAcknowledged,at),pairingCode:null,seniorPaired:false,slots:[],stats:{},lastCookerAt:null,lastActivityAt:null,absences:[],alerts:[]};
 }
 export function updateFirebaseConnection(uid:string,connection:SmartThingsConnection) {
   if(state.user?.uid!==uid||!state.user.verified||!state.saved||!state.profile)return;
@@ -41,9 +54,11 @@ async function refreshFirebaseConnection(uid:string,at:number) {
   const revision=connectionRevision;
   try {
     if(epoch!==at||state.user?.uid!==uid)return;
-    const connection=await readSmartThingsConnection(uid);
+    const connection=await within(readSmartThingsConnection(uid));
     if(epoch===at&&connectionRevision===revision)updateFirebaseConnection(uid,connection);
-  } catch { /* Connection outages do not block saved household settings. */ }
+  } catch {
+    if (epoch === at && connectionRevision === revision) updateFirebaseConnection(uid, {stage:'read_error'});
+  }
 }
 async function observeUser(user:FirebaseUser|null) {
   if(state.user!==undefined&&state.user?.uid!==user?.uid)resetSeniorStepsConsent();

@@ -18,46 +18,30 @@ const interval = (cfg: Config) => cfg.READING_INTERVAL_MIN * MINUTE_MS;
 const gapTooLong = (prev: PowerReading, next: PowerReading, cfg: Config) =>
   next.measuredAt.getTime() - prev.measuredAt.getTime() > cfg.MAX_READING_GAP_MIN * MINUTE_MS;
 
-/** 조건을 만족하는 연속 구간들. 수신이 너무 오래 끊기면 구간을 나눈다. */
-function runs(readings: PowerReading[], match: (r: PowerReading) => boolean, cfg: Config) {
-  const out: Array<{ start: Date; end: Date }> = [];
-  let cur: { start: Date; end: Date } | null = null;
-  let prev: PowerReading | null = null;
-  for (const r of readings) {
-    if (cur && prev && gapTooLong(prev, r, cfg)) {
-      out.push(cur);
-      cur = null;
-    }
-    if (match(r)) {
-      const end = new Date(r.measuredAt.getTime() + interval(cfg));
-      cur = cur ? { start: cur.start, end } : { start: r.measuredAt, end };
-    } else if (cur) {
-      out.push(cur);
-      cur = null;
-    }
-    prev = r;
-  }
-  if (cur) out.push(cur);
-  return out;
-}
-
+/** 수신 공백을 넘어 합치지 않는다. 실제 표본이 있는 짧은 저전력 구간만 병합한다. */
 function detectCooks(readings: PowerReading[], cfg: Config): CookerEvent[] {
-  const high = runs(readings, (r) => r.watts >= cfg.COOK_MIN_WATTS, cfg);
-
-  // 짧게 끊긴 고전력 구간은 한 번의 취사로 합친다.
-  const merged: Array<{ start: Date; end: Date }> = [];
-  for (const run of high) {
-    const last = merged.at(-1);
-    if (last && run.start.getTime() - last.end.getTime() <= cfg.COOK_MERGE_GAP_MIN * MINUTE_MS) {
-      last.end = run.end;
-    } else {
-      merged.push({ ...run });
+  const events: CookerEvent[] = [];
+  let start: Date | null = null;
+  let end: Date | null = null;
+  let prev: PowerReading | null = null;
+  const close = () => {
+    if (start && end && end.getTime() - start.getTime() >= cfg.COOK_MIN_MINUTES * MINUTE_MS) {
+      events.push({ type: "cook", startedAt: start, endedAt: end });
     }
-  }
+    start = end = null;
+  };
 
-  return merged
-    .filter((r) => r.end.getTime() - r.start.getTime() >= cfg.COOK_MIN_MINUTES * MINUTE_MS)
-    .map((r) => ({ type: "cook", startedAt: r.start, endedAt: r.end }));
+  for (const reading of readings) {
+    if (prev && gapTooLong(prev, reading, cfg)) close();
+    if (reading.watts >= cfg.COOK_MIN_WATTS) {
+      if (end && reading.measuredAt.getTime() - end.getTime() > cfg.COOK_MERGE_GAP_MIN * MINUTE_MS) close();
+      start ??= reading.measuredAt;
+      end = new Date(reading.measuredAt.getTime() + interval(cfg));
+    }
+    prev = reading;
+  }
+  close();
+  return events;
 }
 
 /**

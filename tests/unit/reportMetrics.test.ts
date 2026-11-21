@@ -53,6 +53,16 @@ describe("report metrics", () => {
     expect(rows.map((r) => r.slot)).toEqual(["breakfast", "dinner"]);
   });
 
+  it("keeps missing records distinct from observed zero and does not infer an incomplete baseline", () => {
+    const recent = daysAgo(NOW, 1, 7);
+    const empty = cookerUsage(view({stats:{}}), NOW);
+    expect(empty).toMatchObject({cook:null,lid:null,cookWeeklyBefore:null,recordedDays:0});
+    expect(empty.perDay.every((d) => d.cook === null)).toBe(true);
+    const partial = cookerUsage(view({stats:{[recent[1]]:{cook:0,lid:0}}}), NOW);
+    expect(partial).toMatchObject({cook:0,lid:0,cookWeeklyBefore:null,recordedDays:1});
+    expect(partial.perDay.map((d) => d.cook)).toEqual([null,0,null,null,null,null,null]);
+  });
+
   it("cookerUsage: 최근 7일 합계와 이전 4주 주 평균", () => {
     const stats: AppView["stats"] = {};
     for (const d of daysAgo(NOW, 1, 7)) stats[d] = { cook: 1, lid: 2 };

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { connectFirebase, accountError } from '@/lib/firebase/bridge';
-import { useFirebaseAccount, signOutFirebase } from '@/lib/data/firebase';
+import { useFirebaseAccount, signOutFirebase, refreshFirebaseAccount } from '@/lib/data/firebase';
 import { useMode } from '@/lib/data/mode';
 import type { Studio } from '@/lib/firebase/studio';
 import {
@@ -156,6 +156,7 @@ export function OperatorConsole() {
         retry={() => {
           setGate(null);
           setAttempt((x) => x + 1);
+          if (!user) void refreshFirebaseAccount().catch(() => {});
         }}
       />
     );
@@ -199,7 +200,12 @@ export function StudioWorkspace({ api, uid, email }: { api: Studio; uid: string;
   }
   const close = useCallback(() => {
     setSelected(null);
-    requestAnimationFrame(() => returnFocus.current?.focus());
+    requestAnimationFrame(() =>
+      (returnFocus.current?.isConnected
+        ? returnFocus.current
+        : document.getElementById('studio-content')
+      )?.focus(),
+    );
   }, []);
   const section = pages.find((p) => p.id === tab)!;
   return (
@@ -289,7 +295,14 @@ export function StudioWorkspace({ api, uid, email }: { api: Studio; uid: string;
               showMembers={() => navigate('members')}
             />
           ) : (
-            <StudioDirectory key={tab + refresh} api={api} uid={uid} kind={tab} select={select} />
+            <StudioDirectory
+              key={tab}
+              api={api}
+              uid={uid}
+              kind={tab}
+              refresh={refresh}
+              select={select}
+            />
           )}
           <footer className="studio-footer">
             <IconSettings />

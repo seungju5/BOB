@@ -219,11 +219,13 @@ export function StudioDirectory({
   api,
   uid,
   kind,
+  refresh,
   select,
 }: {
   api: Studio;
   uid: string;
   kind: 'members' | 'profiles';
+  refresh: number;
   select: (id: string) => void;
 }) {
   const [input, setInput] = useState(''),
@@ -238,7 +240,10 @@ export function StudioDirectory({
     void api
       .page(uid, kind, search, cursor)
       .then((x) => {
-        if (live) setResult(x);
+        if (live) {
+          setError('');
+          setResult(x);
+        }
       })
       .catch((e) => {
         if (live) setError(errorText(e));
@@ -246,7 +251,7 @@ export function StudioDirectory({
     return () => {
       live = false;
     };
-  }, [api, uid, kind, search, cursor, retry]);
+  }, [api, uid, kind, search, cursor, retry, refresh]);
   function load() {
     setError('');
     setResult(null);
@@ -422,7 +427,16 @@ export function StudioDetails({
       await api.save(uid, id, change);
       const latest = await api.detail(uid, id);
       if (!active.current) return;
-      show(latest);
+      // Keep the other form's unsaved draft and original conflict-check version.
+      if (change.type === 'name') {
+        setData((previous) => (previous ? { ...previous, profile: latest.profile } : latest));
+        setName(latest.profile?.name ?? '');
+      } else {
+        const { stage, note, caseAt, caseVersion } = latest;
+        setData((previous) => (previous ? { ...previous, stage, note, caseAt, caseVersion } : latest));
+        setStage(stage);
+        setNote(note);
+      }
       saved();
       if (
         change.type === 'name'

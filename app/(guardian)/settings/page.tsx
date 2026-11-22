@@ -101,6 +101,7 @@ function Settings({ app, view, now }: { app: App; view: AppView; now: Date }) {
         </SettingsGroup>
       </div>
       <div className="mt-6 flex flex-col gap-3 border-t border-line pt-5">
+        <Link href="/account" className="flex min-h-12 items-center justify-between gap-3 rounded-2xl px-2 text-[16px] font-bold text-cocoa hover:bg-butter-soft">내 정보 센터<IconArrowRight className="h-5 w-5" /></Link>
         <Link href="/tutorial" className="flex min-h-12 items-center justify-between gap-3 rounded-2xl px-2 text-[16px] font-bold text-cocoa hover:bg-butter-soft">소개 다시 보기<IconArrowRight className="h-5 w-5" /></Link>
         <PrivacyNotice className="px-2" />
         <section id="account" className="scroll-mt-4"><h2 className="mb-3 text-[18px] font-bold text-cocoa">계정</h2><AccountSettings app={app} /></section>

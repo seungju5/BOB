@@ -9,6 +9,7 @@
     "check:types": "tsc --noEmit",
     "check:smartthings": "node scripts/check-smartthings.mjs",
     "test": "vitest run",
+    "test:accounts": "node --test firebase/tests/account-rules.test.mjs",
     "test:domain": "node --test packages/power-pattern/*.test.mjs packages/power-pattern/research/*.test.mjs packages/walking-hearts/test/*.test.mjs && npm run test:smartthings",
     "test:smartthings": "npm ci --prefix server/smartthings --no-audit --no-fund && npm --prefix server/smartthings test",
     "lint": "eslint"

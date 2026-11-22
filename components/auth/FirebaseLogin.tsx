@@ -16,8 +16,9 @@ import { ONBOARDING_COMPLETE } from '@/lib/data/view';
 import { accountError, connectFirebase, within } from '@/lib/firebase/bridge';
 
 function afterLogin(step: number) {
-  const connecting = new URLSearchParams(window.location.search).get('next') === 'connect';
-  return connecting && step >= ONBOARDING_COMPLETE ? '/connect/' : '/start';
+  const next = new URLSearchParams(window.location.search).get('next');
+  if (next === 'account') return '/account/';
+  return next === 'connect' && step >= ONBOARDING_COMPLETE ? '/connect/' : '/start';
 }
 
 export default function FirebaseLogin(){

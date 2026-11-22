@@ -3,7 +3,7 @@ import { teamFirebaseConfig } from '@/firebase/provider/team-config.mjs';
 import type { MealWindow } from '@/lib/judge/types';
 export const ACCOUNT_CONSENT_VERSION = '2026-10-16';
 export type FirebaseUser = { uid: string; email: string; displayName: string; verified: boolean };
-export type AccountProfile = { ownerUid: string; displayName: string; consentVersion: string };
+export type AccountProfile = { ownerUid: string; displayName: string; consentVersion: string; savedAt?: string | null; revision?: string | null };
 export type Household = { relation: 'mother'|'father'|'parents'|'other'; alias: string; residentCount: number; hasPet: boolean };
 export type Preferences = {
   schemaVersion: 1; onboardingStep: number; phone: string; relationLabel:string; windows: MealWindow[];
@@ -12,7 +12,7 @@ export type Preferences = {
   preparationAcknowledged: boolean;
 };
 export type PreferenceRevision = {settings:string|null;household:string|null};
-export type SavedPreferences = { settings: Preferences|null; household: Household|null; revision?:PreferenceRevision };
+export type SavedPreferences = { settings: Preferences|null; household: Household|null; revision?:PreferenceRevision; savedAt?: {settings:string|null; household:string|null} };
 export type FirebaseProvider = {
   name: 'Firebase'; onUser(cb: (user: FirebaseUser|null)=>void): ()=>void;
   signIn(email:string,password:string,remember:boolean):Promise<FirebaseUser>;
@@ -24,12 +24,17 @@ export type FirebaseProvider = {
   refreshUser():Promise<FirebaseUser|null>;
   getIdToken(expectedUid:string,forceRefresh?:boolean):Promise<string>;
   getAppProfile(uid:string):Promise<AccountProfile|null>;
-  saveProfile(name:string,uid:string):Promise<void>;
+  saveProfile(name:string,uid:string,expectedRevision?:string):Promise<void>;
   getAppPreferences(uid:string):Promise<SavedPreferences>;
   saveAppPreferences(input:Preferences,household:Household|null,uid:string,revision:PreferenceRevision):Promise<SavedPreferences>;
 };
 let providerPromise: Promise<FirebaseProvider>|null = null;
 async function createTeamProvider(): Promise<FirebaseProvider> {
+  if (process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_FIREBASE_EMULATORS === '1') {
+    if (!['localhost', '127.0.0.1', '[::1]'].includes(window.location.hostname)) throw Error('로컬 계정 검사는 이 컴퓨터에서 실행해 주세요.');
+    const { createLocalAccountProvider } = await import('@/firebase/provider/local-accounts.mjs');
+    return createLocalAccountProvider() as FirebaseProvider;
+  }
   const response = await fetch('/__/firebase/init.json', {
     cache: 'no-store', credentials: 'omit', redirect: 'error',
     headers: { Accept: 'application/json' },
@@ -61,6 +66,7 @@ export function within<T>(promise:Promise<T>,ms=12000):Promise<T> {
 }
 export function accountError(error:unknown):string {
   const code=typeof error==='object'&&error&&'code' in error?String(error.code):'';
+  if (code === 'profile/conflict') return '다른 화면에서 이름이 변경됐어요. 서버에서 다시 확인한 후 수정해 주세요.';
   if (/kakao-cancelled/.test(code)) return '카카오 로그인을 취소했어요. 원하실 때 다시 시작해 주세요.';
   if (/kakao-not-ready/.test(code)) return '카카오 로그인 연결을 준비하고 있어요. 지금은 이메일로 시작해 주세요.';
   if (/kakao-expired|kakao-failed/.test(code)) return '로그인 확인 시간이 지났어요. 카카오로 시작하기를 다시 눌러 주세요.';

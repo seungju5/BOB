@@ -26,6 +26,28 @@ Node.js 24를 기준으로 합니다. `npm run dev`로 화면과 가상 체험�
 - 데모를 선택하면 산책, 토끼 꾸미기, 전력 예시를 체험할 수 있습니다. 새 계정에는 팀에서 수신한 데이터만 표시합니다. 카카오, 휴대폰 걸음수 공유, 팀 서명 Android 배포는 각각 팀 등록 및 검증을 거쳐 연결합니다.
 - 팀 개인정보 문의는 [Warmingu9@gmail.com](mailto:Warmingu9@gmail.com)으로 받습니다.
 
+## 온라인 사용자 정보 저장소
+
+사용자는 [내 정보 센터](https://warming-up-bapmunna.web.app/account/)에서 보호자 이름을 수정하고 가구 정보와 생활·알림 설정의 마지막 서버 저장 시각을 확인할 수 있습니다. 다른 기기에서는 같은 이메일 계정으로 로그인합니다. 예시 체험은 브라우저에만 저장됩니다.
+
+운영팀은 프로젝트 권한이 있는 계정으로 [Firebase Authentication](https://console.firebase.google.com/project/warming-up-bapmunna/authentication/users)에서 가입·이메일 인증을, [Cloud Firestore](https://console.firebase.google.com/project/warming-up-bapmunna/firestore/databases/-default-/data)에서 앱 정보를 관리합니다. 로그인 비밀번호는 Firebase Authentication이 처리합니다.
+
+| 저장 위치 | 내용 |
+| --- | --- |
+| `bapmunnaAccounts/{uid}` | 보호자 이름, 이메일, 계정 안내 확인 버전, 서버 저장 시각 |
+| `bapmunnaAccounts/{uid}/preferences/household` | 관계, 호칭, 가구원 수, 반려견 여부 |
+| `bapmunnaAccounts/{uid}/preferences/settings` | 연락처, 가구 정보 이용 확인, 식사 시간대, 생활·알림 기준 |
+
+가구 정보와 이용 확인을 처음 저장할 때 앱은 두 문서를 하나의 트랜잭션으로 기록합니다. Firestore 규칙이 이 확인을 검사합니다. 확인을 취소한 뒤에도 기존 자료를 읽을 수 있습니다. 회원 이름을 동시에 수정하면 먼저 저장된 버전을 유지하고 다른 화면에는 재조회 안내를 표시합니다.
+
+로컬 브라우저에서 가입·저장도 확인할 수 있습니다. 한 터미널에서 `npx --yes --package firebase-tools@15.28.2 firebase emulators:start --config firebase/emulators.json --only auth,firestore --project demo-warming-up`을 실행하고, 다른 터미널에서 `NEXT_PUBLIC_FIREBASE_EMULATORS=1 npm run dev`를 실행한 다음 `http://127.0.0.1:3000/account/`를 엽니다. 이 개발 모드는 루프백의 가상 프로젝트만 사용합니다.
+
+로컬 Firebase Auth·Firestore 에뮬레이터에서 실제 SDK의 계정별 저장·재조회와 접근 범위를 검사하려면 Node 24와 Java 21을 사용해 아래 명령을 실행합니다.
+
+```sh
+npx --yes --package firebase-tools@15.28.2 firebase emulators:exec --config firebase/emulators.json --only auth,firestore --project demo-warming-up "npm run test:accounts"
+```
+
 ## 우리 집 플러그 연결을 확인하는 방법
 
 1. [운영 상태](https://warming-up-bapmunna.web.app/api/smartthings/config)에서 `connectionReady`를 확인합니다. `false`이면 운영 사이트가 새 삼성 연결을 받을 준비 중입니다. `npm run check:smartthings`로도 확인할 수 있습니다. 결과 코드 0은 새 연결을 받을 준비 완료, 2는 준비 중, 1은 점검 실패입니다.

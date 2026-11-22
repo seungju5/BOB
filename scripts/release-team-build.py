@@ -21,7 +21,7 @@ BRANCH = "codex/warming-up-firebase"
 PROJECT = "warming-up-bapmunna"
 ORIGIN = "https://" + PROJECT + ".web.app"
 WORKFLOW = ".github/workflows/firebase-hosting.yml"
-ROUTES = {"": "index.html", "login/": "login/index.html", "privacy/": "privacy/index.html", "connect/": "connect/index.html"}
+ROUTES = {"": "index.html", "login/": "login/index.html", "privacy/": "privacy/index.html", "connect/": "connect/index.html", "account/": "account/index.html"}
 
 
 def api(endpoint):

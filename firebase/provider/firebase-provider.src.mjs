@@ -5,11 +5,12 @@ import {preferenceFields} from './app-preferences.mjs';
 import {CONSENT_VERSION,checkDisplayName} from './auth-utils.mjs';
 import {createKakaoClient,requestAccountEmail,completeKakaoSession} from './kakao-client.mjs';
 
-export function createProvider(config, {googleEnabled = false, kakaoEnabled = false} = {}){
+export function createProvider(config, {googleEnabled = false, kakaoEnabled = false, configureClients} = {}){
   const appName='warming-up-'+config.projectId;
   const app=getApps().find(app=>app.name===appName)?getApp(appName):initializeApp(config,appName);
   if (app.options.projectId !== config.projectId || app.options.appId !== config.appId) throw Error('워크스페이스의 Firebase 앱을 확인해 주세요.');
   const auth=getAuth(app),db=getFirestore(app);
+  configureClients?.(auth, db);
   auth.languageCode='ko';
   let kakaoClient,kakaoCompletion;
   const kakao=()=>kakaoClient??=createKakaoClient({config:{enabled:kakaoEnabled,apiOrigin:window.location.origin},storage:{getItem:key=>window.sessionStorage.getItem(key),setItem:(key,value)=>window.sessionStorage.setItem(key,value),removeItem:key=>window.sessionStorage.removeItem(key)},location:window.location,history:window.history,crypto:window.crypto,fetch:window.fetch.bind(window)});
@@ -40,11 +41,24 @@ export function createProvider(config, {googleEnabled = false, kakaoEnabled = fa
     if(!snapshot.exists())return null;
     const data=snapshot.data();
     const fields=householdFields({relation:data.relation,alias:data.alias,residentCount:data.residentCount,hasPet:data.hasPet});
-    if(data.ownerUid!==uid||data.alias!==fields.alias||!(data.updatedAt instanceof Timestamp))throw Error('저장된 가구 정보를 다시 확인해 주세요.');
+    if(data.ownerUid!==uid||data.alias!==fields.alias||!(data.updatedAt instanceof Timestamp)||snapshot.metadata.hasPendingWrites)throw Error('저장된 가구 정보를 다시 확인해 주세요.');
     return {ownerUid:uid,...fields,updatedAt:data.updatedAt};
   }
-  const revisionOf=snapshot=>snapshot.exists()?`${snapshot.data().updatedAt?.seconds}:${snapshot.data().updatedAt?.nanoseconds}`:null;
-  const preferencesResult=(settings,household,uid)=>({settings:storedPreferences(settings,uid),household:storedHousehold(household,uid),revision:{settings:revisionOf(settings),household:revisionOf(household)}});
+  function confirmedTime(snapshot) {
+    if (!snapshot.exists()) return null;
+    const stamp = snapshot.get('updatedAt');
+    return stamp instanceof Timestamp && !snapshot.metadata.hasPendingWrites ? stamp : null;
+  }
+  function revisionOf(snapshot) {
+    const stamp = confirmedTime(snapshot);
+    return stamp ? stamp.seconds + ':' + stamp.nanoseconds : null;
+  }
+  const savedAt = snapshot => confirmedTime(snapshot)?.toDate().toISOString() ?? null;
+  const preferencesResult = (settings, household, uid) => ({
+    settings: storedPreferences(settings,uid), household: storedHousehold(household,uid),
+    revision: {settings:revisionOf(settings), household:revisionOf(household)},
+    savedAt: {settings:savedAt(settings), household:savedAt(household)},
+  });
   async function withHouseholdUser(expectedUid,run){
     const user=requireUser();let changed=false,unsubscribe;
     const assertCurrent=()=>{
@@ -87,7 +101,14 @@ export function createProvider(config, {googleEnabled = false, kakaoEnabled = fa
     async resendVerification(){if(auth.currentUser&&!auth.currentUser.emailVerified)await sendEmailVerification(auth.currentUser,actionSettings);},
     async refreshUser(){if(auth.currentUser){await reload(auth.currentUser);await auth.currentUser.getIdToken(true);}return mapUser(auth.currentUser);},
     signOut:()=>{kakao().cancel();return signOut(auth);},
-    getAppProfile(expectedUid){return withHouseholdUser(expectedUid,async(user,assertCurrent)=>{const snapshot=await getDocFromServer(profileRef(user.uid));assertCurrent();return snapshot.exists()?snapshot.data():null;});},
+    getAppProfile(expectedUid){return withHouseholdUser(expectedUid,async(user,assertCurrent)=>{
+      const snapshot = await getDocFromServer(profileRef(user.uid));
+      assertCurrent();
+      if (!snapshot.exists()) return null;
+      const profile = snapshot.data();
+      if (profile.ownerUid !== user.uid || snapshot.metadata.hasPendingWrites) throw Error('서버에서 내 프로필을 다시 확인해 주세요.');
+      return {...profile, savedAt:savedAt(snapshot), revision:revisionOf(snapshot)};
+    });},
     getAppPreferences(expectedUid){return withHouseholdUser(expectedUid,async(user,assertCurrent)=>{
       const [settings,household]=await Promise.all([getDocFromServer(settingsRef(user.uid)),getDocFromServer(householdRef(user.uid))]);assertCurrent();
       return preferencesResult(settings,household,user.uid);
@@ -105,13 +126,16 @@ export function createProvider(config, {googleEnabled = false, kakaoEnabled = fa
       const stored=storedPreferences(settings,user.uid);if(!stored)throw Error('저장 결과를 확인하지 못했어요.');
       return preferencesResult(settings,storedHome,user.uid);
     });},
-    saveProfile(name,expectedUid){
+    saveProfile(name,expectedUid,expectedRevision){
       return withHouseholdUser(expectedUid,async(user,assertCurrent)=>{
         const displayName=checkDisplayName(name);
         const ref=profileRef(user.uid);
         await runTransaction(db,async transaction=>{
           const existing=await transaction.get(ref);
           assertCurrent();
+          if (expectedRevision !== undefined && (!existing.exists() || existing.data().consentVersion !== CONSENT_VERSION || revisionOf(existing) !== expectedRevision)) {
+            throw Object.assign(Error('서버에서 최근 이름을 다시 확인해 주세요.'), {code:'profile/conflict'});
+          }
           const fields={ownerUid:user.uid,email:user.email,displayName,consentVersion:CONSENT_VERSION,updatedAt:serverTimestamp()};
           if(existing.exists())transaction.update(ref,fields);
           else transaction.set(ref,{...fields,createdAt:serverTimestamp()});

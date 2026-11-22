@@ -34,7 +34,9 @@ service cloud.firestore {
             && d.hasPet is bool && d.updatedAt == request.time;
         }
         allow read: if b3Owner(uid);
-        allow create,update: if b3Owner(uid) && validHousehold(request.resource.data);
+        // The app can acknowledge and save the household in one atomic transaction.
+        allow create,update: if b3Owner(uid) && validHousehold(request.resource.data)
+          && getAfter(/databases/$(database)/documents/bapmunnaAccounts/$(uid)/preferences/settings).data.preparationAcknowledged == true;
         allow delete: if b3Owner(uid);
       }
       // Private preferences only: no family access, sensor access, or consent grant.
@@ -69,9 +71,14 @@ service cloud.firestore {
             && d.emergencyHours - d.fastingHours >= 12 && d.updatedAt == request.time;
         }
         allow read: if b3Owner(uid);
-        allow create: if b3Owner(uid) && validSettings(request.resource.data);
+        allow create: if b3Owner(uid) && validSettings(request.resource.data)
+          && (request.resource.data.preparationAcknowledged || (request.resource.data.phone == ''
+            && request.resource.data.relationLabel == '' && request.resource.data.onboardingStep <= 3));
         allow update: if b3Owner(uid) && validSettings(request.resource.data)
-          && (resource.data.onboardingStep < 8 || request.resource.data.onboardingStep == 8);
+          && (resource.data.onboardingStep < 8 || request.resource.data.onboardingStep == 8)
+          && (request.resource.data.preparationAcknowledged
+            || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['preparationAcknowledged','updatedAt','onboardingStep'])
+              && (request.resource.data.onboardingStep == resource.data.onboardingStep || request.resource.data.onboardingStep <= 3)));
         allow delete: if b3Owner(uid);
       }
       match /meals/{mealId} {

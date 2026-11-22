@@ -73,6 +73,22 @@ afterEach(()=>{
 // Synthetic promises and Auth callbacks, with the production 12s timeout.
 // These tests do not claim browser, emulator, network or live account evidence.
 describe('Firebase account store asynchronous session isolation',()=>{
+  it('reads back the canonical name after a scoped write and discards a result from a previous session',async()=>{
+    const f=await fixture();await f.mount();await f.emit(f.user('A'));
+    const rev=f.snapshot().revision;
+    f.provider.getAppProfile.mockResolvedValueOnce({...f.snapshot().profile!, displayName:'새 이름'});
+    await f.store.renameFirebaseProfile('새 이름','A',rev,'old-version');
+    expect(f.provider.saveProfile).toHaveBeenCalledWith('새 이름','A','old-version');
+    expect(f.snapshot().profile?.displayName).toBe('새 이름');
+
+    const delayed=deferred<void>();
+    f.provider.saveProfile.mockReturnValueOnce(delayed.promise);
+    const result=observe(f.store.renameFirebaseProfile('이전 계정','A',rev,'next-version'));await flush();
+    await f.emit(f.user('B'));delayed.resolve();await flush();
+    expect(await result).toMatchObject({ok:false});
+    expect(f.snapshot().profile?.ownerUid).toBe('B');
+    expect(f.snapshot().profile?.displayName).not.toBe('이전 계정');
+  });
   it('shares one refresh across open views and does not read while hidden or signed out',async()=>{
     const doc=Object.assign(new EventTarget(),{visibilityState:'visible'});
     const browser=Object.assign(new EventTarget(),{setInterval:vi.fn(windowlessTimer),clearInterval});

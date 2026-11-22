@@ -156,6 +156,24 @@ async function ensureFirebaseObserver(){
   }).catch(error=>{emit({loading:false,error:accountError(error)});throw error;}).finally(()=>{observerReady=null;});
   return observerReady;
 }
+export async function renameFirebaseProfile(name: string, uid: string, revision: number, expectedProfile: string) {
+  const check = () => {
+    if (!isFirebaseSessionCurrent(uid, revision)) throw Object.assign(new Error('로그인한 계정이 바뀌었어요.'), {code:'auth/user-changed'});
+  };
+  check();
+  const provider = await within(connectFirebase());
+  check();
+  await within(provider.saveProfile(name, uid, expectedProfile));
+  check();
+  const profile = await within(provider.getAppProfile(uid));
+  check();
+  if (!profile || profile.ownerUid !== uid || profile.consentVersion !== ACCOUNT_CONSENT_VERSION) {
+    throw new Error('서버에서 저장 결과를 확인하지 못했어요. 다시 조회해 주세요.');
+  }
+  emit({profile});
+  if (profile.displayName !== name.trim()) throw Object.assign(new Error('다른 화면에서 이름이 변경됐어요.'), {code:'profile/conflict'});
+}
+
 export async function refreshFirebaseAccount() {
   await ensureFirebaseObserver();
   const p=await within(connectFirebase());

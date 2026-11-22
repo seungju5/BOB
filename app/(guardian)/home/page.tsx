@@ -83,7 +83,7 @@ export default function HomePage() {
         <div className="flex items-center justify-between text-[16px] text-cocoa/70">
           <span className="flex items-center gap-1.5">
             <IconChart className="h-4 w-4" />
-            이번 주 리포트
+            최근 7일 리포트
           </span>
           <IconArrowRight className="h-5 w-5 text-cocoa" />
         </div>
@@ -99,6 +99,7 @@ export default function HomePage() {
               <span className="text-[16px] text-cocoa/70">최근 7일 끼니 확인율</span>
             </p>
             <p className="mt-2 text-[18px] leading-snug font-extrabold text-cocoa">{report.message}</p>
+            <p className="mt-1 text-[16px] text-cocoa/70">어제까지 7일 기준 · 평소는 그 전 4주 평균이에요.</p>
             <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-paper/80" aria-hidden>
               <div className="h-full rounded-full bg-butter-deep" style={{ width: `${report.r}%` }} />
             </div>

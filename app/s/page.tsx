@@ -12,7 +12,9 @@ import { seniorActionMessage } from "@/components/senior/messages";
 import "@/components/senior/senior-home.css";
 import { addDays, kstDate } from "@/lib/judge/time";
 import type { Absence } from "@/lib/judge/types";
-import { useSenior, type SeniorOp, type SeniorStatus } from "@/lib/data/senior";
+import { mealMidpoint, useSenior, type SeniorOp, type SeniorStatus, type SeniorWhen } from "@/lib/data/senior";
+import { mealSlotLabel } from "@/lib/data/view";
+import type { MealWindow } from "@/lib/judge/types";
 import { useNow } from "@/lib/demo/store";
 
 const CHEERS = [
@@ -103,7 +105,7 @@ function Pairing({ pair, startDemo, canPair }: { pair: (code: string) => Promise
 }
 
 type SheetKind = "eat_out" | "away" | "help" | null;
-type Act = (op: SeniorOp, days?: number) => Promise<void>;
+type Act = (op: SeniorOp, days?: number, when?: SeniorWhen) => Promise<void>;
 
 function SeniorHome({ status, now, act, isDemo, endDemo }: { status: SeniorStatus; now: Date; act: Act; isDemo: boolean; endDemo: () => void }) {
   const [sheet, setSheet] = useState<SheetKind>(null);
@@ -122,12 +124,12 @@ function SeniorHome({ status, now, act, isDemo, endDemo }: { status: SeniorStatu
     setBusy(false);
   };
 
-  const run = async (op: SeniorOp, days?: number) => {
+  const run = async (op: SeniorOp, days?: number, when?: SeniorWhen) => {
     const id = ++request.current;
     setBusy(true);
     setError("");
     try {
-      await act(op, days);
+      await act(op, days, when);
       if (id === request.current) setDone(seniorActionMessage(op, isDemo));
     } catch (e) {
       if (id === request.current) setError(e instanceof Error ? e.message : "잠시 후 다시 시도해 주세요.");
@@ -195,14 +197,7 @@ function SeniorHome({ status, now, act, isDemo, endDemo }: { status: SeniorStatu
             <h2 className="text-[28px] font-extrabold text-cocoa">밖에서 드셨나요?</h2>
             <p className="mt-2 text-2xl text-muted">{isDemo ? "외식 소식을 남기는 방법을 체험해요." : "밥솥을 쓰지 않은 식사 소식을 남겨요."}</p>
             <ErrorLine text={error} />
-            <div className="mt-7 flex flex-col gap-3">
-              <Button className="min-h-16 text-2xl" disabled={busy} onClick={() => run("eat_out")}>
-                {isDemo ? "외식 소식 체험하기" : "네, 먹었어요"}
-              </Button>
-              <Button variant="outline" className="min-h-16 text-2xl" onClick={close}>
-                아니요
-              </Button>
-            </div>
+            <EatOutChoices now={now} windows={status.mealWindows} busy={busy} isDemo={isDemo} onClose={close} run={run} />
           </>
         )}
       </Sheet>
@@ -316,10 +311,12 @@ function AwaySheet({
   error: string;
   isDemo: boolean;
   onClose: () => void;
-  run: (op: SeniorOp, days?: number) => Promise<void>;
+  run: (op: SeniorOp, days?: number, when?: SeniorWhen) => Promise<void>;
 }) {
   const [days, setDays] = useState(1);
-  const end = addDays(today, days - 1);
+  const [fromTomorrow, setFromTomorrow] = useState(false);
+  const start = fromTomorrow ? addDays(today, 1) : today;
+  const end = addDays(start, days - 1);
 
   if (current) {
     return (
@@ -353,17 +350,85 @@ function AwaySheet({
             aria-pressed={days === d}
             className={`h-16 rounded-2xl text-2xl font-bold ${days === d ? "bg-butter text-cocoa" : "bg-butter-soft/60 text-cocoa/70"}`}
           >
-            {d === 1 ? "오늘만" : d === 7 ? "일주일" : `${d}일`}
+            {d === 1 ? (fromTomorrow ? "하루" : "오늘만") : d === 7 ? "일주일" : `${d}일`}
           </button>
         ))}
       </div>
       <p className="mt-4 text-center text-2xl font-bold text-cocoa">
-        {fmtDate(today)} ~ {fmtDate(end)}
+        {days === 1 ? fmtDate(start) : `${fmtDate(start)} ~ ${fmtDate(end)}`}
       </p>
+      {/* 기본은 오늘부터. 내일 떠나실 때만 바꾼다. */}
+      <button type="button" aria-pressed={fromTomorrow} onClick={() => setFromTomorrow(!fromTomorrow)} className="mt-3 min-h-14 w-full rounded-2xl border-2 border-line text-2xl font-bold text-cocoa/80">
+        {fromTomorrow ? "오늘부터로 바꾸기" : "내일 떠나요"}
+      </button>
       <ErrorLine text={error} />
-      <Button className="mt-5 min-h-16 text-2xl" disabled={busy} onClick={() => run("away", days)}>
+      <Button className="mt-5 min-h-16 text-2xl" disabled={busy} onClick={() => run("away", days, fromTomorrow ? { startDate: start } : undefined)}>
         {isDemo ? "외출 소식 체험하기" : "외출 기간 남기기"}
       </Button>
     </>
+  );
+}
+
+/**
+ * 외식 소식. 기본은 지금 바로 "네, 먹었어요". 다른 때 드셨으면 오늘·어제 끼니 중에서 고른다.
+ * 아직 시작하지 않은 끼니는 고를 수 없다.
+ */
+function EatOutChoices({ now, windows, busy, isDemo, onClose, run }: {
+  now: Date;
+  windows: MealWindow[];
+  busy: boolean;
+  isDemo: boolean;
+  onClose: () => void;
+  run: (op: SeniorOp, days?: number, when?: SeniorWhen) => Promise<void>;
+}) {
+  const [picking, setPicking] = useState(false);
+  const today = kstDate(now);
+  const days = [{ date: today, label: "오늘" }, { date: addDays(today, -1), label: "어제" }];
+  if (!picking) {
+    return (
+      <div className="mt-7 flex flex-col gap-3">
+        <Button className="min-h-16 text-2xl" disabled={busy} onClick={() => run("eat_out")}>
+          {isDemo ? "외식 소식 체험하기" : "네, 먹었어요"}
+        </Button>
+        {windows.length ? (
+          <Button variant="outline" className="min-h-16 text-2xl" disabled={busy} onClick={() => setPicking(true)}>
+            다른 때 먹었어요
+          </Button>
+        ) : null}
+        <Button variant="ghost" className="min-h-16 text-2xl" onClick={onClose}>
+          아니요
+        </Button>
+      </div>
+    );
+  }
+  return (
+    <div className="mt-6 flex flex-col gap-4">
+      <p className="text-2xl font-bold text-cocoa">언제 드셨어요?</p>
+      {days.map(({ date, label }) => {
+        const choices = windows.filter((w) => mealMidpoint(date, w).getTime() <= now.getTime());
+        if (!choices.length) return null;
+        return (
+          <div key={date}>
+            <p className="mb-2 text-2xl text-muted">{label}</p>
+            <div className="grid grid-cols-2 gap-2.5">
+              {choices.map((w) => (
+                <button
+                  key={w.slot}
+                  type="button"
+                  disabled={busy}
+                  onClick={() => run("eat_out", undefined, { meal: { date, slot: w.slot } })}
+                  className="min-h-16 rounded-2xl bg-butter-soft text-2xl font-bold text-cocoa disabled:opacity-50"
+                >
+                  {label} {mealSlotLabel(w.slot, windows)}
+                </button>
+              ))}
+            </div>
+          </div>
+        );
+      })}
+      <Button variant="ghost" className="min-h-16 text-2xl" onClick={() => setPicking(false)}>
+        이전
+      </Button>
+    </div>
   );
 }

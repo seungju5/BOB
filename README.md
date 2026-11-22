@@ -35,6 +35,16 @@ Node.js 24를 기준으로 합니다. `npm run dev`로 화면과 가상 체험�
 
 Firebase에서 실행할 서버는 `server/smartthings/`에 있습니다. 공개 준비 상태에는 계정이나 기기 정보가 없습니다. 팀용 삼성 앱 등록, 서버 환경 설정, 운영 전환 방법은 [SmartThings 서버 안내](server/smartthings/README.md)에 있습니다.
 
+### 개인 삼성 계정에서 전력 기록 한 번 확인하기
+
+본인 계정으로 로그인한 [삼성 공식 CLI](https://developer.smartthings.com/docs/sdks/cli)가 있는 컴퓨터에서 아래 명령을 실행합니다. 따옴표 안 기기 이름은 내 SmartThings 앱에 표시되는 이름으로 바꿉니다. Node 24를 사용합니다.
+
+```sh
+node scripts/export-personal-meter.mjs --device "내 플러그 이름" --out "$HOME/Downloads/밥뭇나-개인점검.json"
+```
+
+밥뭇나에 로그인해 가구 동의를 확인한 뒤 [기기 연결 화면](https://warming-up-bapmunna.web.app/connect/)에서 **개인 전력 점검 파일 열기 → 내 점검 파일 선택**을 누릅니다. 파일에는 전력·누적량, 각 측정 시각, 조회 시각과 기기 분류만 들어갑니다. 브라우저가 파일을 읽고 점검 창을 닫으면 화면에서 지웁니다. 다음 측정값을 확인할 때는 다른 파일 이름으로 다시 한 번 조회합니다. 이 개인 점검은 자동 연결 상태, 알림, 식사 기록에 영향을 주지 않습니다.
+
 ## 배포와 복구
 
 팀 소유자는 Python 3, GitHub CLI(`gh`), Firebase CLI(`firebase`)가 설치된 컴퓨터에서 `gh auth login`, `firebase login`으로 최초 로그인합니다. [Actions의 빌드](https://github.com/seungju5/BOB/actions/workflows/firebase-hosting.yml?query=branch%3Acodex%2Fwarming-up-firebase)가 끝나면 저장소 루트에서 다음 명령을 실행합니다.

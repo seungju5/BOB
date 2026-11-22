@@ -8,7 +8,9 @@ import { useMode } from "@/lib/data/mode";
 import { ONBOARDING_COMPLETE } from "@/lib/data/view";
 import { ACCOUNT_CONSENT_VERSION } from "@/lib/firebase/bridge";
 import { openSmartThings, SMARTTHINGS_CONSENT_VERSION, SmartThingsError, type CheckedConnection, type SmartThingsConnection, type SmartThingsDevice } from "@/lib/firebase/smartthings";
-import { ALERT_DEFAULTS, DETECTION } from "@/config/detection";
+import { DETECTION } from "@/config/detection";
+import { MeterReadings } from "./MeterReadings";
+import { PersonalMeterCheck } from "./PersonalMeterCheck";
 import { callbackMessage, deviceStageCopy, formatDeviceTime, smartThingsErrorMessage, type DisplayStage } from "@/lib/smartthings/presentation";
 import { returnedToAccount } from "@/lib/smartthings/pending";
 
@@ -181,7 +183,7 @@ function AccountPanel({ uid, revision, consent, latest, showConsentLink, onboard
             current(); publish(result.connection); setMeasurement(result);
           });
         }}>플러그 전력 직접 조회</Button>
-        {measurement && measurement.connection.device?.id === selected.id && <MeterResult result={measurement}/>}
+        {measurement && measurement.connection.device?.id === selected.id && <MeterReadings reading={measurement.reading} energy={measurement.energy} checkedAt={measurement.connection.lastCheckedAt}/>}
         {!selected.isVirtual && <div className="mt-4 border-t border-line pt-3">
           <h3 className="text-[17px] font-bold text-cocoa">내 플러그의 높은 전력 알림</h3>
           <p className={textClass}>밥솥을 꽂은 플러그에서 {DETECTION.COOK_MIN_WATTS}W 이상이 {DETECTION.COOK_MIN_MINUTES}분에 걸쳐 여러 번 측정되면 내 홈과 알림에 가장 최근 소식 한 건을 보여줘요. 끄면 저장한 패턴 시각을 지워요.</p>
@@ -208,24 +210,6 @@ function AccountPanel({ uid, revision, consent, latest, showConsentLink, onboard
     {busy && <p role="status" className={`mt-3 ${textClass}`}>{busy === "start" ? "삼성 연결 화면을 열고 있어요…" : "요청을 확인하고 있어요…"}</p>}
     {error && <p role="alert" className="mt-3 text-[16px] font-semibold text-blush-deep">{error}</p>}
     {notice && <p role="status" className={`mt-3 ${textClass}`}>{notice}</p>}
+    {consent && (stage === "setup_required" || stage === "disconnected") && <PersonalMeterCheck uid={uid} revision={revision}/>}
   </section>;
-}
-
-function MeterResult({result}: {result: CheckedConnection}) {
-  const {reading, energy, connection} = result;
-  const checkedAt = connection.lastCheckedAt;
-  const old = reading && checkedAt && checkedAt - reading.measuredAt >= ALERT_DEFAULTS.DEVICE_OFFLINE_HOURS * 3600000;
-  const number = new Intl.NumberFormat("ko-KR", { maximumSignificantDigits: 7 });
-  return <div role="status" className="mt-3 rounded-xl bg-paper p-3">
-    {reading ? <>
-      <p className="text-[15px] text-muted">기기가 마지막으로 측정한 전력</p>
-      <p className="text-[20px] font-bold text-cocoa">{number.format(reading.watts)} W</p>
-      <p className={textClass}>측정 시각 · {formatDeviceTime(reading.measuredAt)} (한국 시간)</p>
-      {old ? <p className="mt-1 text-[15px] font-semibold text-cocoa">조회 시점보다 {ALERT_DEFAULTS.DEVICE_OFFLINE_HOURS}시간 이상 앞선 기록이에요.</p> : null}
-    </> : <p className={textClass}>기기에서 측정 시각이 있는 전력값을 받지 못했어요.</p>}
-    {energy && <div className="mt-2 border-t border-line pt-2">
-      <p className="text-[16px] font-semibold text-cocoa">누적 전력량 · {number.format(energy.kwh)} kWh</p>
-      <p className={textClass}>누적량 기록 시각 · {formatDeviceTime(energy.measuredAt)} (한국 시간)</p>
-    </div>}
-  </div>;
 }

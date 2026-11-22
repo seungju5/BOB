@@ -13,17 +13,36 @@ export function advancePowerNotice(current, event, receivedAt) {
       !Number.isSafeInteger(event.time) || event.time < notice.enabledAt || event.time > receivedAt ||
       receivedAt - event.time > criteria.maxGapMinutes * minute) return null;
 
-  const previous = notice.lastPowerAt ?? null;
-  const lastHigh = notice.lastHighAt ?? null;
-  if (!event.high) {
-    if (previous !== null && event.time <= previous) return null;
-    const gap = previous !== null && event.time - previous > criteria.maxGapMinutes * minute;
-    return { ...notice, lastPowerAt: event.time, lastHighAt: gap ? null : lastHigh };
+  const { previousRun, ...next } = notice;
+  const first = notice.lastObservedAt;
+  // Older records could clear lastHighAt after a low reading. The saved start
+  // is still a genuine observation and may be used as the last known high.
+  const lastHigh = notice.lastHighAt ?? first;
+  const time = event.time;
+  next.lastPowerAt = Math.max(notice.lastPowerAt ?? 0, time);
+  let predecessor = previousRun;
+  if (event.high) {
+    if (first == null || time > lastHigh && !continuesCookRun(time, lastHigh)) {
+      // A fresh out-of-order high can bridge this boundary. Retain just the
+      // previous bounds while such an observation can still arrive.
+      predecessor = first != null && time - lastHigh <= (criteria.mergeGapMinutes + criteria.maxGapMinutes) * minute
+        ? { first, last: lastHigh } : null;
+      next.lastObservedAt = time;
+      next.lastHighAt = time;
+    } else if (time > lastHigh) {
+      next.lastHighAt = time;
+    } else if (time < first && continuesCookRun(first, time)) {
+      if (predecessor && continuesCookRun(time, predecessor.last)) {
+        next.lastObservedAt = predecessor.first;
+        predecessor = null;
+      } else {
+        next.lastObservedAt = time;
+      }
+    }
   }
-  if (event.time <= Math.max(lastHigh ?? 0, notice.lastObservedAt ?? 0)) return null;
-  // A later low sample may have arrived first. A fresh high still counts.
-  const priorObservation = previous !== null && previous > event.time ? lastHigh : previous;
-  const continued = continuesCookRun(event.time, priorObservation, lastHigh);
-  return { ...notice, lastPowerAt: Math.max(previous ?? 0, event.time), lastHighAt: event.time,
-    lastObservedAt: continued ? notice.lastObservedAt : event.time };
+  if (predecessor && receivedAt - next.lastObservedAt <= criteria.maxGapMinutes * minute)
+    next.previousRun = predecessor;
+  if (next.lastPowerAt === notice.lastPowerAt && next.lastHighAt === notice.lastHighAt &&
+    next.lastObservedAt === first && next.previousRun === previousRun) return null;
+  return next;
 }

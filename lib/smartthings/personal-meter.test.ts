@@ -53,6 +53,18 @@ describe("personal meter file", () => {
       await expect(exportPersonalMeter({ ...args, list: async () => [device, { ...device, deviceId: "another-device" }] })).rejects.toThrow("이름이 같은");
       await expect(exportPersonalMeter({ ...args, list: async () => [{ ...device, components: [...components, ...components] }] })).rejects.toThrow("전력계 한 개");
       expect(status).not.toHaveBeenCalled();
+      const physical = { ...device, deviceId: "direct-1", type: "MQTT", components: [{
+        ...components[0], categories: [{ name: "SmartPlug", categoryType: "manufacturer" }],
+      }] };
+      const automatic = { ...args, device: undefined, onlySmartPlug: true, target: join(dir, "physical.json") };
+      const userCategory = { ...physical, components: [{ ...components[0], categories: [{ name: "SmartPlug", categoryType: "user" }] }] };
+      for (const items of [[device, userCategory], [physical, { ...physical, deviceId: "direct-2" }]]) {
+        await expect(exportPersonalMeter({ ...automatic, list: async () => items })).rejects.toThrow("--device");
+      }
+      expect(status).not.toHaveBeenCalled();
+      expect(await exportPersonalMeter({ ...automatic, list: async () => [physical, device, userCategory] }))
+        .toEqual({ ...example, deviceKind: "recognized" });
+      expect(status.mock.calls).toEqual([["direct-1"]]);
     } finally {
       await rm(dir, { recursive: true, force: true });
     }

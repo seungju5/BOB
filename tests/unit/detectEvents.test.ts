@@ -16,8 +16,8 @@ describe("detectEvents (test.md 1.1)", () => {
     ]);
   });
 
-  it("T-DET-03: 20분 → 5분 끊김 → 20분 → 2건 (병합 간격 3분 초과)", () => {
-    const events = detectEvents(series("2026-10-16 07:00", [[900, 20], [0, 5], [900, 20]]));
+  it("T-DET-03: 직전 고전력 측정으로부터 11분 뒤면 새 취사", () => {
+    const events = detectEvents(series("2026-10-16 07:00", [[900, 20], [0, 10], [900, 20]]));
     expect(events.filter((e) => e.type === "cook")).toHaveLength(2);
   });
 
@@ -79,17 +79,20 @@ describe("detectEvents (test.md 1.1)", () => {
     expect(events.map((e) => e.type)).toEqual(["cook"]);
   });
 
-  it("수신이 끊긴 구간(3분 초과)은 구간을 나눈다", () => {
-    const a = series("2026-10-16 07:00", [[900, 4]]);
-    const b = series("2026-10-16 07:10", [[900, 4]]);
-    expect(detectEvents([...a, ...b]).map(e => e.startedAt)).toEqual([a[0].measuredAt, b[0].measuredAt]);
+  it("마지막 700W부터 정확히 10분이면 병합하고 10분 1밀리초면 새 건이다", () => {
+    const start = at("2026-10-16 07:00").getTime();
+    const points = [0, 600000, 1200000, 1800001].map(ms => ({watts:700,measuredAt:new Date(start+ms)}));
+    const events = detectEvents(points.toReversed());
+    expect(events).toEqual([
+      {type:"cook",startedAt:points[0].measuredAt,endedAt:points[2].measuredAt},
+      {type:"cook",startedAt:points[3].measuredAt,endedAt:points[3].measuredAt},
+    ]);
   });
 
-  it("does not combine isolated 4-minute readings or cook runs across an unobserved gap", () => {
+  it("낮은 전력과 수신 공백은 취사 신호를 추가하지 않는다", () => {
     const sparse = series("2026-10-16 07:00", [[845, 57]]).filter((_, i) => i % 4 === 0);
-    expect(detectEvents(sparse)).toEqual(sparse.map(r => ({type:"cook",startedAt:r.measuredAt,endedAt:r.measuredAt})));
-    const observed = [...series("2026-10-16 07:00", [[845, 8]]), ...series("2026-10-16 07:11", [[845, 8]])];
-    expect(detectEvents(observed)).toHaveLength(2);
+    expect(detectEvents(sparse)).toEqual([{type:"cook",startedAt:sparse[0].measuredAt,endedAt:sparse.at(-1)!.measuredAt}]);
+    expect(detectEvents(series("2026-10-16 07:00", [[700, 1], [699.99, 9], [700, 1]]))).toHaveLength(1);
   });
 
   it("입력 순서가 섞여 있어도 같은 결과", () => {

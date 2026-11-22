@@ -23,7 +23,7 @@ function buildDemoTranscript() {
     r.measuredAt.getTime() - readings[i].measuredAt.getTime() > DETECTION.MAX_READING_GAP_MIN * MINUTE_MS
   ).length;
   return {
-    specVersion: "bapmunna-power-transcription-v4",
+    specVersion: "bapmunna-power-transcription-v5",
     source: "demo" as const,
     dataOrigin: "SYNTHETIC_NOT_HOUSEHOLD_DATA" as const,
     datasetDate, timeZone: "Asia/Seoul",
@@ -31,7 +31,7 @@ function buildDemoTranscript() {
     samples,
     interpretation: {
       method: "threshold_rules", minimumCookWatts: DETECTION.COOK_MIN_WATTS,
-      minimumCookSamples: 1, maximumGapMinutes: DETECTION.MAX_READING_GAP_MIN,
+      minimumCookSamples: 1, cookMergeGapMinutes: DETECTION.COOK_MERGE_GAP_MIN, maximumGapMinutes: DETECTION.MAX_READING_GAP_MIN,
       gapCount, peakSampleWatts: Math.max(...samples.map((sample) => sample.watts)), events,
       coverage: gapCount > 0 ? "gaps" : "continuous",
     },

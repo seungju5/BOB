@@ -5,21 +5,24 @@ import { dirname, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { parseArgs, promisify } from 'node:util';
 import { PERSONAL_METER_FORMAT, parsePersonalMeter } from '../lib/smartthings/personal-meter.ts';
-import { meterObservation, safeDevice } from '../server/smartthings/smartthings.mjs';
+import { hasMeteredPlugCategory, meterObservation, safeDevice } from '../server/smartthings/smartthings.mjs';
 import { meterSignal } from '../server/smartthings/cooking-signal.mjs';
 
 const execute = promisify(execFile);
-const usage = 'node scripts/export-personal-meter.mjs --device "내 플러그 이름 또는 ID" --out "개인점검.json" [--profile 내프로필]';
+const usage = 'node scripts/export-personal-meter.mjs (--only-smart-plug | --device "내 플러그 이름 또는 ID") --out "개인점검.json" [--profile 내프로필]';
 
 // The official CLI owns its credentials. The exported file includes only the
 // chosen outlet's threshold result, dates and broad device classification.
-export async function exportPersonalMeter({ device, target, list, status, now = Date.now }) {
-  if (!device?.trim() || !target?.trim()) throw new Error(usage);
-  const selector = device.trim().normalize('NFC');
+export async function exportPersonalMeter({ device, onlySmartPlug = false, target, list, status, now = Date.now }) {
+  const selector = device?.trim().normalize('NFC');
+  if (Boolean(selector) === onlySmartPlug || !target?.trim()) throw new Error(usage);
   const devices = await list();
   if (!Array.isArray(devices)) throw new Error('삼성 기기 목록의 형식을 확인할 수 없어요.');
-  const matches = devices.filter(item => item?.deviceId === selector ||
-    String(item?.label || item?.name || '').normalize('NFC') === selector);
+  const matches = onlySmartPlug
+    ? devices.filter(item => item && safeDevice(item).isVirtual === false && item.components?.some(hasMeteredPlugCategory))
+    : devices.filter(item => item?.deviceId === selector || String(item?.label || item?.name || '').normalize('NFC') === selector);
+  if (onlySmartPlug && matches.length !== 1)
+    throw new Error('이 삼성 계정에서 실물 전력 플러그 한 대를 특정할 수 없어요. --device로 사용할 플러그를 직접 지정해 주세요.');
   if (!matches.length) throw new Error('선택한 계정에서 이 이름의 전력 측정 플러그를 찾지 못했어요.');
   if (matches.length !== 1) throw new Error('이름이 같은 플러그가 있어요. 삼성 기기 ID로 한 대를 지정해 주세요.');
   const selected = matches[0];
@@ -49,7 +52,9 @@ export async function exportPersonalMeter({ device, target, list, status, now = 
 }
 
 async function main() {
-  const { values } = parseArgs({ options: { device: {type:'string'}, out: {type:'string'}, profile: {type:'string'}, help: {type:'boolean'} } });
+  const { values } = parseArgs({ options: {
+    device: {type:'string'}, 'only-smart-plug': {type:'boolean'}, out: {type:'string'}, profile: {type:'string'}, help: {type:'boolean'},
+  } });
   if (values.help) { console.log(usage); return; }
   async function cli(args) {
     try {
@@ -62,7 +67,7 @@ async function main() {
     }
   }
   await exportPersonalMeter({
-    device: values.device, target: values.out,
+    device: values.device, onlySmartPlug: values['only-smart-plug'], target: values.out,
     list: () => cli(['devices', '--capability', 'powerMeter']),
     status: id => cli(['devices:status', id]),
   });

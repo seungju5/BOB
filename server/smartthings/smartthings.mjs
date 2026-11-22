@@ -159,14 +159,23 @@ export function smartThingsClient(config, fetcher = fetch) {
 
 const knownTransports = new Set(['BLE', 'BLE_D2D', 'LAN', 'MATTER', 'ZIGBEE', 'ZWAVE']);
 
+export function hasMeteredPlugCategory(component) {
+  return component.categories?.some(category => category.name === 'SmartPlug' && category.categoryType === 'manufacturer') &&
+    component.capabilities?.some(capability => capability.id === 'powerMeter');
+}
+
 export function safeDevice(device) {
+  const components = device.components || [];
   const capabilities = new Set(
-    (device.components || []).flatMap((component) =>
+    components.flatMap((component) =>
       (component.capabilities || []).map((item) => item.id),
     ),
   );
+  // Use the manufacturer's plug category on the metered component. A display
+  // name or a user-assigned category alone cannot classify a direct device.
+  const directPlug = device.type === 'MQTT' && components.some(hasMeteredPlugCategory);
   const virtual =
-    device.type === 'VIRTUAL' ? true : knownTransports.has(device.type) ? false : undefined;
+    device.type === 'VIRTUAL' ? true : knownTransports.has(device.type) || directPlug ? false : undefined;
   return {
     id: device.deviceId,
     label: String(device.label || device.name || '이름 없는 기기').slice(0, 100),

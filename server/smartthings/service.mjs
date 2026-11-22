@@ -690,8 +690,8 @@ export function createService({
           const existing = current.powerNotice;
           const powerNotice = existing?.version === POWER_NOTICE_CONSENT && existing.component === meters[0].id
             ? existing : {version: POWER_NOTICE_CONSENT, enabledAt: now(), component: meters[0].id, lastObservedAt: null};
-          if (powerNotice !== existing)
-            await store.patch(uid, {powerNotice}, {installId: current.installId, requireConsent: true});
+          if (powerNotice !== existing || current.deviceIsVirtual !== false)
+            await store.patch(uid, {deviceIsVirtual: false, powerNotice}, {installId: current.installId, requireConsent: true});
           else await verifyConsent(uid);
           return {enabled: true};
         }));
@@ -706,6 +706,12 @@ export function createService({
               throw new ApiError(409, 'choose_device');
             if (current.lastCheckedAt && now() - current.lastCheckedAt < 30000)
               throw new ApiError(429, 'check_later');
+            let classification;
+            if (typeof current.deviceIsVirtual !== 'boolean') {
+              const detail = await smartthings.device(token, current.deviceId);
+              if (detail?.deviceId !== current.deviceId) throw new ApiError(409, 'choose_device');
+              classification = safeDevice(detail).isVirtual;
+            }
             const meter = meterObservation(await smartthings.status(token, current.deviceId), now());
             const updated = await store.patch(
               uid,
@@ -713,6 +719,8 @@ export function createService({
                 hasPower: meter.reading !== null,
                 lastCheckedAt: now(),
                 lastSignalAt: Math.max(current.lastSignalAt || 0, meter.reading?.measuredAt || 0) || null,
+                ...(typeof classification === 'boolean' && {deviceIsVirtual: classification}),
+                ...(classification === true && {powerNotice: null}),
               },
               { installId: current.installId, requireConsent: true },
             );

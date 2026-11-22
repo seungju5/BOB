@@ -2,6 +2,6 @@
   "highWatts": 700,
   "maxGapMinutes": 3,
   "readingIntervalMinutes": 1,
-  "mergeGapMinutes": 3,
+  "mergeGapMinutes": 10,
   "noticeConsentVersion": "cooker-power-notice-v2"
 }

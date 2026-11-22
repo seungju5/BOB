@@ -26,7 +26,7 @@ export type Absence = { startDate: string; endDate: string };
 export type AlertType = "missed_meals" | "fasting" | "emergency" | "help_request" | "device_offline" | "eat_out" | "away" | "weekly_report";
 
 /** 알림에 붙는 부가 정보 (alerts.payload jsonb) */
-export type AlertPayload = { endDate?: string; rate?: number };
+export type AlertPayload = { startDate?: string; endDate?: string; meal?: { date: string; label: string }; rate?: number };
 
 export type AlertSettings = {
   missedMealsThreshold: number;

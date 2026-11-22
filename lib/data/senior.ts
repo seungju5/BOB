@@ -8,6 +8,7 @@ import type { Absence, MealSlotName, MealWindow } from "@/lib/judge/types";
 import { lastCookerAt } from "@/lib/demo/derive";
 import { updateDemo, useDemo } from "@/lib/demo/store";
 import { resetSeniorStepsConsent } from "@/lib/steps/consent";
+import { mealSlotLabel } from "@/lib/data/view";
 
 const KEY = "bapmutna.senior.token";
 const EVENT = "bapmutna:senior";
@@ -59,22 +60,31 @@ export function disconnectSenior() {
   writeToken(null);
 }
 
-/** 끼니 시간대의 한가운데 시각 */
-export function mealMidpoint(date: string, w: Pick<MealWindow, "start" | "end">): Date {
+/** 진행 중인 끼니는 지금까지, 이미 지난 끼니는 시간대 한가운데에 기록한다. */
+export function mealRecordTime(date: string, w: Pick<MealWindow, "start" | "end">, now: Date): Date | null {
   const start = kstDateTime(date, w.start).getTime();
-  return new Date(start + (kstDateTime(date, w.end).getTime() - start) / 2);
+  if (start > now.getTime()) return null;
+  return new Date(Math.min(now.getTime(), start + (kstDateTime(date, w.end).getTime() - start) / 2));
 }
 
 /** 화면을 열 때의 기기와 현재 기기가 같을 때만 행동을 보낸다. */
 export async function performSeniorAction(token: string | null | undefined, op: SeniorOp, days?: number, when: SeniorWhen = {}) {
   if (!token || token !== readToken()) throw new Error("연결이 바뀌었어요. 화면을 다시 확인해 주세요.");
   if (token !== DEMO) throw new Error("가족 휴대폰 연결을 먼저 확인해 주세요.");
-  const iso = new Date().toISOString();
-  const today = kstDate(new Date());
+  const now = new Date();
+  const iso = now.toISOString();
+  const today = kstDate(now);
   updateDemo((s) => {
-    // 고른 끼니가 있으면 그 끼니 시간대 한가운데로 기록해 해당 끼니에 외식으로 잡히게 한다.
-    const window = when.meal && s.mealProfile.windows.find((w) => w.slot === when.meal!.slot);
-    const at = op === "eat_out" && when.meal && window ? mealMidpoint(when.meal.date, window).toISOString() : iso;
+    let at = iso;
+    let meal;
+    if (op === "eat_out" && when.meal) {
+      const {date, slot} = when.meal;
+      const window = s.mealProfile.windows.find(w => w.slot === slot);
+      const time = window && (date === today || date === addDays(today, -1)) && mealRecordTime(date, window, now);
+      if (!time) throw new Error("선택한 날짜와 끼니를 다시 확인해 주세요.");
+      at = time.toISOString();
+      meal = { date, label: mealSlotLabel(slot, s.mealProfile.windows) };
+    }
     const actions = [...s.seniorActions, { type: op === "back" ? ("away" as const) : op, at }];
     if (op === "help")
       return { ...s, seniorActions: actions, alerts: [...s.alerts, { id: `help-${iso}`, type: "help_request", triggeredAt: iso, acknowledgedAt: null, resolvedAt: null }] };
@@ -85,7 +95,7 @@ export async function performSeniorAction(token: string | null | undefined, op: 
         ...s,
         seniorActions: actions,
         absences: [...s.absences.filter((a) => !(a.startDate <= endDate && startDate <= a.endDate)), { startDate, endDate }],
-        alerts: [...s.alerts, { id: `away-${iso}`, type: "away", triggeredAt: iso, acknowledgedAt: null, resolvedAt: null, payload: { endDate } }],
+        alerts: [...s.alerts, { id: `away-${iso}`, type: "away", triggeredAt: iso, acknowledgedAt: null, resolvedAt: null, payload: { startDate, endDate } }],
       };
     }
     if (op === "back")
@@ -96,7 +106,7 @@ export async function performSeniorAction(token: string | null | undefined, op: 
           .map((a) => (a.startDate <= today && today <= a.endDate ? { ...a, endDate: addDays(today, -1) } : a))
           .filter((a) => a.endDate >= a.startDate),
       };
-    return { ...s, seniorActions: actions, alerts: [...s.alerts, { id: `eat_out-${iso}`, type: "eat_out", triggeredAt: iso, acknowledgedAt: null, resolvedAt: null }] };
+    return { ...s, seniorActions: actions, alerts: [...s.alerts, { id: `eat_out-${iso}`, type: "eat_out", triggeredAt: iso, acknowledgedAt: null, resolvedAt: null, ...(meal && {payload: {meal}}) }] };
   });
 }
 

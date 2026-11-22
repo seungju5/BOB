@@ -31,16 +31,19 @@ test('opt-out, previous consent, virtual or unknown device, delayed and unrelate
   const off={powerNotice:null};assert.equal(report(off,15),null);
   assert.equal(c.powerNotice.lastObservedAt,null);
 });
-test('continuous observations and retries produce one notice; a gap or a long low run starts a new one',()=>{
+test('the inclusive ten-minute interval rolls forward from each high, never from a low',()=>{
   const c=initial();
   for (const m of [0,0,3,6]) report(c,m);
   report(c,7,{high:false}); report(c,9);
   assert.equal(c.powerNotice.lastObservedAt,start);
   report(c,14);
-  assert.equal(c.powerNotice.lastObservedAt,start+14*60000);
+  assert.equal(c.powerNotice.lastObservedAt,start);
   for (const m of [15,16,17,18]) report(c,m,{high:false});
-  report(c,19);
-  assert.equal(c.powerNotice.lastObservedAt,start+19*60000);
+  report(c,24);
+  assert.equal(c.powerNotice.lastObservedAt,start);
+  const time=start+34*60000+1;
+  const next=advancePowerNotice(c,{kind:'power',component:'main',high:true,time},time);
+  assert.equal(next.lastObservedAt,time);
 });
 test('a fresh high delivered after a newer low counts once and a replay never rolls the notice back',()=>{
   const c=initial();
@@ -49,5 +52,25 @@ test('a fresh high delivered after a newer low counts once and a replay never ro
   assert.equal(c.powerNotice.lastObservedAt,start+60000);
   assert.equal(c.powerNotice.lastPowerAt,start+2*60000);
   assert.equal(report(c,1,{},60000),null);
-  assert.equal(report(c,0,{},2*60000),null);
+  report(c,0,{},2*60000);
+  assert.equal(c.powerNotice.lastObservedAt,start);
+});
+
+test('a fresh late measurement that bridges two groups restores the first instant; an expired event cannot',()=>{
+  const c=initial();report(c,0);report(c,11);
+  assert.equal(c.powerNotice.lastObservedAt,start+11*60000);
+  report(c,9,{},2*60000);
+  assert.equal(c.powerNotice.lastObservedAt,start);
+  assert.equal(c.powerNotice.lastHighAt,start+11*60000);
+  assert.equal(c.powerNotice.previousRun,undefined);
+  report(c,22);report(c,26,{high:false});
+  assert.equal(c.powerNotice.previousRun,undefined);
+  assert.equal(report(c,20,{},6*60000),null);
+});
+
+test('an existing v2 notice with a missing last high can use its known qualifying time',()=>{
+  const c=initial();
+  Object.assign(c.powerNotice,{lastObservedAt:start,lastPowerAt:start+5*60000,lastHighAt:null});
+  report(c,10);
+  assert.equal(c.powerNotice.lastObservedAt,start);
 });

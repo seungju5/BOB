@@ -5,12 +5,12 @@ import cookerCriteria from "../server/smartthings/power-criteria.json";
 export const DETECTION = {
   /** 전력값 수신 간격(분). SmartThings 폴링 주기와 맞춘다. (미확정) */
   READING_INTERVAL_MIN: cookerCriteria.readingIntervalMinutes,
-  /** 이 간격보다 길게 값이 비면 구간을 끊는다. */
+  /** 표본 수신 공백과 보온 연속성을 판단하는 간격. */
   MAX_READING_GAP_MIN: cookerCriteria.maxGapMinutes,
 
   /** 밥솥 플러그에서 한 번이라도 이 전력(W) 이상을 관측하면 취사 신호다. */
   COOK_MIN_WATTS: cookerCriteria.highWatts,
-  /** 고전력 구간 사이가 이 시간(분) 이하로 끊기면 한 번의 취사로 합친다. (가정) */
+  /** 직전 취사 기준 이상 표본부터 이 시간(분)까지의 후속 표본은 같은 취사 신호로 센다. */
   COOK_MERGE_GAP_MIN: cookerCriteria.mergeGapMinutes,
 
   /** 보온 상태 전력 범위(W). 화면 기준 20~70W, 20W 미만은 절전 대기 (ADR-014, 미확정: 실측). */

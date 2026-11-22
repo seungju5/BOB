@@ -12,7 +12,7 @@ import { seniorActionMessage } from "@/components/senior/messages";
 import "@/components/senior/senior-home.css";
 import { addDays, kstDate } from "@/lib/judge/time";
 import type { Absence } from "@/lib/judge/types";
-import { mealMidpoint, useSenior, type SeniorOp, type SeniorStatus, type SeniorWhen } from "@/lib/data/senior";
+import { mealRecordTime, useSenior, type SeniorOp, type SeniorStatus, type SeniorWhen } from "@/lib/data/senior";
 import { mealSlotLabel } from "@/lib/data/view";
 import type { MealWindow } from "@/lib/judge/types";
 import { useNow } from "@/lib/demo/store";
@@ -405,7 +405,7 @@ function EatOutChoices({ now, windows, busy, isDemo, onClose, run }: {
     <div className="mt-6 flex flex-col gap-4">
       <p className="text-2xl font-bold text-cocoa">언제 드셨어요?</p>
       {days.map(({ date, label }) => {
-        const choices = windows.filter((w) => mealMidpoint(date, w).getTime() <= now.getTime());
+        const choices = windows.filter(w => mealRecordTime(date, w, now) !== null);
         if (!choices.length) return null;
         return (
           <div key={date}>

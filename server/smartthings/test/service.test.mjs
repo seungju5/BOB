@@ -252,7 +252,8 @@ test('owner notice flows from explicit opt-in through signed power events to acc
   const preference = (enabled, user = 'alice') => f.call('/power-notice', {method:'POST', user,
     body:{deviceId:'mine', enabled, consentVersion:POWER_NOTICE_CONSENT}});
   assert.equal((await preference(true)).status, 422);
-  details.type = 'ZIGBEE';
+  details.type = 'MQTT';
+  details.components[0].categories = [{name:'SmartPlug',categoryType:'manufacturer'}];
   f.advance(31000);
   await f.call('/device', {method:'POST', body:{deviceId:'mine'}});
   assert.equal((await preference(true, 'another')).ok, false);
@@ -1072,6 +1073,26 @@ test('virtual type is retained from Samsung through device list, selection, stat
   assert(!Object.hasOwn(safeDevice({ ...device, type: 'UNKNOWN' }), 'isVirtual'));
   assert(!Object.hasOwn(safeDevice({ ...device, type: 'GROUP' }), 'isVirtual'));
   assert.equal(safeDevice({ ...device, type: 'ZIGBEE' }).isVirtual, false);
+});
+
+test('a previously unclassified MQTT outlet is recognized on check without re-linking or opting in', async () => {
+  const f=fixture();
+  await f.link();
+  const info=await f.smartthings.device(null,'mine');
+  const component=info.components[0];
+  info.type='MQTT';component.id='main';
+  component.categories=[{name:'SmartPlug',categoryType:'user'}];
+  await f.call('/device',{method:'POST',body:{deviceId:'mine'}});
+  assert.equal((await (await f.call('/status')).json()).device.isVirtual,undefined);
+  component.categories=[{name:'SmartPlug',categoryType:'manufacturer'}];
+  f.advance(31000);
+  const refreshed=await (await f.call('/check',{method:'POST',body:{}})).json();
+  assert.equal(refreshed.device.isVirtual,false);
+  assert.equal(refreshed.powerNotice,undefined);
+  assert.equal((await f.store.get('alice')).deviceIsVirtual,false);
+  assert.equal(safeDevice({...info,type:'VIRTUAL'}).isVirtual,true);
+  const separated={...info,components:[{categories:component.categories},{capabilities:component.capabilities}]};
+  assert.equal(safeDevice(separated).isVirtual,undefined);
 });
 
 test('only one read scope and the canonical team callback appear in the authorization URL', async () => {

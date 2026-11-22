@@ -1,7 +1,35 @@
-// Read the public, first-party configuration and check the account boundary.
-// No Samsung or Firebase credentials or household identifiers are needed here.
+// The default check uses only public endpoints. --registration additionally
+// uses the operator's existing official CLI session to read app metadata.
 import assert from 'node:assert/strict';
+import { execFile } from 'node:child_process';
+import { parseArgs, promisify } from 'node:util';
 import { TEAM_PROJECT_ID, TEAM_SITE_URL, TEAM_SMARTTHINGS_APP_ID } from '../config/team.ts';
+
+const execute = promisify(execFile);
+
+async function checkRegistration(profile) {
+  async function appMetadata(command) {
+    const args = [command, TEAM_SMARTTHINGS_APP_ID, '--json'];
+    if (profile) args.push('--profile', profile);
+    try {
+      const { stdout } = await execute('smartthings', args, { timeout: 30000, maxBuffer: 256 * 1024 });
+      return JSON.parse(stdout);
+    } catch {
+      throw new Error('삼성 공식 CLI에서 등록된 밥뭇나 앱을 읽지 못했습니다. 앱 소유자 계정과 CLI 설치를 확인해 주세요.');
+    }
+  }
+  const [app, oauth] = await Promise.all([appMetadata('smartapps'), appMetadata('smartapps:oauth')]);
+  const hook = app.apiOnly?.subscription;
+  const checks = [
+    ['등록된 API Access App', app.appId === TEAM_SMARTTHINGS_APP_ID && app.appType === 'API_ONLY'],
+    ['기기 읽기 권한', oauth.scope?.length === 1 && oauth.scope[0] === 'r:devices:*'],
+    ['운영 콜백 주소', oauth.redirectUris?.includes(TEAM_SITE_URL + '/api/smartthings/callback')],
+    ['운영 웹훅 주소', hook?.targetUrl === TEAM_SITE_URL + '/api/smartthings/events'],
+    ['삼성 웹훅 확인', hook?.targetStatus === 'CONFIRMED'],
+  ];
+  for (const [label, ready] of checks) console.log(label + ' · ' + (ready ? '확인' : '준비 필요'));
+  return checks.every(([, ready]) => ready);
+}
 
 async function read(path) {
   const res = await fetch(TEAM_SITE_URL + path, {
@@ -13,6 +41,8 @@ async function read(path) {
 }
 
 try {
+  const { values } = parseArgs({ options: { registration: { type: 'boolean' }, profile: { type: 'string' } } });
+  if (values.profile && !values.registration) throw new Error('--profile은 --registration과 함께 사용해 주세요.');
   const init = await read('/__/firebase/init.json');
   assert.equal(init.res.status, 200);
   assert.equal(init.value.projectId, TEAM_PROJECT_ID);
@@ -39,6 +69,7 @@ try {
   } else {
     console.log('팀 서버가 새 연결을 받고, 로그인하지 않은 요청을 차단합니다. 실제 수신은 앱에서 기기를 선택한 뒤 마지막 자동 수신 시각으로 확인하세요.');
   }
+  if (values.registration && !await checkRegistration(values.profile)) process.exitCode = 2;
 } catch (error) {
   console.error('운영 연결 점검 실패.', error.message);
   process.exitCode = 1;

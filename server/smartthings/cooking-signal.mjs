@@ -11,10 +11,7 @@ export function meterSignal({ reading, energy }) {
   };
 }
 
-// A gap in reception always ends the observed run. Short stretches of sampled
-// low power can connect two high readings from the same cooker cycle.
-export function continuesCookRun(time, previousTime, lastHighTime,
-  maxGap = criteria.maxGapMinutes, mergeGap = criteria.mergeGapMinutes, interval = criteria.readingIntervalMinutes) {
-  return previousTime != null && lastHighTime != null &&
-    time - previousTime <= maxGap * 60000 && time - lastHighTime <= (mergeGap + interval) * 60000;
+// Group two actual qualifying observations. No assumption about watts in between.
+export function continuesCookRun(time, lastHighTime, mergeGapMinutes = criteria.mergeGapMinutes) {
+  return lastHighTime != null && time >= lastHighTime && time - lastHighTime <= mergeGapMinutes * 60000;
 }

@@ -186,7 +186,7 @@ function AccountPanel({ uid, revision, consent, latest, showConsentLink, onboard
         {measurement && measurement.connection.device?.id === selected.id && <MeterReadings reading={measurement.reading} energy={measurement.energy} checkedAt={measurement.connection.lastCheckedAt} physicalPlug={selected.isVirtual === false}/>}
         {selected.isVirtual === false && <div className="mt-4 border-t border-line pt-3">
           <h3 className="text-[17px] font-bold text-cocoa">밥솥 취사 신호 알림</h3>
-          <p className={textClass}>밥솥 전용 플러그에서 {DETECTION.COOK_MIN_WATTS}W 이상이 한 번 측정되면 내 홈과 알림에 표시해요. 같은 취사 중 이어지는 신호는 한 건으로 묶어요.</p>
+          <p className={textClass}>밥솥 전용 플러그에서 {DETECTION.COOK_MIN_WATTS}W 이상이 한 번 측정되면 내 홈과 알림에 표시해요. 직전 취사 신호와의 간격이 {DETECTION.COOK_MERGE_GAP_MIN}분 이하면 같은 건으로 묶어요.</p>
           <Button type="button" variant="outline" className="mt-2" disabled={!!busy || !api} onClick={() => {
             if (!api || !state) return;
             const enabled = !state.powerNotice?.enabled;

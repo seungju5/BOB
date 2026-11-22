@@ -15,17 +15,24 @@ export function weeklyReportLabel(issuedAt: Date): string {
   return `${tm}월 ${Math.ceil(td / 7)}주차`;
 }
 
+const monthDay = (date: string) => `${Number(date.slice(5, 7))}월 ${Number(date.slice(8, 10))}일`;
+
 export function alertCopy(
   type: AlertType,
   relation: string,
   s: { missed: number; fasting: number; emergency: number; plugRegistered?: boolean; payload?: AlertPayload; issuedAt?: string },
 ) {
   switch (type) {
-    case "eat_out":
+    case "eat_out": {
+      const meal = s.payload?.meal;
+      if (meal) return { title: `${relation}께서 밖에서 식사하셨어요`, body: `${monthDay(meal.date)} ${meal.label}에 외식하셨다고 알려주셨어요.` };
       return { title: `${relation}께서 밖에서 식사하셨어요`, body: "맛있게 드셨는지 전화로 여쭤보면 어떨까요?" };
+    }
     case "away": {
       const end = s.payload?.endDate;
-      const until = end ? `${Number(end.slice(5, 7))}월 ${Number(end.slice(8, 10))}일까지 ` : "";
+      const start = s.payload?.startDate;
+      const until = start && end ? (start === end ? `${monthDay(start)} 하루 ` : `${monthDay(start)}부터 ${monthDay(end)}까지 `)
+        : end ? `${monthDay(end)}까지 ` : "";
       return { title: `${relation}께서 ${until}자리를 비우세요`, body: "그동안은 끼니 알림을 쉬어요. 잘 다녀오시라고 인사 건네 보세요." };
     }
     case "weekly_report":

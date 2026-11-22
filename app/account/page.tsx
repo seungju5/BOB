@@ -102,6 +102,7 @@ export default function AccountPage() {
   return <main className="flex flex-col pb-8">
     <PageHeader title="내 정보 센터" back={ready && account.view?.onboardingStep === 8 ? "/more" : "/start"}/>
     <div className="flex flex-col gap-4 px-5 pt-2">
+      {live && account.operator && <Link className={buttonClass("outline")} href="/admin/">팀 운영 스튜디오 열기</Link>}
       {error ? <><p role="alert" className="rounded-2xl bg-butter-soft p-4 text-cocoa">{error}</p>{retry}</>
       : waiting ? <p role="status" className="p-4 text-cocoa">온라인 저장 정보를 확인하고 있어요…</p>
       : ready ? <>

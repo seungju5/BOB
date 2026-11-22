@@ -30,7 +30,7 @@ async function accountAction(action, body) {
 async function register(verify) {
   const credentials = {email: randomUUID() + '@example.test', password: randomUUID(), returnSecureToken: true};
   const {localId, idToken} = await accountAction('signUp', credentials);
-  if (!verify) return {uid: localId, email: credentials.email, token: idToken};
+  if (!verify) return {uid: localId, email: credentials.email, password:credentials.password, token: idToken};
   await accountAction('sendOobCode', {requestType: 'VERIFY_EMAIL', idToken});
   const codes = await (await request(auth + '/emulator/v1/projects/' + project + '/oobCodes')).json();
   const code = codes.oobCodes?.find(c => c.email === credentials.email && c.requestType === 'VERIFY_EMAIL');
@@ -127,4 +127,44 @@ test('the app SDK confirms timestamps, rejects stale names, and isolates househo
     await signOut(authClient); await terminate(db); await deleteApp(app);
     if (previousWindow === undefined) delete globalThis.window; else globalThis.window = previousWindow;
   }
+});
+
+test('Studio membership, directory queries, edits and revocation are enforced by Firestore', async () => {
+  const staff=await register(true), person=await register(true), pending=await register(false);
+  const location=id=>projectDocs+'/'+id;
+  async function provision(path,fields){assert.equal((await request(store+':commit',{writes:[{update:{name:location(path),fields}}]},'owner')).status,200);}
+  await provision('bapmunnaOperators/'+staff.email,{enabled:{booleanValue:true}});
+  await provision('bapmunnaOperators/'+pending.email,{enabled:{booleanValue:true}});
+  const {createStudio}=await import('../provider/studio.mjs');
+  const app=initializeApp({projectId:project,apiKey:'local-only',appId:'1:123:web:abc'},'studio-rules');
+  const authClient=getAuth(app), db=getFirestore(app);
+  connectAuthEmulator(authClient,auth,{disableWarnings:true});connectFirestoreEmulator(db,'127.0.0.1',Number(dbHost.split(':')[1]));
+  const api=createStudio(db,authClient);
+  const login=u=>signInWithEmailAndPassword(authClient,u.email,u.password);
+  try {
+    await login(pending);await api.recordSignIn(pending.uid);
+    await assert.rejects(api.allowed(pending.uid),{code:'permission-denied'});
+    await login(person);await api.recordSignIn(person.uid);
+    assert.equal(await api.allowed(person.uid),false);
+    await assert.rejects(api.overview(person.uid),{code:'permission-denied'});
+    assert.equal((await request(store+'/bapmunnaOperators/'+staff.email,undefined,person.token)).status,403);
+    assert.equal(await write(person,'bapmunnaOperators/'+person.email,{enabled:{booleanValue:true}},[]),403);
+    assert.equal(await write(person,'bapmunnaStorageStatus/'+person.uid,{},['householdAt']),403);
+    assert.equal(await write(person,account(person.uid),profile(person),['createdAt','updatedAt']),200);
+    await login(staff);await api.recordSignIn(staff.uid);
+    assert.equal(await api.allowed(staff.uid),true);
+    const dashboard=await api.overview(staff.uid);
+    assert.ok(dashboard.total>=3);assert.ok(dashboard.verified>=2);assert.equal(dashboard.days.length,7);
+    const found=await api.page(staff.uid,'members',person.email.toUpperCase(),null);assert.equal(found.rows[0].uid,person.uid);
+    const record=await api.detail(staff.uid,person.uid);assert.equal(record.profile.name,'테스트 가족');
+    await api.save(staff.uid,person.uid,{type:'name',name:'운영 수정',version:record.profile.version});
+    await assert.rejects(api.save(staff.uid,person.uid,{type:'name',name:'오래된 수정',version:record.profile.version}),/최신 정보/);
+    await api.save(staff.uid,person.uid,{type:'case',stage:'review',note:'검토 중',version:null});
+    const saved=await api.detail(staff.uid,person.uid);assert.equal(saved.note,'검토 중');assert.equal(saved.profile.name,'운영 수정');
+    await assert.rejects(api.save(staff.uid,person.uid,{type:'case',stage:'done',note:'이전 내용',version:null}),/최신 정보/);
+    assert.equal((await request(store+'/'+account(person.uid)+'/preferences/settings',undefined,staff.token)).status,403);
+    assert.equal((await request(store+'/bapmunnaOpsCases/'+person.uid,undefined,person.token)).status,403);
+    await provision('bapmunnaOperators/'+staff.email,{enabled:{booleanValue:false}});
+    assert.equal(await api.allowed(staff.uid),false);await assert.rejects(api.detail(staff.uid,person.uid),{code:'permission-denied'});
+  } finally {await signOut(authClient);await terminate(db);await deleteApp(app);}
 });

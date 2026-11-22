@@ -5,6 +5,53 @@ service cloud.firestore {
     function b3Verified() {
       return request.auth != null && request.auth.token.email_verified == true;
     }
+    // Membership can be provisioned only with the project management credentials.
+    function studioOperator() {
+      return b3Verified() && request.auth.token.email is string
+        && exists(/databases/$(database)/documents/bapmunnaOperators/$(request.auth.token.email.lower()))
+        && get(/databases/$(database)/documents/bapmunnaOperators/$(request.auth.token.email.lower())).data.enabled == true;
+    }
+    match /bapmunnaOperators/{email} {
+      allow get: if b3Verified() && request.auth.token.email.lower() == email;
+    }
+    match /bapmunnaOpsMeta/directory { allow get: if studioOperator(); }
+    match /bapmunnaMemberDirectory/{uid} {
+      function self() { return request.auth != null && request.auth.uid == uid && request.auth.token.email is string; }
+      function matchesToken(d) {
+        return d.email == request.auth.token.email && d.emailLower == request.auth.token.email.lower()
+          && d.verified == request.auth.token.email_verified && d.lastLoginAt is timestamp
+          && d.lastLoginAt.toMillis() == request.auth.token.auth_time * 1000;
+      }
+      allow get: if self() || studioOperator();
+      allow list: if studioOperator();
+      allow create: if self() && request.resource.data.keys().hasOnly(['email','emailLower','verified','joinedAt','lastLoginAt'])
+        && matchesToken(request.resource.data) && request.resource.data.joinedAt == request.time;
+      allow update: if self() && matchesToken(request.resource.data)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['email','emailLower','verified','lastLoginAt'])
+        && (!('lastLoginAt' in resource.data) || resource.data.lastLoginAt <= request.resource.data.lastLoginAt);
+    }
+    match /bapmunnaStorageStatus/{uid} {
+      function matchesSource(changed) {
+        let d = request.resource.data;
+        return d.keys().hasOnly(['settingsAt','householdAt']) && d.keys().hasAny(['settingsAt','householdAt'])
+          && (!changed.hasAny(['settingsAt']) || (d.settingsAt == request.time
+            && getAfter(/databases/$(database)/documents/bapmunnaAccounts/$(uid)/preferences/settings).data.updatedAt == request.time))
+          && (!changed.hasAny(['householdAt']) || (d.householdAt == request.time
+            && getAfter(/databases/$(database)/documents/bapmunnaAccounts/$(uid)/preferences/household).data.updatedAt == request.time));
+      }
+      allow get: if studioOperator();
+      allow create: if b3Owner(uid) && matchesSource(request.resource.data.keys());
+      allow update: if b3Owner(uid) && matchesSource(request.resource.data.diff(resource.data).affectedKeys());
+    }
+    match /bapmunnaOpsCases/{uid} {
+      allow get: if studioOperator();
+      allow create,update: if studioOperator()
+        && (exists(/databases/$(database)/documents/bapmunnaMemberDirectory/$(uid)) || exists(/databases/$(database)/documents/bapmunnaAccounts/$(uid)))
+        && request.resource.data.keys().hasOnly(['stage','note','editedBy','updatedAt'])
+        && request.resource.data.stage in ['new','review','done']
+        && request.resource.data.note is string && request.resource.data.note.size() <= 500
+        && request.resource.data.editedBy == request.auth.uid && request.resource.data.updatedAt == request.time;
+    }
     function b3Owner(uid) { return b3Verified() && request.auth.uid == uid; }
     function b3Profile(d,uid) {
       return d.keys().hasAll(['ownerUid','email','displayName','consentVersion','createdAt','updatedAt'])
@@ -14,7 +61,12 @@ service cloud.firestore {
         && d.consentVersion == '2026-10-16' && d.createdAt is timestamp && d.updatedAt == request.time;
     }
     match /bapmunnaAccounts/{uid} {
-      allow read: if b3Owner(uid);
+      allow read: if b3Owner(uid) || studioOperator();
+      allow update: if studioOperator() && resource.data.ownerUid == uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName','updatedAt'])
+        && request.resource.data.displayName is string && request.resource.data.displayName == request.resource.data.displayName.trim()
+        && request.resource.data.displayName.size() >= 2 && request.resource.data.displayName.size() <= 30
+        && request.resource.data.updatedAt == request.time;
       allow create: if b3Owner(uid) && b3Profile(request.resource.data,uid)
         && request.resource.data.createdAt == request.time;
       allow update: if b3Owner(uid) && b3Profile(request.resource.data,uid)

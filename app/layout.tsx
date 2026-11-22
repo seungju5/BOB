@@ -41,7 +41,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="ko" className="h-full antialiased">
       <body className="min-h-full">
-        <div className="mx-auto flex min-h-dvh w-full max-w-[440px] flex-col bg-paper shadow-[0_0_0_1px_var(--color-line)]">
+        <div className="app-frame mx-auto flex min-h-dvh w-full max-w-[440px] flex-col bg-paper shadow-[0_0_0_1px_var(--color-line)]">
           <RoleSwitcher />
           {children}
         </div>

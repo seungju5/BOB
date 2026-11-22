@@ -12,7 +12,7 @@ export function PrivacyContent() {
     <section>
       <h2 className="text-[21px] font-bold">1. 어떤 정보를 왜 쓰나요?</h2>
       <dl className="mt-3 space-y-4">
-        <div><dt className="font-bold">회원 정보</dt><dd>계정 식별값, 이메일, 표시 이름, 가입·이용 시각, 동의 확인 기록을 로그인과 운영 문의 처리에 사용해요. 비밀번호는 인증 서비스가 관리해요.</dd></div>
+        <div><dt className="font-bold">회원 정보</dt><dd>계정 식별값, 이메일, 표시 이름, 가입·이용 시각, 동의 확인 기록을 로그인과 운영 문의 처리에 사용해요. 등록된 팀 운영자는 가입 상태와 보호자 이름, 가구·생활 설정의 저장 시각을 확인하고 운영 문의를 처리해요. 비밀번호는 인증 서비스가 관리해요.</dd></div>
         <div><dt className="font-bold">우리 집 정보와 생활 기준</dt><dd>어르신 성함 또는 별칭, 호칭, 거주 인원, 반려견 여부, 식사 시간과 밥솥 사용·알림 설정을 본인 계정에 저장해요. 전화 연결에 쓸 연락처는 선택 입력이에요.</dd></div>
         <div><dt className="font-bold">선택 기능인 삼성 기기 연결</dt><dd>밥뭇나는 기기를 연결하지 않고도 이용할 수 있어요. 연결 화면에 ‘준비 중’이라고 나오면 아직 삼성 연결을 시작할 수 없어요.</dd></div>
       </dl>

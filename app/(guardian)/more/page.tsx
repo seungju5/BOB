@@ -9,7 +9,7 @@ import { useApp } from "@/lib/data/useApp";
 import { unackedAlerts } from "@/lib/data/view";
 
 export default function MorePage() {
-  const { view } = useApp();
+  const { view, operator } = useApp();
   const count = view ? unackedAlerts(view).length : 0;
   return <main className="flex flex-1 flex-col px-6 py-6">
     <Logo />
@@ -27,6 +27,7 @@ export default function MorePage() {
         <IconArrowRight className="h-5 w-5 shrink-0 text-muted" />
       </Link>)}
     </div>
+    {operator && <Link href="/admin/" className="mt-4 flex min-h-12 items-center gap-3 rounded-2xl border border-line px-4 py-3 font-bold text-cocoa"><IconChart className="h-5 w-5"/>팀 운영 스튜디오</Link>}
     <ImpactConnectionLinks />
     <ShareApp />
     <Mascot className="mx-auto mt-auto h-32 w-32 pt-6" />

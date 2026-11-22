@@ -8,8 +8,8 @@ import { DEFAULT_WINDOWS, type AppActions, type AppView, type OnboardingPatch } 
 import { assertOnboardingConsent } from './consent';
 import { cancelPendingSmartThings, readSmartThingsConnection, type SmartThingsConnection } from '@/lib/firebase/smartthings';
 
-type State = { user: FirebaseUser|null|undefined; profile: AccountProfile|null; saved: SavedPreferences|null; connection:SmartThingsConnection|null; view: AppView|null; error:string|null; loading:boolean; revision:number };
-const EMPTY: State = {user:undefined,profile:null,saved:null,connection:null,view:null,error:null,loading:true,revision:0};
+type State = { user: FirebaseUser|null|undefined; profile: AccountProfile|null; saved: SavedPreferences|null; connection:SmartThingsConnection|null; view: AppView|null; error:string|null; loading:boolean; operator:boolean; revision:number };
+const EMPTY: State = {user:undefined,profile:null,saved:null,connection:null,view:null,error:null,loading:true,operator:false,revision:0};
 let state=EMPTY, epoch=0;
 let statusRequest: AbortController | null = null;
 let signalObservers = 0, signalTimer: number | null = null, pollableUid: string | null = null;
@@ -130,13 +130,14 @@ async function observeUser(user:FirebaseUser|null) {
   consentProbe = null;
   mustConfirmConsent = false;
   const at=++epoch;emit({...EMPTY,user,loading:!!user?.verified,revision:state.revision+1});
+  if (user) void connectFirebase().then(p=>p.studio.recordSignIn(user.uid)).catch(()=>{});
   if(!user?.verified)return;
   try {
     const provider=await within(connectFirebase());
-    const [profile,saved]=await within(Promise.all([provider.getAppProfile(user.uid),provider.getAppPreferences(user.uid)]));
+    const [profile,saved,operator]=await within(Promise.all([provider.getAppProfile(user.uid),provider.getAppPreferences(user.uid),provider.studio.allowed(user.uid).catch(()=>false)]));
     if(epoch!==at)return;
     const ready=profile?.ownerUid===user.uid&&profile.consentVersion===ACCOUNT_CONSENT_VERSION;
-    emit({profile:ready?profile:null,saved,view:ready?firebaseView(saved):null,loading:false,error:null});
+    emit({operator,profile:ready?profile:null,saved,view:ready?firebaseView(saved):null,loading:false,error:null});
     if(ready)void refreshFirebaseConnection(user.uid,state.revision);
   } catch(error) { if(epoch===at)emit({error:accountError(error),loading:false}); }
 }

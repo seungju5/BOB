@@ -48,6 +48,14 @@ Node.js 24를 기준으로 합니다. `npm run dev`로 화면과 가상 체험�
 npx --yes --package firebase-tools@15.28.2 firebase emulators:exec --config firebase/emulators.json --only auth,firestore --project demo-warming-up "npm run test:accounts"
 ```
 
+## 팀 운영 스튜디오
+
+[운영 스튜디오](https://warming-up-bapmunna.web.app/admin/)는 앱에서 이메일을 인증한 운영자에게 로그인 직후 열립니다. 운영자 등록은 앱 권한이며, 팀 계정의 Google Cloud 역할이나 Firebase 비밀번호를 변경하지 않습니다. 신규 운영자도 자신의 이메일로 가입하고 인증한 뒤 로그인합니다.
+
+가입자 목록은 Firebase 인증에서 대조한 가입·로그인 시각과 앱에서 확인한 가입·인증 상태를 표시합니다. 앱 내 등록과 로그인은 가입 색인을 갱신합니다. 콘솔에서 직접 수행한 사용자 생성·삭제·사용 중지는 소유자가 인증 목록을 다시 대조하면 반영됩니다. 개요에 마지막 대조 시각을 표시합니다. 저장 데이터에서는 보호자 이름을 수정하고, 가구 및 생활 설정의 마지막 저장 시각을 확인하며, 계정별 팀 메모와 처리 상태를 기록합니다. 가족 연락처·식사·센서 원본은 운영 스튜디오가 읽을 수 없습니다.
+
+팀 소유자가 Firebase CLI로 해당 프로젝트에 로그인한 컴퓨터에서 `node scripts/sync-studio-directory.mjs`를 실행하면 인증 목록과 기존 설정 저장 시각을 대조합니다. 승인된 이메일을 한 줄에 하나씩 적은 비공개 파일을 사용하여 `node scripts/sync-studio-directory.mjs --grant-file <파일>`로 등록하고 `--revoke-file <파일>`로 해제합니다. 명단은 저장소에 올리지 않습니다. 앱에서 운영자 목록을 편집할 수 없습니다.
+
 ## 우리 집 플러그 연결을 확인하는 방법
 
 1. [운영 상태](https://warming-up-bapmunna.web.app/api/smartthings/config)에서 `connectionReady`를 확인합니다. `false`이면 운영 사이트가 새 삼성 연결을 받을 준비 중입니다. `npm run check:smartthings`로도 확인할 수 있습니다. 결과 코드 0은 새 연결을 받을 준비 완료, 2는 준비 중, 1은 점검 실패입니다.

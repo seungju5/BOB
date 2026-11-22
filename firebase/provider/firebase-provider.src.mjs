@@ -1,6 +1,7 @@
 import {initializeApp,getApp,getApps} from 'firebase/app';
 import {getAuth,onAuthStateChanged,beforeAuthStateChanged,signInWithEmailAndPassword,createUserWithEmailAndPassword,sendEmailVerification,sendPasswordResetEmail,updateProfile,signOut,reload,setPersistence,browserLocalPersistence,browserSessionPersistence,GoogleAuthProvider,signInWithPopup,signInWithCustomToken,verifyBeforeUpdateEmail} from 'firebase/auth';
 import {getFirestore,doc,getDocFromServer,runTransaction,serverTimestamp,Timestamp} from 'firebase/firestore';
+import {createStudio} from './studio.mjs';
 import {preferenceFields} from './app-preferences.mjs';
 import {CONSENT_VERSION,checkDisplayName} from './auth-utils.mjs';
 import {createKakaoClient,requestAccountEmail,completeKakaoSession} from './kakao-client.mjs';
@@ -75,6 +76,7 @@ export function createProvider(config, {googleEnabled = false, kakaoEnabled = fa
   }
   return {
     name:'Firebase',
+    studio:createStudio(db,auth),
     kakaoStatus:()=>kakao().available(),
     async kakao(keep){
       await auth.authStateReady();
@@ -121,6 +123,7 @@ export function createProvider(config, {googleEnabled = false, kakaoEnabled = fa
         if(expectedRevision&&(revisionOf(existingSettings)!==expectedRevision.settings||(existingHousehold&&revisionOf(existingHousehold)!==expectedRevision.household)))throw Object.assign(Error('다른 화면에서 설정이 바뀌었어요.'),{code:'preferences/conflict'});
         transaction.set(settingsRef(user.uid),{ownerUid:user.uid,...fields,onboardingStep:existingSettings.exists()&&existingSettings.data().onboardingStep===8?8:fields.onboardingStep,updatedAt:serverTimestamp()});
         if(household)transaction.set(householdRef(user.uid),{ownerUid:user.uid,...household,updatedAt:serverTimestamp()});
+        transaction.set(doc(db,'bapmunnaStorageStatus',user.uid),{settingsAt:serverTimestamp(),...(household && {householdAt:serverTimestamp()})},{merge:true});
       });assertCurrent();
       const [settings,storedHome]=await Promise.all([getDocFromServer(settingsRef(user.uid)),getDocFromServer(householdRef(user.uid))]);assertCurrent();
       const stored=storedPreferences(settings,user.uid);if(!stored)throw Error('저장 결과를 확인하지 못했어요.');

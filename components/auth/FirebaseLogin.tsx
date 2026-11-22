@@ -4,7 +4,7 @@ import { TEAM_GOOGLE_SIGN_IN_ENABLED, TEAM_KAKAO_SIGN_IN_ENABLED } from '@/confi
 import { PrivacyNotice } from '@/components/privacy/PrivacyNotice';
 
 import Link from 'next/link';
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { Logo, Mascot } from '@/components/Mascot';
 import { Button } from '@/components/ui';
@@ -15,6 +15,10 @@ import { useFirebaseAccount, refreshFirebaseAccount, signOutFirebase } from '@/l
 import { ONBOARDING_COMPLETE } from '@/lib/data/view';
 import { accountError, connectFirebase, within } from '@/lib/firebase/bridge';
 
+function onLocationChange(notify:()=>void) {
+  window.addEventListener('popstate',notify);
+  return ()=>window.removeEventListener('popstate',notify);
+}
 function afterLogin(step: number) {
   const next = new URLSearchParams(window.location.search).get('next');
   if (next === 'account') return '/account/';
@@ -34,6 +38,7 @@ function LoginForm({account,busy,setBusy,continueUid,setContinueUid}:{account:Re
   const [keep,setKeep]=useState(false),[consent,setConsent]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
   const [kakaoReady,setKakaoReady]=useState(false),[verificationEmail,setVerificationEmail]=useState('');
   const locked=useRef(false);
+  const studioLogin=useSyncExternalStore(onLocationChange,()=>new URLSearchParams(window.location.search).get('next')==='studio',()=>false);
   useEffect(()=>{
     if (!TEAM_KAKAO_SIGN_IN_ENABLED) return;
     let active=true;
@@ -43,8 +48,10 @@ function LoginForm({account,busy,setBusy,continueUid,setContinueUid}:{account:Re
   useEffect(()=>{
     // Restoring a session must leave the account-switch choice reachable.
     // Only a sign-in/profile action started on this screen advances automatically.
-    if(!busy&&continueUid&&account.user?.uid===continueUid&&account.view&&mode==='live'&&!leavingForDemo.current)router.replace(afterLogin(account.view.onboardingStep));
-  },[account.user?.uid,account.view,busy,continueUid,mode,router]);
+    if (busy || account.loading || !continueUid || account.user?.uid !== continueUid || mode !== 'live' || leavingForDemo.current) return;
+    if (account.operator || new URLSearchParams(window.location.search).get('next') === 'studio' && account.user?.verified) router.replace('/admin/');
+    else if (account.view) router.replace(afterLogin(account.view.onboardingStep));
+  },[account.user?.uid,account.user?.verified,account.loading,account.operator,account.view,busy,continueUid,mode,router]);
   async function run(action:()=>Promise<void>){
     if(busy||locked.current)return;locked.current=true;setBusy(true);setContinueUid(null);setError('');setNotice('');
     try{await action();}catch(e){setContinueUid(null);setError(accountError(e));}finally{locked.current=false;setBusy(false);}
@@ -65,15 +72,17 @@ function LoginForm({account,busy,setBusy,continueUid,setContinueUid}:{account:Re
   }
   const user=account.user;
   return <main className="flex flex-1 flex-col px-6 pt-6 pb-8">
-    <header className="flex items-center justify-between border-b border-line pb-4"><Logo/><span className="text-[16px] text-muted">보호자용</span></header>
-    <div className="mt-5"><FlowProgress current="login" /></div>
+    <header className="flex items-center justify-between border-b border-line pb-4"><Logo/><span className="text-[16px] text-muted">{studioLogin?'팀 운영 스튜디오':'보호자용'}</span></header>
+    {!studioLogin && <div className="mt-5"><FlowProgress current="login" /></div>}
     <div className="mx-auto mt-6 flex w-full max-w-md flex-1 flex-col">
-      <Mascot className="mx-auto h-24 w-24"/>
-      <h1 className="mt-3 text-center text-[28px] leading-tight font-extrabold text-cocoa">보호자님, 반가워요.</h1>
-      <p className="mt-2 text-center text-[16px] text-muted">멀리 있어도, 안부는 가까이.</p>
+      {!studioLogin && <Mascot className="mx-auto h-24 w-24"/>}
+      <h1 className="mt-3 text-center text-[28px] leading-tight font-extrabold text-cocoa">{studioLogin?'팀 운영자 로그인':'보호자님, 반가워요.'}</h1>
+      <p className="mt-2 text-center text-[16px] text-muted">{studioLogin?'등록된 팀 이메일로 로그인해 주세요.':'멀리 있어도, 안부는 가까이.'}</p>
       {error||account.error?<p role="alert" className="mt-5 rounded-2xl bg-blush p-4 text-[16px] text-cocoa">{error||account.error}</p>:null}
       {notice?<p role="status" className="mt-5 rounded-2xl bg-sage p-4 text-[16px] text-cocoa">{notice}</p>:null}
       {account.loading ? <p role="status" className="py-8 text-center text-[16px] text-muted">로그인 상태를 확인하고 있어요…</p>
+      : user && account.operator ? <section className="mt-6 grid gap-3"><p className="text-center">{user.email}</p><Button onClick={()=>{setMode('live');router.push('/admin/');}}>팀 운영 스튜디오 열기</Button><Button variant="ghost" disabled={busy} onClick={()=>run(signOutFirebase)}>다른 계정으로 로그인</Button></section>
+      : user?.verified && studioLogin ? <section className="mt-6 grid gap-3"><p className="text-center">이 계정에 등록된 운영 권한이 없습니다.</p><Button onClick={()=>run(signOutFirebase)}>다른 이메일로 로그인</Button></section>
       : user && !user.verified ? <section className="mt-6 flex flex-col gap-3">
         <h2 className="text-[20px] font-bold text-cocoa">{user.email?'이메일을 확인해 주세요':'처음 한 번, 이메일을 확인해요'}</h2>
         {user.email?<p className="break-all text-[16px] text-muted">{user.email}로 보낸 확인 링크를 눌러 주세요.</p>:<>
@@ -123,10 +132,10 @@ function LoginForm({account,busy,setBusy,continueUid,setContinueUid}:{account:Re
           {tab!=='reset'?<button type="button" disabled={busy} className="min-h-12 text-[16px] text-muted underline" onClick={()=>{setTab('reset');setError('');setPassword('');}}>비밀번호 찾기</button>:null}
           {tab!=='login'?<button type="button" disabled={busy} className="min-h-12 text-[16px] text-muted underline" onClick={()=>{setTab('login');setError('');}}>로그인으로</button>:null}
         </div>
-        <p className="text-[16px] leading-relaxed text-muted">보호자 본인의 계정으로 시작해요.<br/>어르신의 기록은 자동 연결되지 않아요.</p>
+        <p className="text-[16px] leading-relaxed text-muted">{studioLogin?'이메일 인증을 마친 운영자 계정만 접근할 수 있습니다.':<>보호자 본인의 계정으로 시작해요.<br/>어르신의 기록은 자동 연결되지 않아요.</>}</p>
       </form>}
-      <Button variant="ghost" className="mt-6" disabled={busy} onClick={()=>{leavingForDemo.current=true;setContinueUid(null);setMode('demo');router.push('/start');}}>로그인 없이 데모로 둘러보기</Button>
-      <p className="mt-2 text-center text-[16px] text-muted">데모에서는 예시 기록으로 사용해 볼 수 있어요.</p>
+      {!studioLogin && <><Button variant="ghost" className="mt-6" disabled={busy} onClick={()=>{leavingForDemo.current=true;setContinueUid(null);setMode('demo');router.push('/start');}}>로그인 없이 데모로 둘러보기</Button>
+      <p className="mt-2 text-center text-[16px] text-muted">데모에서는 예시 기록으로 사용해 볼 수 있어요.</p></>}
       <Link className="mt-4 flex min-h-12 items-center justify-center text-[16px] text-muted underline" href="/">첫 화면으로</Link>
     </div>
   </main>;

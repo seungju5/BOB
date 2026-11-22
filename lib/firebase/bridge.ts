@@ -15,6 +15,7 @@ export type PreferenceRevision = {settings:string|null;household:string|null};
 export type SavedPreferences = { settings: Preferences|null; household: Household|null; revision?:PreferenceRevision; savedAt?: {settings:string|null; household:string|null} };
 export type FirebaseProvider = {
   name: 'Firebase'; onUser(cb: (user: FirebaseUser|null)=>void): ()=>void;
+  studio: import('./studio').Studio;
   signIn(email:string,password:string,remember:boolean):Promise<FirebaseUser>;
   signUp(email:string,password:string,name:string,remember:boolean):Promise<FirebaseUser>;
   google(remember:boolean):Promise<FirebaseUser>; signOut():Promise<void>;

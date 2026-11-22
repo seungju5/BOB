@@ -43,6 +43,7 @@ async function fixture() {
   };
   const provider={
     name:'Firebase' as const,
+    studio:{allowed:vi.fn(async()=>false),recordSignIn:vi.fn(async()=>{}),watch:vi.fn(),overview:vi.fn(),page:vi.fn(),detail:vi.fn(),save:vi.fn()},
     onUser:vi.fn((callback:(user:FirebaseUser|null)=>void)=>{callbacks.add(callback);return()=>{callbacks.delete(callback);};}),
     getAppProfile:vi.fn(async(uid:string)=>profile(uid)),
     getAppPreferences:vi.fn(async(uid:string)=>server.get(uid)??saved(uid)),
@@ -73,6 +74,11 @@ afterEach(()=>{
 // Synthetic promises and Auth callbacks, with the production 12s timeout.
 // These tests do not claim browser, emulator, network or live account evidence.
 describe('Firebase account store asynchronous session isolation',()=>{
+  it('clears operator navigation immediately on account changes',async()=>{
+    const f=await fixture();await f.mount();f.provider.studio.allowed.mockResolvedValueOnce(true);
+    await f.emit(f.user('A'));expect(f.snapshot().operator).toBe(true);
+    await f.emit(f.user('B'));expect(f.snapshot().operator).toBe(false);
+  });
   it('reads back the canonical name after a scoped write and discards a result from a previous session',async()=>{
     const f=await fixture();await f.mount();await f.emit(f.user('A'));
     const rev=f.snapshot().revision;

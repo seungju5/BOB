@@ -9,7 +9,7 @@ import { guardianStartPath } from "@/lib/data/view";
 
 /** 보호자 진입점. 과거 /start로 보낸 로그인 링크도 콜백으로 넘긴다. */
 export default function GuardianStart() {
-  const { view, needsLogin, error } = useApp();
+  const { view, needsLogin, error, operator } = useApp();
   const router = useRouter();
 
   useEffect(() => {
@@ -20,9 +20,10 @@ export default function GuardianStart() {
   useEffect(() => {
     const query = new URLSearchParams(location.search);
     if (query.has("code") || query.has("error")) return;
-    if (needsLogin) router.replace("/login");
+    if (operator) router.replace('/admin/');
+    else if (needsLogin) router.replace("/login");
     else if (view) router.replace(guardianStartPath(view.onboardingStep));
-  }, [view, needsLogin, router]);
+  }, [view, needsLogin, operator, router]);
 
   return (
     <main className="flex flex-1 flex-col gap-4 p-6">

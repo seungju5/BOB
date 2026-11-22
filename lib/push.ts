@@ -80,6 +80,7 @@ export function useAlertNotifications(view: AppView | null) {
           emergency: view.alertSettings.emergencyHours,
           plugRegistered: !!view.plug.deviceId,
           payload: a.payload,
+          issuedAt: a.triggeredAt,
         });
         const options = { body: copy.body, tag: a.id, icon: appPath("/icon.svg"), data: { url: appPath(alertUrl(a.type)) } };
         if (reg) void reg.showNotification(copy.title, options);

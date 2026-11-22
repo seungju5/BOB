@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { AlertThresholdFields, Choice, Field, MealWindowsEditor, RelationPicker, Slider, TextInput, Toggle, windowsValid } from "@/components/forms";
+import { AlertThresholdFields, missedMealsHint, Choice, Field, MealWindowsEditor, RelationPicker, Slider, TextInput, Toggle, windowsValid } from "@/components/forms";
 import { IconArrowRight, IconLock, IconPlug, IconSuitcase } from "@/components/icons";
 import { PlugForm } from "@/components/PlugForm";
 import { SmartThingsAccountCard } from "@/components/SmartThingsAccountCard";
@@ -116,7 +116,7 @@ function AlertSettings({ view, actions }: { view: AppView; actions: AppActions }
   return (
     <form onSubmit={(event) => { event.preventDefault(); if (view.seniorConsent) void feedback.run(() => actions.saveAlertSettings(draft), "알림 기준을 저장했어요."); }}>
       <fieldset disabled={feedback.busy} aria-busy={feedback.busy} className="flex min-w-0 flex-col gap-5">
-        <AlertThresholdFields value={draft} onChange={(value) => { setDraft(value); feedback.clear(); }} hints={{ missed: "연속으로 이만큼 끼니 소식이 없으면 알려 드려요.", fasting: "마지막 밥솥 사용 후 이 시간이 지나면 알려 드려요.", emergency: "안부를 직접 확인할 기준이에요. 지정 연락처나 기관에 자동으로 연락하지는 않아요." }} />
+        <AlertThresholdFields value={draft} onChange={(value) => { setDraft(value); feedback.clear(); }} hints={{ missed: missedMealsHint(draft.missedMealsThreshold, view.mealProfile.windows.length), fasting: "마지막 밥솥 사용 후 이 시간이 지나면 알려 드려요.", emergency: "안부를 직접 확인할 기준이에요. 지정 연락처나 기관에 자동으로 연락하지는 않아요." }} />
         <SaveFeedback {...feedback} />
         <Button type="submit" disabled={feedback.busy || !view.seniorConsent}>{feedback.busy ? "저장하고 있어요…" : "알림 기준 저장"}</Button>
       </fieldset>

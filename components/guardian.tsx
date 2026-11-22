@@ -6,10 +6,10 @@ import { IconChart, IconCheck, IconClock, IconPhone, IconSuitcase, IconUtensils 
 
 export const STATUS_META: Record<MealStatus, { label: string; className: string }> = {
   confirmed: { label: "확인됨", className: "bg-sage text-sage-deep" },
-  eat_out: { label: "외식", className: "bg-butter-soft text-cocoa" },
+  eat_out: { label: "외식", className: "bg-butter text-cocoa" },
   away: { label: "부재", className: "bg-sky text-sky-deep" },
-  unconfirmed: { label: "미확인", className: "bg-blush text-blush-deep" },
-  pending: { label: "대기 중", className: "bg-line/60 text-muted" },
+  unconfirmed: { label: "미확인", className: "bg-neutral-300 text-neutral-800" },
+  pending: { label: "대기 중", className: "bg-white text-muted/60 ring-1 ring-inset ring-line" },
 };
 
 export function StatusIcon({ status, className = "h-4 w-4" }: { status: MealStatus; className?: string }) {

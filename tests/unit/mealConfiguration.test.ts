@@ -102,9 +102,13 @@ describe("실제 계정 미연결과 하루 상태", () => {
     expect(mealDaySummary(fourView(["away"], "2026-11-14"), "2026-11-14", NOW)).toEqual({ tone: "away", ok: 0, total: 0 });
   });
 
-  it("팔레트를 바꿔도 외식과 확인의 의미는 같은 색으로 유지한다", () => {
+  it("어느 팔레트에서도 외식·확인·미확인·대기 중은 서로 다른 색이다 (2026-11-22 피드백)", () => {
     expect(validMealPalette("unknown")).toBe("soft");
-    for (const palette of ["soft", "clear"] as const) expect(mealStatusClass("eat_out", palette)).toBe(mealStatusClass("confirmed", palette));
+    for (const palette of ["soft", "clear"] as const) {
+      const classes = (["confirmed", "eat_out", "unconfirmed", "pending"] as const).map((s) => mealStatusClass(s, palette));
+      expect(new Set(classes).size).toBe(classes.length);
+      expect(mealStatusClass("eat_out", palette)).toContain("butter");
+    }
   });
 });
 

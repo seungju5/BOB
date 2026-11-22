@@ -57,10 +57,13 @@ export const MEAL_DAY_LABEL: Record<MealDayTone, string> = {
 /** 상태마다 라벨·기호도 표시한다. 색상만으로 상태를 전달하지 않는다. */
 export function mealStatusClass(status: MealStatus, palette: MealPaletteId = "soft"): string {
   const confirmed = palette === "clear" ? "bg-sage-deep text-white" : "bg-sage text-sage-deep";
-  if (status === "confirmed" || status === "eat_out") return confirmed;
+  if (status === "confirmed") return confirmed;
+  // 외식은 확인됨과 헷갈리지 않게 노란색으로 구분한다.
+  if (status === "eat_out") return palette === "clear" ? "bg-butter-deep text-cocoa" : "bg-butter text-cocoa";
   if (status === "away") return palette === "clear" ? "bg-sky-deep text-white" : "bg-sky text-sky-deep";
-  if (status === "unconfirmed") return "bg-neutral-100 text-cocoa ring-1 ring-inset ring-neutral-300";
-  return "bg-white text-muted ring-1 ring-inset ring-line";
+  if (status === "unconfirmed") return palette === "clear" ? "bg-neutral-500 text-white" : "bg-neutral-300 text-neutral-800";
+  // 대기 중은 아직 판단 전이라 글자까지 흐리게 둔다.
+  return "bg-white text-muted/60 ring-1 ring-inset ring-line";
 }
 
 export function mealDayClass(tone: MealDayTone, palette: MealPaletteId = "soft"): string {

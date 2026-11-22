@@ -40,6 +40,7 @@ export default function HomePage() {
         emergency: view.alertSettings.emergencyHours,
         plugRegistered: !!view.plug.deviceId,
         payload: top.payload,
+        issuedAt: top.triggeredAt,
       })
     : null;
 
@@ -74,8 +75,6 @@ export default function HomePage() {
           </div>
         </section>
       ) : null}
-
-      <ImpactConnectionLinks compact />
 
       <Link
         href="/report"
@@ -128,6 +127,8 @@ export default function HomePage() {
         </ul>
         <p className="mt-3 text-[16px] leading-relaxed text-muted">밥솥 사용 여부만 전해요. 무엇을 얼마나 드셨는지는 알 수 없어요.</p>
       </section>
+
+      <ImpactConnectionLinks compact />
 
       <div className="mt-6 flex items-end gap-3">
         <Mascot className="h-16 w-16 shrink-0" mood={top ? "worried" : "happy"} />

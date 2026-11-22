@@ -9,7 +9,7 @@ export function Field({ label, hint, children, htmlFor }: { label: string; hint?
     <div className="flex flex-col gap-2">
       {htmlFor ? <label htmlFor={htmlFor} className="text-[16px] font-bold text-cocoa">{label}</label> : <span className="text-[16px] font-bold text-cocoa">{label}</span>}
       {children}
-      {hint ? <span className="text-[16px] leading-relaxed text-muted">{hint}</span> : null}
+      {hint ? <span className="text-[16px] leading-relaxed whitespace-pre-line text-muted">{hint}</span> : null}
     </div>
   );
 }
@@ -161,6 +161,20 @@ export const ALERT_RANGE = {
 } as const;
 
 type AlertHours = { missedMealsThreshold: number; fastingHours: number; emergencyHours: number };
+
+const DAY_WORDS = ["", "하루", "이틀", "사흘", "나흘", "닷새", "엿새"];
+
+/** 결식 알림 끼니 수가 하루 끼니 수 기준으로 며칠쯤인지 풀어서 알려 준다. */
+export function missedMealsHint(threshold: number, mealsPerDay: number): string {
+  const base = "연속으로 이만큼 끼니 소식이 없으면 알려 드려요.";
+  if (mealsPerDay < 1 || threshold < 1) return base;
+  const days = Math.floor(threshold / mealsPerDay);
+  const rest = threshold % mealsPerDay;
+  const span = days === 0
+    ? "하루가 채 안 되는 동안"
+    : `${DAY_WORDS[days] ?? `${days}일`}${rest ? ` 하고 ${rest}끼` : ""} 동안`;
+  return `${base}\n하루 ${mealsPerDay}끼로 설정했으니 ${threshold}끼면 ${span} 소식이 없을 때예요.`;
+}
 
 /** 한쪽 알림 시간을 바꾸면 다른 쪽을 밀어 기존 GAP을 지킨다. */
 export function fitAlertHours<T extends AlertHours>(s: T, changed: "fastingHours" | "emergencyHours"): T {

@@ -22,6 +22,7 @@ import { Button, Skeleton } from "@/components/ui";
 import { useApp } from "@/lib/data/useApp";
 import { tutorialExitPath } from "@/lib/data/view";
 import { PrivacyNotice } from "@/components/privacy/PrivacyNotice";
+import { weeklyReportLabel } from "@/lib/alerts/copy";
 
 /** 가입 후의 소개. 명시적으로 선택한 데모도 같은 소개를 별도로 체험한다. */
 
@@ -39,7 +40,7 @@ const SLIDES: Slide[] = [
     content: (
       <div className="flex w-full flex-col gap-3">
         <InfoCard icon={IconBell} text={"점심시간이 지났는데\n아직 식사 소식이 없어요"} />
-        <InfoCard icon={IconFile} text={"주간 리포트가\n발행되었어요"} />
+        <InfoCard icon={IconFile} text={`${weeklyReportLabel(new Date())} 리포트가\n발행되었어요`} />
       </div>
     ),
   },

@@ -46,6 +46,7 @@ export default function AlertsPage() {
               emergency: view.alertSettings.emergencyHours,
               plugRegistered: !!view.plug.deviceId,
               payload: a.payload,
+              issuedAt: a.triggeredAt,
             });
             const t = new Date(a.triggeredAt);
             const done = !!a.acknowledgedAt;

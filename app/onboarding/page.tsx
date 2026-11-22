@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { AlertThresholdFields, Choice, Field, MealWindowsEditor, RelationPicker, Slider, TextInput, windowsValid } from "@/components/forms";
+import { AlertThresholdFields, missedMealsHint, Choice, Field, MealWindowsEditor, RelationPicker, Slider, TextInput, windowsValid } from "@/components/forms";
 import { IconCheck, IconInfo } from "@/components/icons";
 import { SeniorConsentField } from "@/components/privacy/SeniorConsentField";
 import { Mascot } from "@/components/Mascot";
@@ -196,7 +196,7 @@ function AlertStep({ state, next }: StepProps) {
           value={settings}
           onChange={setSettings}
           hints={{
-            missed: "연속으로 이만큼 끼니 소식이 없으면 알려 드려요.",
+            missed: missedMealsHint(settings.missedMealsThreshold, state.mealProfile.windows.length),
             fasting: "마지막 밥솥 사용 후",
             emergency: "안부를 직접 확인할 기준이에요. 지정 연락처·신고 기관에 자동으로 연락하지는 않아요.",
           }}

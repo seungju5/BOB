@@ -27,11 +27,22 @@ function siteResource(name) {
 export function servingConfig(hosting) {
   assert.equal(hosting.site, site);
   assert.equal(hosting.public, 'out');
-  assert.deepEqual(Object.keys(hosting).sort(), ['headers', 'ignore', 'public', 'site', 'trailingSlash']);
-  assert.equal(typeof hosting.trailingSlash, 'boolean');
+  assert.deepEqual(Object.keys(hosting).sort(), ['headers', 'ignore', 'public', 'rewrites', 'site']);
+  const readiness = { regex: '^/api/smartthings/config/?$', destination: '/service-status/smartthings.json' };
+  const gateway = { source: '/api/smartthings/**', run: { serviceId: 'warming-up-smartthings', region: 'asia-northeast3' } };
+  assert(Array.isArray(hosting.rewrites) && hosting.rewrites.length === 1, 'Expected one SmartThings route.');
+  const [rule] = hosting.rewrites;
+  let rewrite;
+  if ('destination' in rule) {
+    assert.deepEqual(rule, readiness);
+    rewrite = { regex: rule.regex, path: rule.destination };
+  } else {
+    assert.deepEqual(rule, gateway);
+    rewrite = { glob: rule.source, run: rule.run };
+  }
   assert(Array.isArray(hosting.ignore) && hosting.ignore.every(pattern => typeof pattern === 'string'));
   return {
-    trailingSlashBehavior: hosting.trailingSlash ? 'ADD' : 'REMOVE',
+    rewrites: [rewrite],
     headers: hosting.headers.map(rule => ({
       glob: rule.source,
       headers: Object.fromEntries(rule.headers.map(({ key, value }) => [key, value])),

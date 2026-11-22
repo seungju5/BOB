@@ -40,7 +40,7 @@ describe('actual SmartThings connection summary stays separate from meal care',(
   it('maps only an acknowledged selected connection and never invents food or health records',()=>{
     const now=Date.now();
     const view=firebaseView({settings,household},{stage:'connected',device:{id:'synthetic-plug',label:'가상 플러그'},lastReceivedAt:now,lastSignalAt:now});
-    expect(view.plug).toEqual({deviceId:'synthetic-plug',online:true,lastReadingAt:new Date(now).toISOString()});
+    expect(view.plug).toEqual({status:'connected',deviceId:'synthetic-plug',online:true,lastReadingAt:new Date(now).toISOString()});
     expect(view.careAvailable).toBe(false);expect(view.slots).toEqual([]);expect(view.lastCookerAt).toBeNull();expect(view.alerts).toEqual([]);
     expect(firebaseView({settings,household},{stage:'connected',device:{id:'synthetic-plug',label:'가상 플러그'},lastReceivedAt:now},now+3*60*60*1000).plug.online).toBe(false);
   });
@@ -56,10 +56,22 @@ describe('actual SmartThings connection summary stays separate from meal care',(
     }
   });
   it('manual checks never become automatic event evidence; revoked consent clears the summary',()=>{
-    const connection={stage:'connected' as const,device:{id:'synthetic-plug',label:'가상 플러그'},lastCheckedAt:Date.now(),lastSignalAt:Date.now()};
-    expect(firebaseView({settings,household},connection).plug).toMatchObject({online:false,lastReadingAt:null});
-    expect(firebaseView({settings:{...settings,preparationAcknowledged:false},household},connection).plug.deviceId).toBe('');
+    const now=Date.now();
+    const connection={stage:'connected' as const,device:{id:'synthetic-plug',label:'가상 플러그',isVirtual:true},lastCheckedAt:now,lastSignalAt:now};
+    expect(firebaseView({settings,household},connection).plug).toMatchObject({
+      online:false,lastReadingAt:null,lastCheckedAt:new Date(now).toISOString(),isVirtual:true,
+    });
+    expect(firebaseView({settings:{...settings,preparationAcknowledged:false},household},connection).plug).toEqual({
+      status:'consent_required',deviceId:'',online:false,lastReadingAt:null,
+    });
     expect(firebaseView({settings,household},{...connection,stage:'reconnect_required'}).plug.deviceId).toBe('');
     expect(firebaseView({settings,household},{...connection,lastReceivedAt:Date.now()+60_000}).plug.lastReadingAt).toBeNull();
   });
+  it.each(['setup_required','read_error','choose_device','subscribing','reconnect_required','disconnected'] as const)(
+    'retains the distinct %s status without leaking prior device data',stage=>{
+      const stale={stage,device:{id:'old-plug',label:'old'},lastReceivedAt:Date.now(),lastCheckedAt:Date.now()};
+      const view=firebaseView({settings,household},stale);
+      expect(view.plug).toEqual({status:stage,deviceId:'',online:false,lastReadingAt:null});
+      expect(view.stats).toEqual({});expect(view.slots).toEqual([]);expect(view.alerts).toEqual([]);
+    });
 });

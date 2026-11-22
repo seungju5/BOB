@@ -22,7 +22,7 @@ export type FirebaseProvider = {
   completeKakaoLogin?(fragment?:string,signal?:AbortSignal):Promise<FirebaseUser>; requestEmail?(email:string,expectedUid:string):Promise<void>;
   resetPassword(email:string):Promise<void>; resendVerification():Promise<void>;
   refreshUser():Promise<FirebaseUser|null>;
-  getIdToken(expectedUid:string):Promise<string>;
+  getIdToken(expectedUid:string,forceRefresh?:boolean):Promise<string>;
   getAppProfile(uid:string):Promise<AccountProfile|null>;
   saveProfile(name:string,uid:string):Promise<void>;
   getAppPreferences(uid:string):Promise<SavedPreferences>;

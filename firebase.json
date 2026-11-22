@@ -8,7 +8,12 @@
       "**/node_modules/**",
       "**/*.map"
     ],
-    "trailingSlash": true,
+    "rewrites": [
+      {
+        "regex": "^/api/smartthings/config/?$",
+        "destination": "/service-status/smartthings.json"
+      }
+    ],
     "headers": [
       {
         "source": "**",
@@ -26,6 +31,14 @@
             "value": "SAMEORIGIN"
           }
         ]
+      },
+      {
+        "source": "/api/smartthings/**",
+        "headers": [{ "key": "Cache-Control", "value": "private, no-store" }]
+      },
+      {
+        "source": "/service-status/smartthings.json",
+        "headers": [{ "key": "Cache-Control", "value": "no-store" }]
       },
       {
         "source": "/_next/static/**",

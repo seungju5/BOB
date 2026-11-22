@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AccountProfile, FirebaseProvider, FirebaseUser, Household, Preferences, SavedPreferences } from '@/lib/firebase/bridge';
 
-const bridgeMock=vi.hoisted(()=>({connect:vi.fn(),smartThings:vi.fn(),resetSteps:vi.fn()}));
+const bridgeMock=vi.hoisted(()=>({connect:vi.fn(),smartThings:vi.fn(),cancelPending:vi.fn(),resetSteps:vi.fn()}));
 vi.mock('@/lib/steps/consent',()=>({resetSeniorStepsConsent:bridgeMock.resetSteps}));
-vi.mock('@/lib/firebase/smartthings',()=>({readSmartThingsConnection:bridgeMock.smartThings}));
+vi.mock('@/lib/firebase/smartthings',()=>({readSmartThingsConnection:bridgeMock.smartThings,cancelPendingSmartThings:bridgeMock.cancelPending}));
 vi.mock('@/lib/firebase/bridge',async original=>({
   ...await original<typeof import('@/lib/firebase/bridge')>(),
   connectFirebase:bridgeMock.connect,
@@ -64,9 +64,10 @@ async function fixture() {
 
 beforeEach(()=>{
   vi.resetModules();bridgeMock.connect.mockReset();bridgeMock.smartThings.mockReset().mockRejectedValue(new Error('No network in unit tests'));vi.useFakeTimers();
+  bridgeMock.cancelPending.mockReset().mockResolvedValue(undefined);
 });
 afterEach(()=>{
-  vi.clearAllTimers();vi.useRealTimers();
+  vi.clearAllTimers();vi.useRealTimers();vi.unstubAllGlobals();
 });
 
 // Synthetic promises and Auth callbacks, with the production 12s timeout.
@@ -77,6 +78,12 @@ describe('Firebase account store asynchronous session isolation',()=>{
     expect(f.snapshot().view).toMatchObject({mode:'live',dataSource:'firebase',
       plug:{status:'read_error',deviceId:'',online:false,lastReadingAt:null},slots:[],stats:{},alerts:[]});
     expect(f.snapshot().error).toBeNull();
+  });
+  it('an unconfigured integration preserves the profile and shows setup rather than a verified empty connection',async()=>{
+    bridgeMock.smartThings.mockResolvedValue({stage:'setup_required'});
+    const f=await fixture();await f.mount();await f.emit(f.user('A'));
+    expect(f.snapshot()).toMatchObject({error:null,loading:false,profile:{ownerUid:'A'},
+      view:{senior:{name:'A의 가상 가족'},plug:{status:'setup_required',deviceId:'',lastReadingAt:null}}});
   });
   it('a stalled status read changes from checking to failure without substituting a sample',async()=>{
     bridgeMock.smartThings.mockReturnValue(new Promise(()=>{}));
@@ -90,11 +97,11 @@ describe('Firebase account store asynchronous session isolation',()=>{
     const pending=deferred<{stage:'connected';device:{id:string;label:string}}>();
     bridgeMock.smartThings.mockReturnValue(pending.promise);
     const f=await fixture();await f.mount();await f.emit(f.user('A'));
-    f.store.updateFirebaseConnection('A',{stage:'disconnected'});
+    f.store.updateFirebaseConnection('A',{stage:'disconnected'},f.snapshot().revision);
     pending.resolve({stage:'connected',device:{id:'old-plug',label:'이전 가상 기기'}});await flush();
     expect(f.snapshot().connection?.stage).toBe('disconnected');expect(f.snapshot().view?.plug.deviceId).toBe('');
     await f.emit(f.user('B'));
-    f.store.updateFirebaseConnection('A',{stage:'connected',device:{id:'wrong-owner',label:'다른 계정'}});
+    f.store.updateFirebaseConnection('A',{stage:'connected',device:{id:'wrong-owner',label:'다른 계정'}},f.snapshot().revision);
     expect(f.snapshot().view?.plug.deviceId).not.toBe('wrong-owner');
   });
   it('rejects an unconsented household save before contacting the write provider',async()=>{
@@ -102,9 +109,78 @@ describe('Firebase account store asynchronous session isolation',()=>{
     const old=f.server.get('A')!;
     f.server.set('A',{...old,settings:{...old.settings!,preparationAcknowledged:false}});
     await f.mount();await f.emit(f.user('A'));
+    expect(bridgeMock.smartThings).not.toHaveBeenCalled();
     await expect(f.store.firebaseActions.saveOnboarding(4,{senior:{name:'가상 이름',relation:'어머니',phone:''}})).rejects.toThrow('동의를 확인');
     expect(f.provider.saveAppPreferences).not.toHaveBeenCalled();
     expect(f.snapshot().view?.senior.name).toBe('A의 가상 가족');
+  });
+  it('erases selected device data immediately on withdrawal and rejects responses from the older grant after re-consent',async()=>{
+    const f=await fixture();await f.mount();await f.emit(f.user('A'));
+    const before=f.snapshot().revision;
+    const sample={stage:'connected' as const,device:{id:'unit',label:'가상',isVirtual:true},lastReceivedAt:Date.now(),reading:{watts:850,measuredAt:Date.now()}};
+    f.store.updateFirebaseConnection('A',sample,before);
+    expect(f.snapshot().connection).not.toHaveProperty('reading');
+    expect(f.snapshot().view?.plug.isVirtual).toBe(true);
+    const pending=deferred<SavedPreferences>();
+    f.provider.saveAppPreferences.mockReturnValueOnce(pending.promise);
+    const withdrawal=f.store.firebaseActions.saveOnboarding(3,{seniorConsent:false});await flush();
+    expect(f.snapshot().connection).toBeNull();
+    expect(bridgeMock.cancelPending).toHaveBeenCalledWith('A');
+    expect(f.store.canReadConnection('A',f.snapshot().revision)).toBe(false);
+    expect(f.store.isFirebaseSessionCurrent('A',f.snapshot().revision)).toBe(true);
+    f.store.updateFirebaseConnection('A',sample,before);
+    expect(f.snapshot().connection).toBeNull();
+    const [settings,household,uid]=f.provider.saveAppPreferences.mock.calls[0];
+    pending.resolve(f.persist(settings,household,uid));await withdrawal;
+    expect(f.snapshot().view?.plug).toEqual({status:'consent_required',deviceId:'',online:false,lastReadingAt:null});
+
+    const nextStatus=deferred<{stage:'disconnected'}>();
+    bridgeMock.smartThings.mockReturnValueOnce(nextStatus.promise);
+    await f.store.firebaseActions.saveOnboarding(3,{seniorConsent:true});
+    f.store.updateFirebaseConnection('A',sample,before);
+    expect(f.snapshot().connection).toBeNull();
+    nextStatus.resolve({stage:'disconnected'});await flush();
+    expect(f.snapshot().connection).toEqual({stage:'disconnected'});
+    expect(bridgeMock.smartThings).toHaveBeenCalledTimes(2);
+  });
+  it('rejects late manual results for an earlier session even if the same account signs in again',async()=>{
+    const f=await fixture();await f.mount();await f.emit(f.user('A'));const revision=f.snapshot().revision;
+    await f.emit(f.user('B'));await f.emit(f.user('A'));
+    f.store.updateFirebaseConnection('A',{stage:'connected',device:{id:'stale',label:'old'}},revision);
+    expect(f.snapshot().view?.plug.deviceId).toBe('');
+    expect(f.store.isFirebaseSessionCurrent('A',revision)).toBe(false);
+    expect(bridgeMock.cancelPending.mock.calls).toEqual([['A'],['B']]);
+  });
+  it('withdrawal in another tab clears a selected device before reading the saved consent again',async()=>{
+    const browser=new EventTarget(),doc=Object.assign(new EventTarget(),{visibilityState:'visible'});
+    vi.stubGlobal('window',browser);vi.stubGlobal('document',doc);
+    const f=await fixture();await f.mount();await f.emit(f.user('A'));
+    const revision=f.snapshot().revision;
+    f.store.updateFirebaseConnection('A',{stage:'connected',device:{id:'test-device',label:'시험 기기'},lastReceivedAt:Date.now()},revision);
+    const pending=deferred<SavedPreferences>();f.provider.getAppPreferences.mockReturnValueOnce(pending.promise);
+    browser.dispatchEvent(Object.assign(new Event('storage'),{key:'warming-up:consent-changed',newValue:'1'}));
+    expect(f.snapshot().view?.plug.deviceId).toBe('');
+    expect(f.store.canReadConnection('A',f.snapshot().revision)).toBe(false);
+    const old=f.server.get('A')!;pending.resolve({...old,settings:{...old.settings!,preparationAcknowledged:false}});await flush();
+    expect(f.snapshot().view?.plug.status).toBe('consent_required');
+    expect(bridgeMock.cancelPending).toHaveBeenCalledWith('A');
+    expect(f.snapshot().user?.uid).toBe('A');
+    expect(bridgeMock.smartThings).toHaveBeenCalledTimes(1);
+  });
+  it('on return to the app, an unavailable consent read drops prior device data until verified again',async()=>{
+    const doc=Object.assign(new EventTarget(),{visibilityState:'visible'});
+    vi.stubGlobal('window',new EventTarget());vi.stubGlobal('document',doc);
+    const f=await fixture();await f.mount();await f.emit(f.user('A'));
+    f.store.updateFirebaseConnection('A',{stage:'connected',device:{id:'old',label:'가상'}},f.snapshot().revision);
+    f.provider.getAppPreferences.mockRejectedValueOnce(new Error('offline'));
+    doc.dispatchEvent(new Event('visibilitychange'));await flush();
+    expect(f.snapshot().view?.plug).toMatchObject({status:'read_error',deviceId:'',lastReadingAt:null});
+    expect(f.store.canReadConnection('A',f.snapshot().revision)).toBe(false);
+    expect(f.snapshot().profile?.ownerUid).toBe('A');
+    bridgeMock.smartThings.mockResolvedValueOnce({stage:'disconnected'});
+    doc.dispatchEvent(new Event('visibilitychange'));await flush();
+    expect(f.store.canReadConnection('A',f.snapshot().revision)).toBe(true);
+    expect(f.snapshot().view?.plug.status).toBe('disconnected');
   });
 
   it('retries a failed first connection and subscribes to auth before refresh completes',async()=>{
@@ -208,9 +284,20 @@ describe('Firebase account store asynchronous session isolation',()=>{
   it('clears private account state before signout waits for the provider',async()=>{
     const f=await fixture();await f.mount();await f.emit(f.user('A'));
     const pending=deferred<void>();f.provider.signOut.mockReturnValueOnce(pending.promise);
-    const signingOut=observe(f.store.signOutFirebase());await flush();
+    const signingOut=observe(f.store.signOutFirebase());
     expect(f.snapshot()).toMatchObject({user:null,profile:null,saved:null,view:null,loading:false});
+    expect(bridgeMock.cancelPending).toHaveBeenCalledWith('A');
     pending.resolve();expect(await signingOut).toMatchObject({ok:true});
+  });
+  it('finishes signout when the cancellation server stalls and never signs out a newly selected account',async()=>{
+    const f=await fixture();await f.mount();await f.emit(f.user('A'));
+    bridgeMock.cancelPending.mockReturnValueOnce(new Promise(()=>{}));
+    const first=f.store.signOutFirebase();await vi.advanceTimersByTimeAsync(1201);await first;
+    expect(f.provider.signOut).toHaveBeenCalledTimes(1);
+    await f.emit(f.user('A'));
+    const pending=deferred<void>();bridgeMock.cancelPending.mockReturnValueOnce(pending.promise);
+    const second=f.store.signOutFirebase();await f.emit(f.user('B'));pending.resolve();await second;
+    expect(f.provider.signOut).toHaveBeenCalledTimes(1);expect(f.snapshot().user?.uid).toBe('B');
   });
 
   it('resaves custom relation and contact fields without copying server-only household metadata',async()=>{

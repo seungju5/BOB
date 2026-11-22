@@ -3,17 +3,20 @@ import {connectFirebase} from '@/lib/firebase/bridge';
 import {readSmartThingsConnection} from '@/lib/firebase/smartthings';
 import {createHeartsClient} from '@/lib/hearts/client';
 import {createWalkingClient} from './client';
+import readiness from '../../public/service-status/smartthings.json';
 
 vi.mock('@/lib/firebase/bridge', () => ({connectFirebase: vi.fn(), within: <T>(value: T) => value}));
 
 describe('new project before device services are connected', () => {
   afterEach(() => { vi.unstubAllGlobals(); vi.clearAllMocks(); });
 
-  it('starts a new household without a device or a received signal', async () => {
-    const fetcher = vi.fn();
+  it('reads only public team readiness before device connections are offered', async () => {
+    const fetcher = vi.fn().mockResolvedValue(Response.json(readiness));
     vi.stubGlobal('fetch', fetcher);
-    expect(await readSmartThingsConnection('fixture-owner')).toEqual({stage: 'disconnected'});
-    expect(fetcher).not.toHaveBeenCalled();
+    expect(await readSmartThingsConnection('fixture-owner')).toEqual({stage: 'setup_required'});
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    expect(fetcher).toHaveBeenCalledWith('/api/smartthings/config', expect.objectContaining({method: 'GET'}));
+    expect(connectFirebase).not.toHaveBeenCalled();
   });
 
   it('stops walking and family-sharing requests before acquiring an ID token', async () => {

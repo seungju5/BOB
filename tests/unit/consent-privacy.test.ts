@@ -46,6 +46,13 @@ describe("public privacy and honest device availability", () => {
     expect(html).toContain("보관 기간이 확정되면");
     expect(html).not.toMatch(/notion\.com|target="_blank"/);
   });
+  it("explains optional read-only device access, transient readings and how to stop it", () => {
+    const html = renderToStaticMarkup(createElement(PrivacyPage));
+    for (const text of ["별도로 동의", "읽기 전용", "토큰을 암호화", "전력(W)", "시간대별 전력 내역은 저장하지", "마지막 자동 수신", "연결 해제"]) {
+      expect(html).toContain(text);
+    }
+    expect(html).not.toContain("운영 메모");
+  });
   it("does not offer an unshipped iPhone binary or deep link from the web", () => {
     const html = renderToStaticMarkup(createElement(HealthConnectionPage));
     expect(html).toContain("예시 걸음으로 산책 체험하기");

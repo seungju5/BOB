@@ -1,0 +1,13 @@
+# Only runtime code and the pinned dependency lock may enter the build context.
+**
+!Dockerfile
+!.dockerignore
+!package.json
+!package-lock.json
+!index.mjs
+!maintenance.mjs
+!http-adapter.mjs
+!security.mjs
+!service.mjs
+!smartthings.mjs
+!store.mjs

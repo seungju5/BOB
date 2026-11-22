@@ -69,7 +69,11 @@ export function createProvider(config, {googleEnabled = false, kakaoEnabled = fa
     },
     completeKakaoLogin(fragment,signal){return kakaoCompletion??=completeKakaoSession({auth,client:kakao(),fragment,signal,remember,beforeChange:beforeAuthStateChanged,observe:onAuthStateChanged,signIn:signInWithCustomToken}).then(mapUser);},
     requestEmail(email,expectedUid){return requestAccountEmail({email,expectedUid,currentUser:()=>auth.currentUser,sendVerification:(user,address)=>verifyBeforeUpdateEmail(user,address,actionSettings)});},
-    getIdToken(expectedUid){return withHouseholdUser(expectedUid,async(user,assertCurrent)=>{const token=await user.getIdToken();assertCurrent();return token;});},
+    getIdToken(expectedUid,forceRefresh=false){return withHouseholdUser(expectedUid,async(user,assertCurrent)=>{
+      const token=await user.getIdToken(forceRefresh);
+      assertCurrent();
+      return token;
+    });},
     onUser(callback){return onAuthStateChanged(auth,user=>callback(mapUser(user)));},
     async signIn(email,password,keep){await remember(keep);const result=await signInWithEmailAndPassword(auth,email.trim(),password);return mapUser(result.user);},
     async signUp(email,password,name,keep){

@@ -70,12 +70,19 @@ for (const name of ['app', 'components', 'config', 'firebase', 'lib', 'packages'
   for await (const file of files(join(root, name))) {
     if (name === 'public') {
       const asset = routeName(join(root, name), file);
-      assert(/^(?:brand\/[^/]+\.(?:png|webp|woff2|ttf|txt)|walking\/[^/]+\.(?:jpg|png)|bapmunna-app-qr\.(?:png|svg)|icon\.svg|sw\.js)$/.test(asset), 'Unexpected public asset: ' + asset);
+      assert(/^(?:brand\/[^/]+\.(?:png|webp|woff2|ttf|txt)|walking\/[^/]+\.(?:jpg|png)|bapmunna-app-qr\.(?:png|svg)|icon\.svg|sw\.js|service-status\/smartthings\.json)$/.test(asset), 'Unexpected public asset: ' + asset);
       publicAssets.add(asset);
     }
     await inspectFile(file, root, name === 'public');
   }
 }
+
+const readinessAsset = 'service-status/smartthings.json';
+const readiness = JSON.parse(await readFile(join(root, 'public', readinessAsset), 'utf8'));
+assert.equal(readiness.projectId, TEAM_PROJECT_ID);
+assert.equal(readiness.enabled, false, 'Only a running server can report a working integration.');
+assert.equal(readiness.connectionReady, false);
+assert.equal(readiness.mode, 'hosting-only');
 
 if (!sourceOnly) {
   const output = resolve(root, firebase.hosting.public);
@@ -109,7 +116,7 @@ if (!sourceOnly) {
   for (const page of ['privacy/index.html', 'health/privacy/index.html']) {
     assert((await readFile(join(output, page), 'utf8')).includes('mailto:' + TEAM_SUPPORT_EMAIL), 'Missing team contact in ' + page);
   }
-  for (const name of ['bapmunna-app-qr.png', 'bapmunna-app-qr.svg', 'brand/bunny.png']) {
+  for (const name of ['bapmunna-app-qr.png', 'bapmunna-app-qr.svg', 'brand/bunny.png', readinessAsset]) {
     assert((await readFile(join(output, name))).equals(await readFile(join(root, 'public', name))), 'Public asset differs from source: ' + name);
   }
 }

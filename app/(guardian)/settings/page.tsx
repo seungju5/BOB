@@ -6,7 +6,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { AlertThresholdFields, Choice, Field, MealWindowsEditor, RelationPicker, Slider, TextInput, Toggle, windowsValid } from "@/components/forms";
 import { IconArrowRight, IconLock, IconPlug, IconSuitcase } from "@/components/icons";
 import { PlugForm } from "@/components/PlugForm";
-import { SmartThingsPanel } from "@/components/SmartThingsPanel";
+import { SmartThingsAccountCard } from "@/components/SmartThingsAccountCard";
 import { SeniorConsentField } from "@/components/privacy/SeniorConsentField";
 import { PrivacyNotice } from "@/components/privacy/PrivacyNotice";
 import { deviceReadingLabel, seniorDetailsProblems } from "@/components/onboarding/settings-validation";
@@ -223,13 +223,13 @@ function DeviceSettings({ app, view }: { app: App; view: AppView }) {
   const careAvailable = careDataAvailable(view);
   const hasReading = Boolean(view.plug.lastReadingAt && Number.isFinite(Date.parse(view.plug.lastReadingAt)));
   return <div className="flex flex-col gap-5">
-    <div className="rounded-2xl bg-butter-soft p-4">
+    {firebase ? <SmartThingsAccountCard compact /> : <div className="rounded-2xl bg-butter-soft p-4">
       <p className="text-[16px] font-bold text-cocoa">{mode === "demo" ? "예시 기기 상태" : "기기 상태"}</p>
       <p className="mt-2 text-[16px] text-cocoa">{view.plug.status === "checking" ? "기기 상태를 확인하고 있어요." : view.plug.status === "read_error" ? "기기 상태를 조회하지 못했어요." : view.plug.deviceId ? view.plug.online && hasReading ? "신호를 받고 있어요." : "기기 수신을 확인해 주세요." : "아직 연결된 기기가 없어요."}</p>
       <p className="mt-4 text-[16px] font-semibold text-cocoa">{mode === "demo" ? "예시 마지막 기기 수신" : "마지막 기기 수신"}</p>
       <p className="mt-1 break-words text-[16px] leading-relaxed text-muted">{view.plug.status === "checking" ? "조회 중이에요." : view.plug.status === "read_error" ? "마지막 수신 시각을 확인할 수 없어요." : deviceReadingLabel(view.plug.lastReadingAt)}</p>
       <p className="mt-3 text-[16px] leading-relaxed text-muted">기기 신호가 없는 것만으로 식사나 건강 상태를 판단하지 않아요.</p>
-    </div>
+    </div>}
     {!view.seniorConsent ? <fieldset disabled={consent.busy} className="min-w-0">
       <SeniorConsentField demo={mode === "demo"} checked={consentChecked} onChange={checked => { setConsentChecked(checked); consent.clear(); }} />
       <Button variant="soft" className="mt-3" disabled={!consentChecked || consent.busy} onClick={() => { if (consentChecked) void consent.run(() => actions.saveOnboarding(view.onboardingStep, { seniorConsent: true }), mode === "demo" ? "예시 체험 선택을 저장했어요." : "동의 확인을 저장했어요."); }}>{consent.busy ? "저장하고 있어요…" : mode === "demo" ? "예시 체험 선택 저장하기" : "동의 확인 저장하기"}</Button>
@@ -242,7 +242,9 @@ function DeviceSettings({ app, view }: { app: App; view: AppView }) {
       }}>{mode === "demo" ? "예시 체험 선택 취소" : "동의 확인 취소"}</Button></> : null}
     </div>}
     <SaveFeedback {...consent} />
-    {firebase ? <SmartThingsPanel /> : view.plug.deviceId ? <div className="flex items-center gap-3 rounded-2xl border border-line p-4"><IconPlug className="h-6 w-6 shrink-0 text-cocoa" /><div className="min-w-0"><p className="text-[16px] font-bold text-cocoa">스마트플러그</p><p className="mt-1 break-all text-[16px] text-muted">{view.plug.deviceId}</p></div></div> : <PlugForm onSubmit={actions.registerPlug} consentConfirmed={view.seniorConsent} isDemo={mode === "demo"} />}
+    {firebase ? <Link href="/connect/" className="flex min-h-12 items-center justify-between rounded-2xl border border-line px-4 py-3 font-bold text-cocoa">
+      삼성 기기 연결 관리 <IconArrowRight className="h-5 w-5" />
+    </Link> : view.plug.deviceId ? <div className="flex items-center gap-3 rounded-2xl border border-line p-4"><IconPlug className="h-6 w-6 shrink-0 text-cocoa" /><div className="min-w-0"><p className="text-[16px] font-bold text-cocoa">스마트플러그</p><p className="mt-1 break-all text-[16px] text-muted">{view.plug.deviceId}</p></div></div> : <PlugForm onSubmit={actions.registerPlug} consentConfirmed={view.seniorConsent} isDemo={mode === "demo"} />}
     <ConnectionGuide />
     <div className="rounded-2xl bg-butter-soft p-4">
       <p className="text-[16px] font-bold text-cocoa">{view.senior.relation} 휴대폰 연결</p>

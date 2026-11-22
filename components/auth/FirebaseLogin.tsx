@@ -12,7 +12,13 @@ import { TextInput } from '@/components/forms';
 import { FlowProgress } from '@/components/onboarding/FlowProgress';
 import { setMode, useMode } from '@/lib/data/mode';
 import { useFirebaseAccount, refreshFirebaseAccount, signOutFirebase } from '@/lib/data/firebase';
+import { ONBOARDING_COMPLETE } from '@/lib/data/view';
 import { accountError, connectFirebase, within } from '@/lib/firebase/bridge';
+
+function afterLogin(step: number) {
+  const connecting = new URLSearchParams(window.location.search).get('next') === 'connect';
+  return connecting && step >= ONBOARDING_COMPLETE ? '/connect/' : '/start';
+}
 
 export default function FirebaseLogin(){
   const account=useFirebaseAccount();
@@ -36,7 +42,7 @@ function LoginForm({account,busy,setBusy,continueUid,setContinueUid}:{account:Re
   useEffect(()=>{
     // Restoring a session must leave the account-switch choice reachable.
     // Only a sign-in/profile action started on this screen advances automatically.
-    if(!busy&&continueUid&&account.user?.uid===continueUid&&account.view&&mode==='live'&&!leavingForDemo.current)router.replace('/start');
+    if(!busy&&continueUid&&account.user?.uid===continueUid&&account.view&&mode==='live'&&!leavingForDemo.current)router.replace(afterLogin(account.view.onboardingStep));
   },[account.user?.uid,account.view,busy,continueUid,mode,router]);
   async function run(action:()=>Promise<void>){
     if(busy||locked.current)return;locked.current=true;setBusy(true);setContinueUid(null);setError('');setNotice('');
@@ -97,7 +103,7 @@ function LoginForm({account,busy,setBusy,continueUid,setContinueUid}:{account:Re
         {account.error?<Button variant="outline" type="button" onClick={()=>run(refreshFirebaseAccount)}>다시 확인</Button>:null}
         <Button type="button" variant="ghost" disabled={busy} onClick={()=>run(signOutFirebase)}>다른 계정으로 로그인</Button>
       </form>
-      : user && account.view ? <section className="mt-6 flex flex-col gap-3"><p className="break-all text-center text-[16px]">{user.email}</p><Button onClick={()=>{setMode('live');router.push('/start');}}>내 계정으로 계속하기</Button><Button variant="ghost" disabled={busy} onClick={()=>run(signOutFirebase)}>다른 계정으로 로그인</Button></section>
+      : user && account.view ? <section className="mt-6 flex flex-col gap-3"><p className="break-all text-center text-[16px]">{user.email}</p><Button onClick={()=>{setMode('live');router.push(afterLogin(account.view!.onboardingStep));}}>내 계정으로 계속하기</Button><Button variant="ghost" disabled={busy} onClick={()=>run(signOutFirebase)}>다른 계정으로 로그인</Button></section>
       : <form className="mt-7 flex flex-col gap-3" onSubmit={submit}>
         {tab==='login' && (TEAM_GOOGLE_SIGN_IN_ENABLED || kakaoReady) ? <>
           {kakaoReady ? <button type="button" disabled={busy} onClick={()=>run(async()=>{const p=await connectFirebase();if(!p.kakao)throw Error('카카오 로그인 연결을 준비하고 있어요.');await p.kakao(keep);})} className="relative flex min-h-14 items-center justify-center rounded-full bg-kakao px-6 text-[17px] font-bold text-kakao-label disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-cocoa">

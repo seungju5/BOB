@@ -21,7 +21,17 @@ export type AppView = {
   /** 가족·기기 기록을 사용할 수 있는지. 계정 로그인 성공과는 별개다. */
   careAvailable?: boolean;
   onboardingStep: number; // 1~7 진행 중, 8 = 완료
-  plug: { deviceId: string; online: boolean; lastReadingAt: string | null; status?: "checking" | "read_error" };
+  plug: {
+    deviceId: string;
+    online: boolean;
+    /** Firebase 실계정에서는 서명된 기기 알림을 서버가 받은 시각이다. */
+    lastReadingAt: string | null;
+    /** 사용자가 선택한 기기 상태를 직접 조회한 시각. */
+    lastCheckedAt?: string;
+    isVirtual?: boolean;
+    status?: "checking" | "consent_required" | "setup_required" | "read_error" | "disconnected" |
+      "choose_device" | "subscribing" | "reconnect_required" | "connected";
+  };
   senior: { name: string; relation: string; phone: string };
   household: { residentCount: number; hasPet: boolean };
   mealProfile: { windows: MealWindow[]; eatOutPerWeek: number; usesKeepWarm: boolean; cooksPerWeek: number };

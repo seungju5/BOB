@@ -10,6 +10,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import urllib.error
 import urllib.request
 import zipfile
 from pathlib import Path, PurePosixPath
@@ -83,19 +84,33 @@ def unpack(artifact, target):
 def hosting_config(sha):
     source = api("contents/firebase.json?ref=" + sha)
     config = json.loads(base64.b64decode(source["content"]))["hosting"]
-    ensure(set(config) == {"site", "public", "ignore", "trailingSlash", "headers"} and
+    ensure(set(config) == {"site", "public", "ignore", "rewrites", "headers"} and
            config["site"] == PROJECT and config["public"] == "out", "Unexpected Hosting configuration.")
+    readiness = {"regex": "^/api/smartthings/config/?$", "destination": "/service-status/smartthings.json"}
+    gateway = {"source": "/api/smartthings/**", "run": {"serviceId": "warming-up-smartthings", "region": "asia-northeast3"}}
+    ensure(config["rewrites"] in ([readiness], [gateway]), "Unexpected SmartThings destination.")
     return {"hosting": config}
 
 
-def verify_live(export, sha):
-    for route, file in ROUTES.items():
+def verify_live(export, sha, hosting):
+    routes = dict(ROUTES)
+    if "destination" in hosting["rewrites"][0]:
+        routes["api/smartthings/config"] = "service-status/smartthings.json"
+    for route, file in routes.items():
         expected = (export / file).read_bytes()
         for attempt in range(5):
             req = urllib.request.Request(ORIGIN + "/" + route + "?release=" + sha, headers={"Cache-Control": "no-cache"})
-            with urllib.request.urlopen(req, timeout=20) as response:
-                if response.geturl().split("?")[0] == ORIGIN + "/" + route and response.read() == expected:
-                    break
+            try:
+                with urllib.request.urlopen(req, timeout=20) as response:
+                    actual_url = response.geturl().split("?")[0]
+                    if route == "api/smartthings/config":
+                        ensure(response.headers.get_content_type() == "application/json" and
+                               "no-store" in response.headers.get("Cache-Control", ""), "Unexpected API readiness response.")
+                    if actual_url == ORIGIN + "/" + route and response.read() == expected:
+                        break
+            except urllib.error.HTTPError as error:
+                if error.code != 404 or attempt == 4:
+                    raise
             if attempt == 4:
                 raise ValueError("Live page differs from the verified artifact: /" + route)
             time.sleep(2)
@@ -111,14 +126,15 @@ def main():
         base = Path(directory)
         export = base / "out"
         unpack(artifact, export)
+        current_config = hosting_config(sha)
         if not args.check_live:
             config = base / "firebase.json"
-            config.write_text(json.dumps(hosting_config(sha)), encoding="utf-8")
+            config.write_text(json.dumps(current_config), encoding="utf-8")
             ensure(latest_sha() == sha, "A newer team commit arrived. Run the command again.")
             subprocess.run(["firebase", "deploy", "--non-interactive", "--only", "hosting", "--project", PROJECT,
                             "--config", str(config), "-m", REPO + "@" + sha + " (verified build " + str(run) + ")"],
                            cwd=base, check=True)
-        verify_live(export, sha)
+        verify_live(export, sha, current_config["hosting"])
     print("Verified " + ORIGIN + " against GitHub run " + str(run) + " at " + sha + ".")
 
 

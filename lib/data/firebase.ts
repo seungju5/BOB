@@ -6,11 +6,16 @@ import { ALERT_DEFAULTS } from '@/config/detection';
 import { accountError, ACCOUNT_CONSENT_VERSION, connectFirebase, within, type AccountProfile, type FirebaseUser, type Household, type Preferences, type SavedPreferences } from '@/lib/firebase/bridge';
 import { DEFAULT_WINDOWS, type AppActions, type AppView, type OnboardingPatch } from './view';
 import { assertOnboardingConsent } from './consent';
-import { readSmartThingsConnection, type SmartThingsConnection } from '@/lib/firebase/smartthings';
+import { cancelPendingSmartThings, readSmartThingsConnection, type SmartThingsConnection } from '@/lib/firebase/smartthings';
 
 type State = { user: FirebaseUser|null|undefined; profile: AccountProfile|null; saved: SavedPreferences|null; connection:SmartThingsConnection|null; view: AppView|null; error:string|null; loading:boolean; revision:number };
 const EMPTY: State = {user:undefined,profile:null,saved:null,connection:null,view:null,error:null,loading:true,revision:0};
-let state=EMPTY, epoch=0, connectionRevision=0;
+let state=EMPTY, epoch=0;
+let statusRequest: AbortController | null = null;
+let pendingWithdrawals = 0;
+let consentProbe: symbol | null = null;
+let mustConfirmConsent = false;
+const CONSENT_CHANGED = 'warming-up:consent-changed';
 let observing=false, observerReady:Promise<void>|null=null;
 const listeners=new Set<()=>void>();
 const emit=(patch:Partial<State>)=>{state={...state,...patch};listeners.forEach(cb=>cb());};
@@ -21,20 +26,25 @@ export function defaultPreferences():Preferences {
   return {schemaVersion:1,onboardingStep:1,phone:'',relationLabel:'',windows:DEFAULT_WINDOWS.map(w=>({...w})),eatOutPerWeek:0,usesKeepWarm:true,cooksPerWeek:7,
     missedMealsThreshold:ALERT_DEFAULTS.MISSED_MEALS_THRESHOLD,fastingHours:ALERT_DEFAULTS.FASTING_HOURS,emergencyHours:ALERT_DEFAULTS.EMERGENCY_HOURS,preparationAcknowledged:false};
 }
+function checkedTimestamp(value: unknown, at: number): number | null {
+  return typeof value === 'number' && Number.isSafeInteger(value) && value > 0 &&
+    value <= at && value <= 8_640_000_000_000_000 ? value : null;
+}
 function connectionPlug(connection: SmartThingsConnection | null, consent: boolean, at: number): AppView["plug"] {
   const empty = {deviceId: "", online: false, lastReadingAt: null};
-  if (!consent) return empty;
+  if (!consent) return {...empty, status: "consent_required"};
   if (!connection) return {...empty, status: "checking"};
-  if (connection.stage === "read_error") return {...empty, status: "read_error"};
-  if (connection.stage !== "connected" || !connection.device?.id.trim()) return empty;
-  const received = connection.lastReceivedAt;
-  if (typeof received !== "number" || !Number.isFinite(received) || received <= 0 || received > at) {
-    return {...empty, deviceId: connection.device.id};
-  }
+  if (connection.stage !== "connected") return {...empty, status: connection.stage};
+  if (typeof connection.device?.id !== 'string' || !connection.device.id.trim()) return {...empty, status: "read_error"};
+  const received = checkedTimestamp(connection.lastReceivedAt, at);
+  const checked = checkedTimestamp(connection.lastCheckedAt, at);
   return {
     deviceId: connection.device.id,
-    online: at - received < ALERT_DEFAULTS.DEVICE_OFFLINE_HOURS * 60 * 60 * 1000,
-    lastReadingAt: new Date(received).toISOString(),
+    status: "connected",
+    online: received !== null && at - received < ALERT_DEFAULTS.DEVICE_OFFLINE_HOURS * 60 * 60 * 1000,
+    lastReadingAt: received === null ? null : new Date(received).toISOString(),
+    ...(checked !== null && {lastCheckedAt: new Date(checked).toISOString()}),
+    ...(connection.device.isVirtual === true && {isVirtual: true}),
   };
 }
 export function firebaseView(saved:SavedPreferences,connection:SmartThingsConnection|null=null,at=Date.now()):AppView {
@@ -45,24 +55,64 @@ export function firebaseView(saved:SavedPreferences,connection:SmartThingsConnec
     alertSettings:{missedMealsThreshold:p.missedMealsThreshold,fastingHours:p.fastingHours,emergencyHours:p.emergencyHours},seniorConsent:p.preparationAcknowledged,
     plug:connectionPlug(connection,p.preparationAcknowledged,at),pairingCode:null,seniorPaired:false,slots:[],stats:{},lastCookerAt:null,lastActivityAt:null,absences:[],alerts:[]};
 }
-export function updateFirebaseConnection(uid:string,connection:SmartThingsConnection) {
-  if(state.user?.uid!==uid||!state.user.verified||!state.saved||!state.profile)return;
-  ++connectionRevision;
-  emit({connection,view:firebaseView(state.saved,connection)});
+function cancelStatusRequest() {
+  statusRequest?.abort();
+  statusRequest = null;
 }
-async function refreshFirebaseConnection(uid:string,at:number) {
-  const revision=connectionRevision;
+export function isFirebaseSessionCurrent(uid: string, revision: number): boolean {
+  return state.user?.uid === uid && state.user.verified && state.profile?.ownerUid === uid &&
+    state.profile.consentVersion === ACCOUNT_CONSENT_VERSION && state.saved !== null && state.revision === revision;
+}
+export function canReadConnection(uid: string, revision: number): boolean {
+  return isFirebaseSessionCurrent(uid, revision) && state.saved?.settings?.preparationAcknowledged === true &&
+    pendingWithdrawals === 0 && !mustConfirmConsent;
+}
+// A status result can also arrive from the connection panel. Keep just summary
+// fields here; a manual wattage reading stays in the panel that requested it.
+export function updateFirebaseConnection(uid: string, result: SmartThingsConnection, revision: number) {
+  if (!canReadConnection(uid, revision) || !state.saved) return;
+  cancelStatusRequest();
+  let connection: SmartThingsConnection = { stage: result.stage };
+  if (result.stage === 'connected') {
+    if (typeof result.device?.id === 'string' && result.device.id.trim()) {
+      const now = Date.now();
+      connection = {
+        stage: 'connected',
+        device: { id: result.device.id, label: result.device.label, ...(result.device.isVirtual === true && {isVirtual: true}) },
+        lastReceivedAt: checkedTimestamp(result.lastReceivedAt, now),
+        lastCheckedAt: checkedTimestamp(result.lastCheckedAt, now),
+        lastSignalAt: checkedTimestamp(result.lastSignalAt, now),
+      };
+    } else {
+      connection = { stage: 'read_error' };
+    }
+  }
+  emit({connection, view: firebaseView(state.saved, connection)});
+}
+async function refreshFirebaseConnection(uid: string, revision: number) {
+  if (!canReadConnection(uid, revision)) return;
+  cancelStatusRequest();
+  const request = new AbortController();
+  statusRequest = request;
   try {
-    if(epoch!==at||state.user?.uid!==uid)return;
-    const connection=await within(readSmartThingsConnection(uid));
-    if(epoch===at&&connectionRevision===revision)updateFirebaseConnection(uid,connection);
+    const connection = await within(readSmartThingsConnection(uid, request.signal));
+    if (statusRequest === request) updateFirebaseConnection(uid, connection, revision);
   } catch {
-    if (epoch === at && connectionRevision === revision) updateFirebaseConnection(uid, {stage:'read_error'});
+    if (statusRequest === request) updateFirebaseConnection(uid, {stage:'read_error'}, revision);
+  } finally {
+    if (statusRequest === request) cancelStatusRequest();
   }
 }
 async function observeUser(user:FirebaseUser|null) {
-  if(state.user!==undefined&&state.user?.uid!==user?.uid)resetSeniorStepsConsent();
-  const at=++epoch;emit({...EMPTY,user,loading:!!user?.verified,revision:at});
+  if(state.user!==undefined&&state.user?.uid!==user?.uid){
+    if (state.user?.uid) void cancelPendingSmartThings(state.user.uid).catch(()=>{});
+    resetSeniorStepsConsent();
+  }
+  cancelStatusRequest();
+  pendingWithdrawals = 0;
+  consentProbe = null;
+  mustConfirmConsent = false;
+  const at=++epoch;emit({...EMPTY,user,loading:!!user?.verified,revision:state.revision+1});
   if(!user?.verified)return;
   try {
     const provider=await within(connectFirebase());
@@ -70,13 +120,22 @@ async function observeUser(user:FirebaseUser|null) {
     if(epoch!==at)return;
     const ready=profile?.ownerUid===user.uid&&profile.consentVersion===ACCOUNT_CONSENT_VERSION;
     emit({profile:ready?profile:null,saved,view:ready?firebaseView(saved):null,loading:false,error:null});
-    if(ready)void refreshFirebaseConnection(user.uid,at);
+    if(ready)void refreshFirebaseConnection(user.uid,state.revision);
   } catch(error) { if(epoch===at)emit({error:accountError(error),loading:false}); }
 }
 async function ensureFirebaseObserver(){
   if(observing)return;
   if(!observerReady)observerReady=within(connectFirebase()).then(provider=>{
-    provider.onUser(user=>{void observeUser(user);});observing=true;
+    provider.onUser(user=>{void observeUser(user);});
+    if (typeof window !== 'undefined') {
+      window.addEventListener('storage', event => {
+        if (event.key === CONSENT_CHANGED && event.newValue) void recheckSavedConsent(true);
+      });
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') void recheckSavedConsent(false);
+      });
+    }
+    observing=true;
   }).catch(error=>{emit({loading:false,error:accountError(error)});throw error;}).finally(()=>{observerReady=null;});
   return observerReady;
 }
@@ -94,9 +153,15 @@ export function useFirebaseAccount(enabled=true) {
   return snapshot;
 }
 export async function signOutFirebase() {
+  const uid = state.user?.uid;
+  // Discard private UI state before any provider or network wait. A pending
+  // Samsung consent window can be cancelled without unlinking a selected device.
+  cancelStatusRequest();pendingWithdrawals=0;
+  consentProbe=null;mustConfirmConsent=false;
+  resetSeniorStepsConsent();const at=++epoch;emit({...EMPTY,user:null,loading:false,revision:state.revision+1});
+  if (uid) await within(cancelPendingSmartThings(uid), 1200).catch(()=>{});
   const p=await within(connectFirebase());
-  // Clear household and forms before awaiting the network or observer callback.
-  resetSeniorStepsConsent();++epoch;emit({...EMPTY,user:null,loading:false,revision:epoch});
+  if (at!==epoch) return;
   await within(p.signOut());
 }
 export function preferencesPatch(saved:SavedPreferences,step:number,patch:OnboardingPatch):{settings:Preferences;household:Household|null} {
@@ -114,22 +179,95 @@ export function preferencesPatch(saved:SavedPreferences,step:number,patch:Onboar
   }
   return {settings,household};
 }
+function notifyConsentChanged() {
+  // The event only prompts other tabs to read their own verified account.
+  // No user, household, consent decision or device is placed in web storage.
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(CONSENT_CHANGED, '1');
+    window.localStorage.removeItem(CONSENT_CHANGED);
+  } catch { /* Returning to the app also checks the saved preference. */ }
+}
+async function recheckSavedConsent(fromPeer: boolean): Promise<void> {
+  const uid = state.user?.uid;
+  if (!uid || !state.saved || !isFirebaseSessionCurrent(uid, state.revision)) return;
+  if (!fromPeer && !mustConfirmConsent && !state.saved.settings?.preparationAcknowledged) return;
+  const at = epoch;
+  const probe = Symbol();
+  consentProbe = probe;
+  if (fromPeer && !mustConfirmConsent) {
+    mustConfirmConsent = true;
+    cancelStatusRequest();
+    emit({connection: null, view: firebaseView(state.saved), revision: state.revision + 1});
+  }
+  const current = () => epoch === at && consentProbe === probe;
+  try {
+    const write = writeQueues.get(uid);
+    if (write) await within(write);
+    if (!current()) return;
+    const provider = await within(connectFirebase());
+    if (!current()) return;
+    const before = state.saved;
+    const saved = await within(provider.getAppPreferences(uid));
+    if (!current()) return;
+    if (state.saved !== before) return recheckSavedConsent(fromPeer);
+    if (mustConfirmConsent || before?.settings?.preparationAcknowledged !== saved.settings?.preparationAcknowledged) {
+      applySavedPreferences(uid, saved, 'confirmation');
+    }
+    consentProbe = null;
+  } catch {
+    if (!current() || !state.saved) return;
+    mustConfirmConsent = true;
+    cancelStatusRequest();
+    const connection: SmartThingsConnection = {stage: 'read_error'};
+    emit({connection, view: firebaseView(state.saved,connection), revision: state.revision + 1});
+    consentProbe = null;
+  }
+}
+function applySavedPreferences(uid: string, saved: SavedPreferences, source: 'write' | 'conflict' | 'confirmation') {
+  const hadConsent = state.saved?.settings?.preparationAcknowledged === true;
+  const hasConsent = saved.settings?.preparationAcknowledged === true;
+  const changed = hadConsent !== hasConsent;
+  const resume = source === 'confirmation' && mustConfirmConsent;
+  if (source === 'confirmation') mustConfirmConsent = false;
+  if (changed || resume) cancelStatusRequest();
+  if (changed && !hasConsent && !pendingWithdrawals) void cancelPendingSmartThings(uid).catch(()=>{});
+  const connection = hasConsent && !changed && !mustConfirmConsent && !pendingWithdrawals ? state.connection : null;
+  const revision = changed || resume ? state.revision + 1 : state.revision;
+  emit({saved, connection, revision, view: firebaseView(saved, connection), error: null});
+  if (changed && source === 'write') notifyConsentChanged();
+  if ((changed || resume) && hasConsent) void refreshFirebaseConnection(uid, revision);
+}
 function save(step:number,patch:OnboardingPatch={}) {
   const at=epoch,uid=state.user?.uid;let expired=false;
   const current=()=>{if(expired)throw Object.assign(new Error('요청 시간이 지났어요. 다시 저장해 주세요.'),{code:'app/timeout'});if(!uid||at!==epoch||state.user?.uid!==uid||!state.user.verified||!state.profile||!state.saved)throw Object.assign(new Error('계정이 바뀌었어요.'),{code:'auth/user-changed'});};
+  const withdrawing = patch.seniorConsent === false && uid && state.user?.verified && state.saved?.settings?.preparationAcknowledged;
+  if (withdrawing && state.saved) {
+    // Immediately discard private observations while Firestore confirms the
+    // preference. A late response from the panel or a previous grant cannot repopulate them.
+    ++pendingWithdrawals;
+    cancelStatusRequest();
+    emit({connection:null, view:firebaseView(state.saved), revision:state.revision+1});
+    void cancelPendingSmartThings(uid!).catch(()=>{});
+  }
   const previous=uid?writeQueues.get(uid)??Promise.resolve():Promise.resolve();
   const work=previous.then(async()=>{
     current();const provider=await connectFirebase();current();
     const input=preferencesPatch(state.saved!,step,patch);
     try {
       const saved=await provider.saveAppPreferences(input.settings,input.household,uid!,state.saved!.revision??{settings:null,household:null});current();
-      emit({saved,view:firebaseView(saved,state.connection),error:null});
+      applySavedPreferences(uid!,saved,'write');
     }catch(error){
       if(typeof error==='object'&&error&&'code' in error&&error.code==='preferences/conflict'){
-        const saved=await provider.getAppPreferences(uid!);current();emit({saved,view:firebaseView(saved,state.connection)});
+        const saved=await provider.getAppPreferences(uid!);current();applySavedPreferences(uid!,saved,'conflict');
       }
       throw error;
     }
+  }).finally(()=>{
+    if (!withdrawing || epoch !== at) return;
+    --pendingWithdrawals;
+    // A failed or timed-out withdrawal has no verified new device status.
+    if (canReadConnection(uid!,state.revision)) updateFirebaseConnection(uid!,{stage:'read_error'},state.revision);
   });
   // A timeout does not cancel a submitted Firestore write. Keep later writes
   // behind its actual settlement, and never apply a result to another session.

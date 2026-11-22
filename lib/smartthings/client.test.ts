@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { TEAM_PROJECT_ID, TEAM_SITE_URL } from "@/config/team";
+import { TEAM_PROJECT_ID, TEAM_SITE_URL, TEAM_SMARTTHINGS_APP_ID } from "@/config/team";
 import { cancelPendingSmartThings, openSmartThings, readSmartThingsConnection, SMARTTHINGS_CONSENT_VERSION } from "@/lib/firebase/smartthings";
 import { callbackMessage, smartThingsErrorMessage } from "./presentation";
 import { pendingForAccount, rememberAttempt, returnedToAccount } from "./pending";
@@ -8,7 +8,7 @@ const sdk = vi.hoisted(() => ({ token: vi.fn() }));
 vi.mock("@/lib/firebase/bridge", () => ({ connectFirebase: async () => ({ getIdToken: sdk.token }) }));
 const transport = vi.fn<typeof fetch>();
 const uid = "test-household";
-const config = { projectId: TEAM_PROJECT_ID, enabled: true, connectionReady: true, consentVersion: SMARTTHINGS_CONSENT_VERSION };
+const config = { projectId: TEAM_PROJECT_ID, appId: TEAM_SMARTTHINGS_APP_ID, enabled: true, connectionReady: true, consentVersion: SMARTTHINGS_CONSENT_VERSION };
 const sampleTime = Date.UTC(2020, 0, 1);
 const plug = { id: "test-plug", label: "연습용 플러그", isVirtual: true };
 const active = { stage: "connected", device: plug, lastCheckedAt: sampleTime };
@@ -45,13 +45,15 @@ describe("team SmartThings browser client", () => {
     const energy = { kwh: 2.75, measuredAt: sampleTime - 30000 };
     transport.mockResolvedValueOnce(json({ ...active, reading: { watts: 780, measuredAt: sampleTime }, energy }));
     const result=await api.check();
-    expect(result.energy).toEqual(energy);
-    expect(result.reading?.measuredAt).toBe(sampleTime);
+    expect(result.energy).toEqual({measuredAt:energy.measuredAt});
+    expect(result.reading).toEqual({cooking:true,measuredAt:sampleTime});
     expect(result.connection).not.toHaveProperty('energy');
     transport.mockResolvedValueOnce(json({...active,reading:null,energy}));
-    expect((await api.check()).energy).toEqual(energy);
+    expect((await api.check()).energy).toEqual({measuredAt:energy.measuredAt});
+    transport.mockResolvedValueOnce(json({...active,reading:{cooking:false,measuredAt:sampleTime},energy:null}));
+    expect((await api.check()).reading).toEqual({cooking:false,measuredAt:sampleTime});
     transport.mockResolvedValueOnce(json({enabled:true}));await api.setPowerNotice('p',true);
-    expect(JSON.parse(String(transport.mock.lastCall?.[1]?.body))).toEqual({deviceId:'p',enabled:true,consentVersion:'cooker-power-notice-v1'});
+    expect(JSON.parse(String(transport.mock.lastCall?.[1]?.body))).toEqual({deviceId:'p',enabled:true,consentVersion:'cooker-power-notice-v2'});
     transport.mockResolvedValueOnce(json({enabled:true}));
     await expect(api.setPowerNotice('p',false)).rejects.toMatchObject({code:'invalid_response'});
   });
@@ -67,6 +69,7 @@ describe("team SmartThings browser client", () => {
 
   it.each([
     ["another project", () => json({ ...config, projectId: "another-team" })],
+    ["another registered Samsung app", () => json({ ...config, appId: "other-app" })],
     ["a Hosting fallback", () => new Response("<html>site</html>")],
     ["a missing endpoint", () => json({ error: "not_found" }, 404)],
     ["malformed flags", () => json({ ...config, enabled: "false" })],
@@ -141,7 +144,7 @@ describe("team SmartThings browser client", () => {
     const client = await openSmartThings(uid);
     expect(await client.devices()).toEqual([plug]);
     const result = await client.select(plug.id);
-    expect(result.reading).toEqual({ watts: 0, measuredAt: sampleTime });
+    expect(result.reading).toEqual({ cooking: false, measuredAt: sampleTime });
     expect(result.connection).not.toHaveProperty("reading");
     expect(result.connection.lastReceivedAt).toBeNull();
     expect(transport.mock.lastCall).toEqual(["/api/smartthings/device", expect.objectContaining({ method: "POST", body: JSON.stringify({ deviceId: plug.id }) })]);

@@ -10,8 +10,8 @@ import { deviceStageCopy } from "@/lib/smartthings/presentation";
 
 export function PowerNotice({at}: {at: string}) {
   return <div role="status" className="mt-2 rounded-xl bg-butter-soft p-3 text-cocoa">
-    <p className="text-[17px] font-bold">밥솥 플러그에서 높은 전력이 여러 번 측정됐어요</p>
-    <p className="mt-1 text-[15px]">{formatSmartThingsKst(at)} · {DETECTION.COOK_MIN_WATTS}W 이상이 {DETECTION.COOK_MIN_MINUTES}분 이상에 걸쳐 기록됐어요. 식사 여부는 직접 확인해 주세요.</p>
+    <p className="text-[17px] font-bold">밥솥 플러그에서 취사 신호가 왔어요</p>
+    <p className="mt-1 text-[15px]">{formatSmartThingsKst(at)} · 취사 기준인 {DETECTION.COOK_MIN_WATTS}W 이상이 측정된 시각이에요. 식사 여부는 직접 확인해 주세요.</p>
   </div>;
 }
 

@@ -1,9 +1,16 @@
 import {describe,it,expect} from 'vitest';
 import {defaultPreferences,firebaseView,preferencesPatch} from '@/lib/data/firebase';
-import {guardianStartPath,slotsForDate,reportSummary} from '@/lib/data/view';
+import {afterGuardianLogin,guardianStartPath,slotsForDate,reportSummary} from '@/lib/data/view';
 import {kstDate} from '@/lib/judge/time';
 const household={relation:'mother' as const,alias:'가상 어머니',residentCount:1,hasPet:false};
 describe('Firebase account preparation is separate from real care',()=>{
+  it('shows optional Samsung connection after signup and preserves explicit account and returning-user destinations',()=>{
+    expect(afterGuardianLogin(1,null)).toBe('/connect/');
+    expect(afterGuardianLogin(1,'account')).toBe('/account/');
+    expect(afterGuardianLogin(4,'connect')).toBe('/connect/');
+    expect(afterGuardianLogin(4,null)).toBe('/onboarding');
+    expect(afterGuardianLogin(8,null)).toBe('/home');
+  });
   it('starts a new account at the tutorial and cannot fabricate care signals',()=>{
     const view=firebaseView({settings:null,household:null});
     expect(guardianStartPath(view.onboardingStep)).toBe('/tutorial');

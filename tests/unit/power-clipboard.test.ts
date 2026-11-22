@@ -31,7 +31,8 @@ it("copies exactly the displayed JSON including the synthetic source and compute
   const {preview,copy} = jsonTab();
   await copy();
   expect(writeText.mock.calls).toEqual([[preview]]);
-  expect(JSON.parse(preview)).toMatchObject({source:"demo",dataOrigin:"SYNTHETIC_NOT_HOUSEHOLD_DATA",interpretation:{events:[]}});
+  expect(JSON.parse(preview)).toMatchObject({source:"demo",dataOrigin:"SYNTHETIC_NOT_HOUSEHOLD_DATA",interpretation:{minimumCookSamples:1}});
+  expect(JSON.parse(preview).interpretation.events).toHaveLength(4);
   expect(updated).toHaveBeenLastCalledWith("출처를 포함한 예시 JSON을 복사했어요.");
 });
 it.each([undefined, {writeText:vi.fn().mockRejectedValue(new Error("denied"))}])("keeps the preview available when clipboard access fails", async clipboard => {

@@ -37,9 +37,9 @@ export function PowerTranscriptionSection({ transcript }: { transcript: DemoTran
         </div>
         {tab === "rules" && <div className="mt-4 space-y-2 text-sm leading-relaxed text-cocoa">
           <h3 className="font-bold">예시 입력에 규칙을 적용한 결과</h3>
-          <p>샘플의 최고 전력은 {interpretation.peakSampleWatts} W예요. 취사 판정에는 {interpretation.minimumCookWatts} W 이상이 {interpretation.minimumCookMinutes}분 이상 이어지는 구간이 필요해요.</p>
-          <p>허용 간격 {interpretation.maximumGapMinutes}분을 넘는 공백이 {interpretation.gapCount}곳 있어요.</p>
-          <p className="rounded-xl bg-butter-soft p-3 font-semibold">{interpretation.events.length ? "규칙이 찾은 예시 이벤트 " + interpretation.events.length + "건" : "취사 여부 판단 보류 · 연속된 전력값이 부족해요."}</p>
+          <p>밥솥 플러그에서 {interpretation.minimumCookWatts}W 이상이 한 번 측정되면 그 시각에 취사 신호를 기록해요.</p>
+          <p>이 예시에는 측정 간격이 {interpretation.maximumGapMinutes}분을 넘은 곳이 {interpretation.gapCount}곳 있어요. 공백 전후의 신호는 따로 세요.</p>
+          <p className="rounded-xl bg-butter-soft p-3 font-semibold">예시 입력에서 찾은 취사 신호 {interpretation.events.filter(event => event.type === "cook").length}건</p>
         </div>}
         {tab === "input" && <div className="mt-4 overflow-x-auto">
           <table className="w-full text-right text-sm tabular-nums text-cocoa">

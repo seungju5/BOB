@@ -9,7 +9,8 @@ import {
   CONSENT,
 } from './security.mjs';
 import { safeDevice, meterObservation, measuredTime } from './smartthings.mjs';
-import { POWER_NOTICE_CONSENT, highReading } from './power-notice.mjs';
+import { POWER_NOTICE_CONSENT } from './power-notice.mjs';
+import { isCookingPower, meterSignal } from './cooking-signal.mjs';
 
 const PREFIX = '/api/smartthings';
 export { CONSENT };
@@ -49,7 +50,7 @@ function publicConnection(current) {
     lastReceivedAt: current.lastReceivedAt ?? null,
     lastCheckedAt: current.lastCheckedAt ?? null,
     hasPower: current.hasPower ?? null,
-    ...(current.stage === 'connected' && current.deviceIsVirtual !== true &&
+    ...(current.stage === 'connected' && current.deviceIsVirtual === false &&
       current.powerNotice?.version === POWER_NOTICE_CONSENT && {
         powerNotice: { enabled: true, lastObservedAt: current.powerNotice.lastObservedAt ?? null },
       }),
@@ -432,7 +433,7 @@ export function createService({
         time,
         kind: power ? 'power' : 'energy',
         ...(power && device.unit === 'W' && typeof device.componentId === 'string' && {
-          component: device.componentId, high: highReading(device.value),
+          component: device.componentId, high: isCookingPower(device.value),
         }),
       });
     }
@@ -446,6 +447,7 @@ export function createService({
       if (path === '/config' && request.method === 'GET')
         return response({
           projectId: TEAM_PROJECT_ID,
+          ...(ready && { appId: config.appId }),
           enabled: ready,
           connectionReady: ready && config.connectionEnabled === true,
           consentVersion: CONSENT,
@@ -474,13 +476,16 @@ export function createService({
               const data = await smartthings.exchange(code),
                 installId = data.installed_app_id;
               if (!identifier(installId)) throw new ApiError(502, 'reconnect_required');
+              const bundle = tokenBundle(data, now());
+              const installation = await smartthings.installation(bundle.access, installId);
+              if (installation?.installedAppId !== installId || installation.appId !== config.appId)
+                throw new ApiError(502, 'oauth_configuration_required');
               const old = await store.get(pending.uid);
               // Reauthorization may replace an expired grant, but must not silently
               // orphan an active subscription from a different installation.
               if (old && old.installId !== installId) throw new ApiError(409, 'disconnect_first');
               await verifyAccount(pending.uid, pending.authTime);
               await verifyConsent(pending.uid);
-              const bundle = tokenBundle(data, now());
               await store.saveConnection(
                 pending.uid,
                 {
@@ -640,7 +645,7 @@ export function createService({
                 deviceId: device.id,
                 deviceLabel: device.label,
                 deviceIsVirtual: device.isVirtual ?? null,
-                ...(device.isVirtual === true && { powerNotice: null }),
+                ...((device.isVirtual !== false || current.deviceId !== device.id) && { powerNotice: null }),
                 stage: 'subscribing',
               },
               { installId: current.installId, requireConsent: true },
@@ -657,7 +662,7 @@ export function createService({
               },
               { installId: current.installId, requireConsent: true },
             );
-            return { ...publicConnection(updated), ...meter };
+            return { ...publicConnection(updated), ...meterSignal(meter) };
           }),
         );
       }
@@ -677,7 +682,9 @@ export function createService({
           if (current.stage !== 'connected' || current.deviceId !== body.deviceId) throw new ApiError(409, 'choose_device');
           const details = await smartthings.device(token, current.deviceId);
           if (details?.deviceId !== current.deviceId) throw new ApiError(409, 'choose_device');
-          if (safeDevice(details).isVirtual === true) throw new ApiError(422, 'test_device');
+          const device = safeDevice(details);
+          if (device.isVirtual === true) throw new ApiError(422, 'test_device');
+          if (device.isVirtual !== false) throw new ApiError(422, 'unclassified_device');
           const meters = (details.components ?? []).filter(c => c.capabilities?.some(k => k.id === 'powerMeter'));
           if (meters.length !== 1 || !identifier(meters[0].id)) throw new ApiError(422, 'ambiguous_meter');
           const existing = current.powerNotice;
@@ -709,7 +716,7 @@ export function createService({
               },
               { installId: current.installId, requireConsent: true },
             );
-            return { ...publicConnection(updated), ...meter };
+            return { ...publicConnection(updated), ...meterSignal(meter) };
           }),
         );
       }

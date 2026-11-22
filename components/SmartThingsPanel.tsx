@@ -183,19 +183,19 @@ function AccountPanel({ uid, revision, consent, latest, showConsentLink, onboard
             current(); publish(result.connection); setMeasurement(result);
           });
         }}>플러그 전력 직접 조회</Button>
-        {measurement && measurement.connection.device?.id === selected.id && <MeterReadings reading={measurement.reading} energy={measurement.energy} checkedAt={measurement.connection.lastCheckedAt}/>}
-        {!selected.isVirtual && <div className="mt-4 border-t border-line pt-3">
-          <h3 className="text-[17px] font-bold text-cocoa">내 플러그의 높은 전력 알림</h3>
-          <p className={textClass}>밥솥을 꽂은 플러그에서 {DETECTION.COOK_MIN_WATTS}W 이상이 {DETECTION.COOK_MIN_MINUTES}분에 걸쳐 여러 번 측정되면 내 홈과 알림에 가장 최근 소식 한 건을 보여줘요. 끄면 저장한 패턴 시각을 지워요.</p>
+        {measurement && measurement.connection.device?.id === selected.id && <MeterReadings reading={measurement.reading} energy={measurement.energy} checkedAt={measurement.connection.lastCheckedAt} physicalPlug={selected.isVirtual === false}/>}
+        {selected.isVirtual === false && <div className="mt-4 border-t border-line pt-3">
+          <h3 className="text-[17px] font-bold text-cocoa">밥솥 취사 신호 알림</h3>
+          <p className={textClass}>밥솥 전용 플러그에서 {DETECTION.COOK_MIN_WATTS}W 이상이 한 번 측정되면 내 홈과 알림에 표시해요. 같은 취사 중 이어지는 신호는 한 건으로 묶어요.</p>
           <Button type="button" variant="outline" className="mt-2" disabled={!!busy || !api} onClick={() => {
             if (!api || !state) return;
             const enabled = !state.powerNotice?.enabled;
             void run("power-notice", async (signal, current) => {
               await api.setPowerNotice(selected.id, enabled, signal); current();
               publish({...state, powerNotice: enabled ? {enabled: true, lastObservedAt: null} : undefined});
-              setNotice(enabled ? "이 플러그의 새 전력 신호부터 확인해요." : "높은 전력 알림을 끄고 저장한 패턴 시각을 지웠어요.");
+              setNotice(enabled ? "이 플러그의 새 취사 신호부터 확인해요." : "취사 신호 알림을 끄고 저장한 신호 시각을 지웠어요.");
             });
-          }}>{state?.powerNotice?.enabled ? "높은 전력 알림 끄기" : "이 플러그에 밥솥을 꽂았어요 · 알림 켜기"}</Button>
+          }}>{state?.powerNotice?.enabled ? "취사 신호 알림 끄기" : "이 플러그에 밥솥을 꽂았어요 · 알림 켜기"}</Button>
         </div>}
       </>}
     </div>}

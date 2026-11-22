@@ -8,13 +8,19 @@ import { parsePersonalMeter, PERSONAL_METER_FORMAT } from "./personal-meter";
 const now = Date.UTC(2025, 4, 1, 12);
 const example = {
   format: PERSONAL_METER_FORMAT, deviceKind: "virtual", checkedAt: now,
-  reading: { watts: 0, measuredAt: now - 1 }, energy: { kwh: 2.7, measuredAt: now - 5000 },
+  reading: { cooking: false, measuredAt: now - 1 }, energy: { measuredAt: now - 5000 },
 };
 
 describe("personal meter file", () => {
-  it("retains zero and independent original times, including a meter with only an energy reading", () => {
+  it("keeps the threshold result and original times, including energy-only meters", () => {
     expect(parsePersonalMeter(example, now)).toEqual(example);
     expect(parsePersonalMeter({ ...example, reading: null }, now)?.energy).toEqual(example.energy);
+  });
+
+  it("interprets earlier file versions in memory and discards raw power and energy", () => {
+    const v1 = {...example, format:"bapmunna.personal-meter.v1", reading:{watts:700,measuredAt:now-1}, energy:{kwh:2.7,measuredAt:now-5000}};
+    expect(parsePersonalMeter(v1,now)).toEqual({...example,reading:{cooking:true,measuredAt:now-1}});
+    expect(parsePersonalMeter({...v1,reading:{watts:NaN,measuredAt:now-1}},now)).toBeNull();
   });
 
   it.each([

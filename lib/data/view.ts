@@ -68,6 +68,12 @@ export function guardianStartPath(savedStep: number): "/home" | "/tutorial" | "/
   if (savedStep >= ONBOARDING_COMPLETE) return "/home";
   return savedStep >= HOUSEHOLD_STEP ? "/onboarding" : "/tutorial";
 }
+/** Verified accounts can see device availability before household consent. */
+export function afterGuardianLogin(savedStep: number, next: string | null) {
+  if (next === "account") return "/account/";
+  if (next === "connect" || savedStep < HOUSEHOLD_STEP) return "/connect/";
+  return guardianStartPath(savedStep);
+}
 export function tutorialExitPath(savedStep: number): "/home" | "/onboarding" {
   return savedStep >= ONBOARDING_COMPLETE ? "/home" : "/onboarding";
 }

@@ -1,7 +1,7 @@
 // Read the public, first-party configuration and check the account boundary.
 // No Samsung or Firebase credentials or household identifiers are needed here.
 import assert from 'node:assert/strict';
-import { TEAM_PROJECT_ID, TEAM_SITE_URL } from '../config/team.ts';
+import { TEAM_PROJECT_ID, TEAM_SITE_URL, TEAM_SMARTTHINGS_APP_ID } from '../config/team.ts';
 
 async function read(path) {
   const res = await fetch(TEAM_SITE_URL + path, {
@@ -26,6 +26,7 @@ try {
   assert(!value.connectionReady || value.enabled);
 
   if (value.enabled) {
+    assert.equal(value.appId, TEAM_SMARTTHINGS_APP_ID, '등록된 밥뭇나 삼성 앱을 확인해 주세요.');
     const status = await read('/api/smartthings/status');
     assert.equal(status.res.status, 401);
     assert.equal(status.value.error, 'login_required');

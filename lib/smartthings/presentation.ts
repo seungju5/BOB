@@ -16,12 +16,13 @@ export const stageCopy: Record<DisplayStage, { title: string; detail: string }> 
 
 export function deviceStageCopy(stage: DisplayStage, isVirtual?: boolean) {
   if (stage === "connected" && isVirtual) {
-    return { title: "테스트 플러그가 연결됐어요", detail: "아래 전력과 시각은 삼성 가상 기기의 기록이에요." };
+    return { title: "테스트 플러그가 연결됐어요", detail: "측정 신호와 시각은 삼성 가상 기기의 기록이에요." };
   }
   return stageCopy[stage];
 }
 
 const errorCopy: Record<string, string> = {
+  unclassified_device: "기기 종류를 확인할 수 없어요. 실물 밥솥 플러그를 선택해 주세요.",
   setup_required: "삼성 기기 연결을 준비하고 있어요. 잠시 후 상태를 다시 확인해 주세요.",
   login_required: "밥뭇나 로그인 시간이 지났어요. 내 계정으로 다시 로그인해 주세요.",
   verified_email_required: "밥뭇나 이메일 인증을 마친 뒤 다시 시도해 주세요.",

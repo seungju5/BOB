@@ -162,12 +162,12 @@ test(
       assert.equal((await store.get(uid)).lastSignalAt, 300);
       assert.equal((await store.get(uid)).lastEventAt, 300);
       assert.equal((await store.get(uid)).lastReceivedAt, 1000000);
-      await store.patch(uid, {powerNotice: {version:POWER_NOTICE_CONSENT, enabledAt:1, component:'main', lastObservedAt:null}});
+      await store.patch(uid, {deviceIsVirtual:false, powerNotice: {version:POWER_NOTICE_CONSENT, enabledAt:1, component:'main', lastObservedAt:null}});
       const received = {id:'signed-high',deviceId:'mine',kind:'power',component:'main',time:999000,high:true};
       await Promise.all([store.receive(uid,installId,received),store.receive(uid,installId,received)]);
       const beforeOff = (await store.get(uid)).powerNotice;
-      assert.equal(beforeOff.highSince,999000);
-      assert.equal(beforeOff.lastObservedAt,null);
+      assert.equal(beforeOff.lastHighAt,999000);
+      assert.equal(beforeOff.lastObservedAt,999000);
       assert(!('high' in beforeOff));
       await store.patch(uid, {powerNotice:null});
       await store.receive(uid,installId,{...received,id:'after-off',time:999001});

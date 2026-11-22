@@ -26,7 +26,7 @@ export default function AlertsPage() {
         }
       />
       <div className="flex flex-col gap-3 px-6">
-        {view?.mode === "demo" ? <p className="rounded-2xl bg-butter-soft p-4 text-[16px]">예시 알림은 이 체험 화면에서만 볼 수 있어요.</p> : view?.careAvailable === false ? <p className="rounded-2xl bg-butter-soft p-4 text-[16px]">기기 연결에서 높은 전력 알림을 켜면 최근 24시간의 플러그 소식을 여기에서 볼 수 있어요.</p> : view && mode === "live" ? <PushCard mode={mode} alertIds={alerts.map((a) => a.id)} /> : null}
+        {view?.mode === "demo" ? <p className="rounded-2xl bg-butter-soft p-4 text-[16px]">예시 알림은 이 체험 화면에서만 볼 수 있어요.</p> : view?.careAvailable === false ? <p className="rounded-2xl bg-butter-soft p-4 text-[16px]">연결한 밥솥 플러그의 취사 신호 알림을 켜면 최근 24시간의 소식을 여기에서 볼 수 있어요.</p> : view && mode === "live" ? <PushCard mode={mode} alertIds={alerts.map((a) => a.id)} /> : null}
         {view?.mode === "live" && view.plug.powerNoticeAt && <PowerNotice at={view.plug.powerNoticeAt}/>}
         {!view ? (
           <Skeleton className="h-24" />

@@ -60,11 +60,15 @@ export function smartThingsClient(config, fetcher = fetch) {
     if (!identifier(id)) throw new ApiError(400, 'invalid_device');
     return `/v1/devices/${id}`;
   };
-  const subscriptions = (id) => {
+  const installationPath = (id) => {
     if (!identifier(id)) throw new ApiError(400, 'invalid_installation');
-    return `/v1/installedapps/${id}/subscriptions`;
+    return `/v1/installedapps/${id}`;
   };
+  const subscriptions = (id) => installationPath(id) + '/subscriptions';
   return {
+    installation(token, id) {
+      return request(installationPath(id), { token });
+    },
     async exchange(code) {
       return request(`/v1/oauth/token`, {
         method: 'POST',

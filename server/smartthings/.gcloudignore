@@ -9,6 +9,7 @@
 !service.mjs
 !smartthings.mjs
 !store.mjs
+!cooking-signal.mjs
 !power-notice.mjs
 !power-criteria.json
 !maintenance.mjs

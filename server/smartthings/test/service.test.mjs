@@ -128,6 +128,7 @@ function fixture({ connectionEnabled = true } = {}) {
     components: [{ capabilities: [{ id: 'powerMeter' }] }],
   };
   const smartthings = {
+    installation: async (_token, id) => ({installedAppId:id, appId:config.appId}),
     exchange: async () => ({
       access_token: 'access-private',
       refresh_token: 'refresh-private',
@@ -263,19 +264,20 @@ test('owner notice flows from explicit opt-in through signed power events to acc
       deviceEvent:{eventId:id,deviceId:'mine',componentId:'main',capability:'powerMeter',attribute:'power',value:812,unit:'W'}
     }]}}});
   await send(0, 'old-signal', 4*86400000);
-  await send(0, 'first');
   assert.deepEqual((await (await f.call('/status')).json()).powerNotice, {enabled:true,lastObservedAt:null});
+  await send(0, 'first');
+  assert.deepEqual((await (await f.call('/status')).json()).powerNotice, {enabled:true,lastObservedAt:startAt});
   for (let minute=3; minute<=15; minute+=3) {
     f.advance(3*60000);
     assert.equal((await send(minute, 'sample-'+minute)).status,200);
   }
-  const lastObservedAt = startAt+15*60000;
+  const lastObservedAt = startAt;
   assert.deepEqual((await (await f.call('/status')).json()).powerNotice, {enabled:true,lastObservedAt});
   await send(15, 'sample-15');
   f.advance(60000); await send(16, 'same-run');
   assert.equal((await f.store.get('alice')).powerNotice.lastObservedAt,lastObservedAt);
   assert.deepEqual(Object.keys((await f.store.get('alice')).powerNotice).sort(),
-    ['component','enabledAt','highSince','lastObservedAt','lastPowerAt','reported','version']);
+    ['component','enabledAt','lastHighAt','lastObservedAt','lastPowerAt','version']);
   assert.deepEqual(await (await f.call('/status',{user:'another'})).json(), {stage:'disconnected'});
   assert.equal((await preference(false)).status, 200);
   assert.equal((await f.store.get('alice')).powerNotice,null);
@@ -295,6 +297,15 @@ test('OAuth binds state to user and browser, encrypts credentials, and consumes 
     400,
   );
   assert.deepEqual(await (await f.call('/status', { user: 'bob' })).json(), { stage: 'disconnected' });
+});
+test('Samsung must confirm this installation belongs to the configured app before a connection is saved', async () => {
+  for (const [installedAppId, appId] of [['install1','different-app'], ['different-install',config.appId]]) {
+    const f = fixture();
+    f.smartthings.installation = async () => ({installedAppId, appId});
+    const {state} = await f.link();
+    assert.equal(await f.store.get('alice'), null);
+    assert.equal(f.states.get(state)?.cancelled, true);
+  }
 });
 test('revoked Firebase account cannot finish an earlier Samsung grant', async () => {
   const f = fixture();
@@ -372,7 +383,8 @@ test('only authorized power devices can be selected; only the authenticated sele
   assert.equal(data.device.label, '주방 플러그');
   assert.equal(data.hasPower, true);
   assert.equal(f.stats().subscriptions, 1);
-  assert.deepEqual(data.reading, { watts: 54, measuredAt: instant });
+  assert.deepEqual(data.reading, { cooking: false, measuredAt: instant });
+  assert.doesNotMatch(JSON.stringify(data), /"watts"|"kwh"/);
   assert.doesNotMatch(JSON.stringify(await f.store.get('alice')), /"watts"|"reading"/);
   assert.equal((await f.call('/check', { method: 'POST', body: {} })).status, 429);
   f.advance(31000);
@@ -1011,7 +1023,7 @@ test('device and check return a transient sample including zero, status and stor
       },
     },
   });
-  const expected = { watts: 0, measuredAt: instant - 1000 };
+  const expected = { cooking: false, measuredAt: instant - 1000 };
   const selected = await (
     await f.call('/device', { method: 'POST', body: { deviceId: 'mine' } })
   ).json();

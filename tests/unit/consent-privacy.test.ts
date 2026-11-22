@@ -48,7 +48,7 @@ describe("public privacy and honest device availability", () => {
   });
   it("explains optional read-only device access, transient readings and how to stop it", () => {
     const html = renderToStaticMarkup(createElement(PrivacyPage));
-    for (const text of ["별도로 동의", "읽기 전용", "토큰을 암호화", "전력(W)", "시간대별 전력 내역은 저장하지", "마지막 자동 수신", "연결 해제"]) {
+    for (const text of ["별도로 동의", "읽기 전용", "토큰을 암호화", "원래 전력값은 판정 뒤 버려요", "자동 신호를 받은 시각", "연결 해제"]) {
       expect(html).toContain(text);
     }
     expect(html).not.toContain("운영 메모");

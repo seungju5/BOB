@@ -51,7 +51,7 @@ function connectionPlug(connection: SmartThingsConnection | null, consent: boole
     ...(event !== null && received !== null && event <= received && {lastEventAt: new Date(event).toISOString()}),
     ...(checked !== null && {lastCheckedAt: new Date(checked).toISOString()}),
     ...(connection.device.isVirtual === true && {isVirtual: true}),
-    ...(connection.device.isVirtual !== true && connection.powerNotice?.enabled && noticeAt !== null &&
+    ...(connection.device.isVirtual === false && connection.powerNotice?.enabled && noticeAt !== null &&
       event !== null && received !== null && noticeAt <= event && event <= received && at - noticeAt < 86400000 &&
       {powerNoticeAt: new Date(noticeAt).toISOString()}),
   };

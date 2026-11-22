@@ -1,6 +1,7 @@
 import type { SmartThingsEnergy, SmartThingsReading } from "../firebase/smartthings";
+import { isCookingPower } from "../../server/smartthings/cooking-signal.mjs";
 
-export const PERSONAL_METER_FORMAT = "bapmunna.personal-meter.v1";
+export const PERSONAL_METER_FORMAT = "bapmunna.personal-meter.v2";
 export const MAX_PERSONAL_METER_BYTES = 4096;
 
 export type PersonalMeter = {
@@ -28,18 +29,21 @@ function validValue(value: unknown): value is number {
 export function parsePersonalMeter(input: unknown, now = Date.now()): PersonalMeter | null {
   if (!hasOnly(input, ["format", "deviceKind", "checkedAt", "reading", "energy"])) return null;
   const { format, deviceKind, checkedAt, reading, energy } = input;
-  if (format !== PERSONAL_METER_FORMAT || !validTime(checkedAt, now) ||
+  const legacy = format === "bapmunna.personal-meter.v1";
+  if ((!legacy && format !== PERSONAL_METER_FORMAT) || !validTime(checkedAt, now) ||
       (deviceKind !== "virtual" && deviceKind !== "recognized" && deviceKind !== "unknown") ||
       (reading === null && energy === null)) return null;
-  let watts: SmartThingsReading | null = null;
+  let signal: SmartThingsReading | null = null;
   let total: SmartThingsEnergy | null = null;
   if (reading !== null) {
-    if (!hasOnly(reading, ["watts", "measuredAt"]) || !validValue(reading.watts) || !validTime(reading.measuredAt, checkedAt)) return null;
-    watts = { watts: reading.watts, measuredAt: reading.measuredAt };
+    if (!hasOnly(reading, [legacy ? "watts" : "cooking", "measuredAt"]) || !validTime(reading.measuredAt, checkedAt)) return null;
+    if (legacy && !validValue(reading.watts) || !legacy && typeof reading.cooking !== "boolean") return null;
+    signal = { cooking: legacy ? isCookingPower(reading.watts) : reading.cooking === true, measuredAt: reading.measuredAt };
   }
   if (energy !== null) {
-    if (!hasOnly(energy, ["kwh", "measuredAt"]) || !validValue(energy.kwh) || !validTime(energy.measuredAt, checkedAt)) return null;
-    total = { kwh: energy.kwh, measuredAt: energy.measuredAt };
+    if (!hasOnly(energy, legacy ? ["kwh", "measuredAt"] : ["measuredAt"]) || !validTime(energy.measuredAt, checkedAt) ||
+      (legacy && !validValue(energy.kwh))) return null;
+    total = { measuredAt: energy.measuredAt };
   }
-  return { format, deviceKind, checkedAt, reading: watts, energy: total };
+  return { format: PERSONAL_METER_FORMAT, deviceKind, checkedAt, reading: signal, energy: total };
 }

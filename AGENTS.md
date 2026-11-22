@@ -22,7 +22,7 @@
 
 ## 팀과 먼저 정할 것
 
-- 판단 기준값(700W·15분, 보온 20~70W), 알림 문구와 조건
+- 판단 기준값(밥솥 전용 플러그 700W 이상 1회, 보온 20~70W), 알림 문구와 조건
 - 데이터 구조·Firestore 보안 규칙 변경, 외부 API 추가
 - 새 계정·외부 서비스 생성 (팀 공용 계정 소유로 만들고 팀 채널에 먼저 공유)
 
@@ -31,3 +31,13 @@
 - 각자 개인 GitHub 계정으로 커밋한다. 공용 계정은 소유·관리용이다.
 - 배포 전 `npm test`, `npm run check:types`, `npm run check:personal-info`, `npm run build`가 통과해야 한다.
 - 화면 피드백 기록은 `docs/feedback/`에 남긴다.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+## This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

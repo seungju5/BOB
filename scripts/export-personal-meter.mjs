@@ -6,12 +6,13 @@ import { pathToFileURL } from 'node:url';
 import { parseArgs, promisify } from 'node:util';
 import { PERSONAL_METER_FORMAT, parsePersonalMeter } from '../lib/smartthings/personal-meter.ts';
 import { meterObservation, safeDevice } from '../server/smartthings/smartthings.mjs';
+import { meterSignal } from '../server/smartthings/cooking-signal.mjs';
 
 const execute = promisify(execFile);
 const usage = 'node scripts/export-personal-meter.mjs --device "내 플러그 이름 또는 ID" --out "개인점검.json" [--profile 내프로필]';
 
 // The official CLI owns its credentials. The exported file includes only the
-// chosen outlet’s measurements, dates and broad device classification.
+// chosen outlet's threshold result, dates and broad device classification.
 export async function exportPersonalMeter({ device, target, list, status, now = Date.now }) {
   if (!device?.trim() || !target?.trim()) throw new Error(usage);
   const selector = device.trim().normalize('NFC');
@@ -33,7 +34,7 @@ export async function exportPersonalMeter({ device, target, list, status, now = 
   const observation = meterObservation({ components: { meter: component } }, checkedAt);
   const { isVirtual } = safeDevice(selected);
   const deviceKind = isVirtual === true ? 'virtual' : isVirtual === false ? 'recognized' : 'unknown';
-  const result = parsePersonalMeter({ format: PERSONAL_METER_FORMAT, deviceKind, checkedAt, ...observation }, checkedAt);
+  const result = parsePersonalMeter({ format: PERSONAL_METER_FORMAT, deviceKind, checkedAt, ...meterSignal(observation) }, checkedAt);
   if (!result) throw new Error('이 플러그에 측정 시각이 있는 전력 또는 누적 전력량 기록이 아직 없어요.');
   const staging = join(dirname(target), '.bapmunna-meter-' + randomUUID() + '.tmp');
   const file = await open(staging, 'wx', 0o600);

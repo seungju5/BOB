@@ -1,11 +1,13 @@
-import { TEAM_PROJECT_ID, TEAM_SITE_URL } from "@/config/team";
+import { TEAM_PROJECT_ID, TEAM_SITE_URL, TEAM_SMARTTHINGS_APP_ID } from "@/config/team";
+import cookerCriteria from "@/server/smartthings/power-criteria.json";
+import { isCookingPower } from "@/server/smartthings/cooking-signal.mjs";
 import { connectFirebase } from "./bridge";
 import { attemptIsPending, forgetAttempt, pendingForAccount, rememberAttempt } from "@/lib/smartthings/pending";
 
 const prefix = "/api/smartthings";
 const callback = `${TEAM_SITE_URL}${prefix}/callback`;
 export const SMARTTHINGS_CONSENT_VERSION = "smartthings-read-2026-11-22";
-const POWER_NOTICE_CONSENT = "cooker-power-notice-v1";
+const POWER_NOTICE_CONSENT = cookerCriteria.noticeConsentVersion;
 const stages = ["disconnected", "choose_device", "subscribing", "connected", "reconnect_required"] as const;
 type ServerStage = (typeof stages)[number];
 export type SmartThingsDevice = { id: string; label: string; isVirtual?: boolean };
@@ -18,8 +20,8 @@ export type SmartThingsConnection = {
   lastCheckedAt?: number | null;
   powerNotice?: { enabled: true; lastObservedAt: number | null };
 };
-export type SmartThingsReading = { watts: number; measuredAt: number };
-export type SmartThingsEnergy = { kwh: number; measuredAt: number };
+export type SmartThingsReading = { cooking: boolean; measuredAt: number };
+export type SmartThingsEnergy = { measuredAt: number };
 export type CheckedConnection = { connection: SmartThingsConnection; reading: SmartThingsReading | null; energy: SmartThingsEnergy | null };
 type Config = { enabled: boolean; connectionReady: boolean; consentVersion: string };
 
@@ -34,7 +36,8 @@ function object(value: unknown): Record<string, unknown> {
 
 function parseConfig(body: Record<string, unknown>): Config {
   const { projectId, enabled, connectionReady, consentVersion } = body;
-  if (projectId !== TEAM_PROJECT_ID || typeof enabled !== "boolean" || typeof connectionReady !== "boolean" ||
+  if (projectId !== TEAM_PROJECT_ID || (enabled && body.appId !== TEAM_SMARTTHINGS_APP_ID) ||
+      typeof enabled !== "boolean" || typeof connectionReady !== "boolean" ||
       typeof consentVersion !== "string" || !consentVersion.trim() || (connectionReady && !enabled)) {
     throw new SmartThingsError("invalid_config");
   }
@@ -59,7 +62,7 @@ function connection(body: Record<string, unknown>): SmartThingsConnection {
   if (stage === "disconnected") return { stage };
   const selected = body.device == null ? null : device(body.device);
   if ((stage === "connected" || stage === "subscribing") && !selected) throw new SmartThingsError("invalid_response");
-  const notice = stage === "connected" && selected?.isVirtual !== true && body.powerNotice != null ? object(body.powerNotice) : null;
+  const notice = stage === "connected" && selected?.isVirtual === false && body.powerNotice != null ? object(body.powerNotice) : null;
   return {
     stage, device: selected, lastSignalAt: observedTime(body.lastSignalAt),
     lastEventAt: observedTime(body.lastEventAt), lastReceivedAt: observedTime(body.lastReceivedAt),
@@ -73,16 +76,19 @@ function checked(body: Record<string, unknown>): CheckedConnection {
   let reading: SmartThingsReading | null = null, energy: SmartThingsEnergy | null = null;
   if (current.stage === "connected") {
     if (body.reading != null) {
-      const {watts, measuredAt: time} = object(body.reading);
+      const {cooking, watts, measuredAt: time} = object(body.reading);
       const measuredAt = observedTime(time);
-      if (typeof watts === "number" && Number.isFinite(watts) && watts >= 0 && measuredAt !== null)
-        reading = {watts, measuredAt};
+      if (measuredAt !== null) {
+        if (typeof cooking === "boolean") reading = {cooking, measuredAt};
+        else if (typeof watts === "number" && Number.isFinite(watts) && watts >= 0)
+          reading = {cooking: isCookingPower(watts), measuredAt};
+      }
     }
     if (body.energy != null) {
       const {kwh, measuredAt: time} = object(body.energy);
       const measuredAt = observedTime(time);
-      if (typeof kwh === "number" && Number.isFinite(kwh) && kwh >= 0 && measuredAt !== null)
-        energy = {kwh, measuredAt};
+      if ((kwh === undefined || typeof kwh === "number" && Number.isFinite(kwh) && kwh >= 0) && measuredAt !== null)
+        energy = {measuredAt};
     }
   }
   return { connection: current, reading, energy };
@@ -148,8 +154,12 @@ async function request(path: string, method: "GET" | "POST" | "DELETE", signal?:
   finally { clearTimeout(timeout); signal?.removeEventListener("abort", cancel); }
 }
 
+export async function readSmartThingsConfig(signal?: AbortSignal) {
+  return parseConfig(await request("config", "GET", signal));
+}
+
 export async function openSmartThings(uid: string, signal?: AbortSignal) {
-  const config = parseConfig(await request("config", "GET", signal));
+  const config = await readSmartThingsConfig(signal);
   function authenticated(path: string, method: "GET" | "POST" | "DELETE", signal?: AbortSignal, body?: object) {
     if (!config.enabled) throw new SmartThingsError("setup_required");
     return request(path, method, signal, uid, body);

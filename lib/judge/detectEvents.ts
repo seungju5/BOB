@@ -1,4 +1,5 @@
 import { DETECTION } from "@/config/detection.ts";
+import { continuesCookRun, isCookingPower } from "@/server/smartthings/cooking-signal.mjs";
 import { MINUTE_MS } from "./time.ts";
 import type { CookerEvent, PowerReading } from "./types.ts";
 
@@ -6,10 +7,12 @@ type Config = typeof DETECTION;
 
 /**
  * 전력 시계열 → 밥솥 이벤트(cook, lid_open). design.md 4.1.
- * 순간값이 아니라 구간 단위로 판단한다.
+ * 취사는 첫 고전력 측정 시각부터 인정한다. 보온 중 뚜껑 열림은 구간으로 판단한다.
  */
 export function detectEvents(readings: PowerReading[], cfg: Config = DETECTION): CookerEvent[] {
-  const sorted = [...readings].sort((a, b) => a.measuredAt.getTime() - b.measuredAt.getTime());
+  const sorted = readings.filter(r => Number.isFinite(r?.watts) && r.watts >= 0 &&
+    r.measuredAt instanceof Date && Number.isFinite(r.measuredAt.getTime()))
+    .sort((a, b) => a.measuredAt.getTime() - b.measuredAt.getTime());
   const events = [...detectCooks(sorted, cfg), ...detectLidOpens(sorted, cfg)];
   return events.sort((a, b) => a.startedAt.getTime() - b.startedAt.getTime());
 }
@@ -21,26 +24,22 @@ const gapTooLong = (prev: PowerReading, next: PowerReading, cfg: Config) =>
 /** 수신 공백을 넘어 합치지 않는다. 실제 표본이 있는 짧은 저전력 구간만 병합한다. */
 function detectCooks(readings: PowerReading[], cfg: Config): CookerEvent[] {
   const events: CookerEvent[] = [];
-  let start: Date | null = null;
-  let end: Date | null = null;
-  let prev: PowerReading | null = null;
-  const close = () => {
-    if (start && end && end.getTime() - start.getTime() >= cfg.COOK_MIN_MINUTES * MINUTE_MS) {
-      events.push({ type: "cook", startedAt: start, endedAt: end });
-    }
-    start = end = null;
-  };
-
+  let run: CookerEvent | null = null;
+  let previousTime: number | null = null;
   for (const reading of readings) {
-    if (prev && gapTooLong(prev, reading, cfg)) close();
-    if (reading.watts >= cfg.COOK_MIN_WATTS) {
-      if (end && reading.measuredAt.getTime() - end.getTime() > cfg.COOK_MERGE_GAP_MIN * MINUTE_MS) close();
-      start ??= reading.measuredAt;
-      end = new Date(reading.measuredAt.getTime() + interval(cfg));
+    const time = reading.measuredAt.getTime();
+    if (previousTime !== null && time - previousTime > cfg.MAX_READING_GAP_MIN * MINUTE_MS) run = null;
+    if (isCookingPower(reading.watts, cfg.COOK_MIN_WATTS)) {
+      if (run && continuesCookRun(time, previousTime, run.endedAt.getTime(),
+        cfg.MAX_READING_GAP_MIN, cfg.COOK_MERGE_GAP_MIN, cfg.READING_INTERVAL_MIN)) {
+        run.endedAt = reading.measuredAt;
+      } else {
+        run = { type: "cook", startedAt: reading.measuredAt, endedAt: reading.measuredAt };
+        events.push(run);
+      }
     }
-    prev = reading;
+    previousTime = time;
   }
-  close();
   return events;
 }
 

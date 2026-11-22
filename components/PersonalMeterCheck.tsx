@@ -52,7 +52,7 @@ export function PersonalMeterCheck({ uid, revision }: { uid: string; revision: n
       <h3 className="text-[17px] font-bold text-cocoa">파일에서 읽은 전력 기록</h3>
       <p className="mt-1 text-[16px] text-cocoa">{deviceText[record.deviceKind]}</p>
       <p className="mt-1 text-[15px] text-muted">삼성 조회 시각 · {formatDeviceTime(record.checkedAt)} (한국 시간)</p>
-      <MeterReadings reading={record.reading} energy={record.energy} checkedAt={record.checkedAt}/>
+      <MeterReadings reading={record.reading} energy={record.energy} checkedAt={record.checkedAt} physicalPlug={record.deviceKind === "recognized"}/>
       <p className="mt-2 text-[15px] text-muted">파일을 여는 동안 자동 수신과 식사 알림은 시작되지 않아요.</p>
       <button type="button" className="mt-1 min-h-11 font-semibold text-cocoa underline" onClick={clear}>화면에서 기록 지우기</button>
     </div>}

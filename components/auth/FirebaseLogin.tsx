@@ -12,7 +12,7 @@ import { TextInput } from '@/components/forms';
 import { FlowProgress } from '@/components/onboarding/FlowProgress';
 import { setMode, useMode } from '@/lib/data/mode';
 import { useFirebaseAccount, refreshFirebaseAccount, signOutFirebase } from '@/lib/data/firebase';
-import { ONBOARDING_COMPLETE } from '@/lib/data/view';
+import { afterGuardianLogin } from '@/lib/data/view';
 import { accountError, connectFirebase, within } from '@/lib/firebase/bridge';
 
 function onLocationChange(notify:()=>void) {
@@ -20,9 +20,7 @@ function onLocationChange(notify:()=>void) {
   return ()=>window.removeEventListener('popstate',notify);
 }
 function afterLogin(step: number) {
-  const next = new URLSearchParams(window.location.search).get('next');
-  if (next === 'account') return '/account/';
-  return next === 'connect' && step >= ONBOARDING_COMPLETE ? '/connect/' : '/start';
+  return afterGuardianLogin(step, new URLSearchParams(window.location.search).get('next'));
 }
 
 export default function FirebaseLogin(){
@@ -132,7 +130,7 @@ function LoginForm({account,busy,setBusy,continueUid,setContinueUid}:{account:Re
           {tab!=='reset'?<button type="button" disabled={busy} className="min-h-12 text-[16px] text-muted underline" onClick={()=>{setTab('reset');setError('');setPassword('');}}>비밀번호 찾기</button>:null}
           {tab!=='login'?<button type="button" disabled={busy} className="min-h-12 text-[16px] text-muted underline" onClick={()=>{setTab('login');setError('');}}>로그인으로</button>:null}
         </div>
-        <p className="text-[16px] leading-relaxed text-muted">{studioLogin?'이메일 인증을 마친 운영자 계정만 접근할 수 있습니다.':<>보호자 본인의 계정으로 시작해요.<br/>어르신의 기록은 자동 연결되지 않아요.</>}</p>
+        <p className="text-[16px] leading-relaxed text-muted">{studioLogin?'이메일 인증을 마친 운영자 계정만 접근할 수 있습니다.':'밥뭇나는 보호자 이메일로 가입해요. 가입이 끝나면 삼성 기기 연결 화면에서 밥솥 플러그를 연결할 수 있는지 확인해요.'}</p>
       </form>}
       {!studioLogin && <><Button variant="ghost" className="mt-6" disabled={busy} onClick={()=>{leavingForDemo.current=true;setContinueUid(null);setMode('demo');router.push('/start');}}>로그인 없이 데모로 둘러보기</Button>
       <p className="mt-2 text-center text-[16px] text-muted">데모에서는 예시 기록으로 사용해 볼 수 있어요.</p></>}

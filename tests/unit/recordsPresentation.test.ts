@@ -34,7 +34,12 @@ describe("기록·리포트 표시 계약 (서버 렌더, 실제 브라우저 �
     const sample = demoPowerTranscript(toView(createDemoState(context.now), context.now))!;
     const payload = JSON.parse(JSON.stringify(sample));
     expect(payload).toMatchObject({source:"demo", dataOrigin:"SYNTHETIC_NOT_HOUSEHOLD_DATA", datasetDate:"2026-11-18",
-      interpretation:{gapCount:8, peakSampleWatts:852, coverage:"gaps", events:[]}});
+      interpretation:{minimumCookWatts:700, minimumCookSamples:1, gapCount:8, peakSampleWatts:852, coverage:"gaps"}});
+    const highSamples = payload.samples.filter((s: {watts:number}) => s.watts >= 700);
+    expect(payload.interpretation.events).toEqual(highSamples.map((s: {timestamp:string}) => {
+      const time = new Date(s.timestamp).toISOString();
+      return {type:"cook",startedAt:time,endedAt:time};
+    }));
     expect(payload.samples).toHaveLength(9);
     expect(payload.samples.every((s: {timestamp:string}) => s.timestamp.startsWith(payload.datasetDate))).toBe(true);
     expect(JSON.stringify(payload)).not.toMatch(/confidence|currentWatts|totalEnergy|heart/i);

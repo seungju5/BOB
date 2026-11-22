@@ -26,6 +26,8 @@ export type AppView = {
     online: boolean;
     /** Firebase 실계정에서는 서명된 기기 알림을 서버가 받은 시각이다. */
     lastReadingAt: string | null;
+    /** 삼성이 자동 신호에 기록한 시각. 직접 조회한 측정값과 구분한다. */
+    lastEventAt?: string;
     /** 사용자가 선택한 기기 상태를 직접 조회한 시각. */
     lastCheckedAt?: string;
     isVirtual?: boolean;

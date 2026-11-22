@@ -39,10 +39,22 @@ describe('actual SmartThings connection summary stays separate from meal care',(
   const settings={...defaultPreferences(),preparationAcknowledged:true};
   it('maps only an acknowledged selected connection and never invents food or health records',()=>{
     const now=Date.now();
-    const view=firebaseView({settings,household},{stage:'connected',device:{id:'synthetic-plug',label:'가상 플러그'},lastReceivedAt:now,lastSignalAt:now});
-    expect(view.plug).toEqual({status:'connected',deviceId:'synthetic-plug',online:true,lastReadingAt:new Date(now).toISOString()});
+    const view=firebaseView({settings,household},{stage:'connected',device:{id:'synthetic-plug',label:'주방 플러그'},lastReceivedAt:now,lastEventAt:now,lastSignalAt:now});
+    expect(view.plug).toMatchObject({status:'connected',deviceId:'synthetic-plug',online:true,lastReadingAt:new Date(now).toISOString(),lastEventAt:new Date(now).toISOString()});
     expect(view.careAvailable).toBe(false);expect(view.slots).toEqual([]);expect(view.lastCookerAt).toBeNull();expect(view.alerts).toEqual([]);
     expect(firebaseView({settings,household},{stage:'connected',device:{id:'synthetic-plug',label:'가상 플러그'},lastReceivedAt:now},now+3*60*60*1000).plug.online).toBe(false);
+  });
+  it('delayed, undated and virtual events cannot mark the household plug active',()=>{
+    const now=Date.now(), old=now-24*60*60*1000;
+    const device={id:'test-plug',label:'주방 플러그'};
+    const base={stage:'connected' as const,device,lastReceivedAt:now,lastCheckedAt:now,lastSignalAt:now};
+    for(const lastEventAt of [old,undefined,now+1]){
+      const view=firebaseView({settings,household},{...base,lastEventAt},now);
+      expect(view.plug).toMatchObject({online:false,lastReadingAt:new Date(now).toISOString()});
+    }
+    const virtual=firebaseView({settings,household},{...base,device:{...device,isVirtual:true},lastEventAt:now},now);
+    expect(virtual.plug).toMatchObject({online:false,isVirtual:true});
+    expect(virtual.alerts).toEqual([]);
   });
   it('requires a selected device and a valid measured timestamp before reporting reception',()=>{
     const now=Date.now();

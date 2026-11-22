@@ -248,7 +248,7 @@ export function firestoreStore(db, now = () => Date.now()) {
           !current ||
           current.installId !== installId ||
           current.deviceId !== event.deviceId ||
-          current.stage !== 'connected' ||
+          !['subscribing', 'connected'].includes(current.stage) ||
           !consent ||
           current.consentVersion !== CONSENT
         )
@@ -256,7 +256,10 @@ export function firestoreStore(db, now = () => Date.now()) {
         // Deduplication metadata contains no power readings. cleanupExpired
         // removes expired receipts without requiring billed Firestore TTL.
         tx.set(receipt, { expiresAt: new Date(now() + 86400000) });
-        const arrival = { lastReceivedAt: Math.max(now(), current.lastReceivedAt ?? 0) };
+        const arrival = {
+          lastEventAt: Math.max(event.time, current.lastEventAt ?? 0),
+          lastReceivedAt: Math.max(now(), current.lastReceivedAt ?? 0),
+        };
         if (event.time >= (current.lastSignalAt || 0))
           Object.assign(arrival, { lastSignalAt: event.time, lastKind: event.kind });
         tx.update(connection, arrival);

@@ -14,6 +14,13 @@ export const stageCopy: Record<DisplayStage, { title: string; detail: string }> 
   reconnect_required: { title: "삼성 계정을 다시 연결해 주세요", detail: "삼성 화면에서 밥뭇나에 허용할 기기와 ‘기기 읽기’ 권한을 다시 확인해 주세요. 밥뭇나에서는 정확한 허용 종료일을 확인할 수 없어요." },
 };
 
+export function deviceStageCopy(stage: DisplayStage, isVirtual?: boolean) {
+  if (stage === "connected" && isVirtual) {
+    return { title: "테스트 플러그가 연결됐어요", detail: "아래 전력과 시각은 삼성 가상 기기의 기록이에요." };
+  }
+  return stageCopy[stage];
+}
+
 const errorCopy: Record<string, string> = {
   setup_required: "삼성 기기 연결을 준비하고 있어요. 잠시 후 상태를 다시 확인해 주세요.",
   login_required: "밥뭇나 로그인 시간이 지났어요. 내 계정으로 다시 로그인해 주세요.",

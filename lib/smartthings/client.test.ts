@@ -83,13 +83,13 @@ describe("team SmartThings browser client", () => {
     transport.mockResolvedValueOnce(json({ stage: "choose_device" }))
       .mockResolvedValueOnce(json({ stage: "subscribing", device: plug }))
       .mockResolvedValueOnce(json({ ...active, lastSignalAt: sampleTime * 2 }))
-      .mockResolvedValueOnce(json({ ...active, lastReceivedAt: sampleTime }))
+      .mockResolvedValueOnce(json({ ...active, lastEventAt: sampleTime - 60000, lastReceivedAt: sampleTime }))
       .mockResolvedValueOnce(json({ stage: "connected", device: null }));
     const client = await openSmartThings(uid);
     expect((await client.status()).stage).toBe("choose_device");
     expect((await client.status()).stage).toBe("subscribing");
-    expect(await client.status()).toMatchObject({ lastCheckedAt: sampleTime, lastReceivedAt: null });
-    expect((await client.status()).lastReceivedAt).toBe(sampleTime);
+    expect(await client.status()).toMatchObject({ lastCheckedAt: sampleTime, lastEventAt: null, lastReceivedAt: null });
+    expect(await client.status()).toMatchObject({ lastEventAt: sampleTime - 60000, lastReceivedAt: sampleTime });
     await expect(client.status()).rejects.toMatchObject({ code: "invalid_response" });
   });
 

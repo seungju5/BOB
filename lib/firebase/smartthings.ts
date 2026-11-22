@@ -12,6 +12,7 @@ export type SmartThingsConnection = {
   stage: ServerStage | "setup_required" | "read_error";
   device?: SmartThingsDevice | null;
   lastSignalAt?: number | null;
+  lastEventAt?: number | null;
   lastReceivedAt?: number | null;
   lastCheckedAt?: number | null;
 };
@@ -57,7 +58,8 @@ function connection(body: Record<string, unknown>): SmartThingsConnection {
   if ((stage === "connected" || stage === "subscribing") && !selected) throw new SmartThingsError("invalid_response");
   return {
     stage, device: selected, lastSignalAt: observedTime(body.lastSignalAt),
-    lastReceivedAt: observedTime(body.lastReceivedAt), lastCheckedAt: observedTime(body.lastCheckedAt),
+    lastEventAt: observedTime(body.lastEventAt), lastReceivedAt: observedTime(body.lastReceivedAt),
+    lastCheckedAt: observedTime(body.lastCheckedAt),
   };
 }
 

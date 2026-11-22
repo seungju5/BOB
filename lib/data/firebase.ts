@@ -37,12 +37,16 @@ function connectionPlug(connection: SmartThingsConnection | null, consent: boole
   if (connection.stage !== "connected") return {...empty, status: connection.stage};
   if (typeof connection.device?.id !== 'string' || !connection.device.id.trim()) return {...empty, status: "read_error"};
   const received = checkedTimestamp(connection.lastReceivedAt, at);
+  const event = checkedTimestamp(connection.lastEventAt, at);
   const checked = checkedTimestamp(connection.lastCheckedAt, at);
+  const recentSince = at - ALERT_DEFAULTS.DEVICE_OFFLINE_HOURS * 60 * 60 * 1000;
   return {
     deviceId: connection.device.id,
     status: "connected",
-    online: received !== null && at - received < ALERT_DEFAULTS.DEVICE_OFFLINE_HOURS * 60 * 60 * 1000,
+    online: connection.device.isVirtual !== true && received !== null && event !== null &&
+      event <= received && event > recentSince && received > recentSince,
     lastReadingAt: received === null ? null : new Date(received).toISOString(),
+    ...(event !== null && received !== null && event <= received && {lastEventAt: new Date(event).toISOString()}),
     ...(checked !== null && {lastCheckedAt: new Date(checked).toISOString()}),
     ...(connection.device.isVirtual === true && {isVirtual: true}),
   };
@@ -79,6 +83,7 @@ export function updateFirebaseConnection(uid: string, result: SmartThingsConnect
       connection = {
         stage: 'connected',
         device: { id: result.device.id, label: result.device.label, ...(result.device.isVirtual === true && {isVirtual: true}) },
+        lastEventAt: checkedTimestamp(result.lastEventAt, now),
         lastReceivedAt: checkedTimestamp(result.lastReceivedAt, now),
         lastCheckedAt: checkedTimestamp(result.lastCheckedAt, now),
         lastSignalAt: checkedTimestamp(result.lastSignalAt, now),

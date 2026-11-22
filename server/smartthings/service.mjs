@@ -44,6 +44,7 @@ function publicConnection(current) {
     device,
     connectedAt: current.connectedAt,
     lastSignalAt: current.lastSignalAt ?? null,
+    lastEventAt: current.lastEventAt ?? null,
     lastReceivedAt: current.lastReceivedAt ?? null,
     lastCheckedAt: current.lastCheckedAt ?? null,
     hasPower: current.hasPower ?? null,
@@ -406,7 +407,8 @@ export function createService({
       if (!accountChecked) {
         accountChecked = true;
         const connection = await store.get(owner.uid);
-        if (connection?.stage === 'connected' && connection.consentVersion === CONSENT) {
+        // Samsung may send its first signed event while the subscribe request is still in flight.
+        if (connection && ['subscribing', 'connected'].includes(connection.stage) && connection.consentVersion === CONSENT) {
           try {
             await verifyAccount(owner.uid, connection.authTime);
             await verifyConsent(owner.uid);
@@ -528,6 +530,7 @@ export function createService({
               reason: 'consent_required',
               device: null,
               lastSignalAt: null,
+              lastEventAt: null,
               lastReceivedAt: null,
               lastCheckedAt: null,
             });

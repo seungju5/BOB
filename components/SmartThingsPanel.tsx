@@ -8,7 +8,7 @@ import { useMode } from "@/lib/data/mode";
 import { ONBOARDING_COMPLETE } from "@/lib/data/view";
 import { ACCOUNT_CONSENT_VERSION } from "@/lib/firebase/bridge";
 import { openSmartThings, SMARTTHINGS_CONSENT_VERSION, SmartThingsError, type SmartThingsConnection, type SmartThingsDevice, type SmartThingsReading } from "@/lib/firebase/smartthings";
-import { callbackMessage, formatDeviceTime, smartThingsErrorMessage, stageCopy, type DisplayStage } from "@/lib/smartthings/presentation";
+import { callbackMessage, deviceStageCopy, formatDeviceTime, smartThingsErrorMessage, type DisplayStage } from "@/lib/smartthings/presentation";
 import { returnedToAccount } from "@/lib/smartthings/pending";
 
 type Client = Awaited<ReturnType<typeof openSmartThings>>;
@@ -118,6 +118,7 @@ function AccountPanel({ uid, revision, consent, showConsentLink, onboarding }: {
   const canStart = startStage && api?.config.connectionReady === true && !outdated;
   const canRemove = !consent || ["choose_device", "subscribing", "connected", "reconnect_required"].includes(stage);
   const selected = state?.device;
+  const copy = deviceStageCopy(stage, selected?.isVirtual);
   const select = (id: string) => {
     if (!api) return;
     void run("select", async (signal, current) => {
@@ -136,8 +137,8 @@ function AccountPanel({ uid, revision, consent, showConsentLink, onboarding }: {
   };
 
   return <section className={panelClass} aria-label="삼성 기기 연결 관리">
-    <h2 className="text-[20px] font-bold text-cocoa">{stageCopy[stage].title}</h2>
-    <p className={`mt-2 ${textClass}`}>{stage === "consent_required" && onboarding ? "우리 집 설정에서 어떤 기기 정보를 쓸지 함께 읽고 동의 확인을 저장해 주세요." : stageCopy[stage].detail}</p>
+    <h2 className="text-[20px] font-bold text-cocoa">{copy.title}</h2>
+    <p className={`mt-2 ${textClass}`}>{stage === "consent_required" && onboarding ? "우리 집 설정에서 어떤 기기 정보를 쓸지 함께 읽고 동의 확인을 저장해 주세요." : copy.detail}</p>
     {returned && <p role="status" className="mt-3 rounded-xl bg-butter-soft p-3 text-[16px] text-cocoa">{returned}</p>}
     {showConsentLink && !consent && <Link href={onboarding ? "/onboarding/" : "/settings/#device"} className="mt-2 inline-flex min-h-12 items-center font-bold text-cocoa underline">{onboarding ? "우리 집 설정에서 동의하기" : "설정에서 동의 확인하기"}</Link>}
     {outdated && <div className="mt-3"><p role="status" className={textClass}>{smartThingsErrorMessage("consent_updated")}</p><Button type="button" variant="outline" className="mt-2" onClick={() => window.location.reload()}>화면 새로 열기</Button></div>}
@@ -161,6 +162,7 @@ function AccountPanel({ uid, revision, consent, showConsentLink, onboarding }: {
         const items = await api.devices(signal); current(); setDevices(items);
       })}>{devices ? "플러그 목록 다시 보기" : "허용한 플러그 보기"}</Button>
       {devices?.length === 0 && <p role="status" className={textClass}>전력을 읽을 수 있는 플러그가 없어요. SmartThings 앱에서 플러그가 등록됐는지, 삼성 연결에서 그 기기를 허용했는지 확인해 주세요.</p>}
+      {devices && devices.length > 0 && devices.every(item => item.isVirtual === true) && <p role="status" className={textClass}>지금 보이는 플러그는 모두 테스트용이에요. SmartThings 앱의 ‘기기’에서 밥솥 플러그가 있는 장소와 이름을 확인한 뒤 목록을 다시 열어 주세요.</p>}
       {devices?.map(item => <Button type="button" variant="outline" disabled={!!busy} key={item.id} onClick={() => select(item.id)}><span className="break-words">{item.label}{item.isVirtual && <span className="block text-[15px] font-normal">가상 기기 · 테스트용</span>}<span className="sr-only"> 선택</span></span></Button>)}
     </div>}
     {consent && selected && (stage === "subscribing" || stage === "connected") && <div className="mt-3 rounded-xl bg-butter-soft p-4">
@@ -168,6 +170,7 @@ function AccountPanel({ uid, revision, consent, showConsentLink, onboarding }: {
       {stage === "subscribing" ? <Button type="button" className="mt-3" disabled={!!busy} onClick={() => select(selected.id)}>자동 알림 연결 다시 시도</Button> : <>
         <dl className={`mt-2 space-y-2 ${textClass}`}>
           <div><dt>자동으로 받은 마지막 신호</dt><dd className="font-semibold text-cocoa">{state?.lastReceivedAt ? formatDeviceTime(state.lastReceivedAt) : "아직 도착한 신호가 없어요"}</dd></div>
+          {state?.lastReceivedAt && state.lastEventAt && state.lastEventAt <= state.lastReceivedAt && <div><dt>삼성이 기록한 신호 시각</dt><dd className="font-semibold text-cocoa">{formatDeviceTime(state.lastEventAt)}</dd></div>}
           {state?.lastCheckedAt && <div><dt>마지막 직접 조회</dt><dd className="font-semibold text-cocoa">{formatDeviceTime(state.lastCheckedAt)}</dd></div>}
         </dl>
         <Button type="button" variant="outline" className="mt-3" disabled={!!busy} onClick={() => {

@@ -34,6 +34,8 @@ function fixture({ connectionEnabled = true } = {}) {
         throw new ApiError(409, 'reconnect_required');
       if (requireConsent && !consented) throw new ApiError(403, 'consent_required');
       const next = { ...current, ...value };
+      if (Object.hasOwn(value, 'lastSignalAt'))
+        next.lastSignalAt = Math.max(current.lastSignalAt || 0, value.lastSignalAt || 0) || null;
       connections.set(uid, next);
       return structuredClone(next);
     },
@@ -106,11 +108,14 @@ function fixture({ connectionEnabled = true } = {}) {
     },
     receive: async (uid, installId, event) => {
       const c = connections.get(uid);
-      if (!c || c.installId !== installId || c.deviceId !== event.deviceId || seen.has(event.id))
+      if (!c || !consented || !['subscribing', 'connected'].includes(c.stage) ||
+          c.installId !== installId || c.deviceId !== event.deviceId || seen.has(event.id))
         return false;
       seen.add(event.id);
+      c.lastEventAt = Math.max(c.lastEventAt || 0, event.time);
+      c.lastReceivedAt = time;
       if (event.time >= (c.lastSignalAt || 0))
-        Object.assign(c, { lastSignalAt: event.time, lastReceivedAt: time, lastKind: event.kind });
+        Object.assign(c, { lastSignalAt: event.time, lastKind: event.kind });
       return true;
     },
   };
@@ -382,6 +387,34 @@ test('signed events are scoped to installation and selected device; disconnect c
   assert.equal((await f.store.get('alice')).lastSignalAt, instant + 60000);
   assert.equal((await f.call('/connection', { method: 'DELETE', body: { confirm: true } })).status, 200);
   assert.equal(await f.store.get('alice'), null);
+});
+test('the selected device can report its first event before Samsung acknowledges the subscription', async () => {
+  const f = fixture();
+  await f.link();
+  f.smartthings.status = async () => ({ components: {} });
+  f.smartthings.subscribe = async () => {
+    f.advance(1000);
+    const event = {
+      eventType: 'DEVICE_EVENT',
+      eventTime: new Date(instant).toISOString(),
+      deviceEvent: { eventId: 'early', deviceId: 'mine', capability: 'powerMeter', attribute: 'power', value: 0 },
+    };
+    const result = await f.call('/events', {
+      method: 'POST',
+      headers: { Authorization: 'test-signed' },
+      body: { messageType: 'EVENT', eventData: { installedApp: { installedAppId: 'install1' }, events: [event] } },
+    });
+    assert.equal(result.status, 200);
+    assert.equal((await f.store.get('alice')).stage, 'subscribing');
+  };
+  const result = await f.call('/device', { method: 'POST', body: { deviceId: 'mine' } });
+  assert.equal(result.status, 200);
+  const confirmed = await result.json();
+  assert.equal(confirmed.stage, 'connected');
+  assert.equal(confirmed.lastEventAt, instant);
+  assert.equal(confirmed.lastReceivedAt, instant + 1000);
+  assert.equal(confirmed.lastSignalAt, instant);
+  assert.equal(confirmed.reading, null);
 });
 test('unconfigured backend reports setup required and never initiates OAuth', async () => {
   const handle = createService({ config: { ...config, key: '' } });

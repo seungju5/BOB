@@ -146,12 +146,21 @@ test(
       await assert.rejects(() => store.withLease(uid, async () => {}), { code: 'busy' });
       release();
       await first;
-      await store.receive(uid, installId, { id: 'e1', deviceId: 'mine', time: 300, kind: 'power' });
+      const firstEvent = { id: 'e1', deviceId: 'mine', time: 300, kind: 'power' };
+      await store.patch(uid, { stage: 'choose_device' });
+      assert.equal(await store.receive(uid, installId, firstEvent), false);
+      await store.patch(uid, { stage: 'subscribing' });
+      assert.equal(await store.receive(uid, installId, { ...firstEvent, deviceId: 'other' }), false);
+      assert.equal(await store.receive(uid, installId, firstEvent), true);
+      assert.equal((await store.get(uid)).stage, 'subscribing');
+      await store.patch(uid, { stage: 'connected', lastSignalAt: null });
       await store.receive(uid, installId, { id: 'e1', deviceId: 'mine', time: 500, kind: 'power' });
       await store.receive(uid, installId, { id: 'e2', deviceId: 'mine', time: 200, kind: 'power' });
       await store.receive(uid, installId, { id: 'e3', deviceId: 'other', time: 600, kind: 'power' });
       await store.patch(uid, { lastSignalAt: 250 });
       assert.equal((await store.get(uid)).lastSignalAt, 300);
+      assert.equal((await store.get(uid)).lastEventAt, 300);
+      assert.equal((await store.get(uid)).lastReceivedAt, 1000000);
       await getFirestore(app)
         .doc(`bapmunnaAccounts/${uid}/preferences/settings`)
         .update({ preparationAcknowledged: false });

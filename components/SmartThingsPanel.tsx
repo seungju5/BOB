@@ -7,12 +7,13 @@ import { canReadConnection, isFirebaseSessionCurrent, refreshFirebaseAccount, up
 import { useMode } from "@/lib/data/mode";
 import { ONBOARDING_COMPLETE } from "@/lib/data/view";
 import { ACCOUNT_CONSENT_VERSION } from "@/lib/firebase/bridge";
-import { openSmartThings, SMARTTHINGS_CONSENT_VERSION, SmartThingsError, type SmartThingsConnection, type SmartThingsDevice, type SmartThingsReading } from "@/lib/firebase/smartthings";
+import { openSmartThings, SMARTTHINGS_CONSENT_VERSION, SmartThingsError, type CheckedConnection, type SmartThingsConnection, type SmartThingsDevice } from "@/lib/firebase/smartthings";
+import { ALERT_DEFAULTS, DETECTION } from "@/config/detection";
 import { callbackMessage, deviceStageCopy, formatDeviceTime, smartThingsErrorMessage, type DisplayStage } from "@/lib/smartthings/presentation";
 import { returnedToAccount } from "@/lib/smartthings/pending";
 
 type Client = Awaited<ReturnType<typeof openSmartThings>>;
-type Operation = "status" | "start" | "list" | "select" | "check" | "remove";
+type Operation = "status" | "start" | "list" | "select" | "check" | "remove" | "power-notice";
 const panelClass = "rounded-2xl border border-line bg-paper p-5";
 const textClass = "text-[16px] leading-relaxed text-muted";
 
@@ -29,7 +30,7 @@ export function SmartThingsPanel({ showConsentLink = false }: { showConsentLink?
     return account.connection?.stage === "read_error" ? <ConsentRetry /> : <p role="status" className={textClass}>어르신의 동의 상태를 다시 확인하고 있어요…</p>;
   }
   const onboarding = (account.view?.onboardingStep ?? saved.settings?.onboardingStep ?? 1) < ONBOARDING_COMPLETE;
-  return <AccountPanel key={`${user.uid}:${revision}:${consent}`} uid={user.uid} revision={revision} consent={consent} showConsentLink={showConsentLink} onboarding={onboarding} />;
+  return <AccountPanel key={`${user.uid}:${revision}:${consent}`} uid={user.uid} revision={revision} consent={consent} latest={account.connection} showConsentLink={showConsentLink} onboarding={onboarding} />;
 }
 
 function ConsentRetry() {
@@ -46,13 +47,13 @@ function ConsentRetry() {
   </section>;
 }
 
-function AccountPanel({ uid, revision, consent, showConsentLink, onboarding }: { uid: string; revision: number; consent: boolean; showConsentLink: boolean; onboarding: boolean }) {
+function AccountPanel({ uid, revision, consent, latest, showConsentLink, onboarding }: { uid: string; revision: number; consent: boolean; latest: SmartThingsConnection | null; showConsentLink: boolean; onboarding: boolean }) {
   const [api, setApi] = useState<Client | null>(null);
-  const [state, setState] = useState<SmartThingsConnection | null>(null);
+  const [local, setState] = useState<SmartThingsConnection | null>(null);
+  const state = latest ?? local;
   const [allow, setAllow] = useState(false);
   const [devices, setDevices] = useState<SmartThingsDevice[] | null>(null);
-  const [reading, setReading] = useState<SmartThingsReading | null>(null);
-  const [checked, setChecked] = useState(false);
+  const [measurement, setMeasurement] = useState<CheckedConnection | null>(null);
   const [confirm, setConfirm] = useState<"none" | "remove" | "expired">("none");
   const [busy, setBusy] = useState<Operation | null>(null);
   const [error, setError] = useState("");
@@ -84,7 +85,7 @@ function AccountPanel({ uid, revision, consent, showConsentLink, onboarding }: {
         setError(smartThingsErrorMessage(code));
         if (operation === "status" || code === "reconnect_required" || code === "setup_required") {
           publish({ stage: code === "reconnect_required" || code === "setup_required" ? code : "read_error" });
-          setReading(null); setChecked(false); setDevices(null);
+          setMeasurement(null); setDevices(null);
         }
       }
     } finally {
@@ -97,7 +98,7 @@ function AccountPanel({ uid, revision, consent, showConsentLink, onboarding }: {
     const client = await openSmartThings(uid, signal);
     current(); setApi(client);
     const next = await client.status(signal);
-    current(); publish(next); setDevices(null); setReading(null); setChecked(false);
+    current(); publish(next); setDevices(null); setMeasurement(null);
   }), [uid, run, publish]);
 
   useEffect(() => {
@@ -123,7 +124,7 @@ function AccountPanel({ uid, revision, consent, showConsentLink, onboarding }: {
     if (!api) return;
     void run("select", async (signal, current) => {
       const result = await api.select(id, signal);
-      current(); publish(result.connection); setReading(result.reading); setChecked(true); setDevices(null);
+      current(); publish(result.connection); setMeasurement(result); setDevices(null);
     });
   };
   const remove = () => {
@@ -131,7 +132,7 @@ function AccountPanel({ uid, revision, consent, showConsentLink, onboarding }: {
       const client = api ?? await openSmartThings(uid, signal);
       current();
       const next = await client.disconnect(confirm === "expired", signal);
-      current(); publish(next); setAllow(false); setConfirm("none"); setDevices(null); setReading(null); setChecked(false);
+      current(); publish(next); setAllow(false); setConfirm("none"); setDevices(null); setMeasurement(null);
       setNotice("밥뭇나에 남아 있는 삼성 기기 연결이 없음을 확인했어요.");
     });
   };
@@ -168,7 +169,7 @@ function AccountPanel({ uid, revision, consent, showConsentLink, onboarding }: {
     {consent && selected && (stage === "subscribing" || stage === "connected") && <div className="mt-3 rounded-xl bg-butter-soft p-4">
       <p className="break-words text-[17px] font-bold text-cocoa">{selected.label}{selected.isVirtual && <span className="block text-[15px]">가상 기기 · 테스트용</span>}</p>
       {stage === "subscribing" ? <Button type="button" className="mt-3" disabled={!!busy} onClick={() => select(selected.id)}>자동 알림 연결 다시 시도</Button> : <>
-        <dl className={`mt-2 space-y-2 ${textClass}`}>
+        <dl aria-live="polite" className={`mt-2 space-y-2 ${textClass}`}>
           <div><dt>자동으로 받은 마지막 신호</dt><dd className="font-semibold text-cocoa">{state?.lastReceivedAt ? formatDeviceTime(state.lastReceivedAt) : "아직 도착한 신호가 없어요"}</dd></div>
           {state?.lastReceivedAt && state.lastEventAt && state.lastEventAt <= state.lastReceivedAt && <div><dt>삼성이 기록한 신호 시각</dt><dd className="font-semibold text-cocoa">{formatDeviceTime(state.lastEventAt)}</dd></div>}
           {state?.lastCheckedAt && <div><dt>마지막 직접 조회</dt><dd className="font-semibold text-cocoa">{formatDeviceTime(state.lastCheckedAt)}</dd></div>}
@@ -177,11 +178,22 @@ function AccountPanel({ uid, revision, consent, showConsentLink, onboarding }: {
           if (!api) return;
           void run("check", async (signal, current) => {
             const result = await api.check(signal);
-            current(); publish(result.connection); setReading(result.reading); setChecked(true);
+            current(); publish(result.connection); setMeasurement(result);
           });
         }}>플러그 전력 직접 조회</Button>
-        {checked && <div role="status" className="mt-3 rounded-xl bg-paper p-3">
-          {reading ? <><p className="text-[15px] text-muted">기기가 마지막으로 측정한 전력</p><p className="text-[20px] font-bold text-cocoa">{new Intl.NumberFormat("ko-KR", { maximumSignificantDigits: 7 }).format(reading.watts)} W</p><p className={textClass}>측정 시각 · {formatDeviceTime(reading.measuredAt)} (한국 시간)</p></> : <p className={textClass}>기기에서 측정 시각이 있는 전력값을 받지 못했어요.</p>}
+        {measurement && measurement.connection.device?.id === selected.id && <MeterResult result={measurement}/>}
+        {!selected.isVirtual && <div className="mt-4 border-t border-line pt-3">
+          <h3 className="text-[17px] font-bold text-cocoa">내 플러그의 높은 전력 알림</h3>
+          <p className={textClass}>밥솥을 꽂은 플러그에서 {DETECTION.COOK_MIN_WATTS}W 이상이 {DETECTION.COOK_MIN_MINUTES}분에 걸쳐 여러 번 측정되면 내 홈과 알림에 가장 최근 소식 한 건을 보여줘요. 끄면 저장한 패턴 시각을 지워요.</p>
+          <Button type="button" variant="outline" className="mt-2" disabled={!!busy || !api} onClick={() => {
+            if (!api || !state) return;
+            const enabled = !state.powerNotice?.enabled;
+            void run("power-notice", async (signal, current) => {
+              await api.setPowerNotice(selected.id, enabled, signal); current();
+              publish({...state, powerNotice: enabled ? {enabled: true, lastObservedAt: null} : undefined});
+              setNotice(enabled ? "이 플러그의 새 전력 신호부터 확인해요." : "높은 전력 알림을 끄고 저장한 패턴 시각을 지웠어요.");
+            });
+          }}>{state?.powerNotice?.enabled ? "높은 전력 알림 끄기" : "이 플러그에 밥솥을 꽂았어요 · 알림 켜기"}</Button>
         </div>}
       </>}
     </div>}
@@ -197,4 +209,23 @@ function AccountPanel({ uid, revision, consent, showConsentLink, onboarding }: {
     {error && <p role="alert" className="mt-3 text-[16px] font-semibold text-blush-deep">{error}</p>}
     {notice && <p role="status" className={`mt-3 ${textClass}`}>{notice}</p>}
   </section>;
+}
+
+function MeterResult({result}: {result: CheckedConnection}) {
+  const {reading, energy, connection} = result;
+  const checkedAt = connection.lastCheckedAt;
+  const old = reading && checkedAt && checkedAt - reading.measuredAt >= ALERT_DEFAULTS.DEVICE_OFFLINE_HOURS * 3600000;
+  const number = new Intl.NumberFormat("ko-KR", { maximumSignificantDigits: 7 });
+  return <div role="status" className="mt-3 rounded-xl bg-paper p-3">
+    {reading ? <>
+      <p className="text-[15px] text-muted">기기가 마지막으로 측정한 전력</p>
+      <p className="text-[20px] font-bold text-cocoa">{number.format(reading.watts)} W</p>
+      <p className={textClass}>측정 시각 · {formatDeviceTime(reading.measuredAt)} (한국 시간)</p>
+      {old ? <p className="mt-1 text-[15px] font-semibold text-cocoa">조회 시점보다 {ALERT_DEFAULTS.DEVICE_OFFLINE_HOURS}시간 이상 앞선 기록이에요.</p> : null}
+    </> : <p className={textClass}>기기에서 측정 시각이 있는 전력값을 받지 못했어요.</p>}
+    {energy && <div className="mt-2 border-t border-line pt-2">
+      <p className="text-[16px] font-semibold text-cocoa">누적 전력량 · {number.format(energy.kwh)} kWh</p>
+      <p className={textClass}>누적량 기록 시각 · {formatDeviceTime(energy.measuredAt)} (한국 시간)</p>
+    </div>}
+  </div>;
 }

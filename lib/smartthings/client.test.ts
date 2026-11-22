@@ -39,6 +39,22 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("team SmartThings browser client", () => {
+  it("keeps the original times for W and kWh, and validates the opt-in response separately", async () => {
+    ready();
+    const api=await openSmartThings(uid);
+    const energy = { kwh: 2.75, measuredAt: sampleTime - 30000 };
+    transport.mockResolvedValueOnce(json({ ...active, reading: { watts: 780, measuredAt: sampleTime }, energy }));
+    const result=await api.check();
+    expect(result.energy).toEqual(energy);
+    expect(result.reading?.measuredAt).toBe(sampleTime);
+    expect(result.connection).not.toHaveProperty('energy');
+    transport.mockResolvedValueOnce(json({...active,reading:null,energy}));
+    expect((await api.check()).energy).toEqual(energy);
+    transport.mockResolvedValueOnce(json({enabled:true}));await api.setPowerNotice('p',true);
+    expect(JSON.parse(String(transport.mock.lastCall?.[1]?.body))).toEqual({deviceId:'p',enabled:true,consentVersion:'cooker-power-notice-v1'});
+    transport.mockResolvedValueOnce(json({enabled:true}));
+    await expect(api.setPowerNotice('p',false)).rejects.toMatchObject({code:'invalid_response'});
+  });
   it("reports a confirmed unconfigured service without looking up an account or sending a token", async () => {
     transport.mockResolvedValueOnce(json({ ...config, enabled: false, connectionReady: false }));
     const client = await openSmartThings(uid);

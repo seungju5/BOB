@@ -8,7 +8,8 @@ import {
   TEAM_PROJECT_ID,
   CONSENT,
 } from './security.mjs';
-import { safeDevice, readingSummary, measuredTime } from './smartthings.mjs';
+import { safeDevice, meterObservation, measuredTime } from './smartthings.mjs';
+import { POWER_NOTICE_CONSENT, highReading } from './power-notice.mjs';
 
 const PREFIX = '/api/smartthings';
 export { CONSENT };
@@ -48,6 +49,10 @@ function publicConnection(current) {
     lastReceivedAt: current.lastReceivedAt ?? null,
     lastCheckedAt: current.lastCheckedAt ?? null,
     hasPower: current.hasPower ?? null,
+    ...(current.stage === 'connected' && current.deviceIsVirtual !== true &&
+      current.powerNotice?.version === POWER_NOTICE_CONSENT && {
+        powerNotice: { enabled: true, lastObservedAt: current.powerNotice.lastObservedAt ?? null },
+      }),
   };
 }
 const DAY = 86400000;
@@ -426,6 +431,9 @@ export function createService({
         deviceId: device.deviceId,
         time,
         kind: power ? 'power' : 'energy',
+        ...(power && device.unit === 'W' && typeof device.componentId === 'string' && {
+          component: device.componentId, high: highReading(device.value),
+        }),
       });
     }
     return response({ ok: true });
@@ -625,13 +633,14 @@ export function createService({
             if (device.id !== body.deviceId || !device.power)
               throw new ApiError(422, 'power_not_supported');
             await verifyConsent(uid);
-            const sample = readingSummary(await smartthings.status(token, device.id), now());
+            const meter = meterObservation(await smartthings.status(token, device.id), now());
             await store.patch(
               uid,
               {
                 deviceId: device.id,
                 deviceLabel: device.label,
                 deviceIsVirtual: device.isVirtual ?? null,
+                ...(device.isVirtual === true && { powerNotice: null }),
                 stage: 'subscribing',
               },
               { installId: current.installId, requireConsent: true },
@@ -642,15 +651,43 @@ export function createService({
               uid,
               {
                 stage: 'connected',
-                hasPower: sample !== null,
+                hasPower: meter.reading !== null,
                 lastCheckedAt: now(),
-                lastSignalAt: sample?.measuredAt ?? null,
+                lastSignalAt: meter.reading?.measuredAt ?? null,
               },
               { installId: current.installId, requireConsent: true },
             );
-            return { ...publicConnection(updated), reading: sample };
+            return { ...publicConnection(updated), ...meter };
           }),
         );
+      }
+      if (path === '/power-notice' && request.method === 'POST') {
+        const body = await json(request);
+        if (!identifier(body?.deviceId) || typeof body.enabled !== 'boolean' ||
+            (body.enabled && body.consentVersion !== POWER_NOTICE_CONSENT)) throw new ApiError(400, 'invalid_request');
+        if (!body.enabled) {
+          return response(await store.withLease(uid, async () => {
+            const current = await store.get(uid);
+            if (!current || current.deviceId !== body.deviceId) throw new ApiError(409, 'choose_device');
+            await store.patch(uid, {powerNotice: null}, {installId: current.installId});
+            return {enabled: false};
+          }));
+        }
+        return response(await authorized(uid, async (current, token) => {
+          if (current.stage !== 'connected' || current.deviceId !== body.deviceId) throw new ApiError(409, 'choose_device');
+          const details = await smartthings.device(token, current.deviceId);
+          if (details?.deviceId !== current.deviceId) throw new ApiError(409, 'choose_device');
+          if (safeDevice(details).isVirtual === true) throw new ApiError(422, 'test_device');
+          const meters = (details.components ?? []).filter(c => c.capabilities?.some(k => k.id === 'powerMeter'));
+          if (meters.length !== 1 || !identifier(meters[0].id)) throw new ApiError(422, 'ambiguous_meter');
+          const existing = current.powerNotice;
+          const powerNotice = existing?.version === POWER_NOTICE_CONSENT && existing.component === meters[0].id
+            ? existing : {version: POWER_NOTICE_CONSENT, enabledAt: now(), component: meters[0].id, lastObservedAt: null};
+          if (powerNotice !== existing)
+            await store.patch(uid, {powerNotice}, {installId: current.installId, requireConsent: true});
+          else await verifyConsent(uid);
+          return {enabled: true};
+        }));
       }
       if (path === '/check' && request.method === 'POST') {
         const body = await json(request);
@@ -662,17 +699,17 @@ export function createService({
               throw new ApiError(409, 'choose_device');
             if (current.lastCheckedAt && now() - current.lastCheckedAt < 30000)
               throw new ApiError(429, 'check_later');
-            const sample = readingSummary(await smartthings.status(token, current.deviceId), now());
+            const meter = meterObservation(await smartthings.status(token, current.deviceId), now());
             const updated = await store.patch(
               uid,
               {
-                hasPower: sample !== null,
+                hasPower: meter.reading !== null,
                 lastCheckedAt: now(),
-                lastSignalAt: Math.max(current.lastSignalAt || 0, sample?.measuredAt || 0) || null,
+                lastSignalAt: Math.max(current.lastSignalAt || 0, meter.reading?.measuredAt || 0) || null,
               },
               { installId: current.installId, requireConsent: true },
             );
-            return { ...publicConnection(updated), reading: sample };
+            return { ...publicConnection(updated), ...meter };
           }),
         );
       }

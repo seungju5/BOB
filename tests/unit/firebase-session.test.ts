@@ -73,6 +73,27 @@ afterEach(()=>{
 // Synthetic promises and Auth callbacks, with the production 12s timeout.
 // These tests do not claim browser, emulator, network or live account evidence.
 describe('Firebase account store asynchronous session isolation',()=>{
+  it('shares one refresh across open views and does not read while hidden or signed out',async()=>{
+    const doc=Object.assign(new EventTarget(),{visibilityState:'visible'});
+    const browser=Object.assign(new EventTarget(),{setInterval:vi.fn(windowlessTimer),clearInterval});
+    function windowlessTimer(fn:()=>void,ms:number){return setInterval(fn,ms);}
+    vi.stubGlobal('window',browser);vi.stubGlobal('document',doc);
+    const now=Date.now();
+    const connected={stage:'connected',device:{id:'p',label:'우리 기기',isVirtual:false}};
+    bridgeMock.smartThings.mockResolvedValue(connected);
+    const f=await fixture();await f.mount();await f.mount();await f.emit(f.user('A'));
+    expect(browser.setInterval).toHaveBeenCalledTimes(1);
+    expect(bridgeMock.smartThings).toHaveBeenCalledTimes(1);
+    doc.visibilityState='hidden';await vi.advanceTimersByTimeAsync(60000);
+    expect(bridgeMock.smartThings).toHaveBeenCalledTimes(1);
+    doc.visibilityState='visible';
+    bridgeMock.smartThings.mockResolvedValue({...connected,lastReceivedAt:now,lastEventAt:now,powerNotice:{enabled:true,lastObservedAt:now}});
+    await vi.advanceTimersByTimeAsync(60000);
+    expect(f.snapshot().view?.plug.powerNoticeAt).toBe(new Date(now).toISOString());
+    expect(f.snapshot().view?.slots).toEqual([]);
+    await f.emit(null);await vi.advanceTimersByTimeAsync(60000);
+    expect(bridgeMock.smartThings).toHaveBeenCalledTimes(2);
+  });
   it('a failed status read keeps account settings and never introduces device or meal data',async()=>{
     const f=await fixture();await f.mount();await f.emit(f.user('A'));
     expect(f.snapshot().view).toMatchObject({mode:'live',dataSource:'firebase',

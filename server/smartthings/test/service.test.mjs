@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import { randomBytes, generateKeyPairSync, sign, createHash } from 'node:crypto';
 import { createService, CONSENT } from '../service.mjs';
 import { ApiError, hash, readConfig, vault, webhookVerifier } from '../security.mjs';
-import { smartThingsClient, readingSummary, safeDevice } from '../smartthings.mjs';
+import { smartThingsClient, readingSummary, meterObservation, safeDevice } from '../smartthings.mjs';
+import { POWER_NOTICE_CONSENT, advancePowerNotice } from '../power-notice.mjs';
 
 const instant = Date.parse('2026-11-03T03:00:00Z');
 const DAY = 86400000;
@@ -116,6 +117,8 @@ function fixture({ connectionEnabled = true } = {}) {
       c.lastReceivedAt = time;
       if (event.time >= (c.lastSignalAt || 0))
         Object.assign(c, { lastSignalAt: event.time, lastKind: event.kind });
+      const notice = advancePowerNotice(c, event, time);
+      if (notice) c.powerNotice = notice;
       return true;
     },
   };
@@ -222,6 +225,62 @@ function fixture({ connectionEnabled = true } = {}) {
     stats: () => ({ refreshes, subscriptions }),
   };
 }
+
+test('pairs cumulative energy with the corresponding outlet and keeps its independent time', () => {
+  const at = new Date(instant).toISOString(), earlier = new Date(instant - 30000).toISOString();
+  const meter = (value, unit, timestamp) => ({value, unit, timestamp});
+  const status = {components: {
+    a: {powerMeter: {power: meter(50, 'W', earlier)}, energyMeter: {energy: meter(9, 'kWh', at)}},
+    b: {powerMeter: {power: meter(0, 'W', at)}, energyMeter: {energy: meter(2750, 'Wh', earlier)}},
+  }};
+  assert.deepEqual(meterObservation(status, instant), {
+    reading: {watts: 0, measuredAt: instant}, energy: {kwh: 2.75, measuredAt: instant - 30000},
+  });
+  delete status.components.b.energyMeter;
+  assert.equal(meterObservation(status, instant).energy, null);
+  assert.equal(meterObservation({components:{main:{energyMeter:{energy:meter(3, 'W', at)}}}}, instant).energy, null);
+});
+
+test('owner notice flows from explicit opt-in through signed power events to account status, then erases on opt-out', async () => {
+  const f = fixture();
+  await f.link();
+  const details = await f.smartthings.device(null, 'mine');
+  details.type = 'VIRTUAL';
+  details.components[0].id = 'main';
+  await f.call('/device', {method:'POST', body:{deviceId:'mine'}});
+  const preference = (enabled, user = 'alice') => f.call('/power-notice', {method:'POST', user,
+    body:{deviceId:'mine', enabled, consentVersion:POWER_NOTICE_CONSENT}});
+  assert.equal((await preference(true)).status, 422);
+  details.type = 'ZIGBEE';
+  f.advance(31000);
+  await f.call('/device', {method:'POST', body:{deviceId:'mine'}});
+  assert.equal((await preference(true, 'another')).ok, false);
+  assert.equal((await preference(true)).status, 200);
+  const startAt = instant + 31000;
+  const send = (measurement, id, age = 0) => f.call('/events', {method:'POST', headers:{Authorization:'test-signed'},
+    body:{messageType:'EVENT',eventData:{installedApp:{installedAppId:'install1'},events:[{
+      eventType:'DEVICE_EVENT',eventTime:new Date(startAt+measurement*60000-age).toISOString(),
+      deviceEvent:{eventId:id,deviceId:'mine',componentId:'main',capability:'powerMeter',attribute:'power',value:812,unit:'W'}
+    }]}}});
+  await send(0, 'old-signal', 4*86400000);
+  await send(0, 'first');
+  assert.deepEqual((await (await f.call('/status')).json()).powerNotice, {enabled:true,lastObservedAt:null});
+  for (let minute=3; minute<=15; minute+=3) {
+    f.advance(3*60000);
+    assert.equal((await send(minute, 'sample-'+minute)).status,200);
+  }
+  const lastObservedAt = startAt+15*60000;
+  assert.deepEqual((await (await f.call('/status')).json()).powerNotice, {enabled:true,lastObservedAt});
+  await send(15, 'sample-15');
+  f.advance(60000); await send(16, 'same-run');
+  assert.equal((await f.store.get('alice')).powerNotice.lastObservedAt,lastObservedAt);
+  assert.deepEqual(Object.keys((await f.store.get('alice')).powerNotice).sort(),
+    ['component','enabledAt','highSince','lastObservedAt','lastPowerAt','reported','version']);
+  assert.deepEqual(await (await f.call('/status',{user:'another'})).json(), {stage:'disconnected'});
+  assert.equal((await preference(false)).status, 200);
+  assert.equal((await f.store.get('alice')).powerNotice,null);
+  assert.equal((await (await f.call('/status')).json()).powerNotice,undefined);
+});
 test('OAuth binds state to user and browser, encrypts credentials, and consumes state once', async () => {
   const f = fixture(),
     { state, cookie } = await f.link();

@@ -1,16 +1,17 @@
 // 판단 기준값. 코드에 숫자를 직접 쓰지 말고 여기서 가져다 쓴다.
 // (가정) 표시는 밥솥 실측 전 초기값이다. 실측 후 확정하고 adr.md에 근거를 남긴다.
+import cookerCriteria from "../server/smartthings/power-criteria.json";
 
 export const DETECTION = {
   /** 전력값 수신 간격(분). SmartThings 폴링 주기와 맞춘다. (미확정) */
   READING_INTERVAL_MIN: 1,
   /** 이 간격보다 길게 값이 비면 구간을 끊는다. */
-  MAX_READING_GAP_MIN: 3,
+  MAX_READING_GAP_MIN: cookerCriteria.maxGapMinutes,
 
   /** 취사로 보는 최소 전력(W). 2026-11-21 화면(전력 해석) 기준 700W 이상으로 통일 (ADR-014). */
-  COOK_MIN_WATTS: 700,
+  COOK_MIN_WATTS: cookerCriteria.highWatts,
   /** 취사로 인정하는 최소 지속 시간(분). 순간 서지와 구분하려고 15분 (ADR-014, 가정). */
-  COOK_MIN_MINUTES: 15,
+  COOK_MIN_MINUTES: cookerCriteria.spanMinutes,
   /** 고전력 구간 사이가 이 시간(분) 이하로 끊기면 한 번의 취사로 합친다. (가정) */
   COOK_MERGE_GAP_MIN: 3,
 

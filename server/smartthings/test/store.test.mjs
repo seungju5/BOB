@@ -5,6 +5,7 @@ import { initializeApp, deleteApp } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { ACCOUNT_CONSENT, CONSENT } from '../security.mjs';
 import { firestoreStore } from '../store.mjs';
+import { POWER_NOTICE_CONSENT } from '../power-notice.mjs';
 
 test(
   'real Firestore transactions preserve owner isolation, locks, single-use state and signal order',
@@ -161,6 +162,16 @@ test(
       assert.equal((await store.get(uid)).lastSignalAt, 300);
       assert.equal((await store.get(uid)).lastEventAt, 300);
       assert.equal((await store.get(uid)).lastReceivedAt, 1000000);
+      await store.patch(uid, {powerNotice: {version:POWER_NOTICE_CONSENT, enabledAt:1, component:'main', lastObservedAt:null}});
+      const received = {id:'signed-high',deviceId:'mine',kind:'power',component:'main',time:999000,high:true};
+      await Promise.all([store.receive(uid,installId,received),store.receive(uid,installId,received)]);
+      const beforeOff = (await store.get(uid)).powerNotice;
+      assert.equal(beforeOff.highSince,999000);
+      assert.equal(beforeOff.lastObservedAt,null);
+      assert(!('high' in beforeOff));
+      await store.patch(uid, {powerNotice:null});
+      await store.receive(uid,installId,{...received,id:'after-off',time:999001});
+      assert.equal((await store.get(uid)).powerNotice,null);
       await getFirestore(app)
         .doc(`bapmunnaAccounts/${uid}/preferences/settings`)
         .update({ preparationAcknowledged: false });
@@ -187,7 +198,7 @@ test(
         }),
         false,
       );
-      assert.equal((await store.get(uid)).lastSignalAt, 300);
+      assert.equal((await store.get(uid)).lastSignalAt, 999001);
       await store.remove(uid, 'not-the-install');
       assert.ok(await store.get(uid));
       await store.remove(uid, installId);

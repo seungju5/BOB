@@ -11,3 +11,5 @@
 !service.mjs
 !smartthings.mjs
 !store.mjs
+!power-notice.mjs
+!power-criteria.json

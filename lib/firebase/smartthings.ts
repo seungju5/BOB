@@ -5,6 +5,7 @@ import { attemptIsPending, forgetAttempt, pendingForAccount, rememberAttempt } f
 const prefix = "/api/smartthings";
 const callback = `${TEAM_SITE_URL}${prefix}/callback`;
 export const SMARTTHINGS_CONSENT_VERSION = "smartthings-read-2026-11-22";
+const POWER_NOTICE_CONSENT = "cooker-power-notice-v1";
 const stages = ["disconnected", "choose_device", "subscribing", "connected", "reconnect_required"] as const;
 type ServerStage = (typeof stages)[number];
 export type SmartThingsDevice = { id: string; label: string; isVirtual?: boolean };
@@ -15,9 +16,11 @@ export type SmartThingsConnection = {
   lastEventAt?: number | null;
   lastReceivedAt?: number | null;
   lastCheckedAt?: number | null;
+  powerNotice?: { enabled: true; lastObservedAt: number | null };
 };
 export type SmartThingsReading = { watts: number; measuredAt: number };
-type CheckedConnection = { connection: SmartThingsConnection; reading: SmartThingsReading | null };
+export type SmartThingsEnergy = { kwh: number; measuredAt: number };
+export type CheckedConnection = { connection: SmartThingsConnection; reading: SmartThingsReading | null; energy: SmartThingsEnergy | null };
 type Config = { enabled: boolean; connectionReady: boolean; consentVersion: string };
 
 export class SmartThingsError extends Error {
@@ -43,7 +46,7 @@ function device(value: unknown): SmartThingsDevice {
   if (typeof item.id !== "string" || !item.id.trim() || typeof item.label !== "string" || !item.label.trim()) {
     throw new SmartThingsError("invalid_response");
   }
-  return { id: item.id, label: item.label, ...(item.isVirtual === true ? { isVirtual: true } : {}) };
+  return { id: item.id, label: item.label, ...(typeof item.isVirtual === "boolean" ? { isVirtual: item.isVirtual } : {}) };
 }
 
 function observedTime(value: unknown): number | null {
@@ -56,20 +59,33 @@ function connection(body: Record<string, unknown>): SmartThingsConnection {
   if (stage === "disconnected") return { stage };
   const selected = body.device == null ? null : device(body.device);
   if ((stage === "connected" || stage === "subscribing") && !selected) throw new SmartThingsError("invalid_response");
+  const notice = stage === "connected" && selected?.isVirtual !== true && body.powerNotice != null ? object(body.powerNotice) : null;
   return {
     stage, device: selected, lastSignalAt: observedTime(body.lastSignalAt),
     lastEventAt: observedTime(body.lastEventAt), lastReceivedAt: observedTime(body.lastReceivedAt),
     lastCheckedAt: observedTime(body.lastCheckedAt),
+    ...(notice?.enabled === true && {powerNotice: {enabled: true as const, lastObservedAt: observedTime(notice.lastObservedAt)}}),
   };
 }
 
 function checked(body: Record<string, unknown>): CheckedConnection {
   const current = connection(body);
-  if (current.stage !== "connected" || body.reading == null) return { connection: current, reading: null };
-  const sample = object(body.reading);
-  const measuredAt = observedTime(sample.measuredAt);
-  const watts = sample.watts;
-  return { connection: current, reading: typeof watts === "number" && Number.isFinite(watts) && watts >= 0 && measuredAt !== null ? { watts, measuredAt } : null };
+  let reading: SmartThingsReading | null = null, energy: SmartThingsEnergy | null = null;
+  if (current.stage === "connected") {
+    if (body.reading != null) {
+      const {watts, measuredAt: time} = object(body.reading);
+      const measuredAt = observedTime(time);
+      if (typeof watts === "number" && Number.isFinite(watts) && watts >= 0 && measuredAt !== null)
+        reading = {watts, measuredAt};
+    }
+    if (body.energy != null) {
+      const {kwh, measuredAt: time} = object(body.energy);
+      const measuredAt = observedTime(time);
+      if (typeof kwh === "number" && Number.isFinite(kwh) && kwh >= 0 && measuredAt !== null)
+        energy = {kwh, measuredAt};
+    }
+  }
+  return { connection: current, reading, energy };
 }
 
 function samsungAuthorization(value: unknown, attemptId: string): string {
@@ -175,6 +191,10 @@ export async function openSmartThings(uid: string, signal?: AbortSignal) {
     },
     async check(signal?: AbortSignal) {
       return checked(await authenticated("check", "POST", signal, {}));
+    },
+    async setPowerNotice(deviceId: string, enabled: boolean, signal?: AbortSignal) {
+      const result = await authenticated("power-notice", "POST", signal, {deviceId, enabled, ...(enabled && {consentVersion: POWER_NOTICE_CONSENT})});
+      if (result.enabled !== enabled) throw new SmartThingsError("invalid_response");
     },
     async disconnect(forgetExpired = false, signal?: AbortSignal) {
       const current = connection(await authenticated("connection", "DELETE", signal, { confirm: true, ...(forgetExpired ? { forgetExpired: true } : {}) }));

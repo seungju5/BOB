@@ -1,11 +1,19 @@
 "use client";
 
 import { useState } from "react";
+import { DETECTION } from "@/config/detection";
 import { useApp } from "@/lib/data/useApp";
 import { isDemoView } from "@/lib/data/view";
 import { updateDemo } from "@/lib/demo/store";
 import { DEMO_SMARTTHINGS_PROFILE, formatSmartThingsKst } from "@/lib/smartthings/account-model";
 import { deviceStageCopy } from "@/lib/smartthings/presentation";
+
+export function PowerNotice({at}: {at: string}) {
+  return <div role="status" className="mt-2 rounded-xl bg-butter-soft p-3 text-cocoa">
+    <p className="text-[17px] font-bold">밥솥 플러그에서 높은 전력이 여러 번 측정됐어요</p>
+    <p className="mt-1 text-[15px]">{formatSmartThingsKst(at)} · {DETECTION.COOK_MIN_WATTS}W 이상이 {DETECTION.COOK_MIN_MINUTES}분 이상에 걸쳐 기록됐어요. 식사 여부는 직접 확인해 주세요.</p>
+  </div>;
+}
 
 export function SmartThingsAccountCard({ compact = false }: { compact?: boolean }) {
   const { mode, view } = useApp();
@@ -36,6 +44,7 @@ export function SmartThingsAccountCard({ compact = false }: { compact?: boolean 
         <p className="mt-1 text-[15px] text-muted">자동으로 받은 마지막 신호 · {formatSmartThingsKst(view.plug.lastReadingAt)}</p>
         {view.plug.lastEventAt && <p className="mt-1 text-[15px] text-muted">삼성이 기록한 신호 시각 · {formatSmartThingsKst(view.plug.lastEventAt)}</p>}
         {view.plug.lastCheckedAt && <p className="mt-1 text-[15px] text-muted">마지막 직접 조회 · {formatSmartThingsKst(view.plug.lastCheckedAt)}</p>}
+        {view.plug.powerNoticeAt && <PowerNotice at={view.plug.powerNoticeAt}/>}
       </> : <p className="mt-1 text-[15px] text-muted">{copy.detail}</p>}
       {demo && !compact ? <>
         <button type="button" className="mt-4 min-h-12 rounded-full bg-butter px-5 font-bold text-cocoa" disabled={sampleAdded} onClick={addDemoSignal}>

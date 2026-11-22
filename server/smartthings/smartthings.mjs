@@ -193,9 +193,12 @@ export function measuredTime(value, now) {
   return Number.isFinite(parsed) && parsed > 0 && parsed <= now ? parsed : null;
 }
 
-export function readingSummary(status, now) {
-  let reading = null;
-  for (const component of Object.values(status?.components || {})) {
+// Compare only attributes from the same outlet. On multi-outlet devices, a
+// newer reading on outlet B must never be paired with outlet A's energy.
+export function meterObservation(status, now) {
+  const components = Object.values(status?.components ?? {});
+  let reading = null, selected = null;
+  for (const component of components) {
     const power = component?.powerMeter?.power;
     const time = measuredTime(power?.timestamp, now);
     if (
@@ -206,7 +209,20 @@ export function readingSummary(status, now) {
       power.unit !== 'W'
     )
       continue;
-    if (!reading || time > reading.measuredAt) reading = { watts: power.value, measuredAt: time };
+    if (!reading || time > reading.measuredAt) {
+      reading = { watts: power.value, measuredAt: time };
+      selected = component;
+    }
   }
-  return reading;
+  if (!selected && components.length === 1) selected = components[0];
+  const meter = selected?.energyMeter?.energy;
+  const energyAt = measuredTime(meter?.timestamp, now);
+  const kwh = meter?.unit === 'kWh' ? meter.value : meter?.unit === 'Wh' && typeof meter.value === 'number' ? meter.value / 1000 : null;
+  const energy = typeof kwh === 'number' && Number.isFinite(kwh) && kwh >= 0 && energyAt !== null
+    ? { kwh, measuredAt: energyAt } : null;
+  return { reading, energy };
+}
+
+export function readingSummary(status, now) {
+  return meterObservation(status, now).reading;
 }

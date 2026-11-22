@@ -1,4 +1,5 @@
 import { random, hash, ApiError, ACCOUNT_CONSENT, CONSENT } from './security.mjs';
+import { advancePowerNotice } from './power-notice.mjs';
 
 // None of these collections has a browser-readable rule. All access is through
 // a verified Firebase ID token and an owner UID derived by the server.
@@ -262,6 +263,8 @@ export function firestoreStore(db, now = () => Date.now()) {
         };
         if (event.time >= (current.lastSignalAt || 0))
           Object.assign(arrival, { lastSignalAt: event.time, lastKind: event.kind });
+        const notice = advancePowerNotice(current, event, now());
+        if (notice) arrival.powerNotice = notice;
         tx.update(connection, arrival);
         return true;
       });

@@ -1,0 +1,5 @@
+{
+  "highWatts": 700,
+  "spanMinutes": 15,
+  "maxGapMinutes": 3
+}

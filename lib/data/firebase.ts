@@ -12,6 +12,7 @@ type State = { user: FirebaseUser|null|undefined; profile: AccountProfile|null; 
 const EMPTY: State = {user:undefined,profile:null,saved:null,connection:null,view:null,error:null,loading:true,revision:0};
 let state=EMPTY, epoch=0;
 let statusRequest: AbortController | null = null;
+let signalObservers = 0, signalTimer: number | null = null, pollableUid: string | null = null;
 let pendingWithdrawals = 0;
 let consentProbe: symbol | null = null;
 let mustConfirmConsent = false;
@@ -39,6 +40,7 @@ function connectionPlug(connection: SmartThingsConnection | null, consent: boole
   const received = checkedTimestamp(connection.lastReceivedAt, at);
   const event = checkedTimestamp(connection.lastEventAt, at);
   const checked = checkedTimestamp(connection.lastCheckedAt, at);
+  const noticeAt = checkedTimestamp(connection.powerNotice?.lastObservedAt, at);
   const recentSince = at - ALERT_DEFAULTS.DEVICE_OFFLINE_HOURS * 60 * 60 * 1000;
   return {
     deviceId: connection.device.id,
@@ -49,6 +51,9 @@ function connectionPlug(connection: SmartThingsConnection | null, consent: boole
     ...(event !== null && received !== null && event <= received && {lastEventAt: new Date(event).toISOString()}),
     ...(checked !== null && {lastCheckedAt: new Date(checked).toISOString()}),
     ...(connection.device.isVirtual === true && {isVirtual: true}),
+    ...(connection.device.isVirtual !== true && connection.powerNotice?.enabled && noticeAt !== null &&
+      event !== null && received !== null && noticeAt <= event && event <= received && at - noticeAt < 86400000 &&
+      {powerNoticeAt: new Date(noticeAt).toISOString()}),
   };
 }
 export function firebaseView(saved:SavedPreferences,connection:SmartThingsConnection|null=null,at=Date.now()):AppView {
@@ -77,16 +82,22 @@ export function updateFirebaseConnection(uid: string, result: SmartThingsConnect
   if (!canReadConnection(uid, revision) || !state.saved) return;
   cancelStatusRequest();
   let connection: SmartThingsConnection = { stage: result.stage };
+  if (result.stage === 'connected' || result.stage === 'subscribing') pollableUid = uid;
+  else if (result.stage !== 'read_error') pollableUid = null;
+  if (result.stage === 'subscribing' && result.device) connection.device = result.device;
   if (result.stage === 'connected') {
     if (typeof result.device?.id === 'string' && result.device.id.trim()) {
       const now = Date.now();
       connection = {
         stage: 'connected',
-        device: { id: result.device.id, label: result.device.label, ...(result.device.isVirtual === true && {isVirtual: true}) },
+        device: { id: result.device.id, label: result.device.label, ...(typeof result.device.isVirtual === 'boolean' && {isVirtual: result.device.isVirtual}) },
         lastEventAt: checkedTimestamp(result.lastEventAt, now),
         lastReceivedAt: checkedTimestamp(result.lastReceivedAt, now),
         lastCheckedAt: checkedTimestamp(result.lastCheckedAt, now),
         lastSignalAt: checkedTimestamp(result.lastSignalAt, now),
+        ...(result.device.isVirtual !== true && result.powerNotice?.enabled && {
+          powerNotice: {enabled: true, lastObservedAt: checkedTimestamp(result.powerNotice.lastObservedAt, now)},
+        }),
       };
     } else {
       connection = { stage: 'read_error' };
@@ -114,6 +125,7 @@ async function observeUser(user:FirebaseUser|null) {
     resetSeniorStepsConsent();
   }
   cancelStatusRequest();
+  pollableUid = null;
   pendingWithdrawals = 0;
   consentProbe = null;
   mustConfirmConsent = false;
@@ -153,7 +165,23 @@ export async function refreshFirebaseAccount() {
 export function useFirebaseAccount(enabled=true) {
   const snapshot=useSyncExternalStore(subscribe,()=>state,()=>EMPTY);
   useEffect(()=>{
-    if(enabled)void ensureFirebaseObserver().catch(()=>{});
+    if (!enabled) return;
+    void ensureFirebaseObserver().catch(()=>{});
+    if (typeof window === 'undefined' || typeof window.setInterval !== 'function') return;
+    // All mounted account views share one timer. Read the team's connection
+    // summary, never Samsung's meter nor the user's raw measurements.
+    const readVisibleSignal = () => {
+      const uid = state.user?.uid;
+      if (document.visibilityState === 'visible' && uid && uid === pollableUid && !statusRequest &&
+          canReadConnection(uid, state.revision)) void refreshFirebaseConnection(uid, state.revision);
+    };
+    if (++signalObservers === 1) signalTimer = window.setInterval(readVisibleSignal, 60000);
+    return () => {
+      if (--signalObservers === 0 && signalTimer !== null) {
+        window.clearInterval(signalTimer);
+        signalTimer = null;
+      }
+    };
   },[enabled]);
   return snapshot;
 }
@@ -161,7 +189,7 @@ export async function signOutFirebase() {
   const uid = state.user?.uid;
   // Discard private UI state before any provider or network wait. A pending
   // Samsung consent window can be cancelled without unlinking a selected device.
-  cancelStatusRequest();pendingWithdrawals=0;
+  cancelStatusRequest();pollableUid=null;pendingWithdrawals=0;
   consentProbe=null;mustConfirmConsent=false;
   resetSeniorStepsConsent();const at=++epoch;emit({...EMPTY,user:null,loading:false,revision:state.revision+1});
   if (uid) await within(cancelPendingSmartThings(uid), 1200).catch(()=>{});

@@ -36,6 +36,8 @@ const errorCopy: Record<string, string> = {
   choose_device: "먼저 밥솥에 사용하는 스마트플러그를 선택해 주세요.",
   disconnect_first: "다른 플러그를 쓰려면 기존 연결을 먼저 해제해 주세요.",
   power_not_supported: "이 기기는 전력 측정을 제공하지 않아요. 다른 플러그를 선택해 주세요.",
+  test_device: "삼성에 가상 기기로 등록된 플러그예요. 밥솥이 꽂힌 실물 플러그에서 알림을 켜 주세요.",
+  ambiguous_meter: "이 기기에서 밥솥 전력계 한 개를 구분할 수 없어요. 밥솥에 연결한 단일 전력 측정 플러그를 선택해 주세요.",
   device_missing: "삼성에서 그 기기를 찾지 못했어요. SmartThings 앱에서 확인해 주세요.",
   check_later: "방금 확인했어요. 30초 후 다시 시도해 주세요.",
   rate_limited: "삼성에 요청이 많아요. 조금 뒤 다시 시도해 주세요.",

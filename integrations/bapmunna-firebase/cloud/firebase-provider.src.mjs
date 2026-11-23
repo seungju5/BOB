@@ -83,7 +83,10 @@ export function createProvider(config){
     async resetPassword(email){try{await sendPasswordResetEmail(auth,email.trim(),actionSettings);}catch(error){if(!['auth/user-not-found','auth/invalid-email'].includes(error.code))throw error;}},
     async resendVerification(){if(auth.currentUser&&!auth.currentUser.emailVerified)await sendEmailVerification(auth.currentUser,actionSettings);},
     async refreshUser(){if(auth.currentUser){await reload(auth.currentUser);await auth.currentUser.getIdToken(true);}return mapUser(auth.currentUser);},
-    signOut:()=>{kakao().cancel();return signOut(auth);},
+    signOut(){
+      if(typeof window !== 'undefined') kakao().cancel();
+      return signOut(auth);
+    },
     async getProfile(){const user=requireUser(),snapshot=await getDoc(profileRef(user.uid));return snapshot.exists()?snapshot.data():null;},
     getAppProfile(expectedUid){return withHouseholdUser(expectedUid,async(user,assertCurrent)=>{const snapshot=await getDocFromServer(profileRef(user.uid));assertCurrent();return snapshot.exists()?snapshot.data():null;});},
     getAppPreferences(expectedUid){return withHouseholdUser(expectedUid,async(user,assertCurrent)=>{

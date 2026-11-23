@@ -7,9 +7,21 @@
 
 [밥뭇나 열기](https://warming-up-bapmunna.web.app/) · [보호자 이메일 가입·로그인](https://warming-up-bapmunna.web.app/login/) · [어르신 화면](https://warming-up-bapmunna.web.app/s/) · [개인정보 안내와 팀 문의처](https://warming-up-bapmunna.web.app/privacy/)
 
-운영 앱의 소스와 게시 명령은 [Firebase 전용 브랜치](https://github.com/seungju5/BOB/tree/codex/warming-up-firebase)에 있습니다. 이 브랜치의 변경은 [GitHub Actions](https://github.com/seungju5/BOB/actions/workflows/firebase-hosting.yml?query=branch%3Acodex%2Fwarming-up-firebase)가 검사합니다. 보호자는 본인 이메일을 확인한 뒤 가구 설정을 저장할 수 있습니다. 삼성 실기기 연결은 준비 중입니다.
+[**운영 웹앱 전체 소스 보기**](apps/warming-up/) · [이메일 로그인·가구 정보 저장](apps/warming-up/firebase/provider/) · [Firestore 접근 규칙](apps/warming-up/firebase/firestore.rules) · [끼니·알림 판단 함수](apps/warming-up/lib/judge/)
 
-## main의 Next.js 앱 실행
+웹앱에서 **보호자로 시작 → 로그인 없이 데모로 둘러보기**를 선택하면 튜토리얼부터 식사 기록과 알림 기준 설정까지 살펴볼 수 있습니다. 데모의 전력과 걸음 수는 예시 데이터입니다. 실제 계정은 이메일 인증 후 가구 정보와 알림 기준을 저장할 수 있습니다. 삼성 기기 연결과 휴대폰 걸음 수 공유는 준비 중입니다.
+
+이 저장소를 내려받아 현재 운영판을 로컬에서 실행하려면 Node.js 24로 다음 명령을 실행하세요.
+
+```sh
+cd apps/warming-up
+npm ci
+npm run dev
+```
+
+2026년 11월 23일에 `apps/warming-up/`의 전체 파일이 운영 커밋 `7a9fad3`과 일치하는지 확인했습니다. 배포는 [팀 Firebase 워크플로](https://github.com/seungju5/BOB/actions/workflows/firebase-hosting.yml?query=branch%3Acodex%2Fwarming-up-firebase)에서 관리합니다. 다음 배포본을 확인한 뒤 `main`에서 `git subtree pull --prefix=apps/warming-up origin codex/warming-up-firebase --squash`로 갱신할 수 있습니다.
+
+## 기존 Supabase 앱 실행 (저장소 루트)
 
 ```bash
 npm install

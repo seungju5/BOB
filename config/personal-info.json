@@ -1,6 +1,6 @@
 {
   "_comment": "scripts/check-personal-info.mjs 설정. allowed: 팀이 공개하기로 한 값(공용 메일 등). legacyFiles: 검사 도입 전부터 개인 정보가 있던 파일 — 정리하면 지운다.",
-  "allowed": [],
+  "allowed": ["warmingu9@gmail.com"],
   "legacyFiles": [
     "config/deployment.json",
     "documentation/consent-feedback-20261116.md",

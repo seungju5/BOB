@@ -13,6 +13,7 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
     "integrations/bapmunna-firebase/**",
+    "apps/warming-up/**",
   ]),
 ]);
 

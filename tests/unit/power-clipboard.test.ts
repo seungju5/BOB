@@ -8,7 +8,7 @@ const updated = vi.hoisted(() => vi.fn());
 vi.mock("react", async original => ({
   ...await original<typeof import("react")>(),
   useId: () => "transcript",
-  useState: (initial: unknown) => [initial === false ? true : initial === "rules" ? "json" : initial, updated],
+  useState: (initial: unknown) => [initial === false ? true : initial === "input" ? "json" : initial, updated],
 }));
 type Element = ReactElement<{children?:ReactNode; onClick?:() => Promise<void>}>;
 function elements(node: ReactNode): Element[] {
@@ -32,7 +32,7 @@ it("copies exactly the displayed JSON including the synthetic source and compute
   await copy();
   expect(writeText.mock.calls).toEqual([[preview]]);
   expect(JSON.parse(preview)).toMatchObject({source:"demo",dataOrigin:"SYNTHETIC_NOT_HOUSEHOLD_DATA",interpretation:{minimumCookSamples:1}});
-  expect(JSON.parse(preview).interpretation.events).toHaveLength(4);
+  expect(JSON.parse(preview).interpretation.events).toHaveLength(2);
   expect(updated).toHaveBeenLastCalledWith("출처를 포함한 예시 JSON을 복사했어요.");
 });
 it.each([undefined, {writeText:vi.fn().mockRejectedValue(new Error("denied"))}])("keeps the preview available when clipboard access fails", async clipboard => {

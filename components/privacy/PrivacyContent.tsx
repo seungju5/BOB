@@ -1,4 +1,5 @@
 import { PRIVACY_NOTICE_DATE, PRIVACY_SUPPORT_EMAIL } from "@/lib/privacy/notice";
+import { DETECTION } from "@/config/detection";
 
 /** The public page and the in-form reader deliberately share the same copy. */
 export function PrivacyContent() {
@@ -24,6 +25,7 @@ export function PrivacyContent() {
       <p className="mt-3">팀 서버는 삼성의 접근·갱신 토큰을 암호화해 해당 밥뭇나 계정과 연결해 보관해요. 선택한 기기의 식별값·이름, 연결 동의와 상태, 최근 조회·신호 시각도 보관해요. 가상 기기의 값은 테스트용이에요.</p>
       <p className="mt-3">기기를 직접 조회하면 실물 플러그의 측정이 취사 기준에 해당하는지와 측정 시각을 보여줘요. 원래 전력값은 판정 뒤 버려요. 삼성의 측정 시각, 밥뭇나가 자동 신호를 받은 시각, 직접 조회한 시각은 따로 표시해요.</p>
       <p className="mt-3">‘밥솥 취사 신호 알림’을 켜면 지정한 밥솥 전용 플러그에서 취사 기준에 도달한 첫 신호를 알려줘요. 계정에는 중복을 구분하는 데 필요한 시각과 최근 알림 시각을 보관해요. 홈과 알림에는 최근 24시간의 마지막 소식 한 건을 표시해요. 알림을 끄거나 연결을 지우면 해당 설정과 신호 시각도 지워요.</p>
+      <p className="mt-3">정기 조회를 켜면 지정한 실물 플러그를 {DETECTION.POWER_CHECK_INTERVAL_MIN}분마다 확인해요. 서버에 남는 것은 조회와 측정 시각이에요. 전력 원값은 판정 뒤 버려요. 기존 알림을 쓰시는 분은 기기 설정에서 정기 조회를 따로 켤 수 있어요.</p>
       <p className="mt-3">개인 점검 파일을 열면 브라우저에서 기기 종류, 신호 해석과 측정·조회 시각을 볼 수 있어요. 파일은 서버에 전송하지 않으며, 창을 닫으면 화면의 기록을 지워요.</p>
     </section>
     <section>

@@ -122,6 +122,17 @@ function AccountPanel({ uid, revision, consent, latest, showConsentLink, onboard
   const canRemove = !consent || ["choose_device", "subscribing", "connected", "reconnect_required"].includes(stage);
   const selected = state?.device;
   const copy = deviceStageCopy(stage, selected?.isVirtual);
+  const setCookerNotice = (enabled: boolean) => {
+    if (!api || !selected) return;
+    void run("power-notice", async (signal, current) => {
+      await api.setPowerNotice(selected.id, enabled, signal);
+      current();
+      const next = await api.status(signal);
+      current(); publish(next);
+      if (!enabled && !next.powerNotice) setNotice("취사 신호 알림과 정기 조회를 껐어요.");
+      else if (next.powerChecks) setNotice("밥솥 사용 시각을 확인할게요.");
+    });
+  };
   const select = (id: string) => {
     if (!api) return;
     void run("select", async (signal, current) => {
@@ -186,16 +197,16 @@ function AccountPanel({ uid, revision, consent, latest, showConsentLink, onboard
         {measurement && measurement.connection.device?.id === selected.id && <MeterReadings reading={measurement.reading} energy={measurement.energy} checkedAt={measurement.connection.lastCheckedAt} physicalPlug={selected.isVirtual === false}/>}
         {selected.isVirtual === false && <div className="mt-4 border-t border-line pt-3">
           <h3 className="text-[17px] font-bold text-cocoa">밥솥 취사 신호 알림</h3>
-          <p className={textClass}>밥솥 전용 플러그에서 {DETECTION.COOK_MIN_WATTS}W 이상이 한 번 측정되면 내 홈과 알림에 표시해요. 직전 취사 신호와의 간격이 {DETECTION.COOK_MERGE_GAP_MIN}분 이하면 같은 건으로 묶어요.</p>
-          <Button type="button" variant="outline" className="mt-2" disabled={!!busy || !api} onClick={() => {
-            if (!api || !state) return;
-            const enabled = !state.powerNotice?.enabled;
-            void run("power-notice", async (signal, current) => {
-              await api.setPowerNotice(selected.id, enabled, signal); current();
-              publish({...state, powerNotice: enabled ? {enabled: true, lastObservedAt: null} : undefined});
-              setNotice(enabled ? "이 플러그의 새 취사 신호부터 확인해요." : "취사 신호 알림을 끄고 저장한 신호 시각을 지웠어요.");
-            });
-          }}>{state?.powerNotice?.enabled ? "취사 신호 알림 끄기" : "이 플러그에 밥솥을 꽂았어요 · 알림 켜기"}</Button>
+          <p className={textClass}>밥솥만 꽂은 플러그를 {DETECTION.POWER_CHECK_INTERVAL_MIN}분마다 확인해요. 삼성이 중간에 보낸 신호도 받아요. {DETECTION.COOK_MIN_WATTS}W 이상이 한 번 측정되면 처음 측정한 시각을 홈과 알림에 표시해요.</p>
+          <p className="mt-2 text-[15px] text-muted">기준 이상인 두 측정이 {DETECTION.COOK_MERGE_GAP_MIN}분 이내로 이어지면 같은 사용이에요.</p>
+          {state?.powerChecks?.checkedAt && <p className="mt-2 text-[15px] text-cocoa">마지막 정기 조회 · {formatDeviceTime(state.powerChecks.checkedAt)}</p>}
+          {state?.powerChecks?.measuredAt && <p className="text-[15px] text-cocoa">정기 조회에서 찾은 최근 측정 · {formatDeviceTime(state.powerChecks.measuredAt)}</p>}
+          {state?.powerNotice?.enabled && !state.powerChecks && <Button type="button" variant="outline" className="mt-2" disabled={!!busy || !api} onClick={() => setCookerNotice(true)}>
+            {DETECTION.POWER_CHECK_INTERVAL_MIN}분마다 전력 확인도 켜기
+          </Button>}
+          <Button type="button" variant="outline" className="mt-2" disabled={!!busy || !api} onClick={() => setCookerNotice(!state?.powerNotice?.enabled)}>
+            {state?.powerNotice?.enabled ? "취사 신호 알림 끄기" : "이 플러그에 밥솥을 꽂았어요 · 알림 켜기"}
+          </Button>
         </div>}
       </>}
     </div>}

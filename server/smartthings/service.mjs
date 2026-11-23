@@ -9,7 +9,7 @@ import {
   CONSENT,
 } from './security.mjs';
 import { safeDevice, meterObservation, measuredTime } from './smartthings.mjs';
-import { POWER_NOTICE_CONSENT } from './power-notice.mjs';
+import { hasPowerChecks, matchesPowerCheck, POWER_CHECK_MINUTES, POWER_CHECK_MS, POWER_NOTICE_CONSENT } from './power-notice.mjs';
 import { isCookingPower, meterSignal } from './cooking-signal.mjs';
 
 const PREFIX = '/api/smartthings';
@@ -50,6 +50,8 @@ function publicConnection(current) {
     lastReceivedAt: current.lastReceivedAt ?? null,
     lastCheckedAt: current.lastCheckedAt ?? null,
     hasPower: current.hasPower ?? null,
+    ...(hasPowerChecks(current) && {powerChecks: {nextAt: current.powerChecks.nextAt,
+      checkedAt: current.powerChecks.checkedAt ?? null, measuredAt: current.powerChecks.measuredAt ?? null}}),
     ...(current.stage === 'connected' && current.deviceIsVirtual === false &&
       current.powerNotice?.version === POWER_NOTICE_CONSENT && {
         powerNotice: { enabled: true, lastObservedAt: current.powerNotice.lastObservedAt ?? null },
@@ -98,8 +100,9 @@ export function createTokenManager({
   verifyConsent,
   now = () => Date.now(),
 }) {
-  async function authorized(uid, operation, { maintenance = false, allowWithoutConsent = false } = {}) {
+  async function authorized(uid, operation, { maintenance = false, allowWithoutConsent = false, reserve } = {}) {
     return store.withLease(uid, async () => {
+      if (reserve && !(await reserve())) return false;
       let current = await store.get(uid);
       if (!current) throw new ApiError(409, 'reconnect_required');
       if (current.stage === 'reconnect_required') {
@@ -296,6 +299,24 @@ export function createService({
     secrets = ready ? vault(config.key) : null;
   const tokens = createTokenManager({ store, secrets, smartthings, verifyAccount, verifyConsent, now });
   const authorized = tokens.authorized;
+  async function pollPower(uid, deviceId, installId) {
+    let claim;
+    return authorized(uid, async (current, token) => {
+      if (!matchesPowerCheck(current, claim)) return false;
+      const status = await smartthings.status(token, deviceId);
+      const at = now();
+      const {reading} = meterObservation(status, at, claim.component);
+      const observation = reading && reading.measuredAt >= claim.enabledAt && at - reading.measuredAt <= POWER_CHECK_MS
+        ? {kind: 'power', component: claim.component, time: reading.measuredAt, high: isCookingPower(reading.watts)} : null;
+      return store.finishPowerCheck(uid, claim, observation, at);
+    }, {reserve: async () => {
+      claim = await store.claimPowerCheck(uid, deviceId, installId);
+      return claim !== null;
+    }}).catch(error => {
+      if (!claim && error.code === 'busy') return false;
+      throw error;
+    });
+  }
   // Firebase Hosting forwards only __session to Cloud Run. Restrict this nonce
   // cookie to the integration path so it does not replace an app-wide session.
   const cookieName = '__session';
@@ -645,7 +666,7 @@ export function createService({
                 deviceId: device.id,
                 deviceLabel: device.label,
                 deviceIsVirtual: device.isVirtual ?? null,
-                ...((device.isVirtual !== false || current.deviceId !== device.id) && { powerNotice: null }),
+                ...((device.isVirtual !== false || current.deviceId !== device.id) && { powerNotice: null, powerChecks: null }),
                 stage: 'subscribing',
               },
               { installId: current.installId, requireConsent: true },
@@ -669,12 +690,13 @@ export function createService({
       if (path === '/power-notice' && request.method === 'POST') {
         const body = await json(request);
         if (!identifier(body?.deviceId) || typeof body.enabled !== 'boolean' ||
+            (body.checkIntervalMinutes !== undefined && (!body.enabled || body.checkIntervalMinutes !== POWER_CHECK_MINUTES)) ||
             (body.enabled && body.consentVersion !== POWER_NOTICE_CONSENT)) throw new ApiError(400, 'invalid_request');
         if (!body.enabled) {
           return response(await store.withLease(uid, async () => {
             const current = await store.get(uid);
             if (!current || current.deviceId !== body.deviceId) throw new ApiError(409, 'choose_device');
-            await store.patch(uid, {powerNotice: null}, {installId: current.installId});
+            await store.patch(uid, {powerNotice: null, powerChecks: null}, {installId: current.installId});
             return {enabled: false};
           }));
         }
@@ -690,11 +712,22 @@ export function createService({
           const existing = current.powerNotice;
           const powerNotice = existing?.version === POWER_NOTICE_CONSENT && existing.component === meters[0].id
             ? existing : {version: POWER_NOTICE_CONSENT, enabledAt: now(), component: meters[0].id, lastObservedAt: null};
-          if (powerNotice !== existing || current.deviceIsVirtual !== false)
-            await store.patch(uid, {deviceIsVirtual: false, powerNotice}, {installId: current.installId, requireConsent: true});
+          const freshNotice = powerNotice !== existing;
+          const startChecks = body.checkIntervalMinutes === POWER_CHECK_MINUTES && (freshNotice || !hasPowerChecks(current));
+          if (freshNotice || startChecks || current.deviceIsVirtual !== false) {
+            const at = now();
+            await store.patch(uid, {deviceIsVirtual: false, ...(freshNotice && {powerNotice, powerChecks: null}),
+              ...(startChecks && {powerChecks: {enabledAt: at, nextAt: at + POWER_CHECK_MS}})},
+            {installId: current.installId, requireConsent: true});
+          }
           else await verifyConsent(uid);
           return {enabled: true};
         }));
+      }
+      if (path === '/poll' && request.method === 'POST') {
+        const body = await json(request);
+        if (!identifier(body?.deviceId)) throw new ApiError(400, 'invalid_device');
+        return response({checked: await pollPower(uid, body.deviceId)});
       }
       if (path === '/check' && request.method === 'POST') {
         const body = await json(request);
@@ -720,7 +753,7 @@ export function createService({
                 lastCheckedAt: now(),
                 lastSignalAt: Math.max(current.lastSignalAt || 0, meter.reading?.measuredAt || 0) || null,
                 ...(typeof classification === 'boolean' && {deviceIsVirtual: classification}),
-                ...(classification === true && {powerNotice: null}),
+                ...(classification === true && {powerNotice: null, powerChecks: null}),
               },
               { installId: current.installId, requireConsent: true },
             );
@@ -762,6 +795,17 @@ export function createService({
   handle.maintain = (options) => {
     if (!ready) throw new ApiError(503, 'setup_required');
     return tokens.maintain(options);
+  };
+  handle.pollDuePower = async () => {
+    if (!ready) throw new ApiError(503, 'setup_required');
+    const candidates = await store.duePowerChecks();
+    const result = {due: candidates.length, checked: 0, deferred: 0};
+    for (const {uid, deviceId, installId} of candidates) {
+      try {
+        if (await pollPower(uid, deviceId, installId)) result.checked++;
+      } catch { result.deferred++; }
+    }
+    return result;
   };
   return handle;
 }

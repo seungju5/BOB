@@ -5,10 +5,16 @@ import { createRuntime } from './index.mjs';
 try {
   const runtime = createRuntime();
   if (!runtime.ready) throw Error();
-  const refresh = await runtime.handle.maintain({ limit: 20, budgetMs: 120000 });
-  const cleanup = await runtime.store.cleanupExpired({ limit: 500 });
-  console.log(JSON.stringify({ refresh, cleanup }));
-  if (refresh.deferred > 0) process.exitCode = 1;
+  if (process.argv[2] === '--poll-power') {
+    const power = await runtime.handle.pollDuePower();
+    console.log(JSON.stringify({power}));
+    if (power.deferred > 0) process.exitCode = 1;
+  } else if (process.argv.length === 2) {
+    const refresh = await runtime.handle.maintain({ limit: 20, budgetMs: 120000 });
+    const cleanup = await runtime.store.cleanupExpired({ limit: 500 });
+    console.log(JSON.stringify({ refresh, cleanup }));
+    if (refresh.deferred > 0) process.exitCode = 1;
+  } else throw new Error('Unknown maintenance command.');
 } catch {
   console.error('SmartThings maintenance did not complete.');
   process.exitCode = 1;

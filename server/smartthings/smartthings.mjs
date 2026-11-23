@@ -208,8 +208,10 @@ export function measuredTime(value, now) {
 
 // Compare only attributes from the same outlet. On multi-outlet devices, a
 // newer reading on outlet B must never be paired with outlet A's energy.
-export function meterObservation(status, now) {
-  const components = Object.values(status?.components ?? {});
+export function meterObservation(status, now, componentId) {
+  const outlets = status?.components ?? {};
+  const components = componentId === undefined ? Object.values(outlets) :
+    Object.hasOwn(outlets, componentId) ? [outlets[componentId]] : [];
   let reading = null, selected = null;
   for (const component of components) {
     const power = component?.powerMeter?.power;

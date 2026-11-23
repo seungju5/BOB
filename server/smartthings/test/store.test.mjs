@@ -169,7 +169,24 @@ test(
       assert.equal(beforeOff.lastHighAt,999000);
       assert.equal(beforeOff.lastObservedAt,999000);
       assert(!('high' in beforeOff));
-      await store.patch(uid, {powerNotice:null});
+      await store.patch(uid, {powerChecks:{enabledAt:400000,nextAt:1000000}});
+      assert.ok((await store.duePowerChecks()).some(c => c.uid === uid && c.deviceId === 'mine'));
+      assert.equal(await store.claimPowerCheck(uid,'other',installId),null);
+      const claims = await Promise.all([store.claimPowerCheck(uid,'mine',installId),store.claimPowerCheck(uid,'mine',installId)]);
+      assert.equal(claims.filter(Boolean).length,1);
+      assert.ok(!(await store.duePowerChecks()).some(c => c.uid === uid));
+      const claim = claims.find(Boolean);
+      await Promise.all([
+        store.receive(uid,installId,{...received,id:'during-poll',time:999500}),
+        store.finishPowerCheck(uid,claim,{kind:'power',component:'main',time:980000,high:true},1000000),
+      ]);
+      const afterPoll = await store.get(uid);
+      assert.equal(afterPoll.powerNotice.lastObservedAt,980000);
+      assert.equal(afterPoll.powerNotice.lastHighAt,999500);
+      assert.equal(afterPoll.lastEventAt,999500);
+      assert.deepEqual(afterPoll.powerChecks,{enabledAt:400000,nextAt:1600000,checkedAt:1000000,measuredAt:980000});
+      await store.patch(uid, {powerNotice:null,powerChecks:null});
+      assert.equal(await store.finishPowerCheck(uid,claim,{kind:'power',component:'main',time:999800,high:true},1000000),false);
       await store.receive(uid,installId,{...received,id:'after-off',time:999001});
       assert.equal((await store.get(uid)).powerNotice,null);
       await getFirestore(app)
@@ -198,7 +215,8 @@ test(
         }),
         false,
       );
-      assert.equal((await store.get(uid)).lastSignalAt, 999001);
+      assert.equal((await store.get(uid)).lastSignalAt, beforeWithdrawalWrite.lastSignalAt);
+      assert.equal(beforeWithdrawalWrite.lastSignalAt, 999500);
       await store.remove(uid, 'not-the-install');
       assert.ok(await store.get(uid));
       await store.remove(uid, installId);

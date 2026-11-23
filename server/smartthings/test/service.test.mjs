@@ -4,7 +4,7 @@ import { randomBytes, generateKeyPairSync, sign, createHash } from 'node:crypto'
 import { createService, CONSENT } from '../service.mjs';
 import { ApiError, hash, readConfig, vault, webhookVerifier } from '../security.mjs';
 import { smartThingsClient, readingSummary, meterObservation, safeDevice } from '../smartthings.mjs';
-import { POWER_NOTICE_CONSENT, advancePowerNotice } from '../power-notice.mjs';
+import { POWER_NOTICE_CONSENT, POWER_CHECK_MS, advancePowerNotice, hasPowerChecks, matchesPowerCheck } from '../power-notice.mjs';
 
 const instant = Date.parse('2026-11-03T03:00:00Z');
 const DAY = 86400000;
@@ -46,6 +46,25 @@ function fixture({ connectionEnabled = true } = {}) {
         .sort((a, b) => a[1].refreshDueAt - b[1].refreshDueAt)
         .slice(0, limit)
         .map(([uid, c]) => ({ uid, installId: c.installId })),
+    duePowerChecks: async () => [...connections.values()].filter(c => c.powerChecks?.nextAt <= time)
+      .map(({uid, installId, deviceId}) => ({uid, installId, deviceId})),
+    claimPowerCheck: async (uid, deviceId, installId) => {
+      const c = connections.get(uid);
+      if (!hasPowerChecks(c) || c.deviceId !== deviceId || (installId && c.installId !== installId) || c.powerChecks.nextAt > time) return null;
+      if (!consented) { c.powerChecks = null; return null; }
+      c.powerChecks.nextAt = time + POWER_CHECK_MS;
+      return {installId: c.installId, deviceId, component: c.powerNotice.component, enabledAt: c.powerChecks.enabledAt, nextAt: c.powerChecks.nextAt};
+    },
+    finishPowerCheck: async (uid, claim, event, at) => {
+      const c = connections.get(uid);
+      if (!consented || !matchesPowerCheck(c, claim)) return false;
+      c.powerChecks.checkedAt = at;
+      if (event) {
+        c.powerChecks.measuredAt = Math.max(c.powerChecks.measuredAt ?? 0, event.time);
+        c.powerNotice = advancePowerNotice(c, event, at, 'poll') ?? c.powerNotice;
+      }
+      return true;
+    },
     saveConnection: async (uid, value, attempt) => {
       if (attempt) {
         const pending = states.get(attempt.state);
@@ -214,6 +233,7 @@ function fixture({ connectionEnabled = true } = {}) {
     states,
     smartthings,
     maintain: handle.maintain,
+    pollDue: handle.pollDuePower,
     setConsent: (value) => {
       consented = value;
     },
@@ -284,6 +304,62 @@ test('owner notice flows from explicit opt-in through signed power events to acc
   assert.equal((await f.store.get('alice')).powerNotice,null);
   assert.equal((await (await f.call('/status')).json()).powerNotice,undefined);
 });
+test('one Samsung check per ten minutes across the job and open tabs, using original W time and the selected outlet', async () => {
+  const f = fixture();
+  await f.link();
+  const details = await f.smartthings.device(null, 'mine');
+  Object.assign(details, {type: 'MQTT', components: [{id: 'main', categories: [{name:'SmartPlug', categoryType:'manufacturer'}],
+    capabilities: [{id:'powerMeter'}]}]});
+  await f.call('/device', {method:'POST', body:{deviceId:'mine'}});
+  const enable = (extra = {}) => f.call('/power-notice', {method:'POST', body:{deviceId:'mine', enabled:true, consentVersion:POWER_NOTICE_CONSENT, ...extra}});
+  const poll = (user = 'alice', deviceId = 'mine') => f.call('/poll', {method:'POST', user, body:{deviceId}});
+  await enable();
+  assert.equal((await f.pollDue()).due, 0); // Older webhook-only consent.
+  assert.equal((await enable({checkIntervalMinutes:15})).status, 400);
+  await enable({checkIntervalMinutes:10});
+  let calls = 0, watts = 699.99, measuredAt = instant + 9*60000;
+  f.smartthings.status = async () => {
+    calls++;
+    const at = new Date(measuredAt).toISOString();
+    return {components:{main:{powerMeter:{power:{value:watts, unit:'W', timestamp:at}}},
+      other:{powerMeter:{power:{value:1150, unit:'W', timestamp:at}}}}};
+  };
+  f.advance(POWER_CHECK_MS-1);
+  assert.deepEqual(await (await poll()).json(), {checked:false});
+  assert.equal(calls, 0);
+  f.advance(1);
+  assert.equal((await (await poll('another')).json()).checked, false);
+  assert.equal((await (await poll('alice','other')).json()).checked, false);
+  await Promise.all([f.pollDue(), poll(), poll()]);
+  assert.equal(calls, 1);
+  assert.equal((await f.store.get('alice')).powerNotice.lastObservedAt, null);
+  f.advance(POWER_CHECK_MS);
+  measuredAt = instant + 12*60000; watts = 700;
+  const result = await f.pollDue();
+  assert.equal(result.checked, 1);
+  const snapshot = await (await f.call('/status')).json();
+  assert.equal(snapshot.powerNotice.lastObservedAt, measuredAt);
+  assert.equal(snapshot.powerChecks.checkedAt, instant+20*60000);
+  assert.equal(snapshot.powerChecks.measuredAt, measuredAt);
+  assert.equal(snapshot.lastReceivedAt, null); // Polls do not invent a webhook.
+  assert.deepEqual(Object.keys(snapshot.powerChecks).sort(), ['checkedAt','measuredAt','nextAt']);
+  f.advance(POWER_CHECK_MS);
+  await poll(); // SmartThings still returns the old sample.
+  assert.equal((await f.store.get('alice')).powerNotice.lastObservedAt, measuredAt);
+  assert.equal((await f.store.get('alice')).powerChecks.measuredAt, measuredAt);
+  f.advance(POWER_CHECK_MS); measuredAt = instant+40*60000;
+  await poll();
+  assert.equal((await f.store.get('alice')).powerNotice.lastObservedAt, measuredAt);
+  f.advance(POWER_CHECK_MS); f.setConsent(false);
+  await f.pollDue();
+  assert.equal(calls, 4);
+  f.setConsent(true);
+  await f.call('/power-notice', {method:'POST', body:{deviceId:'mine', enabled:false}});
+  assert.equal((await f.store.get('alice')).powerChecks, null);
+  f.advance(POWER_CHECK_MS);
+  assert.equal((await f.pollDue()).due, 0);
+});
+
 test('OAuth binds state to user and browser, encrypts credentials, and consumes state once', async () => {
   const f = fixture(),
     { state, cookie } = await f.link();

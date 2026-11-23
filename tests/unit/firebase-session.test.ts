@@ -74,6 +74,27 @@ afterEach(()=>{
 // Synthetic promises and Auth callbacks, with the production 12s timeout.
 // These tests do not claim browser, emulator, network or live account evidence.
 describe('Firebase account store asynchronous session isolation',()=>{
+  it('uses a due physical plug only once across visible views and shows the Samsung time without inventing a webhook or a meal',async()=>{
+    const doc=Object.assign(new EventTarget(),{visibilityState:'visible'});
+    vi.stubGlobal('document',doc);
+    vi.stubGlobal('window',Object.assign(new EventTarget(),{setInterval,clearInterval}));
+    const at=Date.now(), interval=600000;
+    let nextAt=at+interval, observed:number|null=null;
+    bridgeMock.smartThings.mockImplementation(async (_uid, _signal, deviceId) => {
+      if (deviceId) { observed=Date.now()-180000; nextAt=Date.now()+interval; }
+      return {stage:'connected',device:{id:'p',label:'테스트 플러그',isVirtual:false},
+        powerNotice:{enabled:true,lastObservedAt:observed},powerChecks:{nextAt,checkedAt:observed && Date.now(),measuredAt:observed}};
+    });
+    const f=await fixture(); await f.mount(); await f.mount(); await f.emit(f.user('A'));
+    const meterCalls=()=>bridgeMock.smartThings.mock.calls.filter(call=>call[2] === 'p').length;
+    await vi.advanceTimersByTimeAsync(interval-1); expect(meterCalls()).toBe(0);
+    await vi.advanceTimersByTimeAsync(1); expect(meterCalls()).toBe(1);
+    const view=f.snapshot().view!;
+    expect(view.plug).toMatchObject({online:true,lastReadingAt:null,powerNoticeAt:new Date(at+420000).toISOString()});
+    expect(view.slots).toEqual([]); expect(view.lastActivityAt).toBeNull();
+    doc.visibilityState='hidden'; await vi.advanceTimersByTimeAsync(2*interval); expect(meterCalls()).toBe(1);
+    await f.emit(null); doc.visibilityState='visible'; await vi.advanceTimersByTimeAsync(interval); expect(meterCalls()).toBe(1);
+  });
   it('clears operator navigation immediately on account changes',async()=>{
     const f=await fixture();await f.mount();f.provider.studio.allowed.mockResolvedValueOnce(true);
     await f.emit(f.user('A'));expect(f.snapshot().operator).toBe(true);

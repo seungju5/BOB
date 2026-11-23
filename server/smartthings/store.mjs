@@ -1,5 +1,5 @@
 import { random, hash, ApiError, ACCOUNT_CONSENT, CONSENT } from './security.mjs';
-import { advancePowerNotice } from './power-notice.mjs';
+import { advancePowerNotice, hasPowerChecks, matchesPowerCheck, POWER_CHECK_MS } from './power-notice.mjs';
 
 // None of these collections has a browser-readable rule. All access is through
 // a verified Firebase ID token and an owner UID derived by the server.
@@ -31,6 +31,49 @@ export function firestoreStore(db, now = () => Date.now()) {
   return {
     async verifyConsent(uid) {
       if (!(await eligible(uid))) throw new ApiError(403, 'consent_required');
+    },
+    async duePowerChecks() {
+      const found = await db.collection('bapmunnaSmartThingsConnections')
+        .where('powerChecks.nextAt', '<=', now()).orderBy('powerChecks.nextAt').limit(20)
+        .select('uid', 'installId', 'deviceId').get();
+      return found.docs.flatMap(doc => {
+        const candidate = doc.data();
+        return typeof candidate.uid === 'string' && doc.id === hash(candidate.uid) ? [candidate] : [];
+      });
+    },
+    async claimPowerCheck(uid, deviceId, installId) {
+      return db.runTransaction(async tx => {
+        const target = ref('Connections', uid);
+        const current = (await tx.get(target)).data();
+        const at = now();
+        if (!current?.powerChecks || current.deviceId !== deviceId ||
+            (installId && current.installId !== installId) || current.powerChecks.nextAt > at) return null;
+        if (!hasPowerChecks(current) || current.consentVersion !== CONSENT || !(await eligible(uid, tx))) {
+          tx.update(target, {powerChecks: null});
+          return null;
+        }
+        // Reserve before Samsung is called. Tabs, overlapping jobs and retries
+        // share one ten-minute limit, including when Samsung returns an error.
+        const nextAt = at + POWER_CHECK_MS;
+        tx.update(target, {'powerChecks.nextAt': nextAt});
+        return {deviceId, installId: current.installId, component: current.powerNotice.component,
+          enabledAt: current.powerChecks.enabledAt, nextAt};
+      });
+    },
+    async finishPowerCheck(uid, claim, observation, checkedAt) {
+      return db.runTransaction(async tx => {
+        const target = ref('Connections', uid);
+        const current = (await tx.get(target)).data();
+        if (!matchesPowerCheck(current, claim) || current.consentVersion !== CONSENT || !(await eligible(uid, tx))) return false;
+        const fields = {'powerChecks.checkedAt': checkedAt};
+        if (observation) {
+          fields['powerChecks.measuredAt'] = Math.max(current.powerChecks.measuredAt ?? 0, observation.time);
+          const notice = advancePowerNotice(current, observation, checkedAt, 'poll');
+          if (notice) fields.powerNotice = notice;
+        }
+        tx.update(target, fields);
+        return true;
+      });
     },
     async dueConnections({ limit = 20 } = {}) {
       if (!Number.isSafeInteger(limit) || limit < 1 || limit > 20)

@@ -2,13 +2,14 @@
 
 import { useId, useState } from "react";
 import type { DemoTranscript } from "@/lib/power/power-transcription-model";
+import { PowerSampleFigure } from "./PowerSampleFigure";
 
-const tabs = [{ id: "rules", label: "규칙 해석" }, { id: "input", label: "입력값" }, { id: "json", label: "JSON" }] as const;
+const tabs = [{ id: "input", label: "그래프와 측정표" }, { id: "rules", label: "감지 기준" }, { id: "json", label: "JSON" }] as const;
 
 export function PowerTranscriptionSection({ transcript }: { transcript: DemoTranscript }) {
   const id = useId();
   const [expanded, setExpanded] = useState(false);
-  const [tab, setTab] = useState<(typeof tabs)[number]["id"]>("rules");
+  const [tab, setTab] = useState<(typeof tabs)[number]["id"]>("input");
   const [copyStatus, setCopyStatus] = useState("");
   const { interpretation, samples } = transcript;
   const json = JSON.stringify(transcript, null, 2);
@@ -39,18 +40,10 @@ export function PowerTranscriptionSection({ transcript }: { transcript: DemoTran
           <h3 className="font-bold">예시 입력에 규칙을 적용한 결과</h3>
           <p>밥솥 플러그에서 {interpretation.minimumCookWatts}W 이상이 한 번 측정되면 그 시각에 취사 신호를 기록해요.</p>
           <p>기준 이상인 두 측정의 간격이 {interpretation.cookMergeGapMinutes}분 이하면 같은 취사 한 건으로 묶어요. 그보다 길면 새 건으로 세요.</p>
-          <p>이 예시에는 측정이 {interpretation.maximumGapMinutes}분 넘게 비어 있는 곳이 {interpretation.gapCount}곳 있어요. 그 사이의 전력은 알 수 없어요.</p>
+          <p>{interpretation.checkIntervalMinutes}분마다 플러그를 확인해요. 이 예시에서는 조회 간격보다 긴 빈 구간이 {interpretation.gapCount}곳 있어요. 그 사이에 밥솥을 사용했는지는 알 수 없어요.</p>
           <p className="rounded-xl bg-butter-soft p-3 font-semibold">예시 입력에서 찾은 취사 신호 {interpretation.events.filter(event => event.type === "cook").length}건</p>
         </div>}
-        {tab === "input" && <div className="mt-4 overflow-x-auto">
-          <table className="w-full text-right text-sm tabular-nums text-cocoa">
-            <caption className="pb-2 text-left font-bold">{transcript.datasetDate} 가상 입력값</caption>
-            <thead><tr>{["시각 (KST)", "전력 (W)", "전압 (V)", "전류 (A)"].map((label) => <th key={label} scope="col" className="px-1 py-2">{label}</th>)}</tr></thead>
-            <tbody>{samples.map((sample) => <tr key={sample.timestamp} className="border-t border-line">
-              <th scope="row" className="px-1 py-2">{sample.timestamp.slice(11, 16)}</th><td>{sample.watts}</td><td>{sample.voltage}</td><td>{sample.currentA}</td>
-            </tr>)}</tbody>
-          </table>
-        </div>}
+        {tab === "input" && <PowerSampleFigure transcript={transcript}/>}
         {tab === "json" && <div className="mt-4 text-sm">
           <button className="min-h-11 rounded-full bg-butter px-4 font-bold text-cocoa" onClick={copy}>예시 JSON 복사</button>
           <p role="status" className="mt-2 text-cocoa">{copyStatus}</p>

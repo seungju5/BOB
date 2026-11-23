@@ -45,6 +45,19 @@ test('the inclusive ten-minute interval rolls forward from each high, never from
   const next=advancePowerNotice(c,{kind:'power',component:'main',high:true,time},time);
   assert.equal(next.lastObservedAt,time);
 });
+test('a scheduled snapshot can bridge on original time and rejects expired or pre-consent status',()=>{
+  const window = 10*60000;
+  const c = {...initial(),stage:'connected',powerChecks:{enabledAt:start,nextAt:start+window}};
+  const event = {kind:'power',component:'main',high:true,time:start};
+  assert.equal(advancePowerNotice(c,event,start+window,'poll').lastObservedAt,start);
+  assert.equal(advancePowerNotice(c,event,start+window+1,'poll'),null);
+  assert.equal(advancePowerNotice(c,{...event,time:start-1},start,'poll'),null);
+  assert.equal(advancePowerNotice({...c,powerChecks:null},event,start,'poll'),null);
+  report(c,0); report(c,18);
+  const bridge = advancePowerNotice(c,{...event,time:start+9*60000},start+19*60000,'poll');
+  assert.equal(bridge.lastObservedAt,start);
+  assert.equal(bridge.lastHighAt,start+18*60000);
+});
 test('a fresh high delivered after a newer low counts once and a replay never rolls the notice back',()=>{
   const c=initial();
   report(c,2,{high:false});

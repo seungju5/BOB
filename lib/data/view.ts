@@ -30,6 +30,7 @@ export type AppView = {
     lastEventAt?: string;
     /** 사용자가 선택한 기기 상태를 직접 조회한 시각. */
     lastCheckedAt?: string;
+    lastPolledMeasurementAt?: string;
     isVirtual?: boolean;
     /** 이 계정이 선택한 플러그에서 관측한 최근 고전력 패턴. 식사 기록과 분리한다. */
     powerNoticeAt?: string;

@@ -53,7 +53,7 @@ describe("team SmartThings browser client", () => {
     transport.mockResolvedValueOnce(json({...active,reading:{cooking:false,measuredAt:sampleTime},energy:null}));
     expect((await api.check()).reading).toEqual({cooking:false,measuredAt:sampleTime});
     transport.mockResolvedValueOnce(json({enabled:true}));await api.setPowerNotice('p',true);
-    expect(JSON.parse(String(transport.mock.lastCall?.[1]?.body))).toEqual({deviceId:'p',enabled:true,consentVersion:'cooker-power-notice-v2'});
+    expect(JSON.parse(String(transport.mock.lastCall?.[1]?.body))).toEqual({deviceId:'p',enabled:true,consentVersion:'cooker-power-notice-v2',checkIntervalMinutes:10});
     transport.mockResolvedValueOnce(json({enabled:true}));
     await expect(api.setPowerNotice('p',false)).rejects.toMatchObject({code:'invalid_response'});
   });

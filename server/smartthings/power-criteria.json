@@ -1,5 +1,6 @@
 {
   "highWatts": 700,
+  "checkIntervalMinutes": 10,
   "maxGapMinutes": 3,
   "readingIntervalMinutes": 1,
   "mergeGapMinutes": 10,

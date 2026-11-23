@@ -41,18 +41,23 @@ function connectionPlug(connection: SmartThingsConnection | null, consent: boole
   const event = checkedTimestamp(connection.lastEventAt, at);
   const checked = checkedTimestamp(connection.lastCheckedAt, at);
   const noticeAt = checkedTimestamp(connection.powerNotice?.lastObservedAt, at);
+  const polled = checkedTimestamp(connection.powerChecks?.checkedAt, at);
+  const measured = checkedTimestamp(connection.powerChecks?.measuredAt, at);
+  const pollEvidence = connection.device.isVirtual === false && connection.powerNotice?.enabled &&
+    measured !== null && polled !== null && measured <= polled ? measured : null;
+  const witnessedAt = Math.max(event && received && event <= received ? event : 0, pollEvidence ?? 0);
   const recentSince = at - ALERT_DEFAULTS.DEVICE_OFFLINE_HOURS * 60 * 60 * 1000;
   return {
     deviceId: connection.device.id,
     status: "connected",
-    online: connection.device.isVirtual !== true && received !== null && event !== null &&
-      event <= received && event > recentSince && received > recentSince,
+    online: connection.device.isVirtual !== true && witnessedAt > recentSince && witnessedAt > 0,
     lastReadingAt: received === null ? null : new Date(received).toISOString(),
     ...(event !== null && received !== null && event <= received && {lastEventAt: new Date(event).toISOString()}),
     ...(checked !== null && {lastCheckedAt: new Date(checked).toISOString()}),
+    ...(pollEvidence !== null && {lastPolledMeasurementAt: new Date(pollEvidence).toISOString()}),
     ...(connection.device.isVirtual === true && {isVirtual: true}),
     ...(connection.device.isVirtual === false && connection.powerNotice?.enabled && noticeAt !== null &&
-      event !== null && received !== null && noticeAt <= event && event <= received && at - noticeAt < 86400000 &&
+      noticeAt <= witnessedAt && at - noticeAt < 86400000 &&
       {powerNoticeAt: new Date(noticeAt).toISOString()}),
   };
 }
@@ -98,6 +103,10 @@ export function updateFirebaseConnection(uid: string, result: SmartThingsConnect
         ...(result.device.isVirtual !== true && result.powerNotice?.enabled && {
           powerNotice: {enabled: true, lastObservedAt: checkedTimestamp(result.powerNotice.lastObservedAt, now)},
         }),
+        ...(result.device.isVirtual === false && result.powerNotice?.enabled && result.powerChecks && {
+          powerChecks: {nextAt: result.powerChecks.nextAt, checkedAt: checkedTimestamp(result.powerChecks.checkedAt, now),
+            measuredAt: checkedTimestamp(result.powerChecks.measuredAt, now)},
+        }),
       };
     } else {
       connection = { stage: 'read_error' };
@@ -105,13 +114,13 @@ export function updateFirebaseConnection(uid: string, result: SmartThingsConnect
   }
   emit({connection, view: firebaseView(state.saved, connection)});
 }
-async function refreshFirebaseConnection(uid: string, revision: number) {
+async function refreshFirebaseConnection(uid: string, revision: number, dueDeviceId?: string) {
   if (!canReadConnection(uid, revision)) return;
   cancelStatusRequest();
   const request = new AbortController();
   statusRequest = request;
   try {
-    const connection = await within(readSmartThingsConnection(uid, request.signal));
+    const connection = await within(readSmartThingsConnection(uid, request.signal, dueDeviceId));
     if (statusRequest === request) updateFirebaseConnection(uid, connection, revision);
   } catch {
     if (statusRequest === request) updateFirebaseConnection(uid, {stage:'read_error'}, revision);
@@ -187,12 +196,17 @@ export function useFirebaseAccount(enabled=true) {
     if (!enabled) return;
     void ensureFirebaseObserver().catch(()=>{});
     if (typeof window === 'undefined' || typeof window.setInterval !== 'function') return;
-    // All mounted account views share one timer. Read the team's connection
-    // summary, never Samsung's meter nor the user's raw measurements.
+    // The minute tick refreshes the team summary. Only an opted-in physical
+    // plug that is due can also trigger the server's ten-minute Samsung check.
     const readVisibleSignal = () => {
       const uid = state.user?.uid;
       if (document.visibilityState === 'visible' && uid && uid === pollableUid && !statusRequest &&
-          canReadConnection(uid, state.revision)) void refreshFirebaseConnection(uid, state.revision);
+          canReadConnection(uid, state.revision)) {
+        const connection = state.connection;
+        const due = connection?.stage === 'connected' && connection.device?.isVirtual === false &&
+          connection.powerChecks && connection.powerChecks.nextAt <= Date.now();
+        void refreshFirebaseConnection(uid, state.revision, due ? connection.device?.id : undefined);
+      }
     };
     if (++signalObservers === 1) signalTimer = window.setInterval(readVisibleSignal, 60000);
     return () => {

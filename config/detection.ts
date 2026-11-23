@@ -3,7 +3,9 @@
 import cookerCriteria from "../server/smartthings/power-criteria.json";
 
 export const DETECTION = {
-  /** 전력값 수신 간격(분). SmartThings 폴링 주기와 맞춘다. (미확정) */
+  /** 동의한 밥솥 전용 플러그를 삼성에 다시 조회하는 간격(분). */
+  POWER_CHECK_INTERVAL_MIN: cookerCriteria.checkIntervalMinutes,
+  /** 1분 해상도 입력으로 보온 구간을 계산할 때 한 표본이 차지하는 시간. */
   READING_INTERVAL_MIN: cookerCriteria.readingIntervalMinutes,
   /** 표본 수신 공백과 보온 연속성을 판단하는 간격. */
   MAX_READING_GAP_MIN: cookerCriteria.maxGapMinutes,

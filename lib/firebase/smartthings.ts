@@ -19,6 +19,7 @@ export type SmartThingsConnection = {
   lastReceivedAt?: number | null;
   lastCheckedAt?: number | null;
   powerNotice?: { enabled: true; lastObservedAt: number | null };
+  powerChecks?: {nextAt: number; checkedAt: number | null; measuredAt: number | null};
 };
 export type SmartThingsReading = { cooking: boolean; measuredAt: number };
 export type SmartThingsEnergy = { measuredAt: number };
@@ -63,11 +64,14 @@ function connection(body: Record<string, unknown>): SmartThingsConnection {
   const selected = body.device == null ? null : device(body.device);
   if ((stage === "connected" || stage === "subscribing") && !selected) throw new SmartThingsError("invalid_response");
   const notice = stage === "connected" && selected?.isVirtual === false && body.powerNotice != null ? object(body.powerNotice) : null;
+  const checks = notice?.enabled === true && body.powerChecks != null ? object(body.powerChecks) : null;
   return {
     stage, device: selected, lastSignalAt: observedTime(body.lastSignalAt),
     lastEventAt: observedTime(body.lastEventAt), lastReceivedAt: observedTime(body.lastReceivedAt),
     lastCheckedAt: observedTime(body.lastCheckedAt),
     ...(notice?.enabled === true && {powerNotice: {enabled: true as const, lastObservedAt: observedTime(notice.lastObservedAt)}}),
+    ...(typeof checks?.nextAt === "number" && Number.isSafeInteger(checks.nextAt) && checks.nextAt > 0 &&
+      {powerChecks: {nextAt: checks.nextAt, checkedAt: observedTime(checks.checkedAt), measuredAt: observedTime(checks.measuredAt)}}),
   };
 }
 
@@ -203,8 +207,13 @@ export async function openSmartThings(uid: string, signal?: AbortSignal) {
       return checked(await authenticated("check", "POST", signal, {}));
     },
     async setPowerNotice(deviceId: string, enabled: boolean, signal?: AbortSignal) {
-      const result = await authenticated("power-notice", "POST", signal, {deviceId, enabled, ...(enabled && {consentVersion: POWER_NOTICE_CONSENT})});
+      const result = await authenticated("power-notice", "POST", signal, {deviceId, enabled,
+        ...(enabled && {consentVersion: POWER_NOTICE_CONSENT, checkIntervalMinutes: cookerCriteria.checkIntervalMinutes})});
       if (result.enabled !== enabled) throw new SmartThingsError("invalid_response");
+    },
+    async pollIfDue(deviceId: string, signal?: AbortSignal) {
+      const result = await authenticated("poll", "POST", signal, {deviceId});
+      if (typeof result.checked !== "boolean") throw new SmartThingsError("invalid_response");
     },
     async disconnect(forgetExpired = false, signal?: AbortSignal) {
       const current = connection(await authenticated("connection", "DELETE", signal, { confirm: true, ...(forgetExpired ? { forgetExpired: true } : {}) }));
@@ -214,8 +223,12 @@ export async function openSmartThings(uid: string, signal?: AbortSignal) {
   };
 }
 
-export async function readSmartThingsConnection(uid: string, signal?: AbortSignal): Promise<SmartThingsConnection> {
+export async function readSmartThingsConnection(uid: string, signal?: AbortSignal, dueDeviceId?: string): Promise<SmartThingsConnection> {
   const api = await openSmartThings(uid, signal);
+  if (api.config.enabled && dueDeviceId) {
+    // A concurrent job may hold the lease. Still read the owner's latest status.
+    try { await api.pollIfDue(dueDeviceId, signal); } catch { signal?.throwIfAborted(); }
+  }
   return api.status(signal);
 }
 

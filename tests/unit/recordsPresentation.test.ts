@@ -9,6 +9,7 @@ const context = vi.hoisted(() => ({ view: null as unknown, now: new Date("2026-1
 vi.mock("@/lib/data/useApp", () => ({ useApp: () => context }));
 import { firebaseView } from "@/lib/data/firebase";
 import { demoPowerTranscript } from "@/lib/power/power-transcription-model";
+import { PowerSampleFigure } from "@/components/power/PowerSampleFigure";
 import RecordsPage from "@/app/(guardian)/records/page";
 import ReportPage from "@/app/(guardian)/report/page";
 
@@ -34,12 +35,18 @@ describe("기록·리포트 표시 계약 (서버 렌더, 실제 브라우저 �
     const sample = demoPowerTranscript(toView(createDemoState(context.now), context.now))!;
     const payload = JSON.parse(JSON.stringify(sample));
     expect(payload).toMatchObject({source:"demo", dataOrigin:"SYNTHETIC_NOT_HOUSEHOLD_DATA", datasetDate:"2026-11-18",
-      interpretation:{minimumCookWatts:700, minimumCookSamples:1, cookMergeGapMinutes:10, gapCount:8, peakSampleWatts:852, coverage:"gaps"}});
-    const highSamples = payload.samples.filter((s: {watts:number}) => s.watts >= 700);
-    expect(payload.interpretation.events).toEqual(highSamples.map((s: {timestamp:string}) => {
-      const time = new Date(s.timestamp).toISOString();
-      return {type:"cook",startedAt:time,endedAt:time};
-    }));
+      interpretation:{minimumCookWatts:700, minimumCookSamples:1, cookMergeGapMinutes:10, checkIntervalMinutes:10,
+        gapCount:1, peakSampleWatts:852, coverage:"gaps"}});
+    const iso = (hhmm: string) => new Date(payload.datasetDate + "T" + hhmm + ":00+09:00").toISOString();
+    expect(payload.interpretation.events).toEqual([
+      {type:"cook",startedAt:iso("07:40"),endedAt:iso("07:50")}, {type:"cook",startedAt:iso("08:30"),endedAt:iso("08:30")},
+    ]);
+    const figure = renderToStaticMarkup(createElement(PowerSampleFigure, {transcript: sample}));
+    expect(figure.match(/data-sample=/g)).toHaveLength(payload.samples.length);
+    expect(figure).toContain("07:30 · 699.9W · 기준 미만");
+    expect(figure).toContain("07:40 · 700W · 사용 시작");
+    expect(figure).toContain("07:50 · 852W · 같은 사용");
+    expect(figure).not.toContain('data-sample="08:10"');
     expect(payload.samples).toHaveLength(9);
     expect(payload.samples.every((s: {timestamp:string}) => s.timestamp.startsWith(payload.datasetDate))).toBe(true);
     expect(JSON.stringify(payload)).not.toMatch(/confidence|currentWatts|totalEnergy|heart/i);

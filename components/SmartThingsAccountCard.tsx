@@ -7,6 +7,7 @@ import { isDemoView } from "@/lib/data/view";
 import { updateDemo } from "@/lib/demo/store";
 import { DEMO_SMARTTHINGS_PROFILE, formatSmartThingsKst } from "@/lib/smartthings/account-model";
 import { deviceStageCopy } from "@/lib/smartthings/presentation";
+import { continuesCookRun } from "@/server/smartthings/cooking-signal.mjs";
 
 export function PowerNotice({at}: {at: string}) {
   return <div role="status" className="mt-2 rounded-xl bg-butter-soft p-3 text-cocoa">
@@ -24,13 +25,15 @@ export function SmartThingsAccountCard({ compact = false }: { compact?: boolean 
   const copy = deviceStageCopy(stage, view.plug.isVirtual);
   const addDemoSignal = () => {
     if (!demo) return;
-    const endedAt = new Date();
-    const startedAt = new Date(endedAt.getTime() - 30 * 60 * 1000);
-    updateDemo(state => ({
-      ...state,
-      plug: {deviceId: DEMO_SMARTTHINGS_PROFILE.deviceId, online: true, offlineSince: null},
-      events: [...state.events, {type: "cook", startedAt: startedAt.toISOString(), endedAt: endedAt.toISOString()}],
-    }));
+    const at = new Date();
+    updateDemo(state => {
+      const previous = state.events.findLast(event => event.type === "cook");
+      const same = previous && continuesCookRun(at.getTime(), Date.parse(previous.endedAt));
+      const time = at.toISOString();
+      return {...state, plug: {deviceId: DEMO_SMARTTHINGS_PROFILE.deviceId, online: true, offlineSince: null},
+        events: same ? state.events.map(event => event === previous ? {...event, endedAt: time} : event) :
+          [...state.events, {type: "cook", startedAt: time, endedAt: time}]};
+    });
     setSampleAdded(true);
   };
   return (
@@ -44,6 +47,7 @@ export function SmartThingsAccountCard({ compact = false }: { compact?: boolean 
         <p className="mt-1 text-[15px] text-muted">자동으로 받은 마지막 신호 · {formatSmartThingsKst(view.plug.lastReadingAt)}</p>
         {view.plug.lastEventAt && <p className="mt-1 text-[15px] text-muted">삼성이 기록한 신호 시각 · {formatSmartThingsKst(view.plug.lastEventAt)}</p>}
         {view.plug.lastCheckedAt && <p className="mt-1 text-[15px] text-muted">마지막 직접 조회 · {formatSmartThingsKst(view.plug.lastCheckedAt)}</p>}
+        {view.plug.lastPolledMeasurementAt && <p className="mt-1 text-[15px] text-muted">정기 조회에서 찾은 최근 측정 · {formatSmartThingsKst(view.plug.lastPolledMeasurementAt)}</p>}
         {view.plug.powerNoticeAt && <PowerNotice at={view.plug.powerNoticeAt}/>}
       </> : <p className="mt-1 text-[15px] text-muted">{copy.detail}</p>}
       {demo && !compact ? <>

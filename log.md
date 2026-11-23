@@ -1,5 +1,13 @@
 # log.md — Dev Log
 
+## 2026-11-23 팀 앱과 이전 통합판의 설정 정리
+
+정리 기준은 `main`의 `c16ca1d`다. 운영 소스는 `apps/warming-up/`에 있고 팀 프로젝트 `warming-up-bapmunna`에서 Hosting, Authentication, Firestore를 제공한다. 이전 통합판 문서의 개인 Firebase 배포·권한 기록을 걷어내고 로컬 체험과 에뮬레이터 검사 경로를 남겼다. [팀 운영 안내](docs/team-migration.md)
+
+운영 Firebase Hosting의 파일 230개를 배포 목록과 대조했다. 로그인 화면은 팀 프로젝트 설정을 읽으며 운영 Firestore 규칙도 팀 소스와 일치한다. 저장소의 공유용 QR 두 개도 팀 주소로 통일했다.
+
+정리 전 파일은 `git show c16ca1d:<저장소 안의 경로>`로 확인할 수 있다. 이 기록은 작업본의 변경 기준이며 GitHub 반영과 Hosting 게시는 별도로 확인한다.
+
 ## 2026-11-23 Warming Up 운영 소스를 main에서 제공
 
 Firebase에서 제공하는 운영판의 소스 286개를 `apps/warming-up/`에 가져왔다. 디렉터리의 Git 트리 해시는 배포 커밋 `7a9fad3`의 루트 트리와 일치한다. 저장소 첫 화면에서 운영판을 열고, 가입·데이터 접근 규칙과 알림 판단 코드를 바로 검토할 수 있다. 기존 Supabase 앱은 저장소 루트에서 실행한다.
@@ -122,7 +130,7 @@ Android SDK/Studio·Xcode가 없어 네이티브 전체 컴파일·실기기 건
 - Firebase 통합판에 본인 계정 OAuth 시작·callback·기기 선택·신호 수신·재연결·해제를 추가했다. 서버 비밀키 암호화, 계정 격리, 서명 검증, 재전송 처리, 갱신 직렬화와 읽기 전용 권한을 적용했다. 가족 요약과 식사 판정은 연결하지 않았다.
 - 검증: 루트 42개, Firebase 시나리오 58 + 워크시트 31 + 역할 9 + 관리 8 + 표현/동등성 41, Firebase Auth/규칙 에뮬레이터 33, 서버 단위 14 및 실제 Firestore 트랜잭션 에뮬레이터 1 통과. TypeScript와 빌드 통과.
 - 실제 외부 확인: 사용자 제공 단기 토큰으로 기기 목록·전력 측정 지원 기기 상태 조회 200. 같은 토큰의 앱 목록/생성은 403. 장기 OAuth 완료 증거는 아직 없다. 계정 비밀번호·토큰은 소스/문서/프런트에 포함하지 않는다.
-- 배포 상태: ku-gpa 결제 미연결, Cloud Run/Functions 미활성. 등록 manifest와 서버는 준비됐지만 공개 callback/webhook 서비스 가동·Target URL 확인·실제 OAuth 연결 완료는 후속 증거가 필요하다. 유료 전환 없음.
+- 당시 공개 callback·웹훅 서버와 사용자 OAuth는 후속 검증 항목이었다.
 
 - 재개 준비: 공식 CLI 등록 파일의 dry-run 확인, 390×844 화면에서 토끼 로그인·역할 전환·SmartThings 준비 중 화면 검수. 구독 이름 충돌 시 실제 기기를 재확인해 연결 완료 오표시를 방지했다.
 
@@ -130,9 +138,8 @@ Android SDK/Studio·Xcode가 없어 네이티브 전체 컴파일·실기기 건
 
 - 삼성 문자 인증과 사용자가 승인한 공식 CLI 권한 부여를 완료했다. 이전 403은 단기 PAT의 앱 등록 권한 문제였으며 공식 CLI 인증으로 앱 생성에 성공했다.
 - App ID `f1b8149d-45c5-4f4b-8136-2ad518faf4ec`, 이름 `밥뭇나 · Warming Up`, API_ONLY. Client ID·Secret 발급 후 앱·OAuth 설정을 각각 재조회해 callback·webhook·`r:devices:*` 일치를 확인했다. 비밀값은 Git 제외 파일에 0600 권한으로 보관한다.
-- `server/registration-status.json`에 비밀값 없는 재조회 증거를 기록했다. Target은 `PENDING`; 공개 API·사용자 OAuth·기기 구독·자동 수신 검증은 미완료다.
-- 기본 Firestore 위치는 서울(`asia-northeast3`)로 확인했다. 같은 리전으로 배포안을 정리했다. Firebase는 Spark/결제 미연결 상태이며 유료 전환을 실행하지 않았다.
-- 사용자가 요청한 팀 시연의 완료 기준과 비용 검토를 `server/deployment-plan.md`에 기록했다. 등록과 화면 구현을 실제 신호 자동 수신 성공으로 혼동하지 않도록 구분한다.
+- 당시 등록 Target은 `PENDING`이었다. 공개 API·사용자 OAuth·기기 구독·자동 수신은 아직 검증하지 못했다.
+- 시연 완료 조건으로 사용자 동의, 플러그 선택, 자동 신호 도착을 정리했다.
 
 ## 2026-11-03 (유료 전환 없이 현재 상태 유지)
 
@@ -152,27 +159,24 @@ Android SDK/Studio·Xcode가 없어 네이티브 전체 컴파일·실기기 건
 - 사용자 요청에 따라 원본 3D 토끼·밥솥 로고·로컬 서체·노랑/크림 토큰을 Firebase, 선택형 Supabase, 루트 Next.js와 Figma에 맞췄다. 공통 자산/색상 검사 스크립트를 추가했다.
 - Next.js 탐색을 홈·기록·더보기로 줄이고 기존 리포트·알림·설정은 더보기에 연결했다. 역할 전환은 탐색만 바꾸며 로그인·페어링·DB 권한은 그대로다. 어르신 세 행동을 390×844 첫 화면 안에 표시하고 320px 가로 넘침 없음을 확인했다.
 - Figma 기존 로그인/연결 6개 화면을 보존하고 공통 디자인 기준 프레임 `3328:2`를 추가했다.
-- Impact Series `5739bba68b9cbdf9` 배포 및 144개 공개 파일 해시 확인. 기존 경로 2,306개 유지. KU GPA `bb499628efe31290`는 디자인만 교체하고 20개 공개 파일 확인, 기존 경로 151개 유지. Hosting 설정·인증·DB·요금제는 변경하지 않았다. 전후 복구 스냅샷을 보존했다.
+- Impact Series `5739bba68b9cbdf9`를 게시하고 공개 파일 144개의 해시와 기존 경로 2,306개의 보존을 확인했다.
 - 검증: 루트 42개, Firebase 시나리오/워크시트/역할/관리/표현 검사 통과. SmartThings 서버 단위 14개 통과(실제 Firestore 통합 1개는 이 실행에서 제외). TypeScript와 Firebase 빌드, Next.js Webpack 프로덕션 빌드 통과. 이 환경의 Turbopack 빌드는 임시 포트 권한 문제로 실행되지 않았다.
 - 실제 사용자 로그인·실기기 OAuth·자동 수신은 이 디자인 작업에서 시험하지 않았다. 공개 SmartThings 서버는 계속 미배포이며 정적 사이트의 HTML 응답도 준비 중으로 안전하게 표시한다. Vercel 별도 미리보기의 기존 실패는 Firebase 게시 성공과 구분한다.
 
 ## 2026-11-03 (OAuth 등록 3개 항목 재확인)
 
-- 사용자 요청에 따라 공식 CLI로 기존 앱·OAuth 설정을 다시 조회했다. Redirect URI·웹훅 URL·읽기 권한이 `app-registration.json`과 모두 일치했다. 등록은 완료이고 Target은 `PENDING`이다.
-- 공개 config와 callback GET, webhook POST는 HTTP 404였다. Firebase 결제 미연결과 Cloud Run·Functions 미활성도 API로 재확인했다. 공개 서버와 실제 사용자 OAuth/자동 수신은 완료되지 않았다.
+- 공식 CLI에서 삼성 앱의 Redirect URI, 웹훅 URL과 읽기 권한을 다시 확인했다. 당시 Target은 `PENDING`이었다.
+- 당시 공개 config와 callback GET, 웹훅 POST는 HTTP 404였다. 실제 사용자 OAuth와 자동 수신 확인이 남았다.
 - 서버 단위 테스트 14개 통과. Firestore 에뮬레이터 테스트는 로컬 Java의 `libjli.dylib` 누락으로 시작하지 못했다. 발급된 앱·클라이언트 자격 증명·32바이트 암호화 키의 서버 구성은 비밀값 출력 없이 확인했다.
-- `server/registration-status.json`과 서버 README에 최신 증거를 저장했다. 앞선 무료 유지 결정을 변경하려면 별도 사용자 결정이 필요하며, 이번 재확인으로 결제·운영 설정을 변경하지 않았다.
 
-- 후속 사용자 결정: 무료 유지(1번), 향후 유료 전환을 위한 준비 요청. `deployment-config.json`에 기존 URI·읽기 권한·서울 서버 제한·예산 알림 제안을 고정하고, 과금·배포를 실행하지 않는 `npm run check:smartthings`와 재개 안내를 추가했다. 자동 과금·서버 활성화는 없다.
+- 당시 사용자는 무료 상태를 유지하고, 서버·결제 전환은 보류하기로 결정했다.
 - 준비 후 검증: 온라인/오프라인 사전 점검, 루트 42개와 Firebase 기존 검사 전체, TypeScript·Firebase 빌드 통과. 서버 실행 코드·원래 3D 토끼 화면은 변경하지 않았다.
 
 ### 2026-11-03 · 토끼의 실제 자세 인사
 
 사용자 요청에 따라 한 장짜리 사진의 점프를 16자세 애니메이션으로 확장했다. 기존 두 번의 깡총 점프 뒤 손·귀·표정·다리가 바뀌며 인사한다. Firebase와 Next.js는 3.6초 제어기를 공유한다. 재생·모션 줄이기·탭 일시 정지·정리·로딩 실패 테스트 7개를 추가했다. 자산과 정확한 최종 프롬프트는 integrations/bapmunna-firebase/documentation/bunny-greeting.md. 공개 배포 결과는 배포 영수증으로 별도 확인한다.
 
-Impact Series·KU GPA의 Firebase/Supabase 정적 경로에 배포하고 각각 150/16개 파일의 공개 바이트 일치를 확인했다. 2402/157개 기존 경로·설정은 보존했다. 로컬 Turbopack의 포트 생성 제한 때문에 Webpack 대체 빌드를 확인하는 과정에서 Tailwind 처리 누락을 발견해 기존 로더를 Next CSS 파이프라인에 연결했다. 새 의존성 없이 스타일이 포함된 프로덕션 빌드를 검수했다. 배포 영수증: integrations/bapmunna-firebase/documentation/bunny-greeting-release.json.
-
-KU GPA는 로컬 소스보다 이전 모듈 구성을 운영하고 있었다. 최초 동기화의 worksheet 의존성 오류를 공개 화면 검수로 발견해, 배포 전 복구본의 app.mjs에 인사 변경만 덧붙여 복구했다. 현재 버전은 sites/ku-gpa/versions/d0fef512fe106010이며 시작·인사·어르신 진입을 재검증했다. 향후 배포도 전체 앱 교체 전 상대 모듈 의존 파일의 존재를 검사한다. 이번 게시 도구에 해당 사전 검사를 추가했다.
+Impact Series 정적 경로에 게시한 파일 150개의 공개 바이트를 확인하고 기존 경로 2,402개와 Hosting 설정을 보존했다. 로컬 Turbopack의 포트 제한 때문에 Webpack 대체 빌드를 검수하면서 Tailwind 처리 누락을 발견해 기존 로더를 Next CSS 파이프라인에 연결했다.
 
 ## 2026-11-04 원본 토끼 그래픽 복원과 관절 모션
 
@@ -180,7 +184,7 @@ KU GPA는 로컬 소스보다 이전 모듈 구성을 운영하고 있었다. �
 
 54개 단위 테스트와 Firebase의 58+31+9+8+41개 검사, TypeScript, Firebase 빌드, Next.js Webpack 프로덕션 빌드를 통과했다. Synagogue 58+31+9 검사 및 빌드 통과. 320/390/1280px, 역할 전환·모션 중 이동·원본 복원·공개 페이지 재생을 확인했다. WebGL 미지원과 컨텍스트 손실은 원본으로 대체한다.
 
-Impact `df72a4cce4229206`(UI 6개 변경, 2,413개 파일 보존), KU GPA `3c8e557fb39d18c1`(모션 모듈·CSS 4개 변경, 169개 파일 보존)을 게시하고 변경 바이트와 네 provider 주소의 원본 이미지 SHA-256을 검증했다. KU GPA의 구형 app.mjs는 그대로 두고 호환 인수 처리를 사용했다. 배포 전후 복구 체크포인트를 보관했다. 인증·DB·규칙·요금제·SmartThings 서버 상태는 그대로다.
+Impact Series `df72a4cce4229206`를 게시했다. 변경한 UI 파일 6개와 원본 이미지 해시를 확인했고 기존 파일 2,413개를 보존했다.
 
 ## 2026-11-04 손 인사 중 얼굴·손 왜곡 수정
 
@@ -188,7 +192,7 @@ Impact `df72a4cce4229206`(UI 6개 변경, 2,413개 파일 보존), KU GPA `3c8e5
 
 실제 브라우저 비교에서 눈·코·입·볼 핵심 영역의 RGBA 최대 차이는 0/255였다. 전체 시각의 손·연필 점 간 거리와 변환 행렬 면적 보존 및 복원 자산 실패 검사를 추가했다. 단위 56개(인사 14개), Firebase 58+31+9+8+41, Synagogue 58+31+9, 타입·디자인 일치·Firebase/Next.js Webpack 빌드가 통과했다. 320/390px, 재생 중 역할 전환, Next.js 프로덕션을 확인했다. 두 번의 점프와 3.6초 종료를 유지했다.
 
-공개 Impact `9c48044d28de2e5b`(모듈·자산 6개 변경, 2,415개 파일 보존), KU GPA `12364f8a5f516eb6`(4개 변경, 171개 파일 보존) 게시 및 바이트 확인. Impact의 실제 재생 56프레임은 idle로 종료했고 두 공개 주소에서 콘솔 오류 없이 재생했다. KU GPA 운영 app.mjs는 그대로 보존했다. 배포 전후 체크포인트를 보관했고 Auth·DB·규칙·과금·SmartThings 서버 상태는 변경하지 않았다. 상세 자산·최종 생성 프롬프트는 documentation/bunny-hand-fix.md에 기록했다.
+Impact Series `9c48044d28de2e5b`를 게시했다. 바뀐 모듈·자산 6개의 바이트를 확인하고 기존 파일 2,415개를 보존했다. 공개 화면에서는 콘솔 오류 없이 56프레임을 재생하고 idle 상태로 돌아왔다. [자산과 검증 기록](integrations/bapmunna-firebase/documentation/bunny-hand-fix.md)
 
 ## 2026-11-12 Super Members 개발 하네스
 
@@ -208,7 +212,7 @@ Impact `df72a4cce4229206`(UI 6개 변경, 2,413개 파일 보존), KU GPA `3c8e5
 ## 2026-11-12 Super Members 공개 가상 작업실
 
 - 사용자의 Firebase 게시·실제 대화·꾸민 작업실·움직이는 캐릭터 요청에 따라 `workspaces/super-members/`를 독립 정적 앱으로 구현했다. Sites 스킬의 로컬 제작/검수 흐름을 적용하고 게시 위치는 명시된 Firebase로 유지했다.
-- 호스팅 `impact-series`가 KU GPA 프로젝트가 아니라 별도 Impact Series 프로젝트에 속함을 새로 조회했다. 그 프로젝트에 `Warming Up Super Members` 웹 앱을 만들고 Firebase AI Logic/Gemini Developer API와 reCAPTCHA App Check를 연결했다. App Check는 ENFORCED, 도메인은 Impact Series 두 공식 호스트다. 결제 계정이 연결되지 않은 Spark 상태를 설정 전후·게시 후 조회했다. 기존 KU GPA 인증·DB·SmartThings 설정은 변경하지 않았다.
+- `impact-series` 프로젝트에 `Warming Up Super Members` 웹 앱을 만들고 Firebase AI Logic/Gemini Developer API와 reCAPTCHA App Check를 연결했다. App Check는 ENFORCED로 설정했다. 설정 전후와 게시 후에 결제 계정이 연결되지 않은 Spark 상태를 확인했다.
 - 내장 image_gen으로 기존 팀 소개판을 참고한 7개 2×2 투명 포즈 시트와 3D 작업실 내부를 제작했다. 캐릭터 선택·인사·말하기·점프, 낮/밤·러그·추가 화분, 움직임 정지와 OS reduced-motion 지원을 구현했다. 원래 밥뭇나 앱 마스코트는 보존했다.
 - 멤버마다 별도 대화와 역할 프롬프트를 갖고 Gemini의 실제 스트리밍 응답을 표시한다. 코드/기기/DB 실행 권한은 없으며 실행 요청 복사로 개발 도구에 인계한다. 첫 대화 전에 Google 전송과 무료 등급 데이터 이용을 안내한다. 대화 기록은 로컬 보관, 최근 8회만 모델 문맥, 실패·중단한 부분 답변은 저장하지 않는다.
 - 독립 검토자가 bfcache 복원, skip-link의 멤버 초기화, 실패 시 새 초안 덮어쓰기, 저장 실패에도 삭제 완료 표시 문제를 재현했다. 모두 수정하고 실제 앱 컨트롤러를 사용하는 회귀 검사 7개와 코어 검사 6개가 통과했다. 공개 브라우저에서 캡틴·브릿지·케어의 서로 다른 실제 답변, 재접속 기록과 이전 질문 문맥을 확인했다. 데스크톱/390px와 방 꾸미기·정지를 확인했으며 OS 설정 변경 자체는 시험하지 않았다.
@@ -253,11 +257,11 @@ SmartThings config는 인증 SDK보다 먼저 확인한다. SDK/첫 인증 이�
 
 Notion의 회의/과제/개인정보 문서와 Figma v1106 전체 추출본을 대조했다. 최신 사용자 결정, 채택된 변경, 확인 필요, 대체된 예전 제안을 구분한 전체 대조표와 수정 후 재판정은 workspace output/bapmunna-final-audit-20261113에 보관했다. PRD 전체 구현 완료로 판정하지 않았다.
 
-로그인→안내→본인 전용 가구 기본정보→홈→선택적 기기 연결을 구현하고, Firebase/Supabase 이전 계정의 늦은 조회 응답과 UI보다 먼저 바뀐 auth.currentUser에 이전 초안이 저장되는 경합을 수정했다. getHousehold/saveHousehold에는 expectedUid를 반드시 전달한다. 가구 저장은 6개 허용 필드와 서버 readback 성공이 필요하며 가족 공유·동의 생성과 별개다. 사용자 명시 승인 후 KU GPA ruleset e0d9c16c-84a1-4eac-aa9b-3932de857e53를 적용했고 이전 규칙·모든 기존 namespace를 보존했다.
+로그인→안내→본인 전용 가구 기본정보→홈→선택적 기기 연결을 구현하고, Firebase/Supabase 이전 계정의 늦은 조회 응답과 UI보다 먼저 바뀐 auth.currentUser에 이전 초안이 저장되는 경합을 수정했다. getHousehold/saveHousehold에는 expectedUid를 반드시 전달한다. 가구 저장은 6개 허용 필드와 서버 readback 성공이 필요하며 가족 공유·동의 생성과 별개다.
 
 Next의 동의 전 홈 진입, 생활 설정 재편집·저장 순서, 페어링 실패→데모 자동 전환 금지, 접수/전송 문구, 접근 가능한 시니어 대화상자를 보강했다. 최신 PRD의 호칭 단일 선택·대표자 연락처 안내·외식0~20·취사1~21을 적용했다. 네 번째 끼니 모델은 미결정이므로 실제 지원하는1~3끼만 표시한다. 원시 전력값 등록 응답을 제거하고 BOB 수집·페어링·발송에 동의 검사를 추가했지만 운영 SQL/Edge는 배포하지 않았다.
 
-다른 채팅의 5c1cfb1 서버 준비 변경을 함께 포함했다. Hosting 프로젝트 Impact Series와 Auth/Firestore KU GPA를 분리한 배포 계약, Docker 범위와 4개 회귀, parser 의존성 보완이다. 삼성 현재 공식 조회403·공개 config/callback404이며 과거 등록 결과를 실제 연동 완료로 승격하지 않는다. 사용자의 무료 유지·삼성 공개 서버 보류는 그대로다.
+다른 작업의 `5c1cfb1`에서 Docker 범위와 서버 회귀 검사 4개, parser 의존성 보완을 가져왔다. 당시 삼성 공식 조회는 403, 공개 config·callback은 404였고 실제 연동은 확인하지 못했다.
 
 최종 소스6c07408 전체 하네스:25/121/48/58/19개 통과, Firebase 계약58시나리오+Node121 통과, 타입·동기화·빌드 통과, skip0·source drift0. 실제 로컬 Auth/Firestore37개 별도 통과. 하네스 환경 제거로 발생한 skip은 명시적 loopback opt-in으로 수정했고, 고정 설치ID의 이전 receipt 충돌은 실행별 UUID로 격리했다. 최종 보고서 .harness/runs/2026-11-13T14-06-30-166Z-7231/report.md.
 
@@ -303,19 +307,15 @@ documentation/smartthings-console-support-20261114.md에 사실·제약·삼성 
 
 더보기 QR PNG를 jsQR로 해독해 공개 앱 URL 일치를 확인했다. 320px에서 공유와 어르신 화면에 가로 넘침이 없고, 24px 세 행동·확인 대화상자 Escape/초점 복원을 확인했다. OS 큰 글꼴·모션 설정 변경, 실제 메신저 수신 카드, 실사용 OAuth·네이티브 건강 데이터는 별도 미검증이다. 전체 매핑과 남은 일은 documentation/final-feedback-20261114.md에 기록했다.
 
-최종 구현 하네스 `.harness/runs/2026-11-14T14-52-28-639Z-83296/report.md`에서 25/216/48/59/49개, 타입·동기화·두 앱 빌드·Next가 실패/skip 없이 통과했다. 실제 운영 규칙을 기준으로 병합한 로컬 Auth/Firestore 검사 46개도 통과했고 기존 규칙 namespace 보존을 확인했다. 마지막 회귀 테스트 파일 추가와 설치 셸 포장·운영 배포 결과는 아래에 이어 기록한다. 카카오/Identity Platform 보류·과금 미활성화는 유지한다.
+최종 구현 하네스 `.harness/runs/2026-11-14T14-52-28-639Z-83296/report.md`에서 25/216/48/59/49개, 타입·동기화·두 앱 빌드·Next가 실패/skip 없이 통과했다. 로컬 Auth·Firestore 검사 46개도 통과했다. 마지막 회귀 테스트 파일 추가와 설치 셸 포장·운영 배포 결과는 아래에 이어 기록한다. 카카오/Identity Platform 보류·과금 미활성화는 유지한다.
 
 로그인 TSX 실행 회귀 8개를 저장소에 보존하고 루트 224개·타입·모바일 셸 8개를 재검사해 통과했다. 별도 네이티브 포장은 133개 자산/16개 HTML, Android/iOS sync·verify, 걸음수 포함 11개 계약과 iOS 메타데이터 4개를 통과했다. prepare-web에서 누락된 생성 manifest와 참조 이미지 검증을 보완했다. 빈 basePath 기본판 포장이므로 Firebase 네이티브 로그인·APK/IPA·실기기 완료를 주장하지 않는다.
 
-본인 설정 Rules를 c629135d-03e8-4d1b-8426-4cbda27cc01e로 게시한 뒤 검증한 병합본과 운영 바이트가 일치함을 다시 읽어 확인했다. 이전 e0d9c16c-84a1-4eac-aa9b-3932de857e53와 나머지 namespace를 보존했다. Hosting 공개 릴리스는 소스 커밋·푸시 이후 아래 영수증으로 기록한다.
-
 2026-11-15 00:01 KST: 통합 b4b43af를 codex/final-feedback-20261114에 푸시하고 Hosting 9ea0c97d5e9613ec에 게시했다. 변경 135개 공개 바이트 일치·기존 2,532개 보존·누락 0·총 2,667개·Hosting 설정/과금 false 유지를 확인했다. 일반/공유 수집기 6개 응답에 로고가 있고, 공개 QR은 로컬에서 해독한 이미지와 일치한다. 실제 공개 표지/로그인/데모 소개·이전 carer 주소 이동과 390px 스크린샷·JS 오류 0을 확인했다. 임시 QA 서버·본인 emulator를 종료하고 브라우저 크기를 복원했으며, 최종 튜토리얼 탭을 사용자용으로 남겼다. 영수증은 workspaces/bapmunna-final/releases/20261114-final-feedback.json. 다음 게시 기준은 이 worktree의 tmp/impact-final/site/bapmunna. 별도 채팅의 Vercel·건강 연결 후속은 미완료로 구분하고 이번 공개 코드를 인계했다.
 
-## 2026-11-14 무료 Vercel 계정·전용 서버 IAM 준비와 첫 배포 인증
+## 2026-11-14 무료 Vercel 계정과 첫 배포 인증
 
-사용자가 새 Google 계정의 무료 Vercel 가입·약관 동의, 공식 CLI 접근, 정확한 전용 서버 계정·8개 권한·키 발급·Vercel 비밀 보관을 명시 승인했다. 새 Hobby 팀 생성과 로그인을 확인했고 업로드 전에 모델 학습 데이터 공유를 끄고 저장했다. CLI 접근 승인과 실제 인증 완료는 구분한다. CLI 인증은 네트워크 실패와 비활성 버튼이 남아 공식 Drop 배포로 전환했다.
-
-provision-smartthings-identity.mjs apply가 성공했다. KU GPA에 bapmunna-smartthings 전용 계정과 기존 검토한 8개 권한의 custom role을 적용했고, IAM 이전 정책 복구본을 보존했다. 활성 원격 키와 로컬0600 비밀 파일을 확인했다. IAM은 프로젝트 Firestore 범위이며 컬렉션별 제한은 서버가 검사한다. Owner/Editor·브라우저 규칙·결제 설정은 변경하지 않았고 KU GPA와 Impact Series의 결제 미연결을 확인했다. 이전 자동 승인 검토 차단은 이번 명시 승인 후 해소됐다.
+Vercel Hobby 팀 생성과 로그인을 확인했고 업로드 전에 모델 학습 데이터 공유를 껐다. CLI 인증 화면에 네트워크 오류가 있어 공식 Drop 배포로 전환했다.
 
 정확한 allowlist의 15개 파일만 ZIP으로 만들었으며 비밀·로컬 CLI 자격증명은 제외했다. SHA-256 70756220953219fd8acebe8558a0db07762f38a2a72d00488d6dd10bbe97202b. Vercel Drop 업로드 목록15개와 Hobby 팀을 확인한 후 프로젝트 이름 bapmunna-smartthings로 Deploy를 눌렀다. 첫 배포 추가 이메일 인증 화면이 나와 새 코드를 요청했고 입력을 기다린다. 아직 프로젝트 고정 주소·성공한 함수 배포·production 비밀 주입은 미검증/미실행이다.
 
@@ -464,8 +464,8 @@ Firebase 읽기 전용 조회에서 현재 c6ac5c6b3663fc35(11/18 16:57 KST)를 
 
 ## 2026-11-21 — 팀 계정 이전 준비
 
-- 배포 대상 값(Firebase 웹 설정·웹/서버 주소·문의 메일·APK 주소)을 `config/deployment.json` 한 곳으로 모았다. Next 앱은 `lib/deployment.ts`, Firebase 정적 앱은 `npm run apply:deployment`가 생성하는 설정을 읽는다. 값은 아직 기존(개인) 값 그대로라 동작 변화 없음.
-- `ku-gpa`가 아니면 실패하던 `public-config.mjs` 잠금을 deployment.json 기준으로 바꿨다.
-- 팀 Firebase용 독립 규칙 `firebase/team-firestore.rules`(`npm run rules:team`), 루트 `firebase.json`·`.firebaserc`, `npm run build:team-site`·`deploy:team` 추가. build:team-site 전체 통과(385 파일 스테이징), 로컬 미리보기 확인.
+- 루트 Next.js/Supabase 앱과 이전 디자인 통합판의 공개 설정을 `config/deployment.json`으로 모았다.
+- 당시 `public-config.mjs`가 배포 설정의 프로젝트 값을 읽도록 수정했다.
+- 초기 이전안을 로컬에서 빌드하고 파일 385개를 스테이징했다. 이후 독립 팀 앱이 운영판으로 정해졌다.
 - CI(`.github/workflows/ci.yml`, Windows·Linux + 규칙 에뮬레이터 + 서버 테스트)와 팀원 개인 정보 감시(`npm run check:personal-info`: 개인 메일·휴대폰·주민번호 형태·내 컴퓨터 경로·개인 Vercel 주소·비밀 키, 기존 9개 파일은 legacyFiles) 추가.
-- 이전 순서와 남은 일: `docs/team-migration.md`.
+- 팀 운영 안내는 [팀 Firebase 문서](docs/team-migration.md)에서 확인한다.

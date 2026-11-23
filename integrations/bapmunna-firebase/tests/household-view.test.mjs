@@ -3,7 +3,6 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {runInNewContext} from 'node:vm';
 import {mountHousehold} from '../docs/household-view.mjs';
-import {deploymentConfig} from '../cloud/deployment-config.mjs';
 
 const flush=()=>new Promise(resolve=>setImmediate(resolve));
 const deferred=()=>{let resolve,reject;const promise=new Promise((yes,no)=>{resolve=yes;reject=no;});return {promise,resolve,reject};};
@@ -164,7 +163,7 @@ test('save timeout means unconfirmed, permits server reload and ignores the late
 
 // Exercise the real Firebase adapter with only SDK I/O replaced; no live account,
 // network, database, or generated cloud bundle is used by these tests.
-const providerSource=readFileSync(new URL('../cloud/firebase-provider.src.mjs',import.meta.url),'utf8').replace(/^import .*;\n/gm,'').replace('export function createProvider','function createProvider');
+const providerSource=readFileSync(new URL('../cloud/firebase-provider.src.mjs',import.meta.url),'utf8').replace(/^import .*;\n/gm,'').replace(/^export (?=function )/gm,'');
 function firebaseFixture(){
   class Stamp{toDate(){return new Date(123);}}
   const auth={currentUser:{uid:'a',emailVerified:true}},listeners=new Set(),database=new Map(),reads=[],writes=[];
@@ -178,9 +177,9 @@ function firebaseFixture(){
     setDoc:async(ref,value)=>{writes.push({path:ref.path,value});database.set(ref.path,{...value,updatedAt:new Stamp()});},
   };
   // Mutable forwarding functions let individual tests delay the actual I/O edge.
-  const context={...sdk,deploymentConfig,getDocFromServer:(...args)=>sdk.getDocFromServer(...args),setDoc:(...args)=>sdk.setDoc(...args)};
+  const context={...sdk,URL,getDocFromServer:(...args)=>sdk.getDocFromServer(...args),setDoc:(...args)=>sdk.setDoc(...args)};
   const create=runInNewContext(`${providerSource}\ncreateProvider;`,context);
-  return {provider:create({}),sdk,auth,listeners,database,reads,writes,snap,stamp:()=>new Stamp(),
+  return {provider:create({projectId:"demo-bapmunna"}),sdk,auth,listeners,database,reads,writes,snap,stamp:()=>new Stamp(),
     emit(value){auth.currentUser=value;for(const listener of [...listeners])listener(value);},
   };
 }

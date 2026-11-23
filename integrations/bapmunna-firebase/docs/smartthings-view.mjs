@@ -57,7 +57,7 @@ export async function readSmartThingsConnection(uid,{connect=connectCloud,fetche
   },new AbortController().signal,requestTimeoutMs);
 }
 
-export function mountSmartThings(element,{accountHref='#account',homeHref='',homeLabel='홈으로 돌아가기',consentHref=`${deploymentConfig.webOrigin}/bapmunna/app/settings#device`,onConnection=()=>{},connect=connectCloud,fetcher=fetch,requestTimeoutMs=12000,apiOrigin=smartThingsApiOrigin,popupConnect=connectInPopup}={}){
+export function mountSmartThings(element,{accountHref='#account',homeHref='',homeLabel='홈으로 돌아가기',consentHref=`${deploymentConfig.webOrigin}/settings#device`,onConnection=()=>{},connect=connectCloud,fetcher=fetch,requestTimeoutMs=12000,apiOrigin=smartThingsApiOrigin,popupConnect=connectInPopup}={}){
   let alive=true,provider,unsubscribe,revision=0,loadController,popupOperation;
   const apiBase=apiOrigin?new URL(apiOrigin).origin:'';
   if(apiBase&&(apiBase!==apiOrigin||!apiBase.startsWith('https://')))throw Error('Invalid SmartThings backend origin.');
@@ -79,7 +79,7 @@ export function mountSmartThings(element,{accountHref='#account',homeHref='',hom
   const action=(name,label,primary=false)=>`<button type="button" data-st-action="${name}" class="${primary?'primary':'st-secondary'} full" ${model.busy?'disabled':''}>${model.busy?'잠시만요…':label}</button>`;
   const returnLink=(primary=false)=>`<a class="${primary?'primary full ':''}st-link" href="${escape(homeHref||accountHref)}">${homeHref?escape(homeLabel):'내 계정으로 돌아가기'}</a>`;
   const admission=()=>`<div class="st-note"><strong>삼성 서비스 연결을 준비하고 있어요.</strong><p>운영팀이 삼성 등록을 마치면 여기서 시작할 수 있어요. 이용자분이 개발자 가입을 하거나 토큰을 복사할 필요는 없어요.</p><p>먼저 SmartThings 앱에 전력 측정이 가능한 플러그를 등록해 주세요.</p></div>${action('reload','연결 준비 상태 다시 확인')}`;
-  function consent(){return `<div class="st-consent"><strong>내가 고른 기기만, 내 계정에</strong><p>삼성에서 허용한 기기 목록을 읽고, 선택한 플러그의 전력 신호 도착 시각과 기기 이름을 저장해요. 삼성 연결 열쇠는 서버에 암호화해 보관해요.</p><p>전력 수치의 장기 기록·갤럭시폰 사용 기록·가족에게 자동 전송하는 기능은 포함하지 않아요. 연결은 언제든 해제할 수 있어요.</p><a class="st-link caption" href="${deploymentConfig.webOrigin}/bapmunna/app/privacy/" target="_blank" rel="noopener noreferrer">개인정보 이용·제공 안내</a><label class="check-row"><input type="checkbox" name="st-consent" ${model.busy?'disabled':''}>이 내용을 확인하고 연결할게요.</label></div>`;}
+  function consent(){return `<div class="st-consent"><strong>내가 고른 기기만, 내 계정에</strong><p>삼성에서 허용한 기기 목록을 읽고, 선택한 플러그의 전력 신호 도착 시각과 기기 이름을 저장해요. 삼성 연결 열쇠는 서버에 암호화해 보관해요.</p><p>전력 수치의 장기 기록·갤럭시폰 사용 기록·가족에게 자동 전송하는 기능은 포함하지 않아요. 연결은 언제든 해제할 수 있어요.</p><a class="st-link caption" href="${deploymentConfig.webOrigin}/privacy/" target="_blank" rel="noopener noreferrer">개인정보 이용·제공 안내</a><label class="check-row"><input type="checkbox" name="st-consent" ${model.busy?'disabled':''}>이 내용을 확인하고 연결할게요.</label></div>`;}
   function disconnected(){return `<div class="st-intro"><span class="bunny-portrait st-mascot" aria-hidden="true"><img src="${asset}" alt=""></span><h2>우리 집 플러그를<br>만나볼까요?</h2><p>처음 한 번 연결하면,<br>기기가 보내는 소식을 받을 수 있어요.</p></div><ol class="st-steps"><li><b>1</b><span>밥뭇나에 로그인</span><small>완료</small></li><li><b>2</b><span>삼성 계정으로 허용</span><small>다음</small></li><li><b>3</b><span>우리 집 플러그 선택</span></li></ol>${consent()}${action('start','SmartThings 연결하기',true)}<p class="caption st-center">삼성 계정 화면으로 이동해요.</p>`;}
   function selected(){
     const c=model.connection;

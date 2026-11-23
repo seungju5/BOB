@@ -32,7 +32,7 @@ describe("PowerTranscriptionSection Presentation Contract [KR: 뷰 렌더링 및
     mocks.useApp.mockReset().mockReturnValue({
       view: {
         plug: {
-          deviceId: "54fac45c-5a59-449e-8db1-2613c1bf5ec6",
+          deviceId: "demo-rice-cooker-plug",
           online: true,
           lastReadingAt: "2026-11-18T16:28:00+09:00",
         },

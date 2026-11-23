@@ -30,11 +30,11 @@ test('local Firestore: concurrent state/handoff consumption, wrong binding and b
   }finally{await deleteApp(app);}
 });
 
-test('local exact merged rules: all browser roles are denied Kakao state, handoff and rate metadata',{skip:!process.env.FIRESTORE_EMULATOR_HOST},async()=>{
+test('checked-in integration rules deny every browser role access to Kakao state, handoff and rate metadata',{skip:!process.env.FIRESTORE_EMULATOR_HOST},async()=>{
   if(!/^(127\.0\.0\.1|localhost):\d+$/.test(process.env.FIRESTORE_EMULATOR_HOST))throw Error('Only a local emulator is allowed.');
   const [{initializeTestEnvironment,assertFails},{doc,setDoc,getDoc,deleteDoc,collection,getDocs,setLogLevel}]=await Promise.all([import('@firebase/rules-unit-testing'),import('firebase/firestore')]);
   setLogLevel('silent');
-  const rules=await readFile(new URL('../../tmp/firebase/merged.rules',import.meta.url),'utf8');
+  const rules=await readFile(new URL('../../firebase/team-firestore.rules',import.meta.url),'utf8');
   assert.match(rules,/match \/bapmunnaSystem\/\{document=\*\*\} \{ allow read,write: if false; \}/);
   const [host,port]=process.env.FIRESTORE_EMULATOR_HOST.split(':');
   const environment=await initializeTestEnvironment({projectId:'demo-bapmunna',firestore:{host,port:Number(port),rules}}),run=randomUUID();

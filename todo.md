@@ -1,5 +1,10 @@
 # todo.md — Task List & Progress
 
+## 2026-11-23 팀 앱과 이전 통합판의 설정 정리
+
+- [x] 팀 Firebase 안내를 실제 운영 프로젝트와 `main/apps/warming-up/` 경로에 맞게 갱신했다.
+- [x] 개인 프로젝트의 배포 영수증·규칙 ID·접속 안내를 이전 통합판 문서에서 제거했다. [정리 전 버전과 확인 방법](log.md)
+
 ## 2026-11-23 멘토 검토용 운영 소스
 
 - [x] `main`에 운영판 전체 소스와 실행 방법을 넣고, 저장소 첫 화면에서 앱과 코드를 모두 열 수 있게 했다.
@@ -75,10 +80,9 @@
 - [x] 웹훅 원문·서명 보존 어댑터, TTL 없는 제한된 일일 정리, 전용 서비스 계정 계획과 배포 파일 allowlist
 - [x] 전체 하네스·로컬 Firestore·실제 localhost HTTP 검사 통과. 320px 연결 오류/복귀 화면 확인. 새 코드·실제 외부 계정 검증을 구분
 - [x] 사용자 승인 후 새 Vercel Hobby 가입·로그인, 모델 학습 데이터 공유 해제·저장
-- [x] 명시 승인한 전용 서버 계정·정확한 8개 권한·키 발급, 두 Firebase 프로젝트 결제 미연결 확인
 - [x] 비밀 없는 서버 파일 15개를 공식 Vercel Drop에 업로드, 별도 프로젝트 이름 설정
 - [x] Vercel 첫 배포 인증·고정 운영 주소, production 비밀값 6개·설정 8개, ESM 초기 오류 해소와 API 200 확인
-- [x] 전용 키로 실제 Firestore/Auth 읽기 권한 확인, 공개 API 인증·서명·state·CORS 경계 및 로컬 HTTP/어댑터 13개 검사 통과
+- [x] 공개 API 인증·서명·state·CORS 경계 및 로컬 HTTP 어댑터 검사 13개 통과
 - [x] `/connect/` 보안 헤더 보완본 최종 게시: 새 Vercel 이메일 인증·Ready 확인, 공개 API 7개와 화면 URL 3개 검사 통과
 - [ ] 삼성 Console 접근 복구와 현재 이용 플랜 확인 (인증 후 오류 재현, 플랜 미확인)
 - [x] 공식 요금·전환 FAQ: 11/4부터 미가입 기존 앱도 수정 제한, Developer 본인 가구용/공개 월 US$4.99, 타 가구 서비스는 별도 적용 조건·가격 확인 필요
@@ -87,14 +91,13 @@
 
 SmartThings frontend API origin은 빈 값이며 아직 실제 연결 준비 완료로 표시하지 않는다. 다른 채팅의 공개 Hosting 배포는 각 릴리스 영수증을 따른다. 구현·배포 절차는 `workspaces/smartthings-vercel/README.md`, 최신 사실과 남은 작업은 `documentation/smartthings-live-20261115.md`에 기록한다.
 
-## 최신 검증 상태 — 2026-11-13 최종 감사
+## 2026-11-13 이전 통합판 최종 감사
 
-아래 예전 Phase의 체크는 당시 소스 구현 기록이며 현재 운영 연동 완료의 증거가 아니다. 최신 배포는 `6c07408` → Impact Series `66beb76f7bf738fd`, 영수증은 `workspaces/bapmunna-final/releases/20261113-final-audit.json`이다.
+11월 13일 Impact Series에 `6c07408`을 게시했다. 당시 Hosting 버전은 `66beb76f7bf738fd`였다. [게시 영수증](workspaces/bapmunna-final/releases/20261113-final-audit.json)
 
 - [x] 최신 요청/Notion/PRD의 확정·미확정·대체된 제안을 분리하고 전체 대조표 작성 (workspace output/bapmunna-final-audit-20261113/requirements-matrix.md F절이 수정 후 상태)
 - [x] 로그인→안내→본인 전용 가구 기본정보→홈→선택적 연결, 홈 연결 안내·개인정보 링크·쉬운 재연결 설명
 - [x] Firebase 기본정보 실제 provider 저장·서버 재조회·재접속, expectedUid로 계정 변경 직전 초안 쓰기 차단
-- [x] 명시 승인 후 본인 전용 가구 규칙 운영 적용, 기존 namespace·규칙 복구본 보존 (ruleset e0d9c16c)
 - [x] 실계정/체험 격리, Supabase 구독의 이전 계정 응답 차단, 시니어 실패 시 자동 데모 전환 제거
 - [x] Next 생활 설정 재편집·저장 순서/실패 초안, 단일 호칭·외식0~20·취사1~21·대표자 전화 안내
 - [x] BOB 동의·페어링·수집/발송 검사 및 원시 전력 응답 제거 소스 (운영 SQL/Edge 배포와 구분)
@@ -272,7 +275,7 @@ SmartThings frontend API origin은 빈 값이며 아직 실제 연결 준비 완
 ### 2026-11-03 승인 디자인 동기화
 - [x] Firebase·Supabase 프런트엔드·Next.js·Figma의 토끼, 로고, 색상, 서체 통일
 - [x] 공통 자산 검사, 세 메뉴, 모바일 역할 전환 검수
-- [x] Impact Series 공개 배포·기존 KU GPA 디자인 갱신·전후 복구본 보존
+- [x] Impact Series 공개 배포와 전후 복구본 보존
 - [ ] 팀 PR 검토/병합 및 별도 Vercel 배포 상태 확인
 - [ ] 실제 SmartThings OAuth·자동 수신: 유료 전환 없이 현 상태 유지 결정에 따라 보류
 
@@ -294,7 +297,7 @@ SmartThings frontend API origin은 빈 값이며 아직 실제 연결 준비 완
 - [x] 두 번의 점프·손 인사·깜빡임·고개 인사 및 원본 복원
 - [x] 모션 접근성·GPU 실패·메시 뒤집힘·모바일/데스크톱·역할 전환 확인
 - [x] Firebase·Next.js·Synagogue 검증 및 빌드
-- [x] Impact·KU GPA 공개 배포 및 네 provider 원본 이미지 해시 일치 검증
+- [x] Impact Series에 게시한 원본 이미지 해시 확인
 
 ## 2026-11-04 손 인사 왜곡 수정
 
@@ -302,7 +305,7 @@ SmartThings frontend API origin은 빈 값이며 아직 실제 연결 준비 완
 - [x] 원본 손 뒤 가림 영역 복원, 그림자 잔상·경계 정리
 - [x] 얼굴 핵심 영역 픽셀 차이 0, 손 모양 보존·자산 실패 검사
 - [x] 56개 단위 검사·기존 Firebase/Synagogue 검사·타입·두 앱 빌드 및 모바일 확인
-- [x] 두 공개 Firebase 주소의 모듈·복원 자산 배포, 공개 바이트·실제 재생 확인
+- [x] Impact Series에 모듈·복원 자산 게시 후 공개 바이트와 실제 재생 확인
 
 ## 2026-11-12 Super Members 개발 하네스
 
@@ -392,7 +395,7 @@ SmartThings frontend API origin은 빈 값이며 아직 실제 연결 준비 완
 - [x] 계정 2개 A→B→A, 새로고침 저장 복원, 320/390px·키보드·연결 준비 표시 확인
 - [x] 실제 계정 복원 시 로그인 선택권과 늦은 로그인 결과 UID 결합 수정·독립 재검토
 - [x] 최신 전체 하네스 통과: `.harness/runs/2026-11-14T14-52-28-639Z-83296/report.md`; exact Rules emulator 46개 별도 통과
-- [x] 최종 소스 b4b43af 푸시·새 본인 설정 Rules c629135d·Hosting 9ea0c97d5e9613ec 게시, 공개135파일 일치·기존경로누락0 (releases/20261114-final-feedback.json)
+- [x] 소스 b4b43af와 Impact Series Hosting 9ea0c97d5e9613ec 게시 기록 확인. 공개 파일 135개 일치, 기존 경로 누락 0. [영수증](workspaces/bapmunna-final/releases/20261114-final-feedback.json)
 - [ ] 실제 Google 신규 OAuth·삼성 웹 OAuth/웹훅·가족 연결·실제 푸시 현장 검증
 - [ ] OS 큰 글꼴/모션 설정을 바꾼 실기기 검사, 메신저 수신 썸네일 확인
 - [ ] 카카오·Identity Platform — 사용자 결정으로 보류

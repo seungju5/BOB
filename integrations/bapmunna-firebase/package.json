@@ -13,7 +13,6 @@
     "build": "node scripts/build-editions.mjs && node scripts/build-portable.mjs",
     "build:cloud": "node scripts/build-cloud.mjs",
     "stage:firebase": "node scripts/build-editions.mjs && npm run build:cloud && node scripts/stage-firebase.mjs",
-    "firebase:inspect": "node scripts/firebase-admin.mjs inspect",
     "test:auth": "node scripts/run-cloud-tests.mjs",
     "test:cloud": "node scripts/run-cloud-tests.mjs",
     "test:manage": "node --test tests/manage.test.mjs",

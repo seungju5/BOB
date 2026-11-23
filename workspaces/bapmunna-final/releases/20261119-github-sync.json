@@ -1609,12 +1609,6 @@
         "bytes": 5391
       },
       {
-        "path": "/bapmunna/firebase-config.mjs",
-        "sha256": "4e367cebcec5405a59ab8dba04234bbfd1248bc1c3f6e48795c0906c910db62a",
-        "hostingGzipSha256": "4073d83c1706cf9d1149cca293f8289747fd02a793e5ce8f33921f2dcabae278",
-        "bytes": 252
-      },
-      {
         "path": "/bapmunna/guardian-entry.mjs",
         "sha256": "7a481267f2e0ac58a5d49efe75d9200cfac5e87ec5cda5835ec240e8684b9fe4",
         "hostingGzipSha256": "bde1aca8eaf708fd542af2d5e42e7ca1530ab97b79967dd6476401c1c474a2a2",
@@ -2099,12 +2093,6 @@
         "sha256": "d9bccd37417d6e695f466ed84ee14abfd01e637c624e6d81c52967fafd7eedd9",
         "hostingGzipSha256": "802c1b7795b853e6139e7e97ab127dec7ea0c2af7dcac274b7474d4c93268b06",
         "bytes": 2572
-      },
-      {
-        "path": "/bapmunna/supabase/firebase-config.mjs",
-        "sha256": "4e367cebcec5405a59ab8dba04234bbfd1248bc1c3f6e48795c0906c910db62a",
-        "hostingGzipSha256": "4073d83c1706cf9d1149cca293f8289747fd02a793e5ce8f33921f2dcabae278",
-        "bytes": 252
       },
       {
         "path": "/bapmunna/supabase/guardian-entry.mjs",

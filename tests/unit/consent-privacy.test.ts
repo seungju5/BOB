@@ -53,10 +53,10 @@ describe("public privacy and honest device availability", () => {
     expect(html).not.toMatch(/bapmunna:\/\/|intent:\/\/|\.apk/);
     expect(html).not.toContain("기록이 보이지 않을 때");
   });
-  it("preserves the approved Android test APK and its physical-device limitation", () => {
+  it("links Android users to the team walking guide", () => {
     const html = renderToStaticMarkup(createElement(HealthInstallGuide, { phone: "android" }));
-    expect(html).toContain("bapmunna-health-0.2.0-test.1.apk");
-    expect(html).toContain("아직 실제 휴대폰 검증을 마치지 않았어요");
+    expect(html).toContain("https://warming-up-bapmunna.web.app/health/");
+    expect(html).not.toMatch(/\.apk|download=/);
     expect(html).not.toContain("아이폰에서 웹 테스트하기");
   });
 });

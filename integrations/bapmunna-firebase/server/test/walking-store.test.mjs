@@ -95,10 +95,10 @@ test('real Firestore: account consent, code/token expiry, unpair, bounded limits
     await f.store.cleanup({limit:1000});assert.equal((await f.store.profile(uid)).deviceConnected,false);
   }finally{await f.clean();}
 });
-test('real merged Firestore rules: anonymous, owner and staff cannot directly read or mutate any walking metadata',{skip:skipped},async()=>{
+test('checked-in integration rules deny anonymous, owner and staff direct access to walking metadata',{skip:skipped},async()=>{
   localOnly();
   const [{initializeTestEnvironment,assertFails},{doc,setDoc,getDoc,deleteDoc,collection,getDocs,setLogLevel}]=await Promise.all([import('@firebase/rules-unit-testing'),import('firebase/firestore')]);
-  setLogLevel('silent');const rules=await readFile(new URL('../../tmp/firebase/merged.rules',import.meta.url),'utf8');
+  setLogLevel('silent');const rules=await readFile(new URL('../../firebase/team-firestore.rules',import.meta.url),'utf8');
   const [host,port]=process.env.FIRESTORE_EMULATOR_HOST.split(':'),run=randomUUID();
   const environment=await initializeTestEnvironment({projectId:'demo-bapmunna',firestore:{host,port:Number(port),rules}}),owner='walking-rule-owner-'+run,staff='walking-rule-staff-'+run,id=hash(run);
   try{

@@ -1,7 +1,6 @@
 import {cp,mkdir,readFile,writeFile,rm,readdir} from 'node:fs/promises';
 import path from 'node:path';
 import {createHash} from 'node:crypto';
-import {deploymentConfig} from '../docs/deployment-config.mjs';
 const root=path.resolve(import.meta.dirname,'..'),source=path.join(root,'docs'),destination=path.join(root,'tmp/firebase-hosting');
 async function fingerprints(directory){const result={};async function walk(dir){for(const entry of await readdir(dir,{withFileTypes:true})){const file=path.join(dir,entry.name);if(entry.isDirectory())await walk(file);else result[path.relative(directory,file)]=createHash('sha256').update(await readFile(file)).digest('hex');}}await walk(directory);return result;}
 const before=await fingerprints(source);
@@ -15,15 +14,6 @@ async function variant(target,provider,base){
   for(const edition of ['senior','carer','share']){
     const entry=path.join(target,edition,'index.html');
     await writeFile(entry,(await readFile(entry,'utf8')).replace('<base href="../">',`<base href="${base}">`));
-  }
-  // Each edition keeps its own share identity, including the separate Supabase app.
-  for(const entry of ['index.html','senior/index.html','carer/index.html','share/index.html']){
-    const file=path.join(target,entry),html=await readFile(file,'utf8');
-    const prefix=deploymentConfig.webOrigin+'/bapmunna';
-    const shareBase=deploymentConfig.webOrigin+base.replace(/\/$/,'');
-    await writeFile(file,html
-      .replace(/(<link rel="canonical" href=")([^"]+)(")/g,(_,start,url,end)=>start+url.replace(prefix,shareBase)+end)
-      .replace(/(<meta property="og:url" content=")([^"]+)(")/g,(_,start,url,end)=>start+url.replace(prefix,shareBase)+end));
   }
   await writeFile(path.join(target,'cloud-config.mjs'),`export const cloudConfig = {provider: '${provider}'};\n`);
 }

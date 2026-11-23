@@ -1,6 +1,4 @@
-// 밥뭇나 전용(팀) Firebase 프로젝트에 배포할 독립 Firestore 규칙을 만든다.
-// 기존(개인) 프로젝트는 다른 앱 규칙에 밥뭇나 조각을 끼워 넣는 방식(firebase-admin.mjs prepare-rules)이었다.
-// 팀 프로젝트에는 다른 앱이 없으므로 조각 두 개 + 마지막 전체 거부 규칙만으로 완성본을 만든다.
+// 호환판 로컬 에뮬레이터가 사용할 규칙을 생성한다. 팀 운영 규칙은 apps/warming-up/firebase/firestore.rules에 있다.
 // 사용: node scripts/build-team-rules.mjs [--check]
 import {readFile, writeFile, mkdir} from 'node:fs/promises';
 import path from 'node:path';

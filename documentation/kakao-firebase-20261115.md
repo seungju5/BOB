@@ -1,4 +1,6 @@
-# Firebase 밥뭇나 카카오 로그인
+# 이전 Firebase 통합판의 카카오 로그인 기록
+
+2026년 11월 15~16일 Impact Series 통합판의 구현·검사 기록이다. 팀 앱의 현재 로그인 방법은 [팀 앱 안내](../apps/warming-up/README.md)를 따른다.
 
 ## 사용자 흐름
 
@@ -8,14 +10,13 @@
 
 ## 구현 및 운영 설정
 
-Firebase Spark에서 custom authentication을 사용한다. Identity Platform/OIDC 업그레이드, 새 IAM 권한, DB 규칙 변경은 하지 않는다. 기존 Vercel `bapmunna-smartthings` 서버와 전용 Firebase 서비스 계정을 재사용하며, 공개 앱은 기존 Impact Series Hosting에 둔다.
+이전 통합판은 Firebase custom authentication을 사용했다. 기존 Vercel 서버가 카카오 응답을 검증하고 custom token을 발급하는 구조였다.
 
 | 위치 | 설정 |
 | --- | --- |
 | 카카오 Developers | 앱 ID 확인, 카카오 로그인 활성화, REST API 키와 Client Secret 확인 |
 | 카카오 등록 Redirect URI | `https://bapmunna-smartthings.vercel.app/api/kakao/callback` |
 | Vercel production | `KAKAO_APP_ID`(숫자 앱 ID), `KAKAO_CLIENT_ID`(REST API 키), `KAKAO_CLIENT_SECRET` |
-| 기존 서버 비밀 | `FIREBASE_PROJECT_ID=ku-gpa`, `FIREBASE_SERVICE_ACCOUNT_JSON` 유지 |
 | 고정 원점 | `KAKAO_API_ORIGIN=https://bapmunna-smartthings.vercel.app`, `BAPMUNNA_WEB_ORIGIN=https://impact-series.web.app` (코드 기본값과 동일) |
 | 앱으로 복귀 | `https://impact-series.web.app/bapmunna/app/auth/kakao/` |
 

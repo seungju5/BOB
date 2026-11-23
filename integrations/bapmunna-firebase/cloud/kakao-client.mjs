@@ -8,7 +8,7 @@ const fail=code=>Object.assign(new Error('Kakao login could not be completed.'),
 const encode=bytes=>btoa(String.fromCharCode(...new Uint8Array(bytes))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
 
 export function createKakaoClient({config,storage,location,history,crypto,fetch,now=Date.now}){
-  const allowed=config?.enabled===true&&config.apiOrigin===deploymentConfig.apiOrigin;
+  const allowed=config?.enabled===true&&config.apiOrigin===deploymentConfig.webOrigin;
   const endpoint=path=>`${config.apiOrigin}/api/kakao/${path}`;
   let starting=false,completion;
   async function request(path,init={}){

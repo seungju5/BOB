@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {editionFromLocation,editionView,initialEditionView,editionLink} from '../docs/editions.mjs';
-const at=path=>new URL(path,'https://ku-gpa.web.app');
+const at=path=>new URL(path,'https://first.example');
 test('separate URLs open their own home, with or without trailing slash',()=>{
   for(const base of ['/bapmunna/','/bapmunna/supabase/'])for(const edition of ['senior','carer'])for(const tail of ['', '/', '/index.html']){
     const url=at(base+edition+tail);assert.equal(editionFromLocation(url),edition);
@@ -36,7 +36,7 @@ test('legacy links, chooser and unknown paths have safe defaults',()=>{
   assert.equal(editionFromLocation(at('/bapmunna/not-carer/')),null);
 });
 test('provider-specific links never cross databases or copy callback secrets',()=>{
-  for(const base of ['https://ku-gpa.web.app/bapmunna/','https://ku-gpa.web.app/bapmunna/supabase/','https://impact-series.web.app/bapmunna/','https://impact-series.web.app/bapmunna/supabase/']){
+  for(const base of ['https://first.example/bapmunna/','https://first.example/bapmunna/supabase/','https://second.example/bapmunna/','https://second.example/bapmunna/supabase/']){
     assert.equal(editionLink(base,'senior'),base+'senior/');
     assert.equal(editionLink(base,'carer','account'),base+'carer/#account');
     assert.equal(editionLink(base,null),base);

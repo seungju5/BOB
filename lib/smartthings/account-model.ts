@@ -21,16 +21,15 @@ export interface SmartThingsLinkedProfile {
 }
 
 /**
- * [EN] Verified live SmartThings Cloud device metadata provisioned on the owner's account.
- * [KR] 사용자 SmartThings 계정에 실제 등록·검증된 클라우드 밥솥 플러그 기본 메타데이터입니다.
+ * Local demonstration fixture for the sample plug and room.
  */
 export const DEFAULT_SMARTTHINGS_PROFILE: SmartThingsLinkedProfile = {
   accountAlias: "SmartThings Cloud (KOR · Asia/Seoul)",
-  locationId: "bad8febc-f349-4969-896a-f14d20dddd62",
+  locationId: "demo-home",
   locationName: "My home",
-  roomId: "c16241b3-45ac-4c21-93cd-773def27bc7f",
+  roomId: "demo-living-room",
   roomName: "Living room",
-  deviceId: "54fac45c-5a59-449e-8db1-2613c1bf5ec6",
+  deviceId: "demo-rice-cooker-plug",
   deviceLabel: "우리 집 밥솥 플러그",
   deviceCategory: "SmartPlug (전력·에너지 측정 플러그)",
   profileName: "bapmunna-rice-cooker-plug-profile",

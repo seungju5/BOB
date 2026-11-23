@@ -51,7 +51,7 @@ test('Kakao deploys four fixed entrypoints without a dynamic route that injects 
 });
 
 test('deployed Kakao wrapper starts a canonical login while continuing to reject extra or duplicate query values',async()=>{
-  const config=readKakaoConfig({KAKAO_APP_ID:'12345',KAKAO_CLIENT_ID:'synthetic-client',KAKAO_CLIENT_SECRET:'synthetic-secret',FIREBASE_PROJECT_ID:'demo-bapmunna'});
+  const config=readKakaoConfig({KAKAO_API_ORIGIN:'https://api.example.test',BAPMUNNA_WEB_ORIGIN:'https://app.example.test',KAKAO_APP_ID:'12345',KAKAO_CLIENT_ID:'synthetic-client',KAKAO_CLIENT_SECRET:'synthetic-secret',FIREBASE_PROJECT_ID:'demo-bapmunna'});
   let saved=0;
   const store={async saveState(){saved++;}};
   const handle=createKakaoService({config,ready:true,store});

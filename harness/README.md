@@ -93,7 +93,7 @@ BAPMUNNA_HARNESS_EMULATOR=1 FIRESTORE_EMULATOR_HOST=127.0.0.1:8180 FIREBASE_AUTH
 
 **2026-11-03 기록**에서는 삼성의 Redirect URI·웹훅 URL·읽기 권한 등록을 확인했으며, 공개 서버는 미배포이고 Target은 `PENDING`이었습니다. 이는 과거 증거이며 현재 상태를 새로 조회한 결과가 아닙니다. 현재 유지할 사용자 결정은 **Firebase Spark 무료 유지, 향후 전환 준비**입니다.
 
-`test:smartthings`의 로컬 단위 검사와 실제 Firestore 트랜잭션 검사는 다릅니다. 로컬 emulator가 없으면 후자가 건너뛰어질 수 있습니다. 실제 OAuth·웹훅 자동 수신·토큰 갱신·2–3가구 분리도 각각 확인해야 합니다. 과거 Java 환경 문제는 `server/upgrade-readiness.md`에 기록돼 있습니다.
+`test:smartthings`의 로컬 단위 검사와 실제 Firestore 트랜잭션 검사는 다릅니다. 로컬 emulator가 없으면 후자가 건너뛰어질 수 있습니다. 실제 OAuth·웹훅 자동 수신·토큰 갱신·2–3가구 분리도 각각 확인해야 합니다. 팀 앱의 연결 준비 상태는 `apps/warming-up/public/service-status/smartthings.json`에서 확인합니다.
 
 기존 `integrations/bapmunna-firebase/ci/`는 자동 CI의 **설치안**입니다. 실행 중인 CI나 병합 차단 장치로 표현하지 않습니다. E2E, 실사용자 사용성, RLS·실기기·푸시 검증의 남은 항목은 `todo.md`와 `test.md`에서 추적합니다.
 

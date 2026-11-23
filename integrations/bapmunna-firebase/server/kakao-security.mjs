@@ -25,14 +25,21 @@ function origin(value){
 }
 export function readKakaoConfig(env={}){
   try{
-    const apiOrigin=origin(env.KAKAO_API_ORIGIN||'https://bapmunna-smartthings.vercel.app');
-    const webOrigin=origin(env.BAPMUNNA_WEB_ORIGIN||'https://impact-series.web.app');
+    const apiOrigin = env.KAKAO_API_ORIGIN ? origin(env.KAKAO_API_ORIGIN) : '';
+    const webOrigin = env.BAPMUNNA_WEB_ORIGIN ? origin(env.BAPMUNNA_WEB_ORIGIN) : '';
     const clientId=env.KAKAO_CLIENT_ID||'',secret=env.KAKAO_CLIENT_SECRET||'',appId=env.KAKAO_APP_ID||'',projectId=env.FIREBASE_PROJECT_ID||'';
     if(clientId&&!/^[A-Za-z0-9_-]{1,128}$/.test(clientId)||secret&&!/^[A-Za-z0-9_-]{1,256}$/.test(secret)||appId&&!/^[1-9][0-9]{0,17}$/.test(appId)||projectId&&!/^[a-z][a-z0-9-]{1,62}$/.test(projectId))throw Error();
-    return {origin:apiOrigin,webOrigin,returnUrl:webOrigin+'/bapmunna/app/auth/kakao/',redirect:apiOrigin+KAKAO_PREFIX+'/callback',clientId,secret,appId,projectId};
+    return {
+      origin: apiOrigin || 'https://localhost', webOrigin,
+      returnUrl: webOrigin && webOrigin + '/bapmunna/app/auth/kakao/',
+      redirect: apiOrigin && apiOrigin + KAKAO_PREFIX + '/callback',
+      clientId, secret, appId, projectId,
+    };
   }catch{throw Error('Invalid Kakao server configuration.');}
 }
-export const kakaoConfigured=config=>Boolean(config.clientId&&config.secret&&config.appId&&config.projectId);
+export const kakaoConfigured = config => Boolean(
+  config.redirect && config.returnUrl && config.clientId && config.secret && config.appId && config.projectId
+);
 // The app ID is immutable; rotating the REST API key must not fork accounts.
 export function kakaoUid(appId,id){
   if(!/^[1-9][0-9]{0,17}$/.test(appId)||!Number.isSafeInteger(id)||id<1)throw new KakaoError(502,'upstream_unavailable');

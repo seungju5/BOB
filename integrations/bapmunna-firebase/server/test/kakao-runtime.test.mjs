@@ -7,9 +7,9 @@ import {readKakaoConfig,kakaoUid} from '../kakao-security.mjs';
 
 const privateKey=generateKeyPairSync('rsa',{modulusLength:2048}).privateKey.export({type:'pkcs8',format:'pem'});
 const account={type:'service_account',project_id:'demo-bapmunna',client_email:'synthetic-kakao@demo-bapmunna.iam.gserviceaccount.com',private_key:privateKey};
-const env={KAKAO_CLIENT_ID:'synthetic-client',KAKAO_CLIENT_SECRET:'synthetic-secret',KAKAO_APP_ID:'12345',FIREBASE_PROJECT_ID:'demo-bapmunna',FIREBASE_SERVICE_ACCOUNT_JSON:JSON.stringify(account)};
+const env={KAKAO_API_ORIGIN:'https://api.example.test',BAPMUNNA_WEB_ORIGIN:'https://app.example.test',KAKAO_CLIENT_ID:'synthetic-client',KAKAO_CLIENT_SECRET:'synthetic-secret',KAKAO_APP_ID:'12345',FIREBASE_PROJECT_ID:'demo-bapmunna',FIREBASE_SERVICE_ACCOUNT_JSON:JSON.stringify(account)};
 test('missing required settings fail closed without initializing an Admin app',async()=>{
-  for(const key of ['KAKAO_CLIENT_ID','KAKAO_CLIENT_SECRET','KAKAO_APP_ID','FIREBASE_PROJECT_ID','FIREBASE_SERVICE_ACCOUNT_JSON']){
+  for(const key of ['KAKAO_API_ORIGIN','BAPMUNNA_WEB_ORIGIN','KAKAO_CLIENT_ID','KAKAO_CLIENT_SECRET','KAKAO_APP_ID','FIREBASE_PROJECT_ID','FIREBASE_SERVICE_ACCOUNT_JSON']){
     const runtime=createKakaoRuntime({...env,[key]:''},{initialize(){throw Error('must not initialize');}});
     assert.equal(runtime.ready,false);assert.equal(runtime.store,null);assert.deepEqual(await (await runtime.handle(new Request(runtime.config.origin+'/api/kakao/config'))).json(),{enabled:false});
   }
@@ -34,7 +34,7 @@ test('server origins and immutable namespace are strict and never taken from req
   for(const value of ['0','01','-1','1.5','abc','1'.repeat(19)])assert.throws(()=>readKakaoConfig({KAKAO_APP_ID:value}));
   const a=readKakaoConfig(env),b=readKakaoConfig({...env,KAKAO_CLIENT_ID:'rotated-key'});
   assert.equal(kakaoUid(a.appId,123),kakaoUid(b.appId,123));assert.notEqual(kakaoUid(a.appId,123),kakaoUid('54321',123));
-  assert.equal(a.returnUrl,'https://impact-series.web.app/bapmunna/app/auth/kakao/');
+  assert.equal(a.returnUrl,env.BAPMUNNA_WEB_ORIGIN+'/bapmunna/app/auth/kakao/');
 });
 test('Kakao runtime does not import SmartThings or open a listening server',async()=>{
   const source=await readFile(new URL('../kakao-runtime.mjs',import.meta.url),'utf8');

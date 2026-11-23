@@ -7,14 +7,6 @@ export async function syncPublicConfig(root){
   let value=match[2];if(value.startsWith('"'))value=JSON.parse(value);else if(value.startsWith("'")&&value.endsWith("'"))value=value.slice(1,-1);
   values[match[1]]=value;
  }
-  // The team target lives in config/deployment.json (npm run apply:deployment); .env.local must agree with it.
- const target=JSON.parse(await readFile(path.join(root,'../../config/deployment.json'),'utf8')).firebase.projectId;
- if(values.NEXT_PUBLIC_FIREBASE_PROJECT_ID&&values.NEXT_PUBLIC_FIREBASE_PROJECT_ID!==target)throw Error(`Environment Firebase target does not match config/deployment.json (${target}).`);
- const firebaseFields={apiKey:'API_KEY',authDomain:'AUTH_DOMAIN',projectId:'PROJECT_ID',appId:'APP_ID'};
- if(Object.values(firebaseFields).every(name=>values['NEXT_PUBLIC_FIREBASE_'+name])){
-  const config=Object.fromEntries(Object.entries(firebaseFields).map(([name,key])=>[name,values['NEXT_PUBLIC_FIREBASE_'+key]]));
-  await writeFile(path.join(root,'docs/firebase-config.mjs'),'// Public browser SDK configuration only.\nexport const firebaseConfig='+JSON.stringify(config,null,2)+';\n');
- }
  const url=values.NEXT_PUBLIC_SUPABASE_URL,key=values.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
  if(url||key){
   if(new URL(url).hostname!=='dakozsbqltciqihazzel.supabase.co')throw Error('Environment Supabase target does not match the confirmed project.');

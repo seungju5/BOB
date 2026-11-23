@@ -45,8 +45,6 @@
   "actualCredentialsDetected": false,
   "reviewRejectionResolvedByInspection": true,
   "deploymentId": "dpl_1pwiU6uoBSLcdLyfWFDCGYisC1zU",
-  "deploymentUrl": "https://bapmunna-smartthings-im10wjbih-peterjang9296-8249.vercel.app",
-  "dashboardUrl": "https://vercel.com/peterjang9296-8249/bapmunna-smartthings/1pwiU6uoBSLcdLyfWFDCGYisC1zU",
   "identityVerificationCompleted": true,
   "readyVerifiedInDashboard": true,
   "currentProductionVerifiedInDashboard": true,

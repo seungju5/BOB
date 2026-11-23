@@ -3,7 +3,7 @@ import Image from 'next/image';
 import {useState} from 'react';
 import {APP_BASE_PATH,appPath} from '@/lib/app-path';
 import {publicUrl} from '@/lib/deployment';
-const URL=publicUrl('/app/');
+const URL=publicUrl('/');
 export function ShareApp(){
  const [notice,setNotice]=useState('');
  if(APP_BASE_PATH!=='/bapmunna/app')return null;

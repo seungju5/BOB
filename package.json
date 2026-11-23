@@ -26,11 +26,11 @@
     "build:office": "node workspaces/super-members/scripts/build.mjs",
     "test:office": "npm run build:office && node --test workspaces/super-members/*.test.mjs",
     "apply:deployment": "node scripts/apply-deployment.mjs",
-    "check:deployment": "node scripts/apply-deployment.mjs --check",
+    "check:deployment": "node scripts/apply-deployment.mjs --check && node apps/warming-up/scripts/check-public.mjs --source-only",
     "rules:team": "node integrations/bapmunna-firebase/scripts/build-team-rules.mjs",
     "check:rules-team": "node integrations/bapmunna-firebase/scripts/build-team-rules.mjs --check",
-    "build:team-site": "npm run check:deployment && npm run build:firebase && npm --prefix integrations/bapmunna-firebase run stage:firebase && node scripts/build-impact-next.mjs && node workspaces/bapmunna-final/scripts/stage.mjs",
-    "deploy:team": "npm run rules:team && node integrations/bapmunna-firebase/node_modules/firebase-tools/lib/bin/firebase.js deploy --only hosting,firestore",
+    "build:team-site": "npm --prefix apps/warming-up run build",
+    "deploy:team": "npm --prefix apps/warming-up run release:hosting",
     "check:personal-info": "node scripts/check-personal-info.mjs"
   },
   "dependencies": {

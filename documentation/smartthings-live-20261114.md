@@ -4,7 +4,7 @@
 
 ## 11월 14일 준비 시점 판정
 
-**구현·로컬 검증과 무료 Vercel 계정·Firebase 전용 서버 계정 준비 완료, 공개 서버 배포와 웹앱의 실제 삼성 OAuth·자동 웹훅 검증 미완료.** 사용자는 실제 가동을 요청했으며 기존 Firebase 무료 유지 조건은 바꾸지 않았다. 후속 진단에서 새 SMS 코드를 유효시간 안에 입력했으나 Console 접근 오류가 두 브라우저에서 재현됐다. 기존 CLI로 실제 전력 측정 기기 1대의 상태 읽기는 성공했다. 사용자의 명시 승인 후 Vercel Hobby 가입과 전용 IAM 역할·키 발급을 완료했다. 비밀을 제외한 서버 파일 15개를 공식 Vercel Drop에 올렸으며 첫 배포의 추가 이메일 인증을 기다리고 있다. 새 결제·삼성 앱 URL 변경은 실행하지 않았다. 다른 채팅의 Hosting 배포는 각 릴리스 영수증을 별도로 따른다.
+11월 14일에는 연결 화면과 로컬 서버 검사를 마쳤다. 두 브라우저에서 삼성 콘솔 접근 오류를 재현했고, 기존 CLI에서는 전력 측정 기기 1대의 상태를 읽었다. 서버 파일 15개를 Vercel Drop에 올린 뒤 첫 배포의 추가 이메일 인증을 기다리던 시점이다. 웹앱의 실제 삼성 OAuth·자동 웹훅 수신은 당시 확인하지 못했다.
 
 후속 진단·발송 전 지원 문의 초안: [smartthings-console-support-20261114.md](smartthings-console-support-20261114.md). 콘솔 오류를 전체 장애 또는 결제 문제로 단정하지 않으며, CLI 기기 조회 성공을 웹앱 연결 완료로 표시하지 않는다.
 
@@ -33,8 +33,6 @@
 
 `workspaces/smartthings-vercel/`은 Node 24 서울 서버용 명시 파일 패키지를 만든다. 요청 본문은 1MiB까지 원문 그대로 검증하고 외부 Host 헤더를 신뢰하지 않는다. 별도 서버 계정 JSON이 없으면 Vercel 초기화를 거부한다.
 
-전용 서비스 계정 `bapmunna-smartthings@ku-gpa.iam.gserviceaccount.com`과 사용자 승인 범위인 Firebase 계정 조회·프로젝트 Firestore 문서용 8개 권한을 실제 적용했다. Owner/Editor·계정 수정·기기 제어 권한은 없다. IAM으로 SmartThings 컬렉션만 분리한 것은 아니므로 서버의 UID·컬렉션 경계 검사를 유지한다. `provision-smartthings-identity.mjs apply`가 성공했고 KU GPA·Impact Series 결제 미연결, 원격 키 활성 상태와 로컬 비밀 파일의 0600 권한을 확인했다. IAM 이전 정책 복구본과 키는 Git 제외 디렉터리에 보관한다. Vercel production 비밀 설정 업로드는 아직 실행하지 않았다.
-
 Vercel은 사용자 승인으로 새 Hobby 계정을 만들었고 소스 업로드 전에 모델 학습 데이터 공유를 끄고 저장했다. 공식 CLI 접근은 승인됐으나 인증 흐름의 네트워크 오류·비활성 버튼으로 실제 grant는 확인되지 않았다. 공식 Drop 업로드로 전환해 15개 파일을 확인했고 프로젝트 이름을 `bapmunna-smartthings`로 설정했다. 첫 Deploy 뒤 추가 이메일 본인 확인 화면이 나타나 최신 보안 코드를 요청했다. 고정 도메인·성공한 빌드·공개 함수 응답은 아직 확정하지 않았다. 업로드 ZIP SHA-256은 `70756220953219fd8acebe8558a0db07762f38a2a72d00488d6dd10bbe97202b`이며 자격증명 파일은 포함하지 않았다.
 
 Firestore TTL 유료 기능은 사용하지 않는다. 일일 인증 cron이 만료 States/Locks/Receipts만 최대 5,000개 정리한다. 논리 만료와 물리 삭제 시각은 다르며 엄격한 24시간 삭제를 약속하지 않는다. 원시 전력값은 저장하지 않는다. 자세한 운영·복구·환경변수는 배포 패키지 README를 따른다.
@@ -45,15 +43,7 @@ Firestore TTL 유료 기능은 사용하지 않는다. 일일 인증 cron이 만
 
 최종 전체 보고서: `.harness/runs/2026-11-14T00-47-16-956Z-31108/report.md`. 하네스25·루트121·서버 동의 경계48·Firebase 역할/관리58·SmartThings49개 통과, 실패/skip 0. Firebase 계약 검사에는 새 popup·remote UI·실제 provider 소스 검사를 포함한다. 타입·도메인/디자인 동기화·Firebase 빌드·Next 정적 빌드도 통과했다. 독립 검토에서 발견한 UID 경합·취소 저장 문제를 수정했고, 마지막 취소 대기 경합은 추가 회귀로 확인했다. 320px에서는 가로 넘침 없이 승인 캐릭터와 오류 복귀 링크가 표시된다.
 
-추가 배포 인증 뒤 이어갈 순서:
-
-1. 이미 확인한 새 Hobby 계정의 첫 배포 인증을 마치고 별도 고정 production origin과 함수 빌드를 확인한다.
-2. 삼성 콘솔에서 기존 앱의 현재 플랜 및 URL 변경 가능성을 확인한다. 유료 결정이 필요하면 정확한 조건을 제시하고 별도 승인을 받는다.
-3. 발급한 전용 runtime identity와 기존 삼성 secret·암호화 키를 production 환경에만 주입한다. Firebase CLI 개인 자격증명은 배포하지 않는다.
-4. 공개 config·callback state 거부·unsigned webhook 거부·정확한 CORS·cron 인증을 확인한다.
-5. 기존 삼성 앱의 redirect와 webhook을 새 고정 주소로 변경하고 `smartapps:confirm` 및 target 재조회로 확정한다. 기존 secret은 회전하지 않는다.
-6. `docs/smartthings-config.mjs`에 검증한 origin을 넣고 Firebase 파일을 기존 서비스 경로를 보존하며 게시한다.
-7. 실제 삼성 동의, 플러그 선택, 자동 웹훅 새 신호, 갱신·해제·재연결 및 동의한 2~3가구 격리를 확인한다.
+당시 후속 검증 항목은 삼성 callback·웹훅 등록, 사용자 동의와 플러그 선택, 실제 자동 수신, 토큰 갱신·해제·재연결, 동의한 가구 간 데이터 격리였다. 팀 앱의 기기 연결 구성은 [팀 서버 안내](../apps/warming-up/server/smartthings/README.md)에서 확인할 수 있다.
 
 ## 공식 근거
 

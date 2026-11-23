@@ -120,7 +120,7 @@ test('verified account proceeds into the existing consent/API UI',async t=>{
   assert.doesNotMatch(el.innerHTML,/test-only-token|test-member/);
   const policyAt=el.innerHTML.indexOf('개인정보 이용·제공 안내');
   assert.ok(policyAt>0&&policyAt<el.innerHTML.indexOf('name="st-consent"'));
-  assert.ok(el.innerHTML.includes('https://impact-series.web.app/bapmunna/app/privacy/'));
+  assert.ok(el.innerHTML.includes('https://warming-up-bapmunna.web.app/privacy/'));
   assert.doesNotMatch(el.innerHTML,/notion\.com/);
   assert.match(el.innerHTML,/target="_blank" rel="noopener noreferrer"/);
 });

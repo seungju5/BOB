@@ -22,23 +22,6 @@
     "project": "impact-series",
     "billingEnabled": false
   },
-  "firestore": {
-    "previous": "projects/ku-gpa/rulesets/e0d9c16c-84a1-4eac-aa9b-3932de857e53",
-    "ruleset": "projects/ku-gpa/rulesets/c629135d-03e8-4d1b-8426-4cbda27cc01e",
-    "sha": "cdfe1e1c8b351553ec4b0126417613c87d62a632271db454d2c10ec2a5d816f0",
-    "publishedBytesMatch": true,
-    "checkedAt": "2026-11-14T14:55:06.941Z",
-    "emulator": {
-      "tests": 46,
-      "passed": 46,
-      "sourceHash": "cdfe1e1c8b351553ec4b0126417613c87d62a632271db454d2c10ec2a5d816f0",
-      "checkedAt": "2026-11-14T14:26:59.696522+00:00",
-      "ports": {
-        "auth": 9294,
-        "firestore": 8284
-      }
-    }
-  },
   "sharing": {
     "checkedAt": "2026-11-14T15:03:46.565Z",
     "checks": [

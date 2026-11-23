@@ -61,7 +61,6 @@
         "/bapmunna/experience.css",
         "/bapmunna/experience.mjs",
         "/bapmunna/family.mjs",
-        "/bapmunna/firebase-config.mjs",
         "/bapmunna/index.html",
         "/bapmunna/interface.css",
         "/bapmunna/manage/crm.mjs",
@@ -129,7 +128,6 @@
         "/bapmunna/supabase/experience.css",
         "/bapmunna/supabase/experience.mjs",
         "/bapmunna/supabase/family.mjs",
-        "/bapmunna/supabase/firebase-config.mjs",
         "/bapmunna/supabase/index.html",
         "/bapmunna/supabase/interface.css",
         "/bapmunna/supabase/manage/crm.mjs",
@@ -161,46 +159,6 @@
         "/index.html"
       ],
       "at": "2026-11-03T10:32:47.255Z"
-    }
-  },
-  "legacy": {
-    "release": {
-      "site": "ku-gpa",
-      "version": "sites/ku-gpa/versions/bb499628efe31290",
-      "release": "sites/ku-gpa/releases/1793701857291000",
-      "previous": "sites/ku-gpa/versions/6c1081ff6ac9552f",
-      "changed": 16,
-      "preserved": 151,
-      "uploads": 12,
-      "hostingConfig": "unchanged",
-      "authDatabase": "unchanged",
-      "publicSmartThingsApi": "not deployed"
-    },
-    "verification": {
-      "version": "sites/ku-gpa/versions/bb499628efe31290",
-      "verified": [
-        "/bapmunna/brand.css",
-        "/bapmunna/character.css",
-        "/bapmunna/connection.css",
-        "/bapmunna/account-view.mjs",
-        "/bapmunna/assets/rice-logo.png",
-        "/bapmunna/assets/bunny.png",
-        "/bapmunna/supabase/brand.css",
-        "/bapmunna/supabase/character.css",
-        "/bapmunna/supabase/connection.css",
-        "/bapmunna/supabase/account-view.mjs",
-        "/bapmunna/supabase/assets/rice-logo.png",
-        "/bapmunna/supabase/assets/bunny.png",
-        "/bapmunna/index.html",
-        "/bapmunna/senior/index.html",
-        "/bapmunna/carer/index.html",
-        "/bapmunna/manage/index.html",
-        "/bapmunna/supabase/index.html",
-        "/bapmunna/supabase/senior/index.html",
-        "/bapmunna/supabase/carer/index.html",
-        "/bapmunna/supabase/manage/index.html"
-      ],
-      "at": "2026-11-03T10:31:57.680Z"
     }
   }
 }

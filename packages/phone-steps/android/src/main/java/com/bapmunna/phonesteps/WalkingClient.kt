@@ -192,7 +192,7 @@ internal class WalkingClient(context: Context) {
     }
     private suspend fun request(path: String, body: JSONObject? = null, token: String? = null, allowed: () -> Boolean = { true }): JSONObject = withContext(Dispatchers.IO) {
         if (path !in setOf("pair", "confirm", "sync", "board", "unpair") && !HeartsRequestPolicy.permits(path)) throw WalkingFailure("invalid_request")
-        val connection = URL("https://bapmunna-smartthings.vercel.app/api/walking/$path").openConnection() as HttpURLConnection
+        val connection = URL("https://warming-up-bapmunna.web.app/api/walking/$path").openConnection() as HttpURLConnection
         try {
             connection.instanceFollowRedirects = false
             connection.connectTimeout = 10000; connection.readTimeout = 10000

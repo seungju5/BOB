@@ -17,18 +17,6 @@
       "hostingConfig": "unchanged",
       "authDatabase": "unchanged",
       "publicSmartThingsApi": "not deployed"
-    },
-    "legacy": {
-      "site": "ku-gpa",
-      "version": "sites/ku-gpa/versions/12364f8a5f516eb6",
-      "release": "sites/ku-gpa/releases/1793751989864000",
-      "previous": "sites/ku-gpa/versions/3c8e557fb39d18c1",
-      "changed": 4,
-      "preserved": 171,
-      "uploads": 2,
-      "hostingConfig": "unchanged",
-      "authDatabase": "unchanged",
-      "publicSmartThingsApi": "not deployed"
     }
   },
   "validation": {
@@ -55,11 +43,6 @@
       8,
       41
     ],
-    "legacyChecks": [
-      58,
-      31,
-      9
-    ],
     "typescript": "passed",
     "builds": [
       "Firebase",
@@ -72,8 +55,7 @@
     ],
     "livePlaybackFrames": 56,
     "liveEndState": "idle",
-    "browserConsoleErrors": 0,
-    "legacyCompatibility": "original app.mjs retained; inferred repair image path verified"
+    "browserConsoleErrors": 0
   },
   "scope": "Static UI only; authentication, database, rules, billing and SmartThings deployment unchanged"
 }

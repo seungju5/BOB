@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {createWalkingService} from '../walking-service.mjs';
 import {readWalkingConfig,nickname,syncInput,randomToken,validDeviceToken,koreanDay,nextKoreanMidnight,rankKey,WalkingError} from '../walking-security.mjs';
 
-const time=Date.parse('2041-11-17T04:00:00.000Z'),origin='https://bapmunna-smartthings.vercel.app',web='https://impact-series.web.app',native='https://localhost';
+const time=Date.parse('2041-11-17T04:00:00.000Z'),origin='https://api.example.test',web='https://app.example.test',native='https://localhost';
 const consent={consentVersion:'2026-11-17',shareTodaySteps:true};
 function fixture({account={},claims={},storeOverrides={},authOverrides={},ready=true}={}){
   const calls=[];
@@ -26,7 +26,8 @@ function fixture({account={},claims={},storeOverrides={},authOverrides={},ready=
     getUser:async uid=>{calls.push(['current',uid]);return {uid,disabled:false,emailVerified:true,tokensValidAfterTime:'2041-01-01T00:00:00Z',...account};},
     ...authOverrides,
   };
-  return {calls,handle:createWalkingService({config:readWalkingConfig({FIREBASE_PROJECT_ID:'demo-bapmunna'}),ready,store,auth,rateSecret:'synthetic-test-key',now:()=>time})};
+  const config=readWalkingConfig({FIREBASE_PROJECT_ID:'demo-bapmunna',WALKING_API_ORIGIN:origin,BAPMUNNA_WEB_ORIGIN:web});
+  return {calls,handle:createWalkingService({config,ready,store,auth,rateSecret:'synthetic-test-key',now:()=>time})};
 }
 async function invoke(handle,path,{origin:requestOrigin=web,method='GET',token='synthetic.jwt.a',body,headers={}}={}){
   const h={...headers};if(requestOrigin!==null)h.Origin=requestOrigin;if(token!==null)h.Authorization='Bearer '+token;

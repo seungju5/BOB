@@ -23,7 +23,7 @@ import { SmartThingsAccountCard } from "@/components/SmartThingsAccountCard";
 
 describe("SmartThings Account Model and Formatter", () => {
   it("provides verified owner cloud device defaults [KR: 사용자 클라우드 밥솥 플러그 기본값 검증]", () => {
-    expect(DEFAULT_SMARTTHINGS_PROFILE.deviceId).toBe("54fac45c-5a59-449e-8db1-2613c1bf5ec6");
+    expect(DEFAULT_SMARTTHINGS_PROFILE.deviceId).toBe("demo-rice-cooker-plug");
     expect(DEFAULT_SMARTTHINGS_PROFILE.deviceLabel).toBe("우리 집 밥솥 플러그");
     expect(DEFAULT_SMARTTHINGS_PROFILE.locationName).toBe("My home");
     expect(DEFAULT_SMARTTHINGS_PROFILE.roomName).toBe("Living room");
@@ -45,7 +45,7 @@ describe("SmartThingsAccountCard Presentation Contract", () => {
     mocks.useApp.mockReset().mockReturnValue({
       view: {
         plug: {
-          deviceId: "54fac45c-5a59-449e-8db1-2613c1bf5ec6",
+          deviceId: "demo-rice-cooker-plug",
           online: true,
           lastReadingAt: "2026-11-18T07:28:11.584Z",
         },
@@ -55,7 +55,7 @@ describe("SmartThingsAccountCard Presentation Contract", () => {
 
   it("renders compact mode with linked badges and location [KR: 홈 화면용 컴팩트 모드 렌더링 검증]", () => {
     const html = renderToStaticMarkup(createElement(SmartThingsAccountCard, { compact: true }));
-    expect(html).toContain("SmartThings 연결됨");
+    expect(html).toContain("SmartThings 연결 예시");
     expect(html).toContain("우리 집 밥솥 플러그");
     expect(html).toContain("My home · Living room");
     expect(html).toContain('href="/connect"');
@@ -64,14 +64,14 @@ describe("SmartThingsAccountCard Presentation Contract", () => {
 
   it("renders full mode with capabilities and refresh button [KR: 기기 연결 상세 모드 렌더링 검증]", () => {
     const html = renderToStaticMarkup(createElement(SmartThingsAccountCard, { compact: false }));
-    expect(html).toContain("SmartThings 계정 연동 완료");
-    expect(html).toContain("실시간 수신 정상");
+    expect(html).toContain("SmartThings 연결 예시");
+    expect(html).toContain("예시 신호 수신");
     expect(html).toContain("우리 집 밥솥 플러그");
-    expect(html).toContain("54fac45c-5a59-449e-8db1-2613c1bf5ec6");
+    expect(html).toContain("demo-rice-cooker-plug");
     expect(html).toContain("Living room");
     expect(html).toContain("My home");
     expect(html).toContain("전력·에너지 측정 플러그");
-    expect(html).toContain("지금 SmartThings 취사 신호 동기화");
+    expect(html).toContain("예시 취사 신호 반영하기");
     expect(html).toContain("산책길 밥김 하트 보기");
   });
 });

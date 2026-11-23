@@ -1,10 +1,8 @@
-import { ANDROID_APK_URL, ANDROID_RELEASE_URL, publicUrl } from "@/lib/deployment";
+import { publicUrl } from "@/lib/deployment";
 
 /** Public routes carry navigation only, never account or health data. */
-export const HEALTH_WEB_URL = publicUrl("/app/health/");
+export const HEALTH_WEB_URL = publicUrl("/health/");
 export const HEALTH_APP_URL = "bapmunna://health";
-export const HEALTH_ANDROID_APK_URL = ANDROID_APK_URL;
-export const HEALTH_ANDROID_RELEASE_URL = ANDROID_RELEASE_URL;
 
 /** A deliberate tap opens the installed app; absence never means connected. */
 export function healthAppLink(platform: "ios" | "android"): string {

@@ -6,8 +6,13 @@ import {doc,getDoc,getDocFromServer,setDoc,updateDoc,deleteDoc,collection,getDoc
 import {initializeApp,deleteApp,getApp} from 'firebase/app';
 import {getAuth,connectAuthEmulator,createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut,sendEmailVerification,sendPasswordResetEmail,reload} from 'firebase/auth';
 import {koreanDay} from '../cloud/auth-utils.mjs';
-import {createProvider} from '../cloud/firebase-provider.src.mjs';
+import {createProvider,createLocalProvider} from '../cloud/firebase-provider.src.mjs';
 import {preferenceFields} from '../cloud/app-preferences.mjs';
+
+test('archived UI rejects a hosted page and a live Firebase project before creating an SDK client', () => {
+  assert.throws(() => createLocalProvider(), /로컬 Firebase/);
+  assert.throws(() => createProvider({projectId:'production-example'}), /Only the local demo project/);
+});
 
 const projectId='demo-bapmunna';
 if(!process.env.FIRESTORE_EMULATOR_HOST||!process.env.FIREBASE_AUTH_EMULATOR_HOST)throw Error('Run only inside the isolated demo Firebase emulators.');

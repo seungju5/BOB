@@ -1,75 +1,46 @@
-// Read-only preflight. No billing, deployment, OAuth grant, or device commands.
-import {readFile,stat} from 'node:fs/promises';
-import {fileURLToPath} from 'node:url';
-import path from 'node:path';
-import {readConfig} from '../server/security.mjs';
-import {configured} from '../server/service.mjs';
-import {firebaseConfig} from '../docs/firebase-config.mjs';
-import {validateDeploymentTargets} from './smartthings-deployment.mjs';
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import { pathToFileURL } from 'node:url';
+import { servingConfig } from '../../../apps/warming-up/scripts/publish-hosting.mjs';
+import { CONSENT, readConfig } from '../../../apps/warming-up/server/smartthings/security.mjs';
 
-const root=new URL('../',import.meta.url);
-const json=async path=>JSON.parse(await readFile(new URL(path,root),'utf8'));
-const offline=process.argv.includes('--offline');
-const [plan,manifest,evidence,rewrite]=await Promise.all([
-  json('server/deployment-config.json'),json('server/app-registration.json'),
-  json('server/registration-status.json'),json('server/hosting-rewrite.example.json'),
-]);
-const deploymentTargets=validateDeploymentTargets(plan,{firebaseProjectId:firebaseConfig.projectId});
-const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
-const match=plan.appId===evidence.appId&&manifest.appName===evidence.appName
-  &&same(plan.scope,manifest.oauth.scope)&&same(plan.scope,evidence.scope)
-  &&same([plan.redirectUri],manifest.oauth.redirectUris)&&same([plan.redirectUri],evidence.redirectUris)
-  &&plan.webhookUrl===manifest.apiOnly.targetUrl&&plan.webhookUrl===evidence.targetUrl
-  &&new URL(plan.appUrl).origin===plan.publicOrigin
-  &&plan.redirectUri===plan.publicOrigin+'/api/smartthings/callback'
-  &&plan.webhookUrl===plan.publicOrigin+'/api/smartthings/events'
-  &&rewrite.rewrites[0].source==='/api/smartthings/**'
-  &&rewrite.rewrites[0].run.serviceId===plan.serviceId
-  &&rewrite.rewrites[0].run.region===plan.region;
-if(!match||plan.billing.automaticUpgrade!==false||plan.billing.explicitApprovalRequired!==true){
-  console.error('Registration/deployment settings differ. Review before proceeding.');process.exit(1);
+const teamApp = new URL('../../../apps/warming-up/', import.meta.url);
+async function readJson(name) {
+  return JSON.parse(await readFile(new URL(name, teamApp), 'utf8'));
 }
 
-let localSecretsReady=false,privateFilePermissions=false;
-try{
-  const folder=process.env.BAPMUNNA_SMARTTHINGS_PRIVATE_DIR||fileURLToPath(new URL('tmp/smartthings-private/',root));
-  const [saved,key,secret,files]=await Promise.all([
-    readFile(path.join(folder,'registration-result.json'),'utf8').then(JSON.parse),readFile(path.join(folder,'encryption-key'),'utf8'),
-    readFile(path.join(folder,'client-secret'),'utf8'),
-    Promise.all(['registration-result.json','encryption-key','client-secret'].map(name=>stat(path.join(folder,name)))),
+export async function checkTeamSource() {
+  const [aliases, { hosting }, fallback] = await Promise.all([
+    readJson('.firebaserc'), readJson('firebase.json'), readJson('public/service-status/smartthings.json'),
   ]);
-  privateFilePermissions=files.every(file=>(file.mode&0o077)===0);
-  const config=readConfig({FIREBASE_PROJECT_ID:plan.projectId,APP_URL:plan.appUrl,PUBLIC_ORIGIN:plan.publicOrigin,
-    SMARTTHINGS_APP_ID:plan.appId,SMARTTHINGS_CLIENT_ID:saved.oauthClientId,
-    SMARTTHINGS_CLIENT_SECRET:secret.trim(),SMARTTHINGS_ENCRYPTION_KEY:key.trim(),SMARTTHINGS_OAUTH_PREFIX:plan.oauthPrefix});
-  localSecretsReady=configured(config)&&saved.app?.appId===plan.appId
-    &&secret.trim()===saved.oauthClientSecret&&privateFilePermissions;
-}catch{/* Missing private files require the app owner; never print their contents. */}
+  const runtime = readConfig({ FIREBASE_PROJECT_ID: aliases.projects.default });
+  assert.equal(aliases.projects.default, runtime.projectId, 'Unexpected default Firebase project.');
+  assert.equal(hosting.site, runtime.projectId, 'Unexpected Hosting site.');
+  const [route] = servingConfig(hosting).rewrites;
+  assert.equal(runtime.origin, 'https://' + hosting.site + '.web.app');
+  assert.equal(fallback.projectId, runtime.projectId);
+  assert.equal(fallback.consentVersion, CONSENT);
+  assert.equal(fallback.mode, 'hosting-only');
+  assert.equal(fallback.enabled, false, 'The static response cannot enable SmartThings.');
+  assert.equal(fallback.connectionReady, false, 'The static response cannot open OAuth.');
+  return {
+    source: 'checked_in_team_configuration',
+    projectId: runtime.projectId,
+    hostingSite: hosting.site,
+    hostingRoute: route,
+    redirectUri: runtime.redirect,
+    webhookUrl: runtime.origin + '/api/smartthings/events',
+    liveEndpointsChecked: false,
+    registrationChecked: false,
+  };
+}
 
-const endpoints=[];
-if(!offline){
-  // Only unauthenticated GETs. Registration and billing are not mutated.
-  for(const route of ['config','callback']){
-    const url=plan.publicOrigin+'/api/smartthings/'+route;
-    try{
-      const result=await fetch(url,{redirect:'manual',signal:AbortSignal.timeout(10000)});
-      let enabled=null;
-      if(route==='config'&&result.headers.get('content-type')?.includes('application/json')){
-        const body=await result.json();enabled=body?.enabled===true;
-      }
-      endpoints.push({path:new URL(url).pathname,method:'GET',status:result.status,...(route==='config'?{enabled}:{})});
-    }catch{endpoints.push({path:new URL(url).pathname,method:'GET',status:null,error:'endpoint_unavailable'});}
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  const args = process.argv.slice(2);
+  if (args.includes('--offline')) {
+    assert.deepEqual(args, ['--offline'], 'Use --offline on its own.');
+    console.log(JSON.stringify(await checkTeamSource(), null, 2));
+  } else {
+    await import('../../../apps/warming-up/scripts/check-smartthings.mjs');
   }
 }
-console.log(JSON.stringify({
-  checkedAt:new Date().toISOString(),mode:offline?'offline':'public_endpoint_check',
-  registration:{source:'saved_official_cli_readback',checkedAt:evidence.checkedAt,matchesManifest:match,
-    redirectUri:plan.redirectUri,webhookUrl:plan.webhookUrl,scope:plan.scope,targetStatus:evidence.targetStatus},
-  localSecretsReady,privateFilePermissions,deploymentTargets,preparedSettingsFile:fileURLToPath(new URL('server/deployment-config.json',root)),
-  endpoints,billingSnapshot:{source:'saved_google_api_readback',checkedAt:evidence.checkedAt,...evidence.firebase},
-  deploymentPerformed:false,billingChanged:false,
-  deploymentDecision:plan.state,
-  nextStep:plan.state==='prepared_deployment_deferred_free_plan'
-    ?'Public deployment is deferred by the owner’s free-plan decision. Continue local verification; wait for an explicit request to resume deployment.'
-    :'Owner approval is required before billing activation. Then deploy, confirm webhook, and verify real OAuth/events.',
-},null,2));

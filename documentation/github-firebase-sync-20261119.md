@@ -1,8 +1,10 @@
-# GitHub 소스와 현재 Firebase 게시본 대조 — 2026-11-19
+# GitHub 소스와 11월 19일 Impact Series 게시본 대조
+
+2026년 11월 19일에 이전 통합판의 정적 파일과 당시 GitHub 작업을 대조한 기록이다. 11월 21일부터 팀 앱을 제공하는 Firebase 프로젝트와 현재 소스 경로는 [팀 운영 안내](../docs/team-migration.md)에서 확인한다.
 
 ## 어디에 올라가 있는가
 
-팀 저장소는 `seungju5/-1`이다. 11월 19일 `main` 반영 전 다음 원격 브랜치와 커밋을 확인했다. [GitHub 저장소](https://github.com/seungju5/-1)
+당시 저장소는 `seungju5/-1`이었다. 11월 19일 `main` 반영 전 다음 원격 브랜치와 커밋을 확인했다. [GitHub 저장소](https://github.com/seungju5/-1)
 
 | 구분 | 원격 브랜치 / 커밋 | 상태 |
 | --- | --- | --- |
@@ -14,7 +16,7 @@
 
 `efbdd94`에 `06942b0`의 검증 문서를 병합한 통합본을 기본 브랜치 `main`에 반영했다. 안티그래비티가 추가한 앱 코드, 디자인, 애니메이션, 자산과 기존 `main` 커밋 이력을 보존했다. [GitHub main](https://github.com/seungju5/-1/tree/main)
 
-## 현재 Firebase에 있는 내용
+## 11월 19일 당시 Firebase에 게시되어 있던 내용
 
 확인 URL: [밥뭇나 앱](https://impact-series.web.app/bapmunna/app/) · [메뉴](https://impact-series.web.app/bapmunna/app/more/) · [산책 체험](https://impact-series.web.app/bapmunna/app/walking/demo/)
 
@@ -40,7 +42,7 @@
 
 ## GitHub에는 있지만 아직 Firebase에 없는 추가분
 
-최신 `efbdd94`에는 전력 전사·단계별 해석 화면과 관련 모델, 컨트롤러, 검사, 동기화 스크립트가 포함되어 있다. 이 코드도 `main`에 포함했다.
+최신 `efbdd94`에는 전력 전사·단계별 해석 화면과 관련 모델, 컨트롤러, 검사가 포함돼 있었다. 당시 검토한 소스를 `main`에 반영했다.
 
 그러나 이 커밋으로 만든 11월 19일 로컬 산출물은 현재 게시본과 다르다. 381개 중 245개는 Hosting 해시가 같고, 새 경로 9개와 달라진 경로 127개가 있다. HTML/RSC의 빌드 식별자 변경도 포함되므로 127개를 모두 새 기능 파일이라고 해석하지 않는다. **현재 Firebase에 전력 전사·해석 화면까지 게시됐다고 보고하지 않는다.**
 
@@ -52,7 +54,7 @@
 - `useSmartThingsSyncController.ts`의 수동 동기화는 `updateDemo`로 브라우저 체험 기록을 만든다. 실제 삼성 API 요청이나 자동 웹훅 수신과 구분해야 한다.
 - `SmartThingsAccountCard`는 기본 기기 프로필과 연결 완료 문구를 사용한다. 이 표시만으로 사용자의 실제 연결 완료를 증명할 수 없다.
 - 추가 전력 전사·해석 컨트롤러에는 고정 예시 수치가 있다. 이 값들을 실측 전력이나 AI가 실제 분석한 결과로 발표하지 않는다.
-- `sync-smartthings-owner-plug.mjs`에는 개인 환경 경로·고정 시험 계정·fallback이 있어 이번 대조에서는 실행하지 않았다. 현재 게시본 보존과 별개로 운영용 동기화 경로는 검토가 필요하다.
+- 이 대조는 읽기 전용으로 수행했고 시험 계정이나 기기의 자료를 Firestore에 쓰지 않았다.
 
 위 사항은 이번에 새로 구현하거나 활성화한 기능이 아니다. Firebase DB·사용자 정보·운영 비밀값·결제·기기 상태는 변경하지 않았다.
 

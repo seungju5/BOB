@@ -92,7 +92,8 @@ test('Firebase server credential accepts only the configured project identity an
 });
 
 test('imported runtime can expose unconfigured status without credentials or a listening server',async()=>{
-  const runtime=createRuntime({PUBLIC_ORIGIN:origin,APP_URL:origin+'/connect/',BAPMUNNA_APP_ORIGINS:'https://impact-series.web.app',BAPMUNNA_RETURN_URL:'https://impact-series.web.app/bapmunna/carer/#connect'});
+  const appOrigin='https://app.example.test';
+  const runtime=createRuntime({PUBLIC_ORIGIN:origin,APP_URL:origin+'/connect/',BAPMUNNA_APP_ORIGINS:appOrigin,BAPMUNNA_RETURN_URL:appOrigin+'/carer/#connect'});
   assert.equal(runtime.ready,false);assert.equal(runtime.store,null);
   const response=await runtime.handle(new Request(origin+'/api/smartthings/config'));
   assert.equal((await response.json()).enabled,false);

@@ -1,16 +1,28 @@
 import {initializeApp,getApp,getApps} from 'firebase/app';
-import {getAuth,onAuthStateChanged,beforeAuthStateChanged,signInWithEmailAndPassword,createUserWithEmailAndPassword,sendEmailVerification,sendPasswordResetEmail,updateProfile,signOut,reload,setPersistence,browserLocalPersistence,browserSessionPersistence,GoogleAuthProvider,signInWithPopup,validatePassword,signInWithCustomToken,verifyBeforeUpdateEmail} from 'firebase/auth';
-import {getFirestore,doc,getDoc,getDocFromServer,setDoc,updateDoc,deleteDoc,collection,getDocs,query,orderBy,limit,startAfter,documentId,where,onSnapshot,writeBatch,runTransaction,serverTimestamp,Timestamp} from 'firebase/firestore';
+import {connectAuthEmulator,getAuth,onAuthStateChanged,beforeAuthStateChanged,signInWithEmailAndPassword,createUserWithEmailAndPassword,sendEmailVerification,sendPasswordResetEmail,updateProfile,signOut,reload,setPersistence,browserLocalPersistence,browserSessionPersistence,GoogleAuthProvider,signInWithPopup,validatePassword,signInWithCustomToken,verifyBeforeUpdateEmail} from 'firebase/auth';
+import {connectFirestoreEmulator,getFirestore,doc,getDoc,getDocFromServer,setDoc,updateDoc,deleteDoc,collection,getDocs,query,orderBy,limit,startAfter,documentId,where,onSnapshot,writeBatch,runTransaction,serverTimestamp,Timestamp} from 'firebase/firestore';
 import {preferenceFields} from './app-preferences.mjs';
 import {CONSENT_VERSION,koreanDay,checkDisplayName,checkMeal,STAGES} from './auth-utils.mjs';
 import {createKakaoClient,requestAccountEmail,completeKakaoSession} from './kakao-client.mjs';
 import {kakaoConfig} from './kakao-config.mjs';
-import {deploymentConfig} from './deployment-config.mjs';
+import emulatorConfig from '../firebase.emulators.json' with {type:'json'};
 
-export function createProvider(config){
+export function createLocalProvider(){
+  const host=globalThis.location?.hostname;
+  if(!['localhost','127.0.0.1','[::1]'].includes(host))throw Error('이전 디자인은 로컬 Firebase 에뮬레이터에서 열어 주세요.');
+  return createProvider({projectId:'demo-bapmunna',authDomain:'localhost',apiKey:'demo-api-key',appId:'demo-local'},true);
+}
+
+export function createProvider(config,local=false){
+  if(config?.projectId!=='demo-bapmunna')throw Error('Only the local demo project is supported.');
   const appName='bapmunna-accounts-v3';
   const app=getApps().find(app=>app.name===appName)?getApp(appName):initializeApp(config,appName);
   const auth=getAuth(app),db=getFirestore(app);
+  if(local&&!auth.emulatorConfig){
+    const {auth:authEmulator,firestore}=emulatorConfig.emulators;
+    connectAuthEmulator(auth,`http://${authEmulator.host}:${authEmulator.port}`,{disableWarnings:true});
+    connectFirestoreEmulator(db,firestore.host,firestore.port);
+  }
   let kakaoClient,kakaoCompletion;
   const kakao=()=>kakaoClient??=createKakaoClient({config:kakaoConfig,storage:{getItem:key=>window.sessionStorage.getItem(key),setItem:(key,value)=>window.sessionStorage.setItem(key,value),removeItem:key=>window.sessionStorage.removeItem(key)},location:window.location,history:window.history,crypto:window.crypto,fetch:window.fetch.bind(window)});
   const mapUser=user=>user?{uid:user.uid,email:user.email||'',displayName:user.displayName||'',verified:user.emailVerified}:null;
@@ -26,7 +38,7 @@ export function createProvider(config){
   }
   const contactRef=uid=>doc(db,'bapmunnaCRMContacts',uid);
   const remember=value=>setPersistence(auth,value?browserLocalPersistence:browserSessionPersistence);
-  const actionSettings={url:`${deploymentConfig.webOrigin}/bapmunna/#account`,handleCodeInApp:false};
+  const actionSettings={url:new URL('#account',globalThis.location?.href||'http://localhost/').href,handleCodeInApp:false};
   function householdFields(input){
     const fields=['relation','alias','residentCount','hasPet'];
     if(!input||typeof input!=='object'||Object.keys(input).length!==fields.length||!fields.every(key=>Object.hasOwn(input,key))
@@ -69,7 +81,7 @@ export function createProvider(config){
       return kakao().begin(keep);
     },
     completeKakaoLogin(fragment,signal){return kakaoCompletion??=completeKakaoSession({auth,client:kakao(),fragment,signal,remember,beforeChange:beforeAuthStateChanged,observe:onAuthStateChanged,signIn:signInWithCustomToken}).then(mapUser);},
-    requestEmail(email,expectedUid){return requestAccountEmail({email,expectedUid,currentUser:()=>auth.currentUser,sendVerification:(user,address)=>verifyBeforeUpdateEmail(user,address,{url:`${deploymentConfig.webOrigin}/bapmunna/app/login/`,handleCodeInApp:false})});},
+    requestEmail(email,expectedUid){return requestAccountEmail({email,expectedUid,currentUser:()=>auth.currentUser,sendVerification:(user,address)=>verifyBeforeUpdateEmail(user,address,actionSettings)});},
     getIdToken(expectedUid){return withHouseholdUser(expectedUid,async(user,assertCurrent)=>{const token=await user.getIdToken();assertCurrent();return token;});},
     onUser(callback){return onAuthStateChanged(auth,user=>callback(mapUser(user)));},
     async signIn(email,password,keep){await remember(keep);const result=await signInWithEmailAndPassword(auth,email.trim(),password);return mapUser(result.user);},

@@ -9,7 +9,7 @@ const selectOptions=(values,current)=>Object.entries(values).map(([id,label])=>`
 
 export function mountAccount(element,{admin=false,management,audience='senior',browseHref='#guardian',demoHref=browseHref,familyHref='#family',connectHref='#connect',onSessionRefresh=()=>{},connect=getProvider}={}){
   const carer=!admin&&audience==='carer';
-  const primaryAccountHref=`${deploymentConfig.webOrigin}/bapmunna/${carer?'carer':'senior'}/#account`;
+  const primaryAccountHref=`${deploymentConfig.webOrigin}/login/`;
   let alive=true,provider,unwatchAuth,unwatchMeals,disposeManagement,generation=0,accountEpoch=0;
   const model={loading:true,busy:false,user:null,profile:null,staff:false,meals:[],tab:'login',notice:'',problem:'',email:'',pendingVerificationEmail:'',recovery:false};
   function feedback(){return `${model.problem?`<p class="notice error" role="alert">${safe(model.problem)}</p>`:''}${model.notice?`<p class="account-success" role="status">${safe(model.notice)}</p>`:''}`;}

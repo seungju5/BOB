@@ -22,15 +22,6 @@
     "project": "impact-series",
     "billingEnabled": false
   },
-  "rules": {
-    "at": "2026-11-13T13:53:41.114Z",
-    "project": "ku-gpa",
-    "previous": "projects/ku-gpa/rulesets/407b97da-502a-4f46-8928-ec44ee17166d",
-    "ruleset": "projects/ku-gpa/rulesets/e0d9c16c-84a1-4eac-aa9b-3932de857e53",
-    "sourceHash": "af8bf7e80a622a0cbc7eb8f3f3ef046c782cd403f7affed43752597a0686b2cb",
-    "emulatorTests": 37,
-    "billingChanged": false
-  },
   "harness": ".harness/runs/2026-11-13T14-06-30-166Z-7231/report.md",
   "backendDeployed": false,
   "liveSmartThingsVerified": false

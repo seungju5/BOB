@@ -53,17 +53,16 @@ async function doctor() {
   }
   const java = await runProcess('java', ['-version'], {cwd: ROOT, timeoutMs: 10000, env: localEnv()});
   const codex = await runProcess('codex', ['--version'], {cwd: ROOT, timeoutMs: 10000, env: localEnv()});
-  const evidence = await readRepoJson('integrations/bapmunna-firebase/server/registration-status.json');
-  const deployment = await readRepoJson('integrations/bapmunna-firebase/server/deployment-config.json');
-  const noAutomaticUpgrade = deployment.billing?.automaticUpgrade === false && deployment.billing?.explicitApprovalRequired === true;
-  const ready = major >= 22 && major < 27 && dependencies.every(item => item.installed) && noAutomaticUpgrade;
+  const evidence = await readRepoJson('apps/warming-up/public/service-status/smartthings.json');
+  const aliases = await readRepoJson('apps/warming-up/.firebaserc');
+  const ready = major >= 22 && major < 27 && dependencies.every(item => item.installed) && evidence.projectId === aliases.projects.default;
   console.log(JSON.stringify({localChecksReady: ready, node: process.versions.node, recommendedNode: '24 LTS', members: team.members.length,
     dependencies, emulatorPrerequisite: {javaAvailable: java.exitCode === 0, note: 'Emulators and integration coverage are not run by doctor.'},
     codexCli: {available: codex.exitCode === 0, requiredForLocalHarness: false,
       note: 'The npm harness works independently. Custom-agent loading depends on the client; pass role instructions through the desktop agent tools if needed.'},
-    noAutomaticUpgrade, smartthingsEvidence: {source: 'saved_readback_not_live', checkedAt: evidence.checkedAt,
-      targetStatus: evidence.targetStatus, publicApiDeployed: evidence.publicApiDeployed, endUserOAuthVerified: evidence.endUserOAuthVerified},
-    ci: 'See integrations/bapmunna-firebase/ci/README.md; the existing workflow is an installation template.',
+    smartthingsEvidence: {source: 'team_site_configuration', project: evidence.projectId,
+      enabled: evidence.enabled, connectionReady: evidence.connectionReady, reason: evidence.reason},
+    ci: '.github/workflows/ci.yml',
     note: 'Roles are prepared files; this command does not prove that the current Codex session loaded them.'}, null, 2));
   if (!ready) process.exitCode = 2;
 }

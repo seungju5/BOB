@@ -1,15 +1,7 @@
 {
   "_comment": "scripts/check-personal-info.mjs 설정. allowed: 팀이 공개하기로 한 값(공용 메일 등). legacyFiles: 검사 도입 전부터 개인 정보가 있던 파일 — 정리하면 지운다.",
-  "allowed": ["warmingu9@gmail.com"],
-  "legacyFiles": [
-    "config/deployment.json",
-    "documentation/consent-feedback-20261116.md",
-    "scripts/sync-smartthings-owner-plug.mjs",
-    "workspaces/bapmunna-final/releases/20261116-consent-feedback.json",
-    "workspaces/bapmunna-final/releases/20261117-business-oauth.json",
-    "workspaces/smartthings-vercel/releases/20261115-production.json",
-    "workspaces/smartthings-vercel/releases/20261116-kakao-active.json",
-    "workspaces/smartthings-vercel/releases/20261116-kakao-runtime.json",
-    "workspaces/smartthings-vercel/releases/20261117-business-oauth-active.json"
-  ]
+  "allowed": [
+    "warmingu9@gmail.com"
+  ],
+  "legacyFiles": []
 }

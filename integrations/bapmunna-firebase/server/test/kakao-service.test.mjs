@@ -4,7 +4,7 @@ import {createKakaoService,kakaoClient} from '../kakao-service.mjs';
 import {kakaoFirestoreStore} from '../kakao-store.mjs';
 import {readKakaoConfig,challengeFor,randomToken,hash,kakaoUid,cookieName,STATE_LIFETIME,HANDOFF_LIFETIME,STARTS_PER_DAY} from '../kakao-security.mjs';
 
-const config=readKakaoConfig({KAKAO_CLIENT_ID:'synthetic-client',KAKAO_CLIENT_SECRET:'synthetic-secret',KAKAO_APP_ID:'12345',FIREBASE_PROJECT_ID:'demo-bapmunna'});
+const config=readKakaoConfig({KAKAO_API_ORIGIN:'https://api.example.test',BAPMUNNA_WEB_ORIGIN:'https://app.example.test',KAKAO_CLIENT_ID:'synthetic-client',KAKAO_CLIENT_SECRET:'synthetic-secret',KAKAO_APP_ID:'12345',FIREBASE_PROJECT_ID:'demo-bapmunna'});
 // Deterministic transaction-boundary fake. Real concurrency is separately
 // checked against a local Firestore emulator in kakao-store.test.mjs.
 function database(){
@@ -111,7 +111,7 @@ test('disabled or unavailable Firebase accounts cannot mint; error details stay 
 });
 test('exchange enforces exact origin, JSON, bounded body, input shape and no credentialed CORS',async()=>{
   const f=fixture(),attempt=await f.start(),done=await f.finish(attempt),code=done.params.get('code');
-  for(const origin of [null,'https://evil.test','https://impact-series.web.app.evil.test','null',config.origin]){
+  for(const origin of [null,'https://evil.test',config.webOrigin+'.evil.test','null',config.origin]){
     const reply=await f.exchange(attempt,code,{origin});assert.equal(reply.status,403);assert.equal(reply.headers.get('access-control-allow-origin'),null);
   }
   for(const body of ['[]','null','{','x'.repeat(2049),JSON.stringify({code,flow:attempt.flow,verifier:attempt.verifier,extra:true})])assert.equal((await f.exchange(attempt,code,{body})).status,400);

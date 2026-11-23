@@ -84,7 +84,7 @@ export function useSmartThingsSyncController(): SmartThingsSyncControllerState {
     setLastCheckedIso(nowIso);
     setLastSignalIso(nowIso);
     setSyncing(false);
-    setSyncNotice("SmartThings ‘우리 집 밥솥 플러그’의 최신 취사 신호를 밥뭇나 홈·식사 기록·산책 하트에 반영했어요.");
+    setSyncNotice("예시 취사 신호를 체험 화면의 식사 기록과 산책 하트에 반영했어요.");
   }, []);
 
   return {

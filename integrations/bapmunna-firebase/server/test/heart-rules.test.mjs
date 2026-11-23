@@ -5,8 +5,7 @@ import {doc,collection,getDoc,getDocs,setDoc,updateDoc,deleteDoc} from 'firebase
 
 test('Firestore rules deny direct wallet, photo, group and device access even to owner or CRM staff',{skip:!process.env.FIRESTORE_EMULATOR_HOST},async()=>{
   if(!/^(127\.0\.0\.1|localhost):\d+$/.test(process.env.FIRESTORE_EMULATOR_HOST||''))throw Error('Only local demo emulators are allowed.');
-  // Use the maintained rule fragments; this is not a substitute for the parent
-  // integration's merged production-rules check.
+  // Load the maintained rule fragments for the integration's heart collections.
   const fragments=['bapmunna.rules','care-domain.rules'].map(name=>readFileSync(new URL('../../firebase/'+name,import.meta.url),'utf8')).join('\n');
   const environment=await initializeTestEnvironment({projectId:'demo-bapmunna-hearts',firestore:{rules:`rules_version = '2'; service cloud.firestore { match /databases/{database}/documents { ${fragments} } }`}});
   const paths=['bapmunnaSystem/walking/Hearts/owner','bapmunnaSystem/walking/HeartMessages/photo','bapmunnaSystem/walking/HeartGroups/week','bapmunnaSystem/walking/Devices/device'];

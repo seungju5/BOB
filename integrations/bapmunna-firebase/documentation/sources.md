@@ -64,7 +64,7 @@ v0.2는 자동·화면 내 58/58 검사, 실제 폼·초대·공유·상태 전�
 
 ## 추가 계정·DB 요청과 공개 참고
 
-- U-9: Ipilot 흐름을 참고한 로그인·비밀번호·별도 고객관리와 Firebase 저장 요청. 사용자가 `https://ipilot.co.kr/`와 `https://ku-gpa.web.app/bapmunna/`를 지정했다.
+- U-9는 Ipilot의 공개 흐름을 참고한 로그인·비밀번호·별도 고객관리와 Firebase 저장 요청이었다.
 - U-10: Supabase에도 같은 웹앱·DB 기능을 요청. 기존 프로젝트 `dakozsbqltciqihazzel` 사용. 이전 U-2의 생략 지시를 대체한다.
 - U-11: 사용자에게 정확한 Supabase 인증 반환·이메일 확인·복구 URL을 제시하고 허용 승인을 받았다. 사용자는 공개 가입용 SMTP를 직접 설정하기로 했다.
 
@@ -76,10 +76,10 @@ Ipilot의 [로그인](https://ipilot.co.kr/login/), [회원가입](https://ipilo
 
 - U-12: 버튼을 줄이고 쉽고 직관적으로 사용할 것. 사용자가 제공한 홈·기록 스크린샷 두 장의 크림/노랑, 카드 우선순위와 기간별 기록을 반영하되 하단 메뉴는 3개로 줄인다.
 - U-13: Firebase를 기본 웹앱·Auth·DB로 유지하고 무료 범위로 구성할 것. Supabase 별도 버전은 유지한다.
-- U-14: `.env.local`을 참고해 현재 개발 범위의 DB 스키마를 직접 생성하고 Firebase에도 대응할 것. 파일에서 Supabase 변수를 찾지 못한 사실과 확인된 프로젝트의 사용 경로는 database.md에 기록했다.
+- U-14는 개발 범위의 DB 스키마를 만들고 Firebase와 Supabase에 각각 대응하라는 요청이었다. [당시 데이터 계약](database.md)
 - U-15: 앞선 요구를 누적 적용하고 전문적으로, 쉽고 단순하게 완성할 것. 실제 저장·백엔드 준비·가상 화면을 혼동시키지 않는다.
 
-스크린샷 식별: `codex-clipboard-65e4ad2c-2772-4378-a33c-dd59ae67ed8b.png`(홈), `codex-clipboard-3513307a-3018-4aa5-82ea-fef08ea8abd7.png`(기록). 원본을 공개 사이트나 저장소에 복제하지 않고 화면 구조만 참조했다. 최신 실행 증거는 test-plan.md·deployment.md를 따른다.
+스크린샷 식별: `codex-clipboard-65e4ad2c-2772-4378-a33c-dd59ae67ed8b.png`(홈), `codex-clipboard-3513307a-3018-4aa5-82ea-fef08ea8abd7.png`(기록). 화면 구조만 참조했다. 당시 검사 범위는 [검사 기록](test-plan.md)을 따른다.
 
 ## 1008 기능정의서 v1.1 · 2026-10-16
 

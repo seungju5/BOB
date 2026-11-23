@@ -3,7 +3,10 @@ import {safeDevice,readingSummary} from './smartthings.mjs';
 
 const PREFIX='/api/smartthings';
 export const CONSENT='smartthings-status-2026-11-03';
-export const configured=config=>Boolean(config.appId&&config.clientId&&config.secret&&config.projectId&&Buffer.from(config.key||'','base64').length===32);
+export const configured = config => Boolean(
+  config.redirect && config.projectId && config.appId && config.clientId && config.secret &&
+  Buffer.from(config.key || '', 'base64').length === 32
+);
 const response=(data,status=200,headers={})=>new Response(JSON.stringify(data),{status,headers:{'Content-Type':'application/json','Cache-Control':'no-store','Referrer-Policy':'no-referrer',...headers}});
 const publicConnection=current=>!current?{stage:'disconnected'}:{stage:current.stage,device:current.deviceId?{id:current.deviceId,label:current.deviceLabel}:null,connectedAt:current.connectedAt,lastSignalAt:current.lastSignalAt||null,lastReceivedAt:current.lastReceivedAt||null,lastCheckedAt:current.lastCheckedAt||null,hasPower:current.hasPower??null};
 const DAY=86400000;

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {createWalkingService} from '../walking-service.mjs';
 import {randomToken,WalkingError} from '../walking-security.mjs';
 import {heartPhoto,HEART_MESSAGE_BODY_BYTES} from '../heart-security.mjs';
-const time=Date.parse('2041-11-17T03:00:00Z'),origin='https://bapmunna-smartthings.vercel.app',web='https://impact-series.web.app',native='https://localhost';
+const time=Date.parse('2041-11-17T03:00:00Z'),origin='https://api.example.test',web='https://app.example.test',native='https://localhost';
 function fixture({deviceError=null,account={},hearts={}}={}){
   const calls=[];
   const functions=Object.fromEntries(['get','join','settings','buy','equip','gift','message','read','leave','league'].map(name=>[name,async(...args)=>{calls.push([name,...args]);return name==='leave'?{ok:true}:{enabled:true,joined:true};}]));

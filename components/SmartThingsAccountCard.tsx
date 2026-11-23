@@ -27,7 +27,7 @@ export function SmartThingsAccountCard({ compact = false }: { compact?: boolean 
         <div className="flex items-center justify-between gap-2">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-sage px-3 py-1 text-[13px] font-bold text-cocoa">
             <IconCheck className="h-4 w-4" />
-            SmartThings 연결됨
+            SmartThings 연결 예시
           </span>
           <span className="text-[13px] font-semibold text-cocoa/70">
             {profile.locationName} · {profile.roomName}
@@ -54,16 +54,16 @@ export function SmartThingsAccountCard({ compact = false }: { compact?: boolean 
 
   return (
     <section
-      aria-label="연동된 SmartThings 기기 정보"
+      aria-label="SmartThings 기기 연결 예시"
       className="rounded-[1.75rem] border border-line bg-paper p-5 shadow-xs"
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="inline-flex items-center gap-1.5 rounded-full bg-sage px-3.5 py-1.5 text-[14px] font-bold text-cocoa">
           <IconCheck className="h-4 w-4" />
-          SmartThings 계정 연동 완료
+          SmartThings 연결 예시
         </span>
         <span className="rounded-full bg-butter-soft px-3 py-1 text-[13px] font-semibold text-cocoa">
-          {online ? "실시간 수신 정상" : "신호 대기 중"}
+          {online ? "예시 신호 수신" : "신호 대기 중"}
         </span>
       </div>
 
@@ -112,7 +112,7 @@ export function SmartThingsAccountCard({ compact = false }: { compact?: boolean 
 
       <div className="mt-4 flex flex-col gap-2.5">
         <Button type="button" onClick={handleSyncNow} disabled={syncing}>
-          {syncing ? "SmartThings 신호 동기화 중…" : "지금 SmartThings 취사 신호 동기화"}
+          {syncing ? "예시 신호 반영 중…" : "예시 취사 신호 반영하기"}
         </Button>
         <div className="grid grid-cols-2 gap-2">
           <Link

@@ -34,10 +34,10 @@ test('staged heart core resolves and the wrapper carries bounded family photos u
   const {heartSummary,createHeartState}=await import(pathToFileURL(join(destination,'runtime/heart-core.mjs')).href);
   const {heartFirestoreStore}=await import(pathToFileURL(join(destination,'runtime/heart-store.mjs')).href);
   assert.equal(typeof heartFirestoreStore,'function');assert.equal(heartSummary(createHeartState({date:'2026-11-18'}),'2026-11-18').count,null);
-  const config=readWalkingConfig();let seen;
+  const config=readWalkingConfig({WALKING_API_ORIGIN:'https://api.example.test',BAPMUNNA_WEB_ORIGIN:'https://app.example.test'});let seen;
   const handler=createWalkingVercelHandler({env:{VERCEL:'1',NODEJS_HELPERS:'0'},runtimeFactory:()=>({config,handle:async request=>{seen=await request.json();return new Response('{"ok":true}');}})});
   const body={text:'합성 테스트 사진',photo:'data:image/jpeg;base64,'+'A'.repeat(200000)};
-  const result=await invoke(handler,{path:'/api/walking/heartmessage?action=heartmessage',method:'POST',headers:{authorization:'Bearer synthetic','content-type':'application/json',origin:'https://impact-series.web.app'},body});
+  const result=await invoke(handler,{path:'/api/walking/heartmessage?action=heartmessage',method:'POST',headers:{authorization:'Bearer synthetic','content-type':'application/json',origin:config.webOrigin},body});
   assert.equal(result.status,200);assert.deepEqual(seen,body);
   assert.equal((await invoke(handler,{path:'/api/walking/heartmessage',method:'POST',body:{text:'A'.repeat(220001)}})).status,413);
 });
@@ -57,12 +57,15 @@ test('dynamic metadata handling preserves native POST body and authentication he
 });
 test('walking runtime uses existing project credential without requiring Kakao or Samsung configuration',async()=>{
   const key=generateKeyPairSync('rsa',{modulusLength:2048}).privateKey.export({type:'pkcs8',format:'pem'});
-  const env={FIREBASE_PROJECT_ID:'demo-bapmunna',FIREBASE_SERVICE_ACCOUNT_JSON:JSON.stringify({type:'service_account',project_id:'demo-bapmunna',client_email:'walking-test@demo-bapmunna.iam.gserviceaccount.com',private_key:key})};
+  const env={WALKING_API_ORIGIN:'https://api.example.test',BAPMUNNA_WEB_ORIGIN:'https://app.example.test',FIREBASE_PROJECT_ID:'demo-bapmunna',FIREBASE_SERVICE_ACCOUNT_JSON:JSON.stringify({type:'service_account',project_id:'demo-bapmunna',client_email:'walking-test@demo-bapmunna.iam.gserviceaccount.com',private_key:key})};
   let signed=0,initialized=0;
   const runtime=createWalkingRuntime(env,{apps:()=>[],certificate:value=>{signed++;assert.equal(value.projectId,'demo-bapmunna');return {};},initialize:()=>{initialized++;return {};},authFor:()=>({}),databaseFor:()=>({})});
   assert.equal(runtime.ready,true);assert.equal(signed,1);assert.equal(initialized,1);
-  assert.equal((await runtime.handle(new Request('https://bapmunna-smartthings.vercel.app/api/walking/config'))).status,200);
+  assert.equal((await runtime.handle(new Request(env.WALKING_API_ORIGIN+'/api/walking/config'))).status,200);
   assert.equal(createWalkingRuntime({}).ready,false);
+  for(const key of ['WALKING_API_ORIGIN','BAPMUNNA_WEB_ORIGIN']){
+    assert.equal(createWalkingRuntime({...env,[key]:''},{initialize(){throw Error('must not initialize');}}).ready,false);
+  }
   assert.throws(()=>createWalkingRuntime({...env,FIREBASE_PROJECT_ID:'different-project'}),/credential/);
 });
 test('walking cleanup requires cron secret and runs even if provider integrations are unconfigured',async()=>{

@@ -69,7 +69,7 @@ public final class PhoneStepsPlugin: CAPPlugin, CAPBridgedPlugin {
         return try await self.walkReminders.configure(enabled:call.getBool("enabled") == true,times:times,glucose:call.getBool("bloodSugarReminder") == true)
     } }
     @objc public func openWalkingWebApp(_ call: CAPPluginCall) { walkingCall(call) {
-        guard let url = URL(string:"https://impact-series.web.app/bapmunna/app/walking/") else { throw WalkingNativeError(code:"invalid_request") }
+        guard let url = URL(string:"https://warming-up-bapmunna.web.app/walking/") else { throw WalkingNativeError(code:"invalid_request") }
         let opened = await UIApplication.shared.open(url)
         guard opened else { throw WalkingNativeError(code:"browser_unavailable") }; return [:]
     } }
@@ -227,7 +227,7 @@ public final class PhoneStepsPlugin: CAPPlugin, CAPBridgedPlugin {
     @objc public func openWebApp(_ call: CAPPluginCall) {
         DispatchQueue.main.async {
             guard self.trusted(call),
-                  let url = URL(string: "https://impact-series.web.app/bapmunna/app/") else { return }
+                  let url = URL(string: "https://warming-up-bapmunna.web.app/") else { return }
             // Fixed URL in the system browser; never forward native tokens or health data.
             UIApplication.shared.open(url, options: [:]) { opened in
                 if opened { call.resolve() }

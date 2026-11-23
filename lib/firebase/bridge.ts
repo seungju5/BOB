@@ -31,6 +31,9 @@ export type FirebaseProvider = {
 let providerPromise: Promise<FirebaseProvider>|null = null;
 export function connectFirebase(): Promise<FirebaseProvider> {
   if (!usesImpactFirebase || typeof window === 'undefined') return Promise.reject(new Error('이 경로에서는 Firebase 계정을 사용하지 않아요.'));
+  if (!['localhost', '127.0.0.1', '[::1]'].includes(window.location.hostname)) {
+    return Promise.reject(new Error('이전 디자인의 로그인은 로컬 에뮬레이터에서만 이용할 수 있어요.'));
+  }
   if (!providerPromise) {
     // One same-origin, fixed module: reuses the shipped SDK and its named app.
     const url = new URL('/bapmunna/cloud-api.mjs', window.location.origin).href;

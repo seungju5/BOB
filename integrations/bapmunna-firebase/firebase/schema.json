@@ -1,8 +1,8 @@
 {
   "version": "2026-10-16.1",
-  "projectId": "ku-gpa",
+  "projectId": "demo-bapmunna",
   "database": "(default)",
-  "primaryApp": "https://ku-gpa.web.app/bapmunna/",
+  "environment": "emulator",
   "timeZone": "Asia/Seoul",
   "consentVersion": "2026-10-16",
   "collections": [

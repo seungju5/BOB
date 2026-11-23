@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {webcrypto,createHash} from 'node:crypto';
 import {createKakaoClient,requestAccountEmail,completeKakaoSession} from '../cloud/kakao-client.mjs';
 
-const key='bapmunna:kakao:pending:v1',origin='https://bapmunna-smartthings.vercel.app';
+const key='bapmunna:kakao:pending:v1',origin='https://warming-up-bapmunna.web.app';
 const code=Buffer.alloc(32,7).toString('base64url');
 function fixture(){
   const state=new Map(),calls=[],events=[];

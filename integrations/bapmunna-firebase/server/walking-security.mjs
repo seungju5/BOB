@@ -31,8 +31,8 @@ export const iso=time=>Number.isFinite(time)?new Date(time).toISOString():null;
 function origin(value){const url=new URL(value);if(url.protocol!=='https:'||url.origin!==value||url.username||url.password)throw Error();return url.origin;}
 export function readWalkingConfig(env={}){
   try{
-    const apiOrigin=origin(env.WALKING_API_ORIGIN||'https://bapmunna-smartthings.vercel.app');
-    const webOrigin=origin(env.BAPMUNNA_WEB_ORIGIN||'https://impact-series.web.app');
+    const apiOrigin = origin(env.WALKING_API_ORIGIN || 'https://localhost');
+    const webOrigin = env.BAPMUNNA_WEB_ORIGIN ? origin(env.BAPMUNNA_WEB_ORIGIN) : '';
     const projectId=env.FIREBASE_PROJECT_ID||'';
     if(projectId&&!/^[a-z][a-z0-9-]{1,62}$/.test(projectId))throw Error();
     return {origin:apiOrigin,webOrigin,projectId};

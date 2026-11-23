@@ -58,8 +58,8 @@ export function webhookVerifier({fetcher=fetch,now=()=>Date.now()}={}){
   };
 }
 
-export function readConfig(env){
-  const app=new URL(env.APP_URL||'https://impact-series.web.app/bapmunna/carer/');
+export function readConfig(env = {}) {
+  const app = env.APP_URL ? new URL(env.APP_URL) : new URL('/connect/', env.PUBLIC_ORIGIN || 'http://127.0.0.1:8080');
   const origin=new URL(env.PUBLIC_ORIGIN||app.origin);
   const local=['127.0.0.1','localhost'].includes(origin.hostname);
   if(app.origin!==origin.origin||(!local&&origin.protocol!=='https:')||app.username||app.password)throw Error('APP_URL must use the same HTTPS origin as PUBLIC_ORIGIN.');
@@ -71,5 +71,12 @@ export function readConfig(env){
   }
   const returnUrl=new URL(env.BAPMUNNA_RETURN_URL||app.href);
   if(![origin.origin,...appOrigins].includes(returnUrl.origin)||returnUrl.username||returnUrl.password)throw Error('BAPMUNNA_RETURN_URL must use an explicitly allowed app origin.');
-  return {appUrl:app.href,origin:origin.origin,appOrigins,returnUrl:returnUrl.href,secure:!local,connectionEnabled:env.SMARTTHINGS_CONNECTION_ENABLED==='true',appId:env.SMARTTHINGS_APP_ID||'',clientId:env.SMARTTHINGS_CLIENT_ID||'',secret:env.SMARTTHINGS_CLIENT_SECRET||'',key:env.SMARTTHINGS_ENCRYPTION_KEY||'',oauth:env.SMARTTHINGS_OAUTH_PREFIX||'/oauth',redirect:`${origin.origin}/api/smartthings/callback`,projectId:env.FIREBASE_PROJECT_ID||''};
+  const redirect = env.APP_URL || env.PUBLIC_ORIGIN ? origin.origin + '/api/smartthings/callback' : '';
+  return {
+    appUrl: app.href, origin: origin.origin, appOrigins, returnUrl: returnUrl.href,
+    secure: !local, connectionEnabled: env.SMARTTHINGS_CONNECTION_ENABLED === 'true',
+    appId: env.SMARTTHINGS_APP_ID || '', clientId: env.SMARTTHINGS_CLIENT_ID || '',
+    secret: env.SMARTTHINGS_CLIENT_SECRET || '', key: env.SMARTTHINGS_ENCRYPTION_KEY || '',
+    oauth: env.SMARTTHINGS_OAUTH_PREFIX || '/oauth', redirect, projectId: env.FIREBASE_PROJECT_ID || '',
+  };
 }

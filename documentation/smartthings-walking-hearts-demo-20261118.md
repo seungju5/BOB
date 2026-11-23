@@ -1,12 +1,10 @@
-# 🍚 SmartThings 연동 × 산책 하트(B안) 최종 통합 시연 가이드
-> **SmartThings Cloud Integration & Walking Hearts (Plan B) Demo Guide**  
-> 문서 일자: 2026-11-18 | 대상 브랜치: `codex/walking-hearts-20261117` | 라이브 URL: [impact-series.web.app/bapmunna/app/](https://impact-series.web.app/bapmunna/app/)
+# 산책 하트와 밥솥 연결 화면 시연 기록
 
----
+2026년 11월 18일 Impact Series 통합판의 발표 시나리오다. 11월 19일 공개 산출물과 대조한 결과, 당시 화면은 예시 기기 프로필과 브라우저 데모 기록을 사용했다. [공개본 대조 기록](github-firebase-sync-20261119.md) · [현재 팀 웹앱](https://warming-up-bapmunna.web.app/)
 
 ## 1. 개요 및 B안 선정 배경 (Overview & Design Rationale)
 
-본 문서는 **Bapmunna(밥뭇나)** 프로젝트의 **삼성 SmartThings 클라우드 밥솥 플러그 연동**과 **산책 하트(B안) 파노라마 경험**을 결합한 통합 시연 가이드입니다.
+이 시연에서는 밥솥 소식을 확인하는 화면과 산책 하트의 공원 파노라마를 함께 살펴본다.
 
 ### 1.1 A안(경쟁형 랭킹) vs B안(따뜻한 동행) 비교
 초기 기획안(A안)은 걸음 수 중심의 순위 경쟁(Leaderboard) 모델이었으나, 사용자 인터뷰와 수업 논의를 거쳐 어르신 친화적인 **B안(산책 하트 & 공원 파노라마)**으로 전격 전환했습니다.
@@ -24,36 +22,16 @@
 
 ---
 
-## 2. SmartThings 클라우드 연동 아키텍처 (Architecture)
+## 2. 시연 데이터가 화면에 표시되는 과정
 
-삼성 SmartThings Cloud와 Bapmunna의 실시간 데이터 연동은 비인가 노출을 차단하는 보안 브릿지와 Firestore 실시간 동기화로 완성되었습니다.
+당시 `/connect`의 동기화 버튼은 기본 기기 프로필을 읽어 `updateDemo`로 브라우저 안의 체험 기록을 갱신했다. 당시 공개 서버의 `connectionReady` 값은 `false`였다. 사용자 OAuth와 실물 플러그에서 자동 수신한 신호는 이 시연에서 확인된 항목에 포함되지 않는다. [11월 19일 코드·공개본 대조](github-firebase-sync-20261119.md)
 
 ```mermaid
-sequenceDiagram
-    autonumber
-    actor Senior as 어르신 (가정)
-    participant Plug as 우리 집 밥솥 플러그
-    participant ST as Samsung SmartThings Cloud
-    participant Bridge as CLI / REST API Bridge
-    participant FS as Cloud Firestore (ku-gpa)
-    participant WebApp as Bapmunna WebApp (보호자/어르신)
-
-    Senior->>Plug: 밥솥 취사 시작 (전력 800W+ 감지)
-    Plug->>ST: powerMeter / switch 이벤트 전송
-    ST->>Bridge: 실시간 기기 상태 전달 (Capabilities: powerMeter, switch)
-    Bridge->>FS: households/cookingEvents 문서 업데이트 (KST 시각 동기화)
-    FS-->>WebApp: onSnapshot 실시간 수신 (/connect, /home, /s, /walking)
-    WebApp-->>Senior: 취사 안부 배지(🍚) 점등 및 첫 번째 산책 하트 자동 활성화
+flowchart LR
+    A["연결 화면의 예시 프로필"] --> B["체험 동기화"]
+    B --> C["브라우저 안의 체험 기록"]
+    C --> D["보호자·어르신 화면과 산책 하트"]
 ```
-
-### 2.1 실제 연동 기기 명세 (Verified Linked Device)
-* **기기명**: `우리 집 밥솥 플러그` (SmartPlug · 전력/에너지 측정)
-* **Device UUID**: `54fac45c-5a59-449e-8db1-2613c1bf5ec6`
-* **장소 및 공간**: `My home` (`bad8febc-f349-4969-896a-f14d20dddd62`) · `Living room` (`c16241b3-45ac-4c21-93cd-773def27bc7f`)
-* **지원 기능 (Capabilities)**: `switch`, `powerMeter`, `energyMeter`, `refresh`
-* **현재 상태**: `켜짐 (ON) · 밥솥 취사 전력 신호 수신 완료` (실시간 정상)
-
----
 
 ## 3. 핵심 화면별 발표 시연 동선 (Step-by-Step Demo Flow)
 
@@ -70,14 +48,14 @@ flowchart LR
 ### ① `/connect` — 삼성 SmartThings 기기 연동 허브
 * **핵심 컴포넌트**: `SmartThingsAccountCard`
 * **시연 포인트**:
-  - 삼성 SmartThings Cloud 정식 계정 연동 상태 및 거실 밥솥 플러그 UUID 실시간 확인.
-  - 전원(ON) 상태와 마지막 전력 측정 시각 표시.
-  - `지금 SmartThings 취사 신호 동기화` 원클릭 버튼을 통한 즉각적인 기기 상태 갱신.
+  - 연결 카드에 예시 기기 이름과 준비 상태가 표시되는지 확인한다.
+  - 예시로 표시한 전원 상태와 측정 시각을 살펴본다.
+  - 동기화 버튼을 누른 뒤 브라우저 체험 기록의 변화를 확인한다.
 
 ### ② `/home` — 보호자 실시간 안부 대시보드
 * **핵심 컴포넌트**: `ImpactConnectionLinks (compact)`, 상단 안부 배너
 * **시연 포인트**:
-  - 홈 상단에서 "SmartThings 연결됨 · Living room · 우리 집 밥솥 플러그" 요약 배너 표출.
+  - 보호자 홈의 밥솥 카드에서 체험용 기기 프로필과 소식이 어떻게 표시되는지 본다.
   - 당일 식사 시간대별(아침·점심·저녁) 밥솥 취사 여부와 7일 끼니 확인율(%) 종합 브리핑.
 
 ### ③ `/s` — 어르신 전용 직관 인터페이스
@@ -108,11 +86,10 @@ flowchart LR
 
 | 검증 항목 | 내용 및 결과 |
 | :--- | :--- |
-| **라이브 웹앱 URL** | [https://impact-series.web.app/bapmunna/app/](https://impact-series.web.app/bapmunna/app/) |
+| **당시 Hosting** | Impact Series `/bapmunna/app/` |
 | **배포 릴리스 버전** | `sites/impact-series/releases/1794988676683000` (Version: `c6ac5c6b3663fc35`) |
 | **Git 소스 브랜치** | `codex/walking-hearts-20261117` (Commit: `887ebf6...`) |
-| **테스트 스위트 통과**| **427개 전체 통과** (Root 314, Hearts 39, Steps 7, Shell 13, Server 46, Firebase 85 / **Failed 0**) |
-| **보안 및 규정 준수**| OWASP Top 10 기준 개인정보 마스킹, 비처방 안내, Vercel/Firebase Spark 환경 통과 |
+| **당시 검사 기록** | 루트 314, 산책 하트 39, 걸음 수 7, 모바일 셸 13, 서버 46, Firebase 85. 실패 0, 건너뜀 10. [당시 릴리스 기록](../workspaces/bapmunna-final/releases/20261118-walking-hearts.json) |
 
 > [!TIP]
 > **시연 팁 (Demo Tip)**:

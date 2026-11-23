@@ -46,11 +46,10 @@ export function SocialLogin() {
       </button>
       {useExistingAccount ? (
         <a
-          href={publicUrl("/carer/#account")}
+          href={publicUrl("/login/")}
           className="relative flex min-h-14 w-full items-center justify-center rounded-full border-2 border-line bg-paper px-6 text-[17px] font-bold text-ink transition-colors hover:border-muted/50 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-cocoa"
         >
-          <GoogleLogo className="absolute left-6 h-5 w-5" />
-          Google 로그인 화면 열기
+          워밍업 이메일 로그인 열기
         </a>
       ) : (
       <button

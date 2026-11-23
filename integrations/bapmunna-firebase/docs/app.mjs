@@ -251,7 +251,7 @@ function connectView(){
 }
 function accountView(){
   const isCarer=edition==='carer';
-  return heading(isCarer?'보호자 계정':'내 식사 기록',EDITIONS[edition].label,isCarer?'내 회원 정보를 안전하게 관리해요.':'식사한 뒤 작은 소식 하나를 남겨보세요.')+(CLOUD_AVAILABLE?'<section id="account-surface" data-cloud-surface></section>':`<section class="card"><h2>실제 저장은 온라인에서 이용해 주세요.</h2><p>내려받는 파일은 가상 체험용이에요.</p><a href="${deploymentConfig.webOrigin}/bapmunna/${edition}/#account">온라인 ${isCarer?'보호자 계정':'내 기록'} 열기 →</a></section>`);
+  return heading(isCarer?'보호자 계정':'내 식사 기록',EDITIONS[edition].label,isCarer?'내 회원 정보를 안전하게 관리해요.':'식사한 뒤 작은 소식 하나를 남겨보세요.')+(CLOUD_AVAILABLE?'<section id="account-surface" data-cloud-surface></section>':`<section class="card"><h2>실제 저장은 온라인에서 이용해 주세요.</h2><p>내려받는 파일은 가상 체험용이에요.</p><a href="${deploymentConfig.webOrigin}/login/">온라인 ${isCarer?'보호자 계정':'내 기록'} 열기 →</a></section>`);
 }
 function modalMarkup(){
   if(!modal)return '';

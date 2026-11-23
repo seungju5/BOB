@@ -15,7 +15,7 @@ test('real Auth + Firestore: verified login → consent → pair → destination
   const uid='walking-e2e-'+run,email=run+'@example.test',password=randomUUID(),keys=new Set(),tokens=[],codes=[];
   const rateLimit=store.rateLimit;
   store.rateLimit=async buckets=>{buckets.forEach(bucket=>{if(!bucket.key.startsWith('pair-global:'))keys.add(bucket.key);});return rateLimit(buckets);};
-  const config={origin:'https://bapmunna-smartthings.vercel.app',webOrigin:'https://impact-series.web.app'};
+  const config={origin:'https://api.example.test',webOrigin:'https://app.example.test'};
   const handle=createWalkingService({config,ready:true,store,auth,rateSecret:run});
   async function request(path,{token,body,native=false}={}){
     const headers={Origin:native?'https://localhost':config.webOrigin};if(token)headers.Authorization='Bearer '+token;if(body)headers['Content-Type']='application/json';

@@ -52,6 +52,13 @@ test('OAuth binds state to user and browser, encrypts credentials, and consumes 
   assert.equal((await f.call(`/callback?state=${state}&code=replay`,{headers:{cookie}})).status,400);
   assert.deepEqual(await (await f.call('/status',{user:'bob'})).json(),{stage:'disconnected'});
 });
+test('OAuth start requests only device reads and the explicitly configured callback',async()=>{
+  const f=fixture();
+  const response=await f.call('/start',{method:'POST',body:{consentVersion:CONSENT}});
+  const target=new URL((await response.json()).url);
+  assert.equal(target.searchParams.get('scope'),'r:devices:*');
+  assert.equal(target.searchParams.get('redirect_uri'),'https://example.test/api/smartthings/callback');
+});
 test('revoked Firebase account cannot finish an earlier Samsung grant',async()=>{
   const f=fixture();const start=await f.call('/start',{method:'POST',body:{consentVersion:CONSENT}}),{url}=await start.json();
   const state=new URL(url).searchParams.get('state'),cookie=start.headers.get('set-cookie').split(';')[0];

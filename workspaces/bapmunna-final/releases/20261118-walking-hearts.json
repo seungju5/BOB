@@ -26,7 +26,7 @@
     "project": "impact-series",
     "billingEnabled": false
   },
-  "change": "Link live SmartThings account & rice cooker smart plug (My home · Living room · 우리 집 밥솥 플러그 · 54fac45c-5a59-449e-8db1-2613c1bf5ec6) into Bapmunna connect, home, and demo/live stores alongside Walking Hearts panorama.",
+  "change": "산책 하트 파노라마와 밥솥 연결 화면을 추가했다. 11월 19일 공개본 대조에서 해당 화면이 예시 프로필과 브라우저 데모 기록을 사용하는 것을 확인했다.",
   "checks": {
     "root": 314,
     "walkingHeartsCore": 39,

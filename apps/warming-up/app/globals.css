@@ -1,0 +1,70 @@
+@import "tailwindcss";
+@import "./brand.generated.css";
+
+/* 밥뭇나 디자인 토큰 — 노란 콜라보 시안(A안) 기반: 크림 배경, 버터 옐로, 코코아 브라운 */
+@theme {
+  --color-butter-deep: #e3b324;
+  --color-sky: #dfeaf6; /* 부재 */
+  --color-sky-deep: #4a6f95;
+  --color-tangerine: #e98a2b; /* 튜토리얼 범례: 두 끼 */
+  --color-kakao: #fee500; /* 카카오 로그인 버튼 (카카오 가이드 색) */
+  --color-kakao-label: #191919;
+
+  --radius-card: 1.75rem;
+  --shadow-soft: 0 1px 2px rgb(59 42 30 / 0.04), 0 8px 24px rgb(59 42 30 / 0.06);
+}
+
+.app-frame:has([data-operator-studio]) { max-width: none; box-shadow: none; }
+
+html {
+  background: var(--color-cream);
+  color: var(--color-ink);
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  font-family: var(--font-sans);
+  letter-spacing: -0.01em;
+  word-break: keep-all;
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-butter-deep);
+  outline-offset: 2px;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.animate-rise {
+  animation: rise 0.35s ease-out both;
+}
+
+@keyframes bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+.animate-bob {
+  animation: bob 3.2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-rise,
+  .animate-bob {
+    animation: none;
+  }
+}

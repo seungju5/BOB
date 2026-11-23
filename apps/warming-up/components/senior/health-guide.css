@@ -1,0 +1,9 @@
+.bapmunna-health-guide :is(p, h1, h2, li, a, label, summary, legend) {
+  overflow-wrap: anywhere;
+  word-break: normal;
+  min-width: 0;
+}
+
+.bapmunna-health-guide label {
+  min-width: min(100%, 7rem);
+}

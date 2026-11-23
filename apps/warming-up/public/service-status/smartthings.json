@@ -1,0 +1,8 @@
+{
+  "projectId": "warming-up-bapmunna",
+  "enabled": false,
+  "connectionReady": false,
+  "consentVersion": "smartthings-read-2026-11-22",
+  "mode": "hosting-only",
+  "reason": "server_not_deployed"
+}

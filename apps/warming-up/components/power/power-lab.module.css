@@ -1,0 +1,86 @@
+.page {
+  min-width: 0;
+  padding: 18px 22px 32px;
+  background: var(--color-cream);
+  color: var(--color-cocoa);
+  font-size: 1.25rem;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+.page *, .page *::before, .page *::after { box-sizing: border-box; }
+.page h1, .page h2, .page p { margin: 0; }
+.page button, .page select { font: inherit; }
+.page button, .page a, .page select { -webkit-tap-highlight-color: transparent; }
+.page button:not(:disabled), .page select, .page summary { cursor: pointer; }
+.page :is(a, button, select, summary):focus-visible { outline: 3px solid var(--color-cocoa); outline-offset: 4px; }
+.header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; min-height: 52px; }
+.menuLink { display: inline-flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 14px; border: 1px solid var(--color-line); border-radius: 24px; color: var(--color-cocoa); background: var(--color-paper); text-decoration: none; font-size: 1.125rem; font-weight: 650; }
+.menuLink span { font-size: 1.75rem; font-weight: 400; line-height: 1; }
+.intro { margin: 29px 0 22px; }
+.eyebrow { color: var(--color-muted); font-size: 1.125rem; }
+.intro h1 { margin-top: 10px; font-size: 2.125rem; font-weight: 750; letter-spacing: -.045em; line-height: 1.3; text-wrap: balance; }
+.sourceNote { display: flex; gap: 9px; align-items: baseline; margin-bottom: 18px !important; color: var(--color-muted); font-size: 1rem; line-height: 1.5; }
+.sourceLabel { flex: 0 0 auto; padding: 2px 8px; border: 1px solid var(--color-line); border-radius: 7px; background: var(--color-paper); color: var(--color-cocoa); font-size: .875rem; font-weight: 650; }
+/* A small paper card, with a rice-grain signature from Bapmunna's own motif. */
+.statusCard { padding: 18px 20px 0; border: 1px solid var(--color-line); border-radius: 30px; background: var(--color-paper); box-shadow: 0 3px 0 var(--color-butter-soft); text-align: center; }
+.cardHeading { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding-bottom: 14px; border-bottom: 1px solid var(--color-line); text-align: left; }
+.cardLabel { color: var(--color-muted); font-size: 1.0625rem; font-weight: 550; }
+.riceMark { flex: 0 0 36px; width: 36px; height: 36px; padding: 2px; border: 1px solid var(--color-line); border-radius: 50%; fill: var(--color-butter); stroke: var(--color-cocoa); stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+.riceMark path:last-child { fill: none; }
+.mascotScene { position: relative; display: grid; place-items: center; height: 218px; margin: 18px auto 8px; }
+.mascotCircle { position: absolute; width: 210px; max-width: 100%; height: 188px; border-radius: 105px 105px 32px 32px; background: var(--color-butter-soft); }
+.mascot { position: relative; width: 274px; max-width: 100%; height: auto; }
+.statusBadge { display: inline-block; max-width: 100%; padding: 5px 14px; border-radius: 20px; background: var(--color-butter-soft); color: var(--color-cocoa); font-size: 1.0625rem; font-weight: 650; }
+.statusCard[data-state=WARMING] .statusBadge, .statusCard[data-state=COOKING] .statusBadge { background: var(--color-butter); }
+.statusCard[data-state=UNKNOWN] .mascotCircle { background: var(--color-cream); }
+.statusMessage h2 { margin-top: 14px; font-size: 1.6875rem; font-weight: 750; letter-spacing: -.035em; line-height: 1.35; text-wrap: balance; }
+.statusMessage > p { margin-top: 12px; color: var(--color-muted); font-size: 1.25rem; white-space: pre-line; }
+.gentleNote { margin: 24px -20px 0 !important; padding: 17px 20px 18px; border-top: 1px dashed var(--color-line); border-radius: 0 0 29px 29px; background: var(--color-butter-soft); color: var(--color-muted); font-size: 1rem; line-height: 1.65; }
+.exampleCard { margin-top: 24px; padding: 22px 18px; border-radius: 24px; border: 1px solid var(--color-line); background: var(--color-paper); }
+.exampleCard h2 { font-size: 1.4375rem; font-weight: 700; letter-spacing: -.03em; }
+.fieldLabel { display: block; margin-top: 18px; margin-bottom: 8px; font-size: 1.125rem; color: var(--color-muted); }
+.selectWrap { position: relative; }
+.selectWrap select { display: block; appearance: none; width: 100%; max-width: 100%; min-width: 0; min-height: 58px; padding: 12px 36px 12px 14px; border: 1px solid var(--color-line); border-radius: 15px; color: var(--color-cocoa); background: var(--color-cream); font-size: 1.125rem; text-overflow: ellipsis; }
+.selectWrap > span { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); pointer-events: none; font-size: 1.4375rem; line-height: 1; }
+.caption { color: var(--color-muted); font-size: 1.0625rem; line-height: 1.6; }
+.exampleCard > .caption { margin-top: 12px; }
+.fileCard { margin-top: 16px; border: 1px solid var(--color-line); border-radius: 22px; background: var(--color-paper); }
+.fileCard summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 68px; padding: 18px; list-style: none; font-weight: 650; font-size: 1.1875rem; border-radius: 21px; }
+.fileCard summary::-webkit-details-marker { display: none; }
+.fileCard summary span { display: grid; place-items: center; flex: 0 0 30px; width: 30px; height: 30px; border-radius: 50%; background: var(--color-butter-soft); font-size: 1.5rem; line-height: 1; font-weight: 400; }
+.fileCard[open] summary span { transform: rotate(45deg); }
+.fileContent { padding: 0 18px 20px; }
+.fileContent > .caption { margin-top: 12px; }
+.primaryButton, .secondaryButton, .textButton { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 56px; padding: 12px; margin-top: 12px; border: 1px solid var(--color-line); border-radius: 16px; color: var(--color-cocoa); background: var(--color-paper); font-weight: 650; line-height: 1.4; }
+.primaryButton { background: var(--color-butter); border-color: var(--color-butter); margin-top: 20px; }
+.textButton { border-color: transparent; background: transparent; font-size: 1.125rem; text-decoration: underline; text-underline-offset: 4px; }
+.page button:disabled { opacity: .6; cursor: wait; }
+.fileError, .fileNotice { margin-top: 14px !important; padding: 12px; border-radius: 12px; background: var(--color-butter-soft); font-size: 1.125rem; }
+.fileError { color: var(--color-blush-deep); background: var(--color-blush); }
+.footer { margin-top: 30px; text-align: center; }
+.footer p { color: var(--color-muted); font-size: 1.0625rem; }
+.footer a { display: flex; justify-content: space-between; align-items: center; gap: 10px; min-height: 58px; margin-top: 18px; padding: 14px 18px; border: 1px solid var(--color-cocoa); border-radius: 18px; background: var(--color-cocoa); color: var(--color-paper); font-weight: 650; text-decoration: none; }
+.footer a span { font-size: 1.625rem; line-height: 1; font-weight: 400; }
+.page :is(button:not(:disabled), a, select, summary) { transition: background-color 140ms ease, border-color 140ms ease, transform 140ms ease; }
+.page :is(button:not(:disabled), a):active { transform: translateY(1px); }
+@media (hover: hover) {
+  .primaryButton:not(:disabled):hover { background: var(--color-butter-deep); }
+  .secondaryButton:hover, .menuLink:hover, .fileCard summary:hover { background: var(--color-butter-soft); }
+  .selectWrap select:hover { border-color: var(--color-muted); }
+  .footer a:hover { background: var(--color-paper); color: var(--color-cocoa); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .page :is(button:not(:disabled), a, select, summary) { transition: none; }
+  .page :is(button:not(:disabled), a):active { transform: none; }
+}
+@media (max-width: 350px) {
+  .page { padding-inline: 16px; }
+  .intro h1 { font-size: 1.9375rem; }
+  .statusCard { padding-inline: 16px; }
+  .mascotScene { height: 198px; }
+  .mascotCircle { width: 192px; height: 176px; }
+  .mascot { width: 250px; }
+  .statusMessage h2 { font-size: 1.5625rem; }
+  .gentleNote { margin-inline: -16px !important; padding-inline: 16px; }
+  .exampleCard, .fileContent { padding-inline: 15px; }
+}

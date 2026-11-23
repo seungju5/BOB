@@ -132,7 +132,7 @@ function LoginForm({account,busy,setBusy,continueUid,setContinueUid}:{account:Re
         </div>
         <p className="text-[16px] leading-relaxed text-muted">{studioLogin?'이메일 인증을 마친 운영자 계정만 접근할 수 있습니다.':'밥뭇나는 보호자 이메일로 가입해요. 가입이 끝나면 삼성 기기 연결 화면에서 밥솥 플러그를 연결할 수 있는지 확인해요.'}</p>
       </form>}
-      {!studioLogin && <><Button variant="ghost" className="mt-6" disabled={busy} onClick={()=>{leavingForDemo.current=true;setContinueUid(null);setMode('demo');router.push('/start');}}>로그인 없이 데모로 둘러보기</Button>
+      {!studioLogin && <><Button variant="ghost" className="mt-6" disabled={busy || mode === undefined} onClick={()=>{leavingForDemo.current=true;setContinueUid(null);setMode('demo');router.push('/start');}}>로그인 없이 데모로 둘러보기</Button>
       <p className="mt-2 text-center text-[16px] text-muted">데모에서는 예시 기록으로 사용해 볼 수 있어요.</p></>}
       <Link className="mt-4 flex min-h-12 items-center justify-center text-[16px] text-muted underline" href="/">첫 화면으로</Link>
     </div>

@@ -1,0 +1,16 @@
+{
+  "name": "Warming Up",
+  "short_name": "Warming Up",
+  "description": "밥뭇나 · 밥 한 끼로 전하는 안부",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#fffdf7",
+  "theme_color": "#f8d14a",
+  "lang": "ko",
+  "icons": [
+    {"src": "/brand/rice-logo.png", "sizes": "160x160", "type": "image/png", "purpose": "any"},
+    {"src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any"}
+  ]
+}

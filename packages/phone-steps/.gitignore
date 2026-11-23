@@ -1,0 +1,5 @@
+.local/
+android/.gradle/
+android/build/
+.build/
+.swiftpm/

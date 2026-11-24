@@ -8,7 +8,7 @@ import { liveActions, useLive } from "./live";
 import { useMode, useSession } from "./mode";
 import { usesImpactFirebase, ACCOUNT_CONSENT_VERSION } from "@/lib/firebase/bridge";
 import { firebaseActions, firebaseView, signOutFirebase, useFirebaseAccount } from "./firebase";
-import { supabase } from "@/lib/supabase";
+import { signOutWithNotifications } from "@/lib/push";
 import type { AppActions, AppView } from "./view";
 
 export type App = {
@@ -53,7 +53,7 @@ export function useApp(): App {
       view: session ? liveState.view : null,
       actions: liveActions,
       provider: "supabase", accountLabel: session?.user.email, accountKey: session?.user.id,
-      signOut: async () => { const { error } = await supabase().auth.signOut(); if (error) throw error; },
+      signOut: () => signOutWithNotifications("global", session?.user.id),
       now,
       mode,
       needsLogin: session === null,

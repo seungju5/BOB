@@ -4,7 +4,7 @@
 // 앱의 NEXT_PUBLIC_VAPID_PUBLIC_KEY는 VAPID_PUBLIC_KEY와 같은 값이어야 한다.
 
 import webpush from "npm:web-push@3.6.7";
-import { alertCopy, alertUrl } from "@/lib/alerts/copy.ts";
+import { alertUrl } from "@/lib/alerts/copy.ts";
 import type { AlertPayload, AlertType } from "@/lib/judge/types.ts";
 import { db, must } from "./core.ts";
 
@@ -24,13 +24,9 @@ function consentRecorded(house: { senior_consent_at: string | null } | null): bo
 export async function pushAlerts(householdId: string, alerts: SentAlert[]) {
   if (!ready || alerts.length === 0) return;
   try {
-    const house = must(await db.from("households").select("senior_relation, senior_consent_at").eq("id", householdId).maybeSingle()) as { senior_relation: string; senior_consent_at: string | null } | null;
+    const house = must(await db.from("households").select("senior_consent_at").eq("id", householdId).maybeSingle()) as { senior_consent_at: string | null } | null;
     if (!consentRecorded(house)) return;
-    const [guardians, settings, plug] = await Promise.all([
-      db.from("household_guardians").select("user_id").eq("household_id", householdId).then(must),
-      db.from("alert_settings").select("missed_meals_threshold, fasting_hours, emergency_hours").eq("household_id", householdId).single().then(must),
-      db.from("smart_plugs").select("id").eq("household_id", householdId).maybeSingle().then(must),
-    ]);
+    const guardians = must(await db.from("household_guardians").select("user_id").eq("household_id", householdId));
     const users = (guardians as { user_id: string }[]).map((g) => g.user_id);
     if (!users.length) return;
     const subs = must(await db.from("push_subscriptions").select("id, endpoint, keys").in("user_id", users)) as {
@@ -38,17 +34,8 @@ export async function pushAlerts(householdId: string, alerts: SentAlert[]) {
       endpoint: string;
       keys: { p256dh: string; auth: string };
     }[];
-    const relation = house!.senior_relation;
-    const s = settings as { missed_meals_threshold: number; fasting_hours: number; emergency_hours: number };
     for (const a of alerts) {
-      const copy = alertCopy(a.type, relation, {
-        missed: s.missed_meals_threshold,
-        fasting: s.fasting_hours,
-        emergency: s.emergency_hours,
-        plugRegistered: !!plug,
-        payload: a.payload ?? undefined,
-      });
-      const message = JSON.stringify({ title: copy.title, body: copy.body, tag: a.id, url: alertUrl(a.type) });
+      const message = JSON.stringify({title: "밥뭇나", body: "워밍이가 새 소식을 가져왔어요. 앱에서 확인해 주세요.", tag: a.id, url: alertUrl(a.type)});
       for (const sub of subs) {
         // Check again after database/previous network waits, immediately before sending.
         const current = must(await db.from("households").select("senior_consent_at").eq("id", householdId).maybeSingle()) as { senior_consent_at: string | null } | null;

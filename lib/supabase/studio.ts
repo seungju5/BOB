@@ -2,6 +2,7 @@
 
 import { supabase } from "@/lib/supabase";
 import { setMode } from "@/lib/data/mode";
+import { signOutWithNotifications } from "@/lib/push";
 import type { Cursor, Member, Overview, Profile, Studio, StudioDetail } from "./studio-types";
 
 export function studioError(cause: unknown) {
@@ -15,8 +16,7 @@ export function studioError(cause: unknown) {
 }
 
 export async function signOutOnThisDevice() {
-  const { error } = await supabase().auth.signOut({ scope: "local" });
-  if (error) throw error;
+  await signOutWithNotifications("local");
   setMode(null);
 }
 

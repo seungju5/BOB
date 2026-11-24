@@ -11,7 +11,7 @@ export function GuardianGate({ children }: { children: ReactNode }) {
   const { view, needsLogin, accountKey, error } = useApp();
   const router = useRouter();
   // 알림을 켜 둔 보호자에게, 새 알림을 휴대폰 알림으로도 띄운다
-  useAlertNotifications(view);
+  useAlertNotifications(view, accountKey);
   useEffect(() => {
     if (needsLogin) router.replace("/login");
     else if (view && view.onboardingStep <= 7) router.replace(guardianStartPath(view.onboardingStep));

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useRef, useState, type ReactNode } from "react";
 import { IconArrowRight, IconCheck, IconHeart, IconHome, IconSuitcase, IconUtensils } from "@/components/icons";
@@ -9,6 +10,7 @@ import { SeniorSheet as Sheet } from "@/components/senior/SeniorSheet";
 import { PhoneStepsCard } from "@/components/senior/PhoneStepsCard";
 import { HealthConnectionLink } from "@/components/senior/HealthConnectionLink";
 import { seniorActionMessage } from "@/components/senior/messages";
+import { appPath } from "@/lib/app-path";
 import "@/components/senior/senior-home.css";
 import { addDays, kstDate } from "@/lib/judge/time";
 import type { Absence } from "@/lib/judge/types";
@@ -167,7 +169,7 @@ function SeniorHome({ status, now, act, isDemo, endDemo }: { status: SeniorStatu
       <Link href={isDemo ? "/walking/demo" : "/walking"} className="mt-7 flex min-h-16 items-center justify-between gap-3 rounded-2xl bg-sage px-5 py-3 text-xl font-bold text-sage-deep">
         {isDemo ? "워밍이 산책 하트 체험" : "워밍이의 산책과 옷장"}<IconArrowRight aria-hidden className="h-5 w-5 shrink-0" />
       </Link>
-      <CookerBadge lastCookerAt={status.lastCookerAt} today={today} />
+      <CookerNote received={status.hasCookSignalToday} />
       <div className="mt-3"><PhoneStepsCard demo={isDemo} /></div>
       <footer className="mt-6 flex flex-wrap items-center justify-between gap-2 border-t border-line pt-2">
         <Link href="/privacy" className="flex min-h-12 items-center text-lg text-muted underline underline-offset-4">개인정보 이용·제공 안내</Link>
@@ -220,23 +222,15 @@ function SeniorHome({ status, now, act, isDemo, endDemo }: { status: SeniorStatu
   );
 }
 
-/**
- * [EN] Rice cooker status badge for seniors showing meal signal or waiting state.
- * [KR] 어르신 화면에서 밥솥 취사 소식이 도착했는지 따뜻하게 보여주는 배지입니다.
- */
-function CookerBadge({ lastCookerAt, today }: { lastCookerAt: string | null; today: string }) {
-  const cookedToday = lastCookerAt ? kstDate(new Date(lastCookerAt)) === today : false;
+function CookerNote({ received }: { received: boolean }) {
   return (
-    <div className={`mt-4 flex items-center gap-3.5 rounded-2xl border-2 p-4 ${
-      cookedToday ? "border-butter-deep bg-cream text-cocoa" : "border-line bg-paper text-muted"
-    }`}>
-      <span className="text-3xl" aria-hidden="true">{cookedToday ? "🍚" : "⏳"}</span>
-      <div className="min-w-0 flex-1">
-        <p className="text-2xl font-bold text-cocoa">
-          {cookedToday ? "오늘 밥솥 취사 소식이 전해졌어요" : "오늘 밥솥 취사 소식을 기다려요"}
-        </p>
-        <p className="text-xl text-muted">
-          {cookedToday ? "산책길 첫 번째 하트가 채워졌어요." : "취사 소식이 도착하면 첫 번째 하트가 켜져요."}
+    <div className="bapmunna-cooker-note" data-received={received} role="status" aria-atomic="true">
+      <Image src={appPath("/brand/rice-logo.png")} width={160} height={160} unoptimized alt="" />
+      <div>
+        <h2>{received ? "오늘 취사 소식이 왔어요" : "취사 소식을 기다려요"}</h2>
+        <p>
+          <IconHeart fill={received ? "currentColor" : "none"} />
+          <span>{received ? "산책길 첫 하트로 이어져요." : "소식이 오면 산책길 첫 하트가 켜져요."}</span>
         </p>
       </div>
     </div>

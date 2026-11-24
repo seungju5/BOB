@@ -3,8 +3,8 @@
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { AlertThresholdFields, Choice, Field, MealWindowsEditor, RelationPicker, Slider, TextInput, Toggle, windowsValid } from "@/components/forms";
-import { IconArrowRight, IconLock, IconPlug, IconSuitcase } from "@/components/icons";
+import { AlertThresholdFields, missedMealsHint, Choice, Field, MealWindowsEditor, RelationPicker, Slider, TextInput, Toggle, windowsValid } from "@/components/forms";
+import { IconArrowRight, IconLock, IconSuitcase } from "@/components/icons";
 import { PlugForm } from "@/components/PlugForm";
 import { SmartThingsPanel } from "@/components/SmartThingsPanel";
 import { SeniorConsentField } from "@/components/privacy/SeniorConsentField";
@@ -15,7 +15,7 @@ import { Button, PageHeader, Skeleton } from "@/components/ui";
 import { addDays, kstDate, MINUTE_MS } from "@/lib/judge/time";
 import { setMode } from "@/lib/data/mode";
 import { useApp, type App } from "@/lib/data/useApp";
-import { FOUR_MEAL_WINDOWS, careDataAvailable, mealSlotsForCount, type AppActions, type AppView } from "@/lib/data/view";
+import { FOUR_MEAL_WINDOWS, familyPairingAvailable, mealSlotsForCount, type AppActions, type AppView } from "@/lib/data/view";
 import { MEAL_PALETTES, setMealPalette, useMealPalette } from "@/lib/data/appearance";
 import type { MealSlotName, MealWindow } from "@/lib/judge/types";
 import { resetDemo, updateDemo } from "@/lib/demo/store";
@@ -92,7 +92,7 @@ function Settings({ app, view, now }: { app: App; view: AppView; now: Date }) {
         </SettingsGroup>
         <SettingsGroup id="life" title="생활 기준" summary="가족·가구 정보, 식사 시간과 밥솥 사용">
           <LifestyleSettings view={view} actions={app.actions} />
-          {careDataAvailable(view) ? <AbsenceSettings view={view} actions={app.actions} now={now} /> : <p className="mt-5 border-t border-line pt-4 text-[16px] leading-relaxed text-muted">부재 일정은 가족 연결이 준비된 뒤 사용할 수 있어요.</p>}
+          {familyPairingAvailable(view) ? <AbsenceSettings view={view} actions={app.actions} now={now} /> : <p className="mt-5 border-t border-line pt-4 text-[16px] leading-relaxed text-muted">부재 일정은 가족 연결이 준비된 뒤 사용할 수 있어요.</p>}
           <AppearanceSettings />
         </SettingsGroup>
         <SettingsGroup id="device" title="기기" summary={view.plug.deviceId ? "연결 상태·마지막 수신·어르신 휴대폰" : "기기 연결·어르신 동의·휴대폰 연결"}>
@@ -101,6 +101,7 @@ function Settings({ app, view, now }: { app: App; view: AppView; now: Date }) {
         </SettingsGroup>
       </div>
       <div className="mt-6 flex flex-col gap-3 border-t border-line pt-5">
+        {app.mode === "live" && app.provider === "supabase" && <Link href="/account" className="flex min-h-12 items-center justify-between gap-3 rounded-2xl px-2 text-[16px] font-bold text-cocoa hover:bg-butter-soft">내 정보 센터<IconArrowRight className="h-5 w-5" /></Link>}
         <Link href="/tutorial" className="flex min-h-12 items-center justify-between gap-3 rounded-2xl px-2 text-[16px] font-bold text-cocoa hover:bg-butter-soft">소개 다시 보기<IconArrowRight className="h-5 w-5" /></Link>
         <PrivacyNotice className="px-2" />
         <section id="account" className="scroll-mt-4"><h2 className="mb-3 text-[18px] font-bold text-cocoa">계정</h2><AccountSettings app={app} /></section>
@@ -115,7 +116,7 @@ function AlertSettings({ view, actions }: { view: AppView; actions: AppActions }
   return (
     <form onSubmit={(event) => { event.preventDefault(); if (view.seniorConsent) void feedback.run(() => actions.saveAlertSettings(draft), "알림 기준을 저장했어요."); }}>
       <fieldset disabled={feedback.busy} aria-busy={feedback.busy} className="flex min-w-0 flex-col gap-5">
-        <AlertThresholdFields value={draft} onChange={(value) => { setDraft(value); feedback.clear(); }} hints={{ missed: "연속으로 이만큼 끼니 소식이 없으면 알려 드려요.", fasting: "마지막 밥솥 사용 후 이 시간이 지나면 알려 드려요.", emergency: "안부를 직접 확인할 기준이에요. 지정 연락처나 기관에 자동으로 연락하지는 않아요." }} />
+        <AlertThresholdFields value={draft} onChange={(value) => { setDraft(value); feedback.clear(); }} hints={{ missed: missedMealsHint(draft.missedMealsThreshold, view.mealProfile.windows.length), fasting: "마지막 밥솥 사용 후 이 시간이 지나면 알려 드려요.", emergency: "안부를 직접 확인할 기준이에요. 지정 연락처나 기관에 자동으로 연락하지는 않아요." }} />
         <SaveFeedback {...feedback} />
         <Button type="submit" disabled={feedback.busy || !view.seniorConsent}>{feedback.busy ? "저장하고 있어요…" : "알림 기준 저장"}</Button>
       </fieldset>
@@ -197,12 +198,12 @@ function AbsenceSettings({ view, actions, now }: { view: AppView; actions: AppAc
       <div className="mt-2 flex flex-col gap-4">
         <p className="text-[16px] leading-relaxed text-muted">병원·외출·여행으로 집을 비우는 동안은 알림을 쉬어요.</p>
         {upcoming.length ? <ul className="flex flex-col gap-2">{upcoming.map((absence) => <li key={absence.startDate + "-" + absence.endDate} className="flex flex-wrap items-center gap-2 rounded-2xl bg-sky px-3 py-2"><IconSuitcase className="h-5 w-5 text-sky-deep" /><span className="flex-1 text-[16px] font-semibold text-cocoa">{absence.startDate.slice(5).replace("-", "/")} ~ {absence.endDate.slice(5).replace("-", "/")}</span><button type="button" disabled={feedback.busy} className="min-h-12 px-2 text-[16px] font-semibold text-sky-deep" onClick={() => void feedback.run(() => actions.removeAbsence(absence), "부재 일정을 삭제했어요.")}>삭제</button></li>)}</ul> : null}
-        <fieldset disabled={feedback.busy} className="grid min-w-0 gap-3">
+        <fieldset disabled={feedback.busy || !view.seniorConsent} className="grid min-w-0 gap-3">
           <Field label="부재 시작일" htmlFor="settings-away-start"><TextInput id="settings-away-start" type="date" value={startDate} min={today} onChange={(event) => { setStartDate(event.target.value); feedback.clear(); }} className="min-w-0 w-full" /></Field>
           <Field label="부재 종료일" htmlFor="settings-away-end"><TextInput id="settings-away-end" type="date" value={endDate} min={startDate} onChange={(event) => { setEndDate(event.target.value); feedback.clear(); }} className="min-w-0 w-full" /></Field>
         </fieldset>
         <SaveFeedback {...feedback} />
-        <Button variant="soft" disabled={feedback.busy || !startDate || !endDate || startDate < today || endDate < startDate} onClick={() => void feedback.run(() => actions.addAbsence({ startDate, endDate }), "부재 일정을 저장했어요.")}>{feedback.busy ? "저장하고 있어요…" : "부재 일정 추가"}</Button>
+        <Button variant="soft" disabled={feedback.busy || !view.seniorConsent || !startDate || !endDate || startDate < today || endDate < startDate} onClick={() => void feedback.run(() => actions.addAbsence({ startDate, endDate }), "부재 일정을 저장했어요.")}>{feedback.busy ? "저장하고 있어요…" : "부재 일정 추가"}</Button>
       </div>
     </details>
   );
@@ -220,29 +221,35 @@ function DeviceSettings({ app, view }: { app: App; view: AppView }) {
   const pairing = useSaveFeedback();
   const { actions, mode } = app;
   const firebase = app.provider === "firebase" || view.dataSource === "firebase";
-  const careAvailable = careDataAvailable(view);
+  const careAvailable = familyPairingAvailable(view);
   const hasReading = Boolean(view.plug.lastReadingAt && Number.isFinite(Date.parse(view.plug.lastReadingAt)));
+  const meterStatus = view.plug.meterKind === "virtual" ? "가상 플러그예요. 전력값은 안부 알림에 쓰지 않아요."
+    : view.plug.deviceId && view.plug.meterKind !== "recognized" && view.dataSource === "supabase" ? "전력을 측정하는 실물 플러그인지 확인해 주세요."
+    : view.plug.deviceId ? view.plug.online && hasReading ? "신호를 받고 있어요." : "기기 수신을 확인해 주세요." : "아직 연결된 기기가 없어요.";
   return <div className="flex flex-col gap-5">
     <div className="rounded-2xl bg-butter-soft p-4">
       <p className="text-[16px] font-bold text-cocoa">{mode === "demo" ? "예시 기기 상태" : "기기 상태"}</p>
-      <p className="mt-2 text-[16px] text-cocoa">{view.plug.deviceId ? view.plug.online && hasReading ? "신호를 받고 있어요." : "기기 수신을 확인해 주세요." : "아직 연결된 기기가 없어요."}</p>
+      <p className="mt-2 text-[16px] text-cocoa">{meterStatus}</p>
       <p className="mt-4 text-[16px] font-semibold text-cocoa">{mode === "demo" ? "예시 마지막 기기 수신" : "마지막 기기 수신"}</p>
       <p className="mt-1 break-words text-[16px] leading-relaxed text-muted">{deviceReadingLabel(view.plug.lastReadingAt)}</p>
       <p className="mt-3 text-[16px] leading-relaxed text-muted">기기 신호가 없는 것만으로 식사나 건강 상태를 판단하지 않아요.</p>
     </div>
     {!view.seniorConsent ? <fieldset disabled={consent.busy} className="min-w-0">
-      <SeniorConsentField checked={consentChecked} onChange={checked => { setConsentChecked(checked); consent.clear(); }} />
-      <Button variant="soft" className="mt-3" disabled={!consentChecked || consent.busy} onClick={() => { if (consentChecked) void consent.run(() => actions.saveOnboarding(view.onboardingStep, { seniorConsent: true }), "동의 확인을 저장했어요."); }}>{consent.busy ? "저장하고 있어요…" : "동의 확인 저장하기"}</Button>
+      <SeniorConsentField demo={mode === "demo"} checked={consentChecked} onChange={checked => { setConsentChecked(checked); consent.clear(); }} />
+      <Button variant="soft" className="mt-3" disabled={!consentChecked || consent.busy} onClick={() => { if (consentChecked) void consent.run(() => actions.saveOnboarding(view.onboardingStep, { seniorConsent: true }), mode === "demo" ? "예시 체험 선택을 저장했어요." : "동의 확인을 저장했어요."); }}>{consent.busy ? "저장하고 있어요…" : mode === "demo" ? "예시 체험 선택 저장하기" : "동의 확인 저장하기"}</Button>
     </fieldset> : <div className="rounded-2xl border border-line p-4">
-      <p className="text-[16px] font-bold text-cocoa">어르신 정보 이용 동의 확인을 저장했어요.</p>
+      <p className="text-[16px] font-bold text-cocoa">{mode === "demo" ? "예시 체험 선택이 이 브라우저에 저장됐어요." : "어르신 정보 이용 동의 확인을 저장했어요."}</p>
       <PrivacyNotice />
-      {firebase || mode === "demo" ? <><p className="text-[16px] leading-relaxed text-muted">확인을 취소하면 새 어르신 정보 저장과 삼성 기기 소식 읽기를 멈춰요. 암호화된 연결 열쇠까지 지우려면 아래에서 기기 연결도 해제해 주세요. 건강 앱 권한 해제는 별도예요.</p><Button variant="outline" className="mt-3 text-[16px]" disabled={consent.busy} onClick={() => {
-        if (!confirm("내 계정의 어르신 정보 이용 동의 확인을 취소할까요? 새 기기 소식 읽기를 멈추지만, 기존 정보와 암호화된 연결 열쇠를 지우려면 연결도 해제해야 해요.")) return;
-        void consent.run(() => actions.saveOnboarding(view.onboardingStep, { seniorConsent: false }), "동의 확인을 취소했어요.").then(saved => { if (saved) setConsentChecked(false); });
-      }}>동의 확인 취소</Button></> : null}
+      <><p className="text-[16px] leading-relaxed text-muted">{mode === "demo" ? "체험 선택을 취소하면 예시 설정 저장을 멈춰요." : "취소하면 새 어르신 정보 저장을 멈춰요. 이미 저장한 정보의 삭제는 개인정보 안내에 있는 운영팀에 요청할 수 있어요."}</p><Button variant="outline" className="mt-3 text-[16px]" disabled={consent.busy} onClick={() => {
+        if (!confirm(mode === "demo" ? "이 브라우저의 예시 체험 선택을 취소할까요?" : "어르신 정보 이용 동의 확인을 취소할까요? 지금까지 저장한 정보는 계정에 남아요.")) return;
+        void consent.run(() => actions.saveOnboarding(view.onboardingStep, { seniorConsent: false }), mode === "demo" ? "예시 체험 선택을 취소했어요." : "동의 확인을 취소했어요.").then(saved => { if (saved) setConsentChecked(false); });
+      }}>{mode === "demo" ? "예시 체험 선택 취소" : "동의 확인 취소"}</Button></>
     </div>}
     <SaveFeedback {...consent} />
-    {firebase ? <SmartThingsPanel key={String(view.seniorConsent)} accountKey={app.accountKey} /> : view.plug.deviceId ? <div className="flex items-center gap-3 rounded-2xl border border-line p-4"><IconPlug className="h-6 w-6 shrink-0 text-cocoa" /><div className="min-w-0"><p className="text-[16px] font-bold text-cocoa">스마트플러그</p><p className="mt-1 break-all text-[16px] text-muted">{view.plug.deviceId}</p></div></div> : <PlugForm onSubmit={actions.registerPlug} consentConfirmed={view.seniorConsent} isDemo={mode === "demo"} />}
+    {firebase ? <SmartThingsPanel key={String(view.seniorConsent)} accountKey={app.accountKey} /> : mode === "demo" ? <PlugForm onSubmit={actions.registerPlug} consentConfirmed={view.seniorConsent} isDemo /> :
+      <Link href="/connect" className="flex min-h-12 items-center justify-between rounded-2xl border border-line px-4 py-3 font-bold text-cocoa">
+        {view.plug.deviceId ? "밥솥 플러그 연결 관리" : "밥솥 플러그 연결하기"} <IconArrowRight className="h-5 w-5" />
+      </Link>}
     <ConnectionGuide />
     <div className="rounded-2xl bg-butter-soft p-4">
       <p className="text-[16px] font-bold text-cocoa">{view.senior.relation} 휴대폰 연결</p>

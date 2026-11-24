@@ -23,6 +23,7 @@ private final class WalkingNoRedirect: NSObject, URLSessionTaskDelegate {
 /** Native-only bearer storage and fixed-origin transport; never returns the token. */
 @MainActor final class WalkingNative {
     private let service = "com.bapmunna.walking.device.v1"
+    private let walkingSharingEnabled = false
     private let healthEnabled: () -> Bool
     private let healthRevision: () -> UInt64
     private let store = HKHealthStore()
@@ -201,7 +202,8 @@ private final class WalkingNoRedirect: NSObject, URLSessionTaskDelegate {
         }
     }
     private func request(_ path: String, body: JSObject?, token: String? = nil) async throws -> JSObject {
-        guard (["pair","confirm","sync","board","unpair"].contains(path) || HeartsPayload.permits(path)), let url = URL(string:"https://warming-up-bapmunna.web.app/api/walking/"+path) else { throw WalkingNativeError(code:"invalid_request") }
+        guard walkingSharingEnabled else { throw WalkingNativeError(code:"setup_required") }
+        guard (["pair","confirm","sync","board","unpair"].contains(path) || HeartsPayload.permits(path)), let url = URL(string:"https://bob-tmdwn1.vercel.app/api/walking/"+path) else { throw WalkingNativeError(code:"invalid_request") }
         var request = URLRequest(url:url); request.httpMethod = body == nil ? "GET" : "POST"
         request.setValue("capacitor://localhost", forHTTPHeaderField:"Origin"); request.setValue("application/json",forHTTPHeaderField:"Accept")
         if let token { request.setValue("Bearer "+token,forHTTPHeaderField:"Authorization") }

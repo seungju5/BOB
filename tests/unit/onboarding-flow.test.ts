@@ -34,7 +34,10 @@ beforeEach(() => {
   house = { onboarding_step: 1, senior_name: "", senior_relation: "어머니", senior_phone: "", resident_count: 1, has_pet: false, senior_consent_at: null };
   mutations = []; failTable = null;
   mocks.useApp.mockReset().mockImplementation(() => ({ view, actions: { ...liveActions, saveOnboarding: vi.fn() }, now: NOW, mode: view?.mode ?? "live", needsLogin: false, error: null }));
-  mocks.rpc.mockReset().mockResolvedValue({ data: "synthetic-household", error: null });
+  // This suite exercises accounts on the original schema before the transactional RPC migration.
+  mocks.rpc.mockReset().mockImplementation(async (name) => name === "save_household_setup"
+    ? { data: null, error: { code: "PGRST202", message: "function not in schema cache" } }
+    : { data: "synthetic-household", error: null });
   mocks.invoke.mockReset().mockResolvedValue({ data: { connected: true, checkedAt: NOW.toISOString() }, error: null });
   mocks.updateDemo.mockReset().mockImplementation((fn: (value: DemoState) => DemoState) => { demo = fn(demo); });
   mocks.from.mockReset().mockImplementation((table: string) => {

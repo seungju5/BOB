@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { readPublicSupabaseConfig } from "./lib/supabase/public-config.ts";
 
 type CssRule = {
   oneOf?: CssRule[];
@@ -7,6 +8,12 @@ type CssRule = {
 
 const staticExport = process.env.BAPMUNNA_STATIC_EXPORT === "1";
 const basePath = process.env.NEXT_PUBLIC_APP_BASE_PATH ?? "";
+readPublicSupabaseConfig(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+  process.env.NODE_ENV !== "production",
+);
 if (basePath && !/^\/[a-zA-Z0-9/_-]+$/.test(basePath)) throw new Error("Invalid app base path");
 if (basePath.endsWith("/")) throw new Error("App base path must not end in a slash");
 

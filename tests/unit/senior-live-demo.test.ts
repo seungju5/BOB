@@ -122,6 +122,23 @@ describe("senior actions never claim delivery from demo or failed requests", () 
     expect(mocks.updateDemo).not.toHaveBeenCalled();
   });
 
+  it("sends a distinct verb for a prior meal and requires the server to confirm the chosen slot", async () => {
+    localStorage.setItem(TOKEN_KEY, LIVE_TOKEN);
+    const meal = {date: "2026-11-12", slot: "lunch" as const};
+    await expect(performSeniorAction(LIVE_TOKEN, "eat_out", undefined, {meal})).rejects.toThrow("접수를 확인하지 못했어요");
+    expect(mocks.invoke).toHaveBeenCalledWith("senior", {body: {op: "selected_meal", token: LIVE_TOKEN, days: undefined, meal}});
+    mocks.invoke.mockResolvedValueOnce({data: {ok: true, applied: {meal}}, error: null});
+    await expect(performSeniorAction(LIVE_TOKEN, "eat_out", undefined, {meal})).resolves.toBeUndefined();
+    expect(mocks.updateDemo).not.toHaveBeenCalled();
+  });
+
+  it("does not accept an old service response that could silently turn tomorrow into today", async () => {
+    localStorage.setItem(TOKEN_KEY, LIVE_TOKEN);
+    const startDate = "2026-11-14";
+    await expect(performSeniorAction(LIVE_TOKEN, "away", 2, {startDate})).rejects.toThrow("접수를 확인하지 못했어요");
+    expect(mocks.invoke).toHaveBeenCalledWith("senior", {body: {op: "planned_away", token: LIVE_TOKEN, days: 2, startDate}});
+  });
+
   it("rejects an action from a stale screen before calling another device's API", async () => {
     localStorage.setItem(TOKEN_KEY, "another-synthetic-device-token-with-32-characters");
     await expect(performSeniorAction(LIVE_TOKEN, "help")).rejects.toThrow("연결이 바뀌었어요");

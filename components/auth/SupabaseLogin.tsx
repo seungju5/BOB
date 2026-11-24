@@ -2,10 +2,12 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useSyncExternalStore } from "react";
-import { APP_BASE_PATH, appPath } from "@/lib/app-path";
+import { loginCallbackUrl, loginReturn } from "@/lib/supabase/login-return";
+import { signOutOnThisDevice } from "@/lib/supabase/studio";
 import { TextInput } from "@/components/forms";
 import { IconCheck } from "@/components/icons";
 import { Mascot } from "@/components/Mascot";
+import { PrivacyNotice } from "@/components/privacy/PrivacyNotice";
 import { Button, PageHeader } from "@/components/ui";
 import { SocialLogin } from "@/components/SocialLogin";
 import { forgetAccount, rememberAccount, useRecentAccounts } from "@/lib/data/accounts";
@@ -29,33 +31,56 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const authError = useSyncExternalStore(() => () => {}, readAuthError, () => "");
+  const switching = useSyncExternalStore(() => () => {}, () => new URLSearchParams(location.search).get("switch") === "1", () => false);
 
   const recent = useRecentAccounts();
 
   useEffect(() => {
-    if (session) {
+    if (session && !switching) {
       if (session.user.email) rememberAccount(session.user.email);
       setMode("live");
-      router.replace("/start");
+      router.replace(loginReturn(location.search));
     }
-  }, [session, router]);
+  }, [session, router, switching]);
 
   const send = async () => {
     setBusy(true);
     setError("");
-    const { error } = await supabase().auth.signInWithOtp({
-      email: email.trim(),
-      options: { emailRedirectTo: `${location.origin}${appPath("/auth/callback")}` },
-    });
-    setBusy(false);
-    if (error) setError(error.message.includes("rate") ? "잠시 후 다시 시도해 주세요. (메일 발송 제한)" : "메일을 보내지 못했어요. 주소를 확인해 주세요.");
-    else setSent(true);
+    try {
+      const result = await supabase().auth.signInWithOtp({
+        email: email.trim(),
+        options: { emailRedirectTo: loginCallbackUrl(location.origin, location.search) },
+      });
+      if (result.error) throw result.error;
+      setSent(true);
+    } catch (cause) {
+      setError(cause instanceof Error && cause.message.includes("rate") ? "잠시 후 다시 시도해 주세요. (메일 발송 제한)" : "메일을 보내지 못했어요. 주소와 연결 상태를 확인해 주세요.");
+    } finally {
+      setBusy(false);
+    }
   };
 
   const demo = () => {
     setMode("demo");
     router.push("/start");
   };
+
+  if (switching && session) return (
+    <main className="flex flex-1 flex-col pb-8">
+      <PageHeader title="계정 전환" back="/account" />
+      <section className="mx-6 rounded-3xl border border-line bg-paper p-5">
+        <h2 className="text-xl font-bold text-cocoa">다른 계정으로 로그인할까요?</h2>
+        <p className="my-4 break-all text-muted">{session.user.email} 계정으로 로그인되어 있어요.</p>
+        <Button disabled={busy} onClick={async () => {
+          setBusy(true); setError("");
+          try { await signOutOnThisDevice(); }
+          catch { setError("현재 계정을 로그아웃하지 못했어요. 다시 시도해 주세요."); }
+          finally { setBusy(false); }
+        }}>이 기기에서 로그아웃하고 계속</Button>
+        {error && <p role="alert" className="mt-2 text-blush-deep">{error}</p>}
+      </section>
+    </main>
+  );
 
   return (
     <main className="flex flex-1 flex-col pb-8">
@@ -67,6 +92,10 @@ export default function LoginPage() {
         {!sent ? (
           <div className="mt-8">
             {authError ? <p role="alert" className="mb-4 text-[14px] font-semibold text-blush-deep">{authError}</p> : null}
+            {supabaseConfigured && <div className="mb-5 rounded-2xl bg-butter-soft p-4 text-[15px] leading-relaxed text-cocoa">
+              <p>처음 로그인하면 보호자 계정이 생겨요. 이메일과 나중에 입력하는 이름·가구 설정을 저장해요. 가족과 정보를 나누거나 기기를 연결할 때는 따로 확인해요.</p>
+              <PrivacyNotice />
+            </div>}
             <SocialLogin />
             {supabaseConfigured ? (
               <div className="mt-6 flex items-center gap-3 text-[13px] text-muted" aria-hidden>
@@ -79,9 +108,7 @@ export default function LoginPage() {
         ) : null}
         {!supabaseConfigured ? (
           <p className="mt-4 text-[15px] leading-relaxed text-muted">
-            {APP_BASE_PATH === "/bapmunna/app"
-              ? "Google·이메일 로그인은 기존 계정 화면에서 이용해요. 아래 데모의 체험 기록과 계정 기록은 별도로 보관돼요."
-              : "지금은 로그인 없이 데모로 둘러볼 수 있어요."}
+            팀 서버의 로그인 설정을 확인하고 있어요. 지금은 데모로 둘러볼 수 있어요.
           </p>
         ) : sent ? (
           <div className="mt-8 flex flex-col items-center rounded-[1.75rem] bg-butter-soft px-6 py-8 text-center">

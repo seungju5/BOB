@@ -23,6 +23,7 @@ function loadEdge(relative,dependencies){
   return {exports,request:request=>handler(request)};
 }
 
+const meterSample = { watts: 45, measuredAt: "2026-11-13T00:00:00.000Z" };
 function registrationFixture({consents=[consentAt],signedIn=true,linked=true,onReadPower=null}={}){
   const calls={power:[],rpc:[],writes:[],consent:0};
   const db={auth:{getUser:async()=>({data:{user:signedIn?{id:'synthetic-owner'}:null},error:null})},
@@ -37,13 +38,14 @@ function registrationFixture({consents=[consentAt],signedIn=true,linked=true,onR
         }
         throw Error(`Unexpected table: ${table}`);
       };
-      const query={select(){return query;},eq(key,value){filters.push([key,value]);return query;},limit(){return query;},update(value){operation='update';payload=value;return query;},maybeSingle:async()=>execute(),then:(resolve,reject)=>Promise.resolve().then(execute).then(resolve,reject)};
+      const query={select(){return query;},eq(key,value){filters.push([key,value]);return query;},order(){return query;},limit(){return query;},update(value){operation='update';payload=value;return query;},maybeSingle:async()=>execute(),then:(resolve,reject)=>Promise.resolve().then(execute).then(resolve,reject)};
       return query;
     },
     rpc:async(name,args)=>{calls.rpc.push({name,args});return {data:'synthetic-plug',error:null};},
   };
-  const readPower=async(...args)=>{calls.power.push(args);if(onReadPower)return onReadPower();return 45;};
-  const edge=loadEdge('register-plug/index.ts',{'@/_shared/core.ts':{db,must,json,cors:{},readPower}});
+  const readPower=async(...args)=>{calls.power.push(args);if(onReadPower)return onReadPower();return meterSample;};
+  const edge=loadEdge('register-plug/index.ts',{'@/_shared/core.ts':{db,must,json,cors:{},readPower,readMeterKind:async()=>"recognized",
+    recordObservation:async(h,device,kind,reading,registration)=>{calls.rpc.push({name:'record_plug_observation',args:{h,device,kind,reading,registration}});return true;}}});
   return {calls,request:(body={deviceId:'synthetic-device',token:'synthetic-not-a-real-token'})=>edge.request(new Request('https://fixture.invalid/register-plug',{method:'POST',headers:{authorization:'Bearer synthetic-app-session','content-type':'application/json'},body:JSON.stringify(body)}))};
 }
 
@@ -82,7 +84,7 @@ test('successful registration returns only connection confirmation and check tim
   assert.equal(response.status,200);assert.deepEqual(Object.keys(body).sort(),['checkedAt','connected']);
   assert.equal(body.connected,true);assert.ok(Number.isFinite(Date.parse(body.checkedAt)));
   assert.equal(f.calls.consent,2);assert.equal(f.calls.rpc.length,1);assert.equal(f.calls.rpc[0].args.h,'synthetic-house');
-  assert.equal(f.calls.writes.length,1);assert.equal(Object.hasOwn(body,'watts'),false);
+  assert.equal(f.calls.writes.length,0);assert.deepEqual(f.calls.rpc[0].args.reading,meterSample);assert.equal(Object.hasOwn(body,'watts'),false);
 });
 
 test('upstream error details cannot leak a token or raw measurement into the response',async()=>{
@@ -143,24 +145,26 @@ function jobFixture({consents=[consentAt],onPower=null,activeConsent=consentAt}=
         if(operation.filters.some(([kind,key,value])=>kind==='not'&&key==='senior_consent_at'&&value===null))data=data.filter(row=>row.senior_consent_at!==null);
       }
     }else if(operation.table==='smart_plugs'){
-      const plug={id:'synthetic-plug',household_id:'synthetic-house',st_device_id:'synthetic-device',last_reading_at:'2026-11-13T00:00:00Z'};
+      const plug={id:'synthetic-plug',household_id:'synthetic-house',st_device_id:'synthetic-device',last_reading_at:'2026-11-13T00:00:00Z',meter_kind:'recognized',observing_since:'2026-11-01T00:00:00Z',status:'online'};
       data=operation.single?plug:[plug];
-    }else if(operation.table==='alert_settings')data={missed_meals_threshold:2,fasting_hours:48,emergency_hours:72};
+    }else if(operation.table==='meal_profiles')data={meal_windows:[{slot:'lunch',start:'11:00',end:'14:00'}]};
+    else if(operation.table==='alert_settings')data={missed_meals_threshold:2,fasting_hours:48,emergency_hours:72};
     else if(operation.table==='meal_slots')data=[{status:'confirmed',date:'2026-11-12',slot:'lunch'}];
     else if(operation.table==='alerts'||operation.table==='power_readings_raw')data=[];
     else throw Error(`Unexpected table: ${operation.table}`);
     return {data,error:null};
   },async(name,args)=>{calls.rpc.push({name,args});return {data:name==='job_secret'?'synthetic-job-secret':'synthetic-device-token',error:null};});
   const shared={db,must,json,dayRange:()=>({from:'2026-11-13T00:00:00Z'}),getAbsences:async()=>[],
-    readPower:async()=>{calls.power++;return onPower?onPower():45;},
+    readPower:async()=>{calls.power++;return onPower?onPower():meterSample;},readMeterKind:async()=>'recognized',
+    recordObservation:async(h,device,kind,reading)=>{calls.writes.push({table:'record_plug_observation',kind:'rpc',reading});return true;},
     recomputeDay:async(h)=>{calls.recompute.push(h);},refreshActivity:async()=>{}};
   const edge=loadEdge('jobs/index.ts',{
     '@/_shared/core.ts':shared,
     '@/_shared/push.ts':{pushAlerts:async()=>{calls.push++;}},
-    '@/config/detection.ts':{DETECTION:{READING_INTERVAL_MIN:1,COOK_MERGE_GAP_MIN:3},RAW_RETENTION_HOURS:24},
+    '@/config/detection.ts':{ALERT_DEFAULTS:{DEVICE_OFFLINE_HOURS:2},DETECTION:{READING_INTERVAL_MIN:1,COOK_MERGE_GAP_MIN:10,LID_OPEN_DEBOUNCE_MIN:10},RAW_RETENTION_HOURS:24},
     '@/lib/judge/detectEvents.ts':{detectEvents:()=>[]},
     '@/lib/judge/evaluateAlerts.ts':{evaluateAlerts:()=>{calls.evaluate++;return {create:['fasting'],resolve:[]};}},
-    '@/lib/judge/time.ts':{addDays:()=> '2026-11-12',HOUR_MS:3600000,kstDate:()=> '2026-11-13',MINUTE_MS:60000},
+    '@/lib/judge/time.ts':{addDays:()=> '2026-11-12',HOUR_MS:3600000,kstDate:()=> '2026-11-13',kstDateTime:(d,t)=>new Date(d+'T'+t+':00+09:00'),MINUTE_MS:60000},
   });
   return {calls,request:job=>edge.request(new Request(`https://fixture.invalid/jobs?job=${job}`,{headers:{'x-job-secret':'synthetic-job-secret'}}))};
 }
@@ -187,13 +191,13 @@ test('ingest discards a sample if consent was withdrawn while SmartThings respon
 test('consented ingest still stores its private sample and marks the device online',async()=>{
   const f=jobFixture(),response=await f.request('ingest');
   assert.equal(response.status,200);assert.equal((await response.json()).ok,1);
-  assert.deepEqual(f.calls.writes.map(write=>[write.table,write.kind]),[['power_readings_raw','upsert'],['smart_plugs','update']]);
+  assert.deepEqual(f.calls.writes.map(write=>[write.table,write.kind]),[['record_plug_observation','rpc']]);
 });
 
 test('judge does not read or derive raw samples without consent',async()=>{
   const f=jobFixture({consents:[null],activeConsent:null}),response=await f.request('judge');
   assert.equal(response.status,200);assert.ok(!f.calls.reads.some(read=>read.table==='power_readings_raw'));
-  assert.equal(f.calls.writes.length,0);assert.deepEqual(f.calls.recompute,[]);
+  assert.equal(f.calls.writes.filter(write=>write.table!=='smart_plugs').length,0);assert.deepEqual(f.calls.recompute,[]);
 });
 
 for(const job of ['alerts','weekly'])test(`${job} does not create records or push after consent withdrawal`,async()=>{
@@ -261,9 +265,11 @@ test('consented push still delivers to the existing recipients',async()=>{
   assert.equal(f.calls.consent,3);assert.ok(f.calls.sent.every(sent=>JSON.parse(sent.message).tag==='synthetic-alert'));
 });
 
+const seniorTime=loadEdge('../../lib/judge/time.ts',{}).exports;
+const seniorSchedule=loadEdge('../../lib/data/senior-schedule.ts',{'../judge/time.ts':seniorTime}).exports;
 function seniorFixture(options={}){
   let consent=Object.hasOwn(options,'consent')?options.consent:consentAt;
-  const calls={queries:[],writes:[],consent:0,status:0,absence:0,hash:0,push:0,refresh:0,recompute:0};
+  const calls={queries:[],writes:[],rpc:[],consent:0,status:0,absence:0,hash:0,push:0,refresh:0,recompute:0};
   const db=queryDatabase(async operation=>{
     calls.queries.push(operation);
     if(operation.kind!=='select'){
@@ -287,10 +293,14 @@ function seniorFixture(options={}){
       calls.absence++;if(options.onAbsence)return options.onAbsence();
       return {data:[],error:null};
     }
+    if(operation.table==='meal_profiles')return {data:{meal_windows:[{slot:'lunch',start:'11:00',end:'14:00'}]},error:null};
+    if(operation.table==='smart_plugs')return {data:null,error:null};
     throw Error(`Unexpected senior query: ${operation.table}`);
   });
+  db.rpc=async(name,args)=>{calls.rpc.push({name,args:structuredClone(args)});return {data:options.duplicate?null:'synthetic-notice',error:null};};
   const edge=loadEdge('senior/index.ts',{
-    '@/lib/judge/time.ts':{kstDate:()=> '2026-11-13',addDays:(date,days)=>new Date(Date.parse(`${date}T00:00:00Z`)+days*86400000).toISOString().slice(0,10)},
+    '@/lib/data/senior-schedule.ts':seniorSchedule,
+    '@/lib/judge/time.ts':options.realCalendar?seniorTime:{kstDate:()=> '2026-11-13',addDays:(date,days)=>new Date(Date.parse(`${date}T00:00:00Z`)+days*86400000).toISOString().slice(0,10)},
     '@/_shared/core.ts':{db,must,json,cors:{},
       sha256:async()=>{calls.hash++;if(options.onHash)return options.onHash();return 'synthetic-token-hash';},
       refreshActivity:async()=>{calls.refresh++;if(options.onRefresh)await options.onRefresh();},
@@ -378,4 +388,45 @@ test('withdrawal during activity refresh prevents recomputation and a successful
   let release;const waiting=new Promise(resolve=>{release=resolve;});const f=seniorFixture({onRefresh:()=>waiting});
   const running=f.request('back');await flush();assert.equal(f.calls.refresh,1);f.setConsent(null);release();const response=await running;
   assert.equal(response.status,403);assert.equal(f.calls.recompute,0);assert.equal(Object.hasOwn(await response.json(),'ok'),false);
+});
+
+test('only the paired device requesting schedule support receives its household meal windows',async()=>{
+  const f=seniorFixture(),response=await f.request('status',{includeSchedule:true,householdId:'other-house'});
+  const result=await response.json();
+  assert.equal(response.status,200);assert.equal(result.scheduledActions,true);assert.equal(result.cookerObserved,false);assert.equal(result.lastCookerAt,null);
+  assert.deepEqual(result.mealWindows,[{slot:'lunch',start:'11:00',end:'14:00'}]);
+  const lookup=f.calls.queries.find(query=>query.table==='meal_profiles');
+  assert.ok(lookup.filters.some(([kind,key,value])=>kind==='eq'&&key==='household_id'&&value==='synthetic-house'));
+});
+
+test('a selected prior food report changes only the named slot and preserves previous cooker totals',async()=>{
+  const f=seniorFixture({realCalendar:true});
+  const date=seniorTime.addDays(seniorTime.kstDate(new Date()),-1);
+  const response=await f.request('selected_meal',{meal:{date,slot:'lunch'},householdId:'other-house'});
+  assert.equal(response.status,200);assert.deepEqual((await response.json()).applied,{meal:{date,slot:'lunch'}});assert.deepEqual(f.calls.rpc,[{name:'record_selected_senior_meal',args:{
+    h:'synthetic-house',selected_date:date,selected_slot:'lunch',selected_label:'첫 끼',
+    recorded_at:seniorTime.kstDateTime(date,'12:30').toISOString(),
+  }}]);assert.equal(f.calls.recompute,0);assert.equal(f.calls.push,1);
+});
+
+test('duplicate selected family meal acknowledgements do not send a second push',async()=>{
+  const f=seniorFixture({realCalendar:true,duplicate:true});
+  const date=seniorTime.addDays(seniorTime.kstDate(new Date()),-1);
+  assert.equal((await f.request('selected_meal',{meal:{date,slot:'lunch'}})).status,200);
+  assert.equal(f.calls.rpc.length,1);assert.equal(f.calls.push,0);
+});
+
+test('a senior cannot select a future, unknown or outdated meal or send an arbitrary absence date',async()=>{
+  const f=seniorFixture({realCalendar:true}),today=seniorTime.kstDate(new Date());
+  for(const meal of [{date:seniorTime.addDays(today,1),slot:'lunch'},{date:today,slot:'not-configured'},{date:seniorTime.addDays(today,-2),slot:'lunch'}]){
+    assert.equal((await f.request('selected_meal',{meal})).status,400);
+  }
+  assert.equal((await f.request('planned_away',{startDate:seniorTime.addDays(today,2)})).status,400);
+  assert.equal(f.calls.push,0);assert.equal(f.calls.rpc.length,0);
+});
+
+test('future absence uses the paired household and leaves current observations intact',async()=>{
+  const f=seniorFixture({realCalendar:true}),start=seniorTime.addDays(seniorTime.kstDate(new Date()),1);
+  assert.equal((await f.request('planned_away',{startDate:start,days:3,householdId:'other-house'})).status,200);
+  assert.deepEqual(f.calls.rpc,[{name:'record_planned_senior_absence',args:{h:'synthetic-house',away_start:start,away_end:seniorTime.addDays(start,2)}}]);assert.equal(f.calls.recompute,0);assert.equal(f.calls.push,1);
 });

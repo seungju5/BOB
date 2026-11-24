@@ -11,7 +11,7 @@ for(const name of readdirSync(file('../docs/assets/'))){
   embedded.set(`./assets/${name}`,`data:${type};base64,${readFileSync(file(`../docs/assets/${name}`)).toString('base64')}`);
 }
 const embed=source=>{for(const [path,data] of embedded)source=source.replaceAll(path,data);return source;};
-const sources=['deployment-config.mjs','shared/config/detection.mjs','shared/lib/judge/time.mjs','shared/lib/judge/detectEvents.mjs','shared/lib/judge/resolveMealSlots.mjs','shared/lib/judge/evaluateAlerts.mjs','shared/lib/data/view.mjs','parity.mjs','power.mjs','engine.mjs','worksheet.mjs','family.mjs','presentation.mjs','checks.mjs','editions.mjs','experience.mjs','bunny-greeting.mjs','runtime-mode.mjs','live-view.mjs','app.mjs'].map(name=>read(`../docs/${name}`).replace(/^import .*;\n/gm,'').replace(/^export /gm,''));
+const sources=['deployment-config.mjs','shared/config/detection.mjs','shared/lib/judge/time.mjs','shared/lib/judge/detectEvents.mjs','shared/lib/judge/resolveMealSlots.mjs','shared/lib/judge/evaluateAlerts.mjs','shared/lib/data/senior-schedule.mjs','shared/lib/data/view.mjs','parity.mjs','power.mjs','engine.mjs','worksheet.mjs','family.mjs','presentation.mjs','checks.mjs','editions.mjs','experience.mjs','bunny-greeting.mjs','runtime-mode.mjs','live-view.mjs','app.mjs'].map(name=>read(`../docs/${name}`).replace(/^import .*;\n/gm,'').replace(/^export \{[^}]*\} from [^;]+;\r?\n/gm,'').replace(/^export /gm,''));
 const script=embed(sources.join('\n')).replace(/<\/script/gi,'<\\/script');
 let html=embed(read('../docs/index.html')).replace(/^\s*<meta name="bapmunna-cloud" content="enabled">\n/m,'');
 html=html.replace('href="./manage/"','href="https://warming-up-bapmunna.web.app/admin/"');

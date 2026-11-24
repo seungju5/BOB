@@ -4,20 +4,19 @@ import Link from 'next/link';
 import {useCallback,useEffect,useRef,useState} from 'react';
 import {Logo,Mascot} from '@/components/Mascot';
 import {refreshFirebaseAccount,useFirebaseAccount} from '@/lib/data/firebase';
-import {usesImpactFirebase} from '@/lib/firebase/bridge';
-import {publicUrl} from '@/lib/deployment';
+import {WALKING_SHARING_READY} from '@/lib/walking/availability';
 import {createWalkingClient,walkingError} from '@/lib/walking/client';
 import {walkingDate,type WalkingProfile,type WalkingBoard as Board,type WalkingPairing} from '@/lib/walking/model';
 import {WalkingBoard} from './WalkingBoard';
 import './walking.css';
 
 export function WalkingPage(){
-  const account=useFirebaseAccount(usesImpactFirebase);
+  const account=useFirebaseAccount(WALKING_SHARING_READY);
   return <main className="bapmunna-walking">
     <header className="walking-header"><Logo/><Link href="/more" className="walking-back">메뉴로</Link></header>
     <div className="walking-hero"><div><span className="walking-eyebrow">한 걸음씩, 함께</span><h1>내 휴대폰<br/>걸음수 연결</h1><p>가족끼리 나누고,<br/>순위는 따로 선택해요.</p></div><Mascot className="h-28 w-28 shrink-0"/></div>
     <Link className="walking-text-link" href="/walking">오늘의 산책으로 돌아가기</Link>
-    {!usesImpactFirebase?<section className="walking-card"><h2 className="walking-heading">밥뭇나에서 함께 걸어요</h2><p>팀 웹앱에서 산책 기능과 참여 안내를 확인해요.</p><a className="walking-primary" href={publicUrl("/walking/")}>공개 앱에서 열기</a><DemoLink/></section>
+    {!WALKING_SHARING_READY?<section className="walking-card"><h2 className="walking-heading">걸음수 연결을 준비하고 있어요</h2><p>지금은 가상 걸음으로 산책 하트와 순위표를 체험할 수 있어요.</p><DemoLink/><Link className="walking-text-link" href="/walking/ranking-demo">걸음수 순위 예시 보기</Link><Link className="walking-text-link" href="/health">휴대폰 걸음수 안내</Link></section>
     :account.loading?<p role="status" className="walking-card">내 계정을 확인하고 있어요…</p>
     :account.error?<section role="alert" className="walking-card"><h2 className="walking-heading">계정을 확인하지 못했어요</h2><p>{account.error}</p><button type="button" className="walking-primary" onClick={()=>void refreshFirebaseAccount()}>다시 확인</button></section>
     :!account.user||!account.user.verified||!account.profile?<section className="walking-card"><h2 className="walking-heading">내 계정으로 시작해요</h2><p>{account.user?'이메일 확인과 가입 안내를 마친 뒤 참여할 수 있어요.':'로그인한 뒤 참여를 선택하면, 다른 분들과 오늘 걸음수를 나눌 수 있어요.'}</p><Link href="/login" className="walking-primary">{account.user?'가입 확인 마치기':'로그인하고 참여하기'}</Link><DemoLink/></section>

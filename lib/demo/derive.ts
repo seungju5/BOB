@@ -52,6 +52,7 @@ export function toView(s: DemoState, now: Date): AppView {
   }
   return {
     mode: "demo",
+    dataSource: "demo",
     onboardingStep: s.onboardingStep,
     plug: { deviceId: s.plug.deviceId, online: s.plug.online, lastReadingAt: lastReadingAt(s, now)?.toISOString() ?? null },
     senior: s.senior,

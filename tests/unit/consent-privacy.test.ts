@@ -55,7 +55,7 @@ describe("public privacy and honest device availability", () => {
   });
   it("links Android users to the team walking guide", () => {
     const html = renderToStaticMarkup(createElement(HealthInstallGuide, { phone: "android" }));
-    expect(html).toContain("https://warming-up-bapmunna.web.app/health/");
+    expect(html).toContain("https://bob-tmdwn1.vercel.app/health/");
     expect(html).not.toMatch(/\.apk|download=/);
     expect(html).not.toContain("아이폰에서 웹 테스트하기");
   });

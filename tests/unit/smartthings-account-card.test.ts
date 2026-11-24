@@ -43,7 +43,9 @@ describe("SmartThings Account Model and Formatter", () => {
 describe("SmartThingsAccountCard Presentation Contract", () => {
   beforeEach(() => {
     mocks.useApp.mockReset().mockReturnValue({
+      provider: "demo",
       view: {
+        mode: "demo",
         plug: {
           deviceId: "demo-rice-cooker-plug",
           online: true,
@@ -60,6 +62,13 @@ describe("SmartThingsAccountCard Presentation Contract", () => {
     expect(html).toContain("My home · Living room");
     expect(html).toContain('href="/connect"');
     expect(html).toContain("상세 보기");
+  });
+
+  it("hides the synthetic device card in a real or signed-out session", () => {
+    mocks.useApp.mockReturnValue({ provider: "supabase", view: { mode: "live" } });
+    expect(renderToStaticMarkup(createElement(SmartThingsAccountCard))).toBe("");
+    mocks.useApp.mockReturnValue({ provider: "supabase", view: null });
+    expect(renderToStaticMarkup(createElement(SmartThingsAccountCard))).toBe("");
   });
 
   it("renders full mode with capabilities and refresh button [KR: 기기 연결 상세 모드 렌더링 검증]", () => {

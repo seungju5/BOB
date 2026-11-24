@@ -1,7 +1,9 @@
-// 팀 공용 웹앱으로 연결하는 공개 경로. 루트 호환판의 API는 같은 origin만 사용한다.
 import deployment from "@/config/deployment.json";
+import { APP_BASE_PATH } from "@/lib/app-path";
 
-export const WEB_ORIGIN = deployment.webOrigin;
+export const WEB_ORIGIN = APP_BASE_PATH === "/bapmunna/app"
+  ? deployment.webOrigin
+  : deployment.supabaseWebOrigin;
 export const API_ORIGIN = "";
 export const PRIVACY_SUPPORT_EMAIL = deployment.privacySupportEmail;
 

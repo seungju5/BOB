@@ -1,12 +1,13 @@
 {
   "canonical": "repository root: Next.js/Supabase",
   "files": {
-    "config/detection.ts": "4fcfabc3e9a85aa591910ddf57ca77a9377e6f535f08365de01d6b1c8c8b2fd5",
+    "config/detection.ts": "3e0d2e1c7b29427bc36690882e9a09f6176ee34841abb445ed3e066f5bf5d544",
     "lib/judge/time.ts": "0c0219755ad4ff1b1c1a96fd38f6205c42271a7d266c489e64280f7ffff39c4d",
-    "lib/judge/types.ts": "d4309e6f79b65eda114814087b2822ae796919addf1b2f3c4a6c942278625225",
-    "lib/judge/detectEvents.ts": "a3ef76c03fb480f61292a502f08103e486a4d5fa5f5e66fcd6f56109a2b132ac",
+    "lib/judge/types.ts": "349712db59d712aac1d61bf2a89f2d85347f7e68b00154d34cc74e47b6106282",
+    "lib/judge/detectEvents.ts": "b98cda4df0148ec5c98341db4f9a33d863e69432626847d5bf6c58e0fc2c38f9",
     "lib/judge/resolveMealSlots.ts": "81620a5e7d21d7d93ad182762018caca61e19998ef56334bf0457fa2cf4b0d17",
     "lib/judge/evaluateAlerts.ts": "69ec41ef52452ff27fea510559ca543d903a565c86dbf7103475bd65f3742917",
-    "lib/data/view.ts": "1f6b754886faaeed5b97365d08d803533ba095e7d2b0d44f917fa0b7136fe65d"
+    "lib/data/senior-schedule.ts": "218fb0df09ba1e76ad2bbd5bad1a02e20f3e5336d8d324c3c46b17ec3ae1319f",
+    "lib/data/view.ts": "3d0341aa6914d11195832defa2125c74c3c35cf781a4b0a20d13d0cfc0fced8e"
   }
 }

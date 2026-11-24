@@ -13,9 +13,9 @@ describe("public health launch links never transfer identity or health data", ()
   it.each([
     "bapmunna://health?token=secret", "bapmunna://health#token", "bapmunna://health/../login",
     "bapmunna://health@evil.test", "bapmunna://health.evil.test", "bapmunna://login",
-    "javascript:alert(1)", "file:///health/", "https://warming-up-bapmunna.web.app.evil.test/health/",
-    "http://warming-up-bapmunna.web.app/health/", "https://user:pass@warming-up-bapmunna.web.app/health/",
+    "javascript:alert(1)", "file:///health/", "https://bob-tmdwn1.vercel.app.evil.test/health/",
+    "http://bob-tmdwn1.vercel.app/health/", "https://user:pass@bob-tmdwn1.vercel.app/health/",
     `${HEALTH_WEB_URL}?redirect=https://evil.test`, `${HEALTH_WEB_URL}#secret`, ` ${HEALTH_APP_URL}`, `${HEALTH_APP_URL}\n`,
-    "https://warming-up-bapmunna.web.app/%68ealth/", "https://warming-up-bapmunna.web.app/health\\",
+    "https://bob-tmdwn1.vercel.app/%68ealth/", "https://bob-tmdwn1.vercel.app/health\\",
   ])("rejects redirects, credentials and route injection: %s", value => expect(isHealthLaunchUrl(value)).toBe(false));
 });

@@ -27,8 +27,7 @@ export const FOUR_MEAL_WINDOWS = [
     ...DEFAULT_WINDOWS,
     { slot: "fourth", start: "21:00", end: "23:00" },
 ];
-export const SLOT_LABEL = { breakfast: "첫 끼", lunch: "두 끼", dinner: "세 끼", fourth: "네 끼" };
-const ORDINAL_LABELS = ["첫 끼", "두 끼", "세 끼", "네 끼"];
+export { SLOT_LABEL, mealSlotLabel } from "./senior-schedule.mjs";
 /** 1·2끼 기존 저장 ID를 유지한다. 표시 순서는 mealSlotLabel로 정한다. */
 export function mealSlotsForCount(count) {
     if (count === 1)
@@ -39,9 +38,18 @@ export function mealSlotsForCount(count) {
         return ["breakfast", "lunch", "dinner", "fourth"];
     return ["breakfast", "lunch", "dinner"];
 }
-export function mealSlotLabel(slot, windows) {
-    const index = windows.findIndex((window) => window.slot === slot);
-    return ORDINAL_LABELS[index] ?? SLOT_LABEL[slot];
+/** A paired phone can report an outing before the cooker is connected. */
+export function familyPairingAvailable(view) {
+    return view.dataSource === "supabase" || careDataAvailable(view);
+}
+/** Only a recent opted-in signal from the selected physical meter is a guardian notice. */
+export function recentPowerNotice(view, now) {
+    const { meterKind, powerNoticeEnabled, observingSince, lastPowerNoticeAt } = view.plug;
+    if (view.mode !== "live" || !view.seniorConsent || !powerNoticeEnabled || meterKind !== "recognized" || !observingSince || !lastPowerNoticeAt)
+        return null;
+    const notice = Date.parse(lastPowerNoticeAt);
+    const age = now.getTime() - notice;
+    return notice >= Date.parse(observingSince) && age >= 0 && age < 24 * 60 * 60_000 ? lastPowerNoticeAt : null;
 }
 /** 실제 가족 데이터가 아직 연결되지 않았다면 미확인을 새로 판정하지 않는다. */
 export function careDataAvailable(v) {
@@ -53,7 +61,7 @@ export function slotsForDate(v, date, now) {
     const found = v.slots.filter((s) => s.date === date).sort((a, b) => ORDER[a.slot] - ORDER[b.slot]);
     if (found.length || date !== kstDate(now))
         return found;
-    if (!careDataAvailable(v))
+    if (!careDataAvailable(v) || v.dataSource === "supabase")
         return [];
     return resolveMealSlots({ date, windows: v.mealProfile.windows, events: [], eatOutChecks: [], absences: v.absences, now });
 }

@@ -1,0 +1,21 @@
+# Local workspace identity. This does not link or create a hosted project.
+project_id = "warming-up-supabase"
+
+# Existing BOB code authenticates cron calls with the Vault-backed x-job-secret.
+[functions.jobs]
+verify_jwt = false
+import_map = "./functions/deno.json"
+entrypoint = "./functions/jobs/index.ts"
+
+# Existing BOB code checks pairing expiry, device-token hashes and senior consent.
+[functions.senior]
+verify_jwt = false
+import_map = "./functions/deno.json"
+entrypoint = "./functions/senior/index.ts"
+
+# Preserve the documented BOB gateway JWT check plus getUser() in the handler.
+# Confirm the target project's signing-key compatibility before deployment.
+[functions.register-plug]
+verify_jwt = true
+import_map = "./functions/deno.json"
+entrypoint = "./functions/register-plug/index.ts"

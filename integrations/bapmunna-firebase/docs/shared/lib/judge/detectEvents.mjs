@@ -3,55 +3,36 @@ import { DETECTION } from "../../config/detection.mjs";
 import { MINUTE_MS } from "./time.mjs";
 /**
  * 전력 시계열 → 밥솥 이벤트(cook, lid_open). design.md 4.1.
- * 순간값이 아니라 구간 단위로 판단한다.
+ * 취사는 첫 고전력 측정 시각부터 인정한다. 보온 중 뚜껑 열림은 구간으로 판단한다.
  */
 export function detectEvents(readings, cfg = DETECTION) {
-    const sorted = [...readings].sort((a, b) => a.measuredAt.getTime() - b.measuredAt.getTime());
+    const sorted = readings.filter(r => Number.isFinite(r?.watts) && r.watts >= 0 &&
+        r.measuredAt instanceof Date && Number.isFinite(r.measuredAt.getTime()))
+        .sort((a, b) => a.measuredAt.getTime() - b.measuredAt.getTime());
     const events = [...detectCooks(sorted, cfg), ...detectLidOpens(sorted, cfg)];
     return events.sort((a, b) => a.startedAt.getTime() - b.startedAt.getTime());
 }
 const interval = (cfg) => cfg.READING_INTERVAL_MIN * MINUTE_MS;
 const gapTooLong = (prev, next, cfg) => next.measuredAt.getTime() - prev.measuredAt.getTime() > cfg.MAX_READING_GAP_MIN * MINUTE_MS;
-/** 조건을 만족하는 연속 구간들. 수신이 너무 오래 끊기면 구간을 나눈다. */
-function runs(readings, match, cfg) {
-    const out = [];
-    let cur = null;
-    let prev = null;
-    for (const r of readings) {
-        if (cur && prev && gapTooLong(prev, r, cfg)) {
-            out.push(cur);
-            cur = null;
-        }
-        if (match(r)) {
-            const end = new Date(r.measuredAt.getTime() + interval(cfg));
-            cur = cur ? { start: cur.start, end } : { start: r.measuredAt, end };
-        }
-        else if (cur) {
-            out.push(cur);
-            cur = null;
-        }
-        prev = r;
-    }
-    if (cur)
-        out.push(cur);
-    return out;
+export function isCookingPower(watts, threshold = DETECTION.COOK_MIN_WATTS) {
+    return typeof watts === "number" && Number.isFinite(watts) && watts >= threshold;
 }
+/** 직전 고전력 측정 시각부터 병합한다. 그 사이의 전력이나 식사 여부는 추정하지 않는다. */
 function detectCooks(readings, cfg) {
-    const high = runs(readings, (r) => r.watts >= cfg.COOK_MIN_WATTS, cfg);
-    // 짧게 끊긴 고전력 구간은 한 번의 취사로 합친다.
-    const merged = [];
-    for (const run of high) {
-        const last = merged.at(-1);
-        if (last && run.start.getTime() - last.end.getTime() <= cfg.COOK_MERGE_GAP_MIN * MINUTE_MS) {
-            last.end = run.end;
+    const events = [];
+    let run = null;
+    for (const reading of readings) {
+        if (!Number.isFinite(reading.measuredAt.getTime()) || !isCookingPower(reading.watts, cfg.COOK_MIN_WATTS))
+            continue;
+        if (run && reading.measuredAt.getTime() - run.endedAt.getTime() <= cfg.COOK_MERGE_GAP_MIN * MINUTE_MS) {
+            run.endedAt = reading.measuredAt;
         }
         else {
-            merged.push({ ...run });
+            run = { type: "cook", startedAt: reading.measuredAt, endedAt: reading.measuredAt };
+            events.push(run);
         }
     }
-    return merged
-        .filter((r) => r.end.getTime() - r.start.getTime() >= cfg.COOK_MIN_MINUTES * MINUTE_MS)
-        .map((r) => ({ type: "cook", startedAt: r.start, endedAt: r.end }));
+    return events;
 }
 /**
  * 보온이 일정 시간 이어진 상태에서, 기준선보다 크게 오른 전력을 뚜껑 열림으로 본다.

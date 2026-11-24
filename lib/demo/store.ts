@@ -58,11 +58,14 @@ export function resetDemo() {
  * 데모 상태 구독. 서버 렌더링과 첫 렌더에서는 null(스켈레톤)을 돌려주고,
  * 브라우저에서만 현재 시각을 읽는다.
  */
-export function useDemo(): DemoState | null {
-  const state = useSyncExternalStore(subscribe, read, () => null);
+const emptySnapshot = () => null;
+const inactiveSubscription = () => () => {};
+
+export function useDemo(enabled: boolean): DemoState | null {
+  const state = useSyncExternalStore(enabled ? subscribe : inactiveSubscription, enabled ? read : emptySnapshot, emptySnapshot);
   useEffect(() => {
-    if (!read()) write(createDemoState(new Date()));
-  }, []);
+    if (enabled && !read()) write(createDemoState(new Date()));
+  }, [enabled]);
   return state;
 }
 

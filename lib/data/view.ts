@@ -17,11 +17,16 @@ export type ViewAlert = {
 export type AppView = {
   mode: "demo" | "live";
   /** 실제 계정의 저장소. 데모의 가상 기록과 섞지 않는다. */
-  dataSource?: "supabase" | "firebase";
+  dataSource?: "supabase" | "firebase" | "demo";
   /** 가족·기기 기록을 사용할 수 있는지. 계정 로그인 성공과는 별개다. */
   careAvailable?: boolean;
   onboardingStep: number; // 1~7 진행 중, 8 = 완료
-  plug: { deviceId: string; online: boolean; lastReadingAt: string | null };
+  plug: {
+    deviceId: string; online: boolean; lastReadingAt: string | null;
+    meterKind?: "recognized" | "virtual" | "unknown" | null;
+    observingSince?: string | null; lastSignalHigh?: boolean | null;
+    powerNoticeEnabled?: boolean; lastPowerNoticeAt?: string | null;
+  };
   senior: { name: string; relation: string; phone: string };
   household: { residentCount: number; hasPet: boolean };
   mealProfile: { windows: MealWindow[]; eatOutPerWeek: number; usesKeepWarm: boolean; cooksPerWeek: number };
@@ -66,6 +71,8 @@ export type AppActions = {
   saveOnboarding(step: number, patch?: OnboardingPatch): Promise<void>;
   registerPlug(deviceId: string, token: string): Promise<RegisterPlugResult>;
   skipPlug(): Promise<void>;
+  setPowerNotice?(deviceId: string, enabled: boolean): Promise<void>;
+  disconnectPlug?(deviceId: string): Promise<void>;
   issuePairingCode(): Promise<void>;
   ackAlert(id: string): Promise<void>;
   ackAll(): Promise<void>;
@@ -88,8 +95,7 @@ export const FOUR_MEAL_WINDOWS: MealWindow[] = [
   { slot: "fourth", start: "21:00", end: "23:00" },
 ];
 
-export const SLOT_LABEL = { breakfast: "첫 끼", lunch: "두 끼", dinner: "세 끼", fourth: "네 끼" } as const;
-const ORDINAL_LABELS = ["첫 끼", "두 끼", "세 끼", "네 끼"] as const;
+export { SLOT_LABEL, mealSlotLabel } from "./senior-schedule";
 
 /** 1·2끼 기존 저장 ID를 유지한다. 표시 순서는 mealSlotLabel로 정한다. */
 export function mealSlotsForCount(count: number): MealSlotName[] {
@@ -99,9 +105,18 @@ export function mealSlotsForCount(count: number): MealSlotName[] {
   return ["breakfast", "lunch", "dinner"];
 }
 
-export function mealSlotLabel(slot: MealSlotName, windows: Pick<MealWindow, "slot">[]): string {
-  const index = windows.findIndex((window) => window.slot === slot);
-  return ORDINAL_LABELS[index] ?? SLOT_LABEL[slot];
+/** A paired phone can report an outing before the cooker is connected. */
+export function familyPairingAvailable(view: AppView): boolean {
+  return view.dataSource === "supabase" || careDataAvailable(view);
+}
+
+/** Only a recent opted-in signal from the selected physical meter is a guardian notice. */
+export function recentPowerNotice(view: AppView, now: Date): string | null {
+  const { meterKind, powerNoticeEnabled, observingSince, lastPowerNoticeAt } = view.plug;
+  if (view.mode !== "live" || !view.seniorConsent || !powerNoticeEnabled || meterKind !== "recognized" || !observingSince || !lastPowerNoticeAt) return null;
+  const notice = Date.parse(lastPowerNoticeAt);
+  const age = now.getTime() - notice;
+  return notice >= Date.parse(observingSince) && age >= 0 && age < 24 * 60 * 60_000 ? lastPowerNoticeAt : null;
 }
 
 /** 실제 가족 데이터가 아직 연결되지 않았다면 미확인을 새로 판정하지 않는다. */
@@ -115,7 +130,7 @@ const ORDER = { breakfast: 0, lunch: 1, dinner: 2, fourth: 3 } as const;
 export function slotsForDate(v: AppView, date: string, now: Date): MealSlot[] {
   const found = v.slots.filter((s) => s.date === date).sort((a, b) => ORDER[a.slot] - ORDER[b.slot]);
   if (found.length || date !== kstDate(now)) return found;
-  if (!careDataAvailable(v)) return [];
+  if (!careDataAvailable(v) || v.dataSource === "supabase") return [];
   return resolveMealSlots({ date, windows: v.mealProfile.windows, events: [], eatOutChecks: [], absences: v.absences, now });
 }
 

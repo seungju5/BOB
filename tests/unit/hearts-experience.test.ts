@@ -114,6 +114,7 @@ function fixture({ nativePage = false, mode = 'web' as 'web' | 'native' } = {}) 
     '@/components/walking/NativeWalkingPanel': { NativeWalkingPanel: 'NativeWalkingPanel' },
     '@/lib/hearts/client': client, '@/lib/hearts/demo': demo, '@/lib/hearts/presentation': presentation, '@/lib/hearts/native': native,
     '@/packages/walking-hearts/core.mjs': core, '@/lib/mobile/links': { healthAppLink },
+    '@/lib/walking/availability': { WALKING_SHARING_READY: true },
     '@/lib/firebase/bridge': { usesImpactFirebase: true }, '@/lib/deployment': deployment, '@/lib/data/firebase': { useFirebaseAccount: () => ({ user: null, loading: false }) },
   };
   function load(file: string): Record<string, unknown> {

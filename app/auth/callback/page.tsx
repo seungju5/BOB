@@ -7,11 +7,12 @@ import { clearLive } from "@/lib/data/live";
 import { rememberAccount } from "@/lib/data/accounts";
 import { setMode } from "@/lib/data/mode";
 import { supabase, supabaseConfigured } from "@/lib/supabase";
+import { callbackReturn, retryLoginPath } from "@/lib/supabase/login-return";
 
 type Failure = "cancelled" | "expired" | "configuration";
 
 function backToLogin(reason: Failure) {
-  location.replace(appPath(`/login?auth_error=${reason}`));
+  location.replace(retryLoginPath(reason, location.search));
 }
 
 /** Google·Kakao OAuth 및 이메일 링크의 PKCE 코드 교환을 한 곳에서 처리한다. */
@@ -44,7 +45,7 @@ export default function AuthCallbackPage() {
         clearLive();
         if (email) rememberAccount(email);
         setMode("live");
-        location.replace(appPath("/start"));
+        location.replace(appPath(callbackReturn(location.search)));
       } catch {
         backToLogin("expired");
       }

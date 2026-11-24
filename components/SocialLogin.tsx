@@ -1,9 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { APP_BASE_PATH, appPath } from "@/lib/app-path";
+import { loginCallbackUrl } from "@/lib/supabase/login-return";
 import { supabase, supabaseConfigured } from "@/lib/supabase";
-import { publicUrl } from "@/lib/deployment";
 
 type Provider = "kakao" | "google";
 
@@ -22,7 +21,7 @@ export function SocialLogin() {
     try {
       const { data, error } = await supabase().auth.signInWithOAuth({
         provider,
-        options: { redirectTo: `${location.origin}${appPath("/auth/callback")}`, skipBrowserRedirect: true },
+        options: { redirectTo: loginCallbackUrl(location.origin, location.search), skipBrowserRedirect: true },
       });
       if (error || !data.url) throw error ?? new Error("OAuth URL이 없습니다.");
       location.assign(data.url);
@@ -33,7 +32,6 @@ export function SocialLogin() {
   };
 
   const off = !supabaseConfigured || busy !== null;
-  const useExistingAccount = !supabaseConfigured && APP_BASE_PATH === "/bapmunna/app";
   return (
     <div className="flex flex-col gap-2">
       <button
@@ -42,16 +40,8 @@ export function SocialLogin() {
         className="relative flex min-h-14 w-full items-center justify-center rounded-full bg-kakao px-6 text-[17px] font-bold text-kakao-label transition-opacity disabled:cursor-not-allowed disabled:opacity-40"
       >
         <KakaoSymbol className="absolute left-6 h-5 w-5" />
-        {busy === "kakao" ? "카카오로 이동 중…" : useExistingAccount ? "카카오 로그인 · 준비 중" : "카카오로 시작하기"}
+        {busy === "kakao" ? "카카오로 이동 중…" : "카카오로 시작하기"}
       </button>
-      {useExistingAccount ? (
-        <a
-          href={publicUrl("/login/")}
-          className="relative flex min-h-14 w-full items-center justify-center rounded-full border-2 border-line bg-paper px-6 text-[17px] font-bold text-ink transition-colors hover:border-muted/50 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-cocoa"
-        >
-          워밍업 이메일 로그인 열기
-        </a>
-      ) : (
       <button
         onClick={() => void login("google")}
         disabled={off}
@@ -60,7 +50,6 @@ export function SocialLogin() {
         <GoogleLogo className="absolute left-6 h-5 w-5" />
         {busy === "google" ? "Google로 이동 중…" : "Google로 시작하기"}
       </button>
-      )}
       {error ? <p className="text-[14px] font-semibold text-blush-deep">{error}</p> : null}
     </div>
   );

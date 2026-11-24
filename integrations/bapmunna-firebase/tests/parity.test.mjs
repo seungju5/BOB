@@ -18,7 +18,7 @@ test('an out-of-window eat-out action goes to the closest canonical slot', () =>
   const s=createState(false);s.now=330;confirmMeal(s,'dinner',true);assert.equal(status(s,0,'breakfast'),'eat_out');assert.equal(status(s,0,'dinner'),'upcoming');
 });
 test('cooking recognized after a slot boundary belongs to its start time', () => {
-  const s=createState(false);s.now=868;const n=DETECTION.COOK_MIN_MINUTES;for(let i=0;i<n;i++){ingestDevice(s,'cooker','power',900);if(i<n-1)advance(s,1);}
+  const s=createState(false);s.now=868;ingestDevice(s,'cooker','power',900);
   assert.equal(status(s,0,'lunch'),'confirmed');assert.equal(s.lastActivityAt,868);assert.equal(s.deviceDays[0].cooker.cook,1);
 });
 test('help remains visible even though the action resets the activity timer', () => {

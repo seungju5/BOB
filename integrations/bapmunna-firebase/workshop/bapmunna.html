@@ -295,16 +295,16 @@ const deploymentConfig=Object.freeze({"webOrigin":"https://warming-up-bapmunna.w
 // 판단 기준값. 코드에 숫자를 직접 쓰지 말고 여기서 가져다 쓴다.
 // (가정) 표시는 밥솥 실측 전 초기값이다. 실측 후 확정하고 adr.md에 근거를 남긴다.
 const DETECTION = {
-    /** 전력값 수신 간격(분). SmartThings 폴링 주기와 맞춘다. (미확정) */
+    /** 삼성에 밥솥 플러그 상태를 다시 요청하는 간격(분). */
+    POWER_CHECK_INTERVAL_MIN: 10,
+    /** 보온·뚜껑 판정을 위한 1분 해상도 표본의 길이. */
     READING_INTERVAL_MIN: 1,
     /** 이 간격보다 길게 값이 비면 구간을 끊는다. */
     MAX_READING_GAP_MIN: 3,
     /** 취사로 보는 최소 전력(W). 2026-11-21 화면(전력 해석) 기준 700W 이상으로 통일 (ADR-014). */
     COOK_MIN_WATTS: 700,
-    /** 취사로 인정하는 최소 지속 시간(분). 순간 서지와 구분하려고 15분 (ADR-014, 가정). */
-    COOK_MIN_MINUTES: 15,
-    /** 고전력 구간 사이가 이 시간(분) 이하로 끊기면 한 번의 취사로 합친다. (가정) */
-    COOK_MERGE_GAP_MIN: 3,
+    /** 마지막 기준 이상 측정부터 이 시간 이내의 다음 고전력 측정은 같은 취사 신호다. */
+    COOK_MERGE_GAP_MIN: 10,
     /** 보온 상태 전력 범위(W). 화면 기준 20~70W, 20W 미만은 절전 대기 (ADR-014, 미확정: 실측). */
     KEEP_WARM_MIN_WATTS: 20,
     KEEP_WARM_MAX_WATTS: 70,
@@ -357,55 +357,36 @@ function addDays(date, n) {
 // GENERATED from lib/judge/detectEvents.ts. Run npm run sync:firebase at repository root.
 /**
  * 전력 시계열 → 밥솥 이벤트(cook, lid_open). design.md 4.1.
- * 순간값이 아니라 구간 단위로 판단한다.
+ * 취사는 첫 고전력 측정 시각부터 인정한다. 보온 중 뚜껑 열림은 구간으로 판단한다.
  */
 function detectEvents(readings, cfg = DETECTION) {
-    const sorted = [...readings].sort((a, b) => a.measuredAt.getTime() - b.measuredAt.getTime());
+    const sorted = readings.filter(r => Number.isFinite(r?.watts) && r.watts >= 0 &&
+        r.measuredAt instanceof Date && Number.isFinite(r.measuredAt.getTime()))
+        .sort((a, b) => a.measuredAt.getTime() - b.measuredAt.getTime());
     const events = [...detectCooks(sorted, cfg), ...detectLidOpens(sorted, cfg)];
     return events.sort((a, b) => a.startedAt.getTime() - b.startedAt.getTime());
 }
 const interval = (cfg) => cfg.READING_INTERVAL_MIN * MINUTE_MS;
 const gapTooLong = (prev, next, cfg) => next.measuredAt.getTime() - prev.measuredAt.getTime() > cfg.MAX_READING_GAP_MIN * MINUTE_MS;
-/** 조건을 만족하는 연속 구간들. 수신이 너무 오래 끊기면 구간을 나눈다. */
-function runs(readings, match, cfg) {
-    const out = [];
-    let cur = null;
-    let prev = null;
-    for (const r of readings) {
-        if (cur && prev && gapTooLong(prev, r, cfg)) {
-            out.push(cur);
-            cur = null;
-        }
-        if (match(r)) {
-            const end = new Date(r.measuredAt.getTime() + interval(cfg));
-            cur = cur ? { start: cur.start, end } : { start: r.measuredAt, end };
-        }
-        else if (cur) {
-            out.push(cur);
-            cur = null;
-        }
-        prev = r;
-    }
-    if (cur)
-        out.push(cur);
-    return out;
+function isCookingPower(watts, threshold = DETECTION.COOK_MIN_WATTS) {
+    return typeof watts === "number" && Number.isFinite(watts) && watts >= threshold;
 }
+/** 직전 고전력 측정 시각부터 병합한다. 그 사이의 전력이나 식사 여부는 추정하지 않는다. */
 function detectCooks(readings, cfg) {
-    const high = runs(readings, (r) => r.watts >= cfg.COOK_MIN_WATTS, cfg);
-    // 짧게 끊긴 고전력 구간은 한 번의 취사로 합친다.
-    const merged = [];
-    for (const run of high) {
-        const last = merged.at(-1);
-        if (last && run.start.getTime() - last.end.getTime() <= cfg.COOK_MERGE_GAP_MIN * MINUTE_MS) {
-            last.end = run.end;
+    const events = [];
+    let run = null;
+    for (const reading of readings) {
+        if (!Number.isFinite(reading.measuredAt.getTime()) || !isCookingPower(reading.watts, cfg.COOK_MIN_WATTS))
+            continue;
+        if (run && reading.measuredAt.getTime() - run.endedAt.getTime() <= cfg.COOK_MERGE_GAP_MIN * MINUTE_MS) {
+            run.endedAt = reading.measuredAt;
         }
         else {
-            merged.push({ ...run });
+            run = { type: "cook", startedAt: reading.measuredAt, endedAt: reading.measuredAt };
+            events.push(run);
         }
     }
-    return merged
-        .filter((r) => r.end.getTime() - r.start.getTime() >= cfg.COOK_MIN_MINUTES * MINUTE_MS)
-        .map((r) => ({ type: "cook", startedAt: r.start, endedAt: r.end }));
+    return events;
 }
 /**
  * 보온이 일정 시간 이어진 상태에서, 기준선보다 크게 오른 전력을 뚜껑 열림으로 본다.
@@ -577,6 +558,33 @@ function effectiveStart(lastActivityAt, absences, now) {
     return start;
 }
 
+// GENERATED from lib/data/senior-schedule.ts. Run npm run sync:firebase at repository root.
+const SLOT_LABEL = { breakfast: "첫 끼", lunch: "두 끼", dinner: "세 끼", fourth: "네 끼" };
+const ORDINAL_LABELS = ["첫 끼", "두 끼", "세 끼", "네 끼"];
+function mealSlotLabel(slot, windows) {
+    const index = windows.findIndex((window) => window.slot === slot);
+    return ORDINAL_LABELS[index] ?? SLOT_LABEL[slot];
+}
+function mealRecordTime(date, window, now) {
+    const start = kstDateTime(date, window.start).getTime();
+    const end = kstDateTime(date, window.end).getTime();
+    if (!Number.isFinite(start) || !Number.isFinite(end) || start >= end || start > now.getTime())
+        return null;
+    return new Date(Math.min(now.getTime(), start + (end - start) / 2));
+}
+function resolveMealChoice(choice, windows, now) {
+    if (typeof choice !== "object" || choice === null || !("date" in choice) || !("slot" in choice))
+        return null;
+    const today = kstDate(now);
+    if (choice.date !== today && choice.date !== addDays(today, -1))
+        return null;
+    const selected = windows.find((window) => window.slot === choice.slot);
+    const at = selected && mealRecordTime(choice.date, selected, now);
+    if (!at || !selected)
+        return null;
+    return { at, date: choice.date, slot: selected.slot, label: mealSlotLabel(selected.slot, windows) };
+}
+
 // GENERATED from lib/data/view.ts. Run npm run sync:firebase at repository root.
 // 화면이 읽는 공통 모양. 데모(localStorage)와 실서비스(Supabase) 모두 이 모양으로 바꿔서 넘긴다.
 // 가족 화면에 필요한 요약만 담는다: 끼니 상태, 날짜별 횟수, 마지막 시각. (취사 시각 목록은 없음)
@@ -604,8 +612,6 @@ const FOUR_MEAL_WINDOWS = [
     ...DEFAULT_WINDOWS,
     { slot: "fourth", start: "21:00", end: "23:00" },
 ];
-const SLOT_LABEL = { breakfast: "첫 끼", lunch: "두 끼", dinner: "세 끼", fourth: "네 끼" };
-const ORDINAL_LABELS = ["첫 끼", "두 끼", "세 끼", "네 끼"];
 /** 1·2끼 기존 저장 ID를 유지한다. 표시 순서는 mealSlotLabel로 정한다. */
 function mealSlotsForCount(count) {
     if (count === 1)
@@ -616,9 +622,18 @@ function mealSlotsForCount(count) {
         return ["breakfast", "lunch", "dinner", "fourth"];
     return ["breakfast", "lunch", "dinner"];
 }
-function mealSlotLabel(slot, windows) {
-    const index = windows.findIndex((window) => window.slot === slot);
-    return ORDINAL_LABELS[index] ?? SLOT_LABEL[slot];
+/** A paired phone can report an outing before the cooker is connected. */
+function familyPairingAvailable(view) {
+    return view.dataSource === "supabase" || careDataAvailable(view);
+}
+/** Only a recent opted-in signal from the selected physical meter is a guardian notice. */
+function recentPowerNotice(view, now) {
+    const { meterKind, powerNoticeEnabled, observingSince, lastPowerNoticeAt } = view.plug;
+    if (view.mode !== "live" || !view.seniorConsent || !powerNoticeEnabled || meterKind !== "recognized" || !observingSince || !lastPowerNoticeAt)
+        return null;
+    const notice = Date.parse(lastPowerNoticeAt);
+    const age = now.getTime() - notice;
+    return notice >= Date.parse(observingSince) && age >= 0 && age < 24 * 60 * 60_000 ? lastPowerNoticeAt : null;
 }
 /** 실제 가족 데이터가 아직 연결되지 않았다면 미확인을 새로 판정하지 않는다. */
 function careDataAvailable(v) {
@@ -630,7 +645,7 @@ function slotsForDate(v, date, now) {
     const found = v.slots.filter((s) => s.date === date).sort((a, b) => ORDER[a.slot] - ORDER[b.slot]);
     if (found.length || date !== kstDate(now))
         return found;
-    if (!careDataAvailable(v))
+    if (!careDataAvailable(v) || v.dataSource === "supabase")
         return [];
     return resolveMealSlots({ date, windows: v.mealProfile.windows, events: [], eatOutChecks: [], absences: v.absences, now });
 }

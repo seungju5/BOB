@@ -1,7 +1,7 @@
 {
-  "name": "밥뭇나",
-  "short_name": "밥뭇나",
-  "description": "밥 한 끼로 전하는 안부",
+  "name": "Warming Up",
+  "short_name": "Warming Up",
+  "description": "밥뭇나 · 밥 한 끼로 전하는 안부",
   "id": "./",
   "start_url": "./",
   "scope": "./",

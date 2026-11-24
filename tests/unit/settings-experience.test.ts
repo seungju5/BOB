@@ -59,6 +59,15 @@ describe("settings and onboarding presentation contracts", () => {
     expect(html).not.toContain('type="password"');
   });
 
+  it("links the signed-in Supabase household to its own account and device settings", () => {
+    Object.assign(view, { dataSource: "supabase", careAvailable: false, seniorConsent: true, pairingCode: null });
+    const html = renderToStaticMarkup(createElement(SettingsPage));
+    expect(html).toContain('href="/account"');
+    expect(html).toContain('href="/connect"');
+    expect(html).toContain("연결 숫자 받기");
+    expect(html).not.toContain('type="password"');
+  });
+
   it("shows the saved household review before optional lifestyle steps, with a later-from-home choice", () => {
     view.onboardingStep = 4;
     const html = renderToStaticMarkup(createElement(OnboardingPage));

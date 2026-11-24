@@ -56,3 +56,6 @@ export function formatSmartThingsKst(iso: string | null | undefined): string {
     minute: "2-digit",
   }).format(new Date(parsed));
 }
+
+const deviceTime = new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", dateStyle: "medium", timeStyle: "short" });
+export function formatDeviceTime(time: number) { return deviceTime.format(time); }

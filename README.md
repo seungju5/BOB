@@ -23,18 +23,18 @@ npm run dev
 
 공용 Firebase 프로젝트 ID는 `warming-up-bapmunna`입니다. 로그인·Firestore·Hosting은 이 프로젝트에서 관리합니다. 팀 배포와 복구는 [운영 가이드](apps/warming-up/README.md)를 따르세요.
 
-## 기존 Supabase 앱 실행 (저장소 루트)
+## 팀 BOB · Vercel과 Supabase
+
+[팀 Vercel 웹앱](https://bob-tmdwn1.vercel.app/) · [BOB 대시보드](https://supabase.com/dashboard/project/vqqolzpodmaibnjazxus) · [팀 배포와 확인 방법](docs/bob-supabase.md)
+
+이 버전은 저장소 루트에서 실행합니다. Vercel이 화면을 제공하고, BOB의 Supabase Auth·Postgres·Edge Functions가 로그인과 가구별 데이터를 처리합니다. 두 운영판의 회원과 가구 데이터는 각자 가입한 서비스에서 관리합니다.
 
 ```bash
-npm install
-```
-
-```bash
+npm ci
 npm run dev
 ```
 
-http://localhost:3000 에서 '보호자로 시작'(온보딩 → 홈)과 '어르신으로 시작'(연결 숫자 → 버튼 3개)을 확인할 수 있습니다.
-지금은 **데모 모드**입니다. 데이터는 브라우저 저장소에만 있고, 지난 5주치 밥솥 기록이 미리 채워져 있습니다. 같은 브라우저의 두 탭이 상태를 공유합니다.
+로컬 첫 화면에서 **보호자로 시작 → 데모로 둘러보기**를 선택하면 예시 데이터로 튜토리얼·가구 설정·홈을 확인할 수 있습니다. 실제 계정은 BOB의 공개 연결 설정이 필요합니다. 가입 직후 기록이 비어 있는 가구에는 측정 대기 상태를 표시합니다.
 
 ```bash
 npm test

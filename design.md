@@ -27,7 +27,7 @@
                                                    │  REST: 디바이스 status (powerMeter)
                                                    ▼
                      ┌────────── Supabase (프로젝트 BOB, ap-northeast-2) ──────┐
-  pg_cron (1분) ───▶ │ Edge Fn jobs?job=ingest → power_readings_raw            │
+  pg_cron (10분) ──▶ │ Edge Fn jobs?job=ingest → 전력 측정·취사 신호 저장       │
   pg_cron (5분) ───▶ │ Edge Fn jobs?job=judge  → cooker_events, meal_slots,    │
                      │                           daily_cooker_stats, raw 삭제  │
   pg_cron (10분) ──▶ │ Edge Fn jobs?job=alerts → alerts  (Web Push는 다음 단계) │
@@ -45,7 +45,8 @@
 - **원시값 보존:** 판정 창 90분이 지난 원시값은 judge 작업이 지우고, 어떤 경우에도 24시간을 넘기지 않는다 (daily 작업).
 - **주기 작업 인증:** pg_cron → `private.run_job()` → `x-job-secret` 헤더. 비밀값은 Vault(`job_secret`)에만 있다.
 
-- **수집 방식:** MVP는 SmartThings REST를 **폴링**한다. 간격은 1분이 기본값이고 `(미확정)`이다 (brd 미확정 #2). SmartApp 웹훅 구독은 후속 개선이다.
+- **전력 수집**. Supabase 파일럿은 어르신이 동의한 가구의 플러그를 SmartThings REST로 10분마다 조회한다. 삼성 응답에 있는 전력 측정 시각을 사용하며, 같은 측정이 다시 오면 한 번만 처리한다.
+- **운영 확인**. 팀 프로젝트에 접근한 뒤 `cron.job`에서 `bapmutna-ingest`의 예약식 `*/10 * * * *`를 확인한다. 밥솥 전용 실물 플러그를 등록하고, SmartThings에 표시된 마지막 측정 시각을 앱의 ‘우리 집 기기 연결’과 대조한다. 같은 측정을 다시 받아도 취사 건수가 늘지 않는지 확인한다.
 - **SmartThings 인증:** MVP 현장테스트는 가구별 PAT(Personal Access Token)를 쓴다 `(가정)`. 정식 서비스는 SmartThings OAuth(SmartApp)로 바꾼다.
 - **시간대:** 모든 판정은 `Asia/Seoul` 기준이다. DB에는 timestamptz(UTC)로 저장한다.
 
@@ -174,12 +175,13 @@ daily_cooker_stats (
 
 | 이벤트 | 판단 기준 (초기값) | 비고 |
 |---|---|---|
-| 취사 `cook` | 700W 이상이 **연속 N분 이상** 이어진 구간 (N=15, `가정`, ADR-014) | 순간값이 아닌 구간 단위로 판단 |
+| 취사 `cook` | 밥솥 전용 플러그에서 처음 700W 이상이 측정된 시각에 1건 | 다음 700W 이상 측정이 직전 고전력 측정으로부터 10분 이내면 같은 건에 포함한다. 10분을 넘기면 새 건이다 |
 | 보온 상태 | 20~70W가 연속 10분 이상 이어진 구간 | 이벤트로 저장하지 않고 열림 판단의 전제로만 쓴다 |
 | 뚜껑 열림 `lid_open` | 보온 중 히터 재가동으로 전력이 순간 상승(보온 기준선 대비 +X W, X는 실측 후 결정) | 보온을 쓰지 않으면 감지할 수 없다. 센서 교차 확인 검토 중 (ADR-003) |
 
 - 모든 기준값은 `config/detection.ts`의 상수로 두고, 밥솥 실측 후 확정한다 (brd 미확정 #5).
-- 판정이 끝난 구간의 `power_readings_raw` 행은 같은 트랜잭션에서 삭제한다. 판정에 쓰이지 않은 데이터도 24시간이 지나면 삭제한다.
+- 700W는 밥솥 사용 신호다. 실제 식사 여부는 당사자가 전한 소식과 구분해서 표시한다. 가상 기기와 종류를 확인하지 못한 기기는 개인 점검에만 쓴다.
+- 뚜껑 열림은 충분히 촘촘한 보온 표본이 누적될 때만 판정한다. 10분 조회 사이에 발생한 전력 변화는 추정하지 않는다. `judge`가 90분 판정 창 밖의 원시값을 정리하고, `daily`도 24시간이 지난 원시값을 정리한다.
 
 ### 4.2 이벤트 → 끼니 상태
 
@@ -187,7 +189,7 @@ daily_cooker_stats (
 2. 슬롯 시간대 안에 `cook` 또는 `lid_open` 이벤트가 있으면 → `confirmed` (source=cooker).
 3. 시간대 안에 시니어가 "외식했어요"를 누르면 → `eat_out` (source=senior_check). 슬롯 밖에 누르면 가장 가까운 슬롯에 적용한다.
 4. 부재 기간에 걸린 날짜의 슬롯 중 2·3에 해당하지 않는 슬롯은 → `away`. 부재 중에도 취사가 감지되면(예정보다 일찍 귀가) `confirmed`가 우선한다.
-5. 슬롯 종료 후에도 `pending`이면 → `unconfirmed`.
+5. 실물 플러그를 끊김 없이 관찰한 기간이 슬롯 전체를 덮고, 슬롯 종료 후에도 소식이 없으면 → `unconfirmed`. 첫 측정 이전이나 관찰 공백은 미확인 끼니 알림에서 제외한다.
 
 ### 4.3 알림 판단 (check-alerts)
 
@@ -246,8 +248,8 @@ daily_cooker_stats (
 
 | 함수 | 인증 | 설명 |
 |---|---|---|
-| `jobs?job=ingest` | `x-job-secret` (pg_cron 1분) | 플러그마다 SmartThings `powerMeter` 조회 → `power_readings_raw`, `smart_plugs.status` |
-| `jobs?job=judge` | 〃 (5분) | 4.1 판정(창 양 끝에서 잘린 구간 제외) → `cooker_events`, 90분 지난 원시값 삭제, 오늘 `meal_slots`·`daily_cooker_stats` 재계산 |
+| `jobs?job=ingest` | `x-job-secret` (pg_cron 10분) | SmartThings `powerMeter`의 값과 측정 시각을 읽는다. 새 유효 측정과 취사 신호를 `record_plug_observation`으로 함께 저장한다. |
+| `jobs?job=judge` | 〃 (5분) | 보온 표본의 뚜껑 열림 판정, 90분 지난 원시값 정리, 확인된 기기 소식으로 오늘의 끼니 슬롯·취사 집계 갱신 |
 | `jobs?job=alerts` | 〃 (10분, :02부터) | 4.3 판정 → `alerts` 생성·해제. Web Push 발송은 다음 단계 |
 | `jobs?job=daily` | 〃 (00:00 KST) | 어제 끼니 확정·집계, 지난 `cooker_events` 삭제, 24시간 지난 원시값 삭제 |
 | `senior` | 기기 토큰 (해시만 저장) | `pair`(연결 숫자 → 토큰), `status`, `eat_out`, `help`(즉시 `help_request` 알림), `away`(days), `back` |

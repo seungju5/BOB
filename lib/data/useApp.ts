@@ -34,7 +34,7 @@ export function useApp(): App {
   const now = useNow();
   const live = !usesImpactFirebase && mode === "live" && !!session;
   const liveState = useLive(live ? session.user.id : null);
-  const demo = useDemo();
+  const demo = useDemo(mode === "demo");
   useAlertSync(mode === "demo" ? now : null);
 
   // 분 단위로만 다시 계산

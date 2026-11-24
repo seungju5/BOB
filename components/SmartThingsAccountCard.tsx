@@ -8,9 +8,16 @@
 import Link from "next/link";
 import { IconArrowRight, IconCheck, IconPlug } from "@/components/icons";
 import { Button } from "@/components/ui";
+import { useApp } from "@/lib/data/useApp";
 import { useSmartThingsSyncController } from "@/lib/smartthings/useSmartThingsSyncController";
 
 export function SmartThingsAccountCard({ compact = false }: { compact?: boolean }) {
+  const { view, provider } = useApp();
+  if (provider !== "demo" || view?.mode !== "demo" || view.dataSource && view.dataSource !== "demo") return null;
+  return <DemoAccountCard compact={compact} />;
+}
+
+function DemoAccountCard({ compact }: { compact: boolean }) {
   const {
     profile,
     online,

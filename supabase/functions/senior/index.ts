@@ -5,13 +5,33 @@
 //   { op: "away", token, days }     오늘부터 days일 부재
 //   { op: "back", token }           부재를 어제로 끝냄
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { resolveMealChoice } from "@/lib/data/senior-schedule.ts";
+import type { MealWindow } from "@/lib/judge/types.ts";
 import { addDays, kstDate } from "@/lib/judge/time.ts";
 import { cors, db, json, must, recomputeDay, refreshActivity, sha256 } from "@/_shared/core.ts";
 import { pushAlerts, type SentAlert } from "@/_shared/push.ts";
 
+type SeniorRequest = { op?: string; code?: string; token?: string; days?: number; includeSchedule?: boolean; meal?: unknown; startDate?: unknown };
+
+async function mealSchedule(h: string): Promise<MealWindow[]> {
+  const profile = must(await db.from("meal_profiles").select("meal_windows").eq("household_id", h).single());
+  const windows: MealWindow[] = Array.isArray(profile?.meal_windows) ? profile.meal_windows : [];
+  const clock = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
+  return windows.filter(w => w && ["breakfast", "lunch", "dinner", "fourth"].includes(w.slot) &&
+    clock.test(w.start) && clock.test(w.end) && w.start < w.end)
+    .map(({slot, start, end}) => ({slot, start, end}));
+}
+
 type Device = { id: string; household_id: string };
 
 class SeniorConsentRequired extends Error {}
+class SeniorChoiceChanged extends Error {}
+
+function scheduledResult(result: {data: string | null; error: {code?: string; message: string} | null}) {
+  if (result.error?.code === "22023") throw new SeniorChoiceChanged();
+  if (result.error?.code === "42501" && result.error.message === "senior_consent_required") throw new SeniorConsentRequired();
+  return must(result);
+}
 
 async function requireSeniorConsent(householdId: string): Promise<void> {
   const house = must(await db.from("households").select("senior_consent_at").eq("id", householdId).maybeSingle()) as {
@@ -41,8 +61,8 @@ async function deviceFor(token: unknown): Promise<Device | null> {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   try {
-    const body = (await req.json()) as { op?: string; code?: string; token?: string; days?: number } | null;
-    if (!body || typeof body !== "object" || !["pair", "status", "eat_out", "help", "away", "back"].includes(body.op ?? "")) return json({ error: "unknown op" }, 400);
+    const body = (await req.json()) as SeniorRequest | null;
+    if (!body || typeof body !== "object" || !["pair", "status", "eat_out", "help", "away", "back", "selected_meal", "planned_away"].includes(body.op ?? "")) return json({ error: "unknown op" }, 400);
     const now = new Date();
     const today = kstDate(now);
 
@@ -74,6 +94,8 @@ Deno.serve(async (req) => {
     const allowed = <T>(action: () => PromiseLike<T>) => whileConsented(h, action);
     await allowed(async () => must(await db.from("senior_devices").update({ last_seen_at: now.toISOString() }).eq("id", device.id)));
 
+    let refreshToday = true;
+    let applied: {meal: {date: string; slot: string}} | {startDate: string} | undefined;
     switch (body.op) {
       case "status": {
         const house = await allowed(async () => must(await db.from("households").select("senior_name, senior_relation, last_cooker_at").eq("id", h).single())) as {
@@ -82,17 +104,47 @@ Deno.serve(async (req) => {
           last_cooker_at: string | null;
         };
         const absence = await allowed(async () => must(
-          await db.from("absences").select("start_date, end_date").eq("household_id", h).gte("end_date", today).lte("start_date", today).limit(1),
+          await db.from("absences").select("start_date, end_date").eq("household_id", h).gte("end_date", today).lte("start_date", today).order("end_date", { ascending: false }).limit(1),
         )) as { start_date: string; end_date: string }[];
+        // Older web clients receive the original response shape. The new badge
+        // only describes a physical meter the household has actually observed.
+        let schedule: {scheduledActions: true; mealWindows: MealWindow[]; cookerObserved: boolean} | undefined;
+        let lastCookerAt = house.last_cooker_at;
+        if (body.includeSchedule === true) {
+          const mealWindows = await allowed(() => mealSchedule(h));
+          const meterRead = await allowed(async () => await db.from("smart_plugs")
+            .select("meter_kind, observing_since, last_reading_at").eq("household_id", h).maybeSingle());
+          const legacy = meterRead.error?.code === "42703" || meterRead.error?.code === "PGRST204";
+          const meter = legacy ? null : must(meterRead);
+          const since = Date.parse(meter?.observing_since ?? "");
+          const measured = Date.parse(meter?.last_reading_at ?? "");
+          const cookerObserved = meter?.meter_kind === "recognized" && measured >= since && measured <= now.getTime();
+          if (!cookerObserved || Date.parse(lastCookerAt ?? "") < since) lastCookerAt = null;
+          if (!legacy) schedule = {scheduledActions: true, mealWindows, cookerObserved};
+        }
         return json({
+          ...schedule,
           seniorName: house.senior_name,
           relation: house.senior_relation,
-          lastCookerAt: house.last_cooker_at,
+          lastCookerAt,
           absence: absence[0] ? { startDate: absence[0].start_date, endDate: absence[0].end_date } : null,
         });
       }
       case "eat_out":
+      case "selected_meal":
       case "help": {
+        if (body.op === "selected_meal" || (body.op === "eat_out" && body.meal !== undefined)) {
+          const windows = await allowed(() => mealSchedule(h));
+          const meal = resolveMealChoice(body.meal, windows, now);
+          if (!meal) return json({error: "오늘 또는 어제의 이미 시작한 끼니를 골라 주세요."}, 400);
+          const noticeId = await allowed(async () => scheduledResult(await db.rpc("record_selected_senior_meal", {
+            h, selected_date: meal.date, selected_slot: meal.slot, selected_label: meal.label, recorded_at: meal.at.toISOString(),
+          })));
+          if (noticeId) await allowed(() => pushAlerts(h, [{id: noticeId, type: "eat_out", payload: {meal: {date: meal.date, label: meal.label}}}]));
+          applied = {meal: {date: meal.date, slot: meal.slot}};
+          refreshToday = false; // The transaction updated the selected slot without recomputing pruned history.
+          break;
+        }
         await allowed(async () => must(await db.from("senior_actions").insert({ household_id: h, type: body.op, at: now.toISOString() })));
         // 가족에게 소식: 도움 요청은 긴급, 외식은 안부 전화 권유 (0003 마이그레이션 필요)
         const type = body.op === "help" ? "help_request" : "eat_out";
@@ -100,8 +152,19 @@ Deno.serve(async (req) => {
         await allowed(() => pushAlerts(h, rows));
         break;
       }
+      case "planned_away":
       case "away": {
         const days = Math.min(Math.max(Math.floor(Number(body.days) || 1), 1), 30);
+        if (body.op === "planned_away" || body.startDate !== undefined) {
+          const startDate = body.startDate;
+          if (typeof startDate !== "string" || ![today, addDays(today, 1)].includes(startDate)) return json({error: "오늘 또는 내일을 선택해 주세요."}, 400);
+          const endDate = addDays(startDate, days - 1);
+          const noticeId = await allowed(async () => scheduledResult(await db.rpc("record_planned_senior_absence", {h, away_start: startDate, away_end: endDate})));
+          if (noticeId) await allowed(() => pushAlerts(h, [{id: noticeId, type: "away", payload: {startDate, endDate}}]));
+          applied = {startDate};
+          refreshToday = startDate === today;
+          break;
+        }
         const endDate = addDays(today, days - 1);
         await allowed(async () => must(await db.from("absences").delete().eq("household_id", h).lte("start_date", today).gte("end_date", today)));
         await allowed(async () => must(await db.from("absences").insert({ household_id: h, start_date: today, end_date: endDate, created_by: "senior" })));
@@ -121,9 +184,10 @@ Deno.serve(async (req) => {
         return json({ error: "unknown op" }, 400);
     }
     await allowed(() => refreshActivity(h));
-    await allowed(() => recomputeDay(h, today, now));
-    return json({ ok: true });
+    if (refreshToday) await allowed(() => recomputeDay(h, today, now));
+    return json({ ok: true, ...(applied && { applied }) });
   } catch (e) {
+    if (e instanceof SeniorChoiceChanged) return json({ error: "날짜나 식사 시간이 바뀌었어요. 최신 정보에서 다시 골라 주세요." }, 409);
     if (e instanceof SeniorConsentRequired) return json({ error: "어르신 동의가 필요해요. 보호자에게 확인해 주세요.", code: "senior_consent_required" }, 403);
     console.error("senior request stopped");
     return json({ error: "잠시 후 다시 시도해 주세요." }, 500);

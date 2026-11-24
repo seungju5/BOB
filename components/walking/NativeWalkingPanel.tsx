@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { PhoneSteps, type RankingLinkStatus, type WalkingBoard, type WalkReminderStatus } from "@bapmunna/phone-steps";
 import { Button } from "@/components/ui";
+import { WALKING_SHARING_READY } from "@/lib/walking/availability";
 
 const emptyLink: RankingLinkStatus = { linked: false, confirmed: false, revokePending: false };
 const emptyReminders: WalkReminderStatus = { enabled: false, times: [], bloodSugarReminder: false, permission: "unknown" };
@@ -41,6 +42,7 @@ export function NativeWalkingPanel({onLinkChange}:{onLinkChange?:(link:RankingLi
     const currentReminders = await PhoneSteps.walkReminderStatus();
     if (!alive.current || id !== revision.current) return;
     setReminders(currentReminders);
+    if (!WALKING_SHARING_READY) return;
     let current = await PhoneSteps.rankingStatus();
     if (current.revokePending) {
       try { onLinkChange?.(emptyLink); await PhoneSteps.rankingDisconnect(); current = await PhoneSteps.rankingStatus(); }
@@ -65,6 +67,7 @@ export function NativeWalkingPanel({onLinkChange}:{onLinkChange?:(link:RankingLi
     try { await operation(); }
     catch (reason) {
       if (alive.current) { setError(message(reason)); setBoard(null); }
+      if (!WALKING_SHARING_READY) return;
       try { const current = await PhoneSteps.rankingStatus(); if (alive.current) reportLink(current); } catch { /* Keep the error visible. */ }
     } finally { locked.current = false; if (alive.current) setBusy(false); }
   }, [reportLink,onLinkChange]);
@@ -88,11 +91,12 @@ export function NativeWalkingPanel({onLinkChange}:{onLinkChange?:(link:RankingLi
   }, [refresh, run]);
 
   return <div className="mt-6 space-y-6 text-2xl leading-relaxed text-cocoa">
+      {error ? <p role="alert" className="mt-4 rounded-2xl bg-blush p-4">{error}</p> : null}
+      {notice ? <p role="status" className="mt-4 rounded-2xl bg-butter-soft p-4">{notice}</p> : null}
+    {!WALKING_SHARING_READY ? <p id="native-ranking-title" className="rounded-3xl bg-paper p-5">가족과 걸음수를 나누는 기능을 준비하고 있어요. 휴대폰에서 산책 알림은 따로 설정할 수 있어요.</p> :
     <section aria-labelledby="native-ranking-title" className="rounded-3xl border border-line bg-paper p-5">
       <h2 id="native-ranking-title" className="text-[28px] font-extrabold">{link.linked && !privateSharing ? "함께 걷는 오늘의 순위" : "오늘의 걸음 연결"}</h2>
       <p className="mt-3 text-muted">{!link.linked ? "가족 계정에 걸음을 연결해 함께 산책을 이어가요. 전체 랭킹 공개는 따로 선택할 수 있어요." : privateSharing ? "한국 시간 기준 오늘 걸음수를 연결된 가족 계정에만 공유해요. 전체 랭킹에는 공개하지 않아요." : "선택한 공개 연결이에요. 별명과 한국 시간 기준 오늘 걸음수가 전체 랭킹 참여자에게 보여요."}</p>
-      {error ? <p role="alert" className="mt-4 rounded-2xl bg-blush p-4">{error}</p> : null}
-      {notice ? <p role="status" className="mt-4 rounded-2xl bg-butter-soft p-4">{notice}</p> : null}
       {link.revokePending ? <div className="mt-4"><p>연결 해제를 마치는 중이에요. 지금은 걸음수를 보내지 않아요.</p><Button disabled={busy} variant="outline" className="mt-3 min-h-16 text-2xl" onClick={() => void run(async () => { onLinkChange?.(emptyLink); await PhoneSteps.rankingDisconnect(); await refresh(false); setNotice("이 휴대폰 연결을 해제했어요."); })}>연결 해제 다시 확인</Button></div>
       : !link.linked ? <>
         <Button variant="outline" className="mt-4 min-h-16 text-2xl" disabled={busy} onClick={() => void run(async () => { await PhoneSteps.openWalkingWebApp(); })}>웹앱에서 가족 계정 연결하기</Button>
@@ -127,7 +131,7 @@ export function NativeWalkingPanel({onLinkChange}:{onLinkChange?:(link:RankingLi
         <Button variant="outline" disabled={busy} className="mt-3 min-h-16 text-2xl" onClick={() => void run(async () => { revision.current++; setBoard(null); onLinkChange?.(emptyLink); await PhoneSteps.rankingDisconnect(); await refresh(false); setNotice("이 휴대폰 연결을 해제했어요. 계정에 보낸 기록은 웹앱에서 관리할 수 있어요."); })}>이 휴대폰 연결 끊기</Button>
         <p className="mt-3 text-muted">{privateSharing ? "계정에 저장된 별명·걸음수를 지우려면 웹앱에서 걸음 연결을 그만해 주세요." : "참여를 완전히 그만하고 별명·걸음수를 지우려면 웹앱의 ‘랭킹 참여 그만하기’를 눌러 주세요."}</p>
       </>}
-    </section>
+    </section>}
 
     <section aria-labelledby="native-reminder-title" className="rounded-3xl border border-line bg-paper p-5">
       <h2 id="native-reminder-title" className="text-[28px] font-extrabold">식사 뒤, 가벼운 산책</h2>

@@ -92,7 +92,7 @@ class PhoneStepsPlugin : Plugin() {
         }
     }
     @PluginMethod fun openWalkingWebApp(call: PluginCall) = launchWalking(call) {
-        activity.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://warming-up-bapmunna.web.app/walking/")).apply { addCategory(Intent.CATEGORY_BROWSABLE) })
+        activity.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://bob-tmdwn1.vercel.app/walking/")).apply { addCategory(Intent.CATEGORY_BROWSABLE) })
         call.resolve()
     }
     @PluginMethod fun walkReminderStatus(call: PluginCall) = launchWalking(call) { call.resolve(WalkingReminders.status(context)) }
@@ -365,6 +365,6 @@ class PhoneStepsPlugin : Plugin() {
 
     companion object {
         private const val SAMSUNG_HEALTH_PACKAGE = "com.sec.android.app.shealth"
-        private const val WEB_APP_URL = "https://warming-up-bapmunna.web.app/"
+        private const val WEB_APP_URL = "https://bob-tmdwn1.vercel.app/"
     }
 }

@@ -1,5 +1,6 @@
 {
-  "_comment": "공유 링크와 문의처는 팀 공용 웹앱을 사용합니다. Firebase 운영 설정은 apps/warming-up에 있습니다.",
+  "_comment": "BOB는 팀 Vercel, Firebase판은 팀 Hosting의 주소로 공유합니다.",
+  "supabaseWebOrigin": "https://bob-tmdwn1.vercel.app",
   "webOrigin": "https://warming-up-bapmunna.web.app",
   "privacySupportEmail": "Warmingu9@gmail.com"
 }

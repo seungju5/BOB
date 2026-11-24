@@ -10,7 +10,7 @@ import { setMode } from '@/lib/data/mode';
 
 export default function KakaoReturn(){
   const router=useRouter();
-  const account=useFirebaseAccount();
+  const account=useFirebaseAccount(usesImpactFirebase);
   const [error,setError]=useState('');
   const [completedUid,setCompletedUid]=useState<string|null>(null);
   // Derived during render instead of setState inside an effect (react-hooks/set-state-in-effect).
@@ -25,9 +25,20 @@ export default function KakaoReturn(){
     // StrictMode's disposable first effect must not consume the one-use code.
     void Promise.resolve().then(async()=>{
       if(!active)return;
+      if(!usesImpactFirebase){
+        const source = new URLSearchParams(window.location.search);
+        const code = source.get('code');
+        const failure = source.get('error') || source.get('error_code');
+        const query = new URLSearchParams();
+        if (failure) query.set('error', failure === 'access_denied' ? 'access_denied' : 'configuration');
+        else if (code && code.length <= 2048) query.set('code', code);
+        // Drop legacy fragments and external redirect parameters before returning to an app page.
+        window.history.replaceState(null, '', window.location.pathname);
+        router.replace(query.size ? '/auth/callback?' + query.toString() : '/login');
+        return;
+      }
       const fragment=window.location.hash;
       window.history.replaceState(null,'',window.location.pathname);
-      if(!usesImpactFirebase)throw Error('카카오 로그인은 밥뭇나 공개 앱에서 시작해 주세요.');
       const provider=await connectFirebase();
       if(!active)return;
       if(!provider.completeKakaoLogin)throw Error('새 로그인 화면을 불러오도록 새로고침해 주세요.');

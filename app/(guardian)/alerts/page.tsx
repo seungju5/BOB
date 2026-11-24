@@ -5,11 +5,13 @@ import { ALERT_TONE, alertCopy, AlertShortcut } from "@/components/guardian";
 import { IconBell, IconCheck } from "@/components/icons";
 import { PageHeader, Skeleton } from "@/components/ui";
 import { kstDate, kstTime } from "@/lib/judge/time";
+import { recentPowerNotice } from "@/lib/data/view";
 import { useApp } from "@/lib/data/useApp";
 import { enablePush, usePushState } from "@/lib/push";
 
 export default function AlertsPage() {
-  const { view, actions, mode } = useApp();
+  const { view, actions, mode, now } = useApp();
+  const notice = view && now ? recentPowerNotice(view, now) : null;
   const alerts = view ? [...view.alerts].sort((a, b) => b.triggeredAt.localeCompare(a.triggeredAt)) : [];
 
   return (
@@ -25,10 +27,16 @@ export default function AlertsPage() {
         }
       />
       <div className="flex flex-col gap-3 px-6">
-        {view?.careAvailable === false ? <p className="rounded-2xl bg-butter-soft p-4 text-[16px]">가족과 기기를 연결하면 실제 알림을 받을 수 있어요. 지금은 설정한 기준만 저장돼요.</p> : <PushCard mode={mode} alertIds={alerts.map((a) => a.id)} />}
+        {view?.mode === "demo" ? <p className="rounded-2xl bg-butter-soft p-4 text-[16px]">예시 알림은 이 체험 화면에서만 볼 수 있어요.</p> : null}
+        {view?.mode === "live" && view.careAvailable === false && !view.seniorPaired ? <p className="rounded-2xl bg-butter-soft p-4 text-[16px]">가족 휴대폰이나 밥솥 플러그를 연결하면 여기에서 소식을 볼 수 있어요.</p> : null}
+        {mode === "live" && view?.seniorConsent && (view.seniorPaired || view.careAvailable !== false) ? <PushCard mode={mode} alertIds={alerts.map((a) => a.id)} /> : null}
+        {notice && <article className="rounded-2xl bg-butter-soft p-5 text-cocoa">
+          <h2 className="text-[17px] font-bold">밥솥 플러그의 전력이 높아졌어요</h2>
+          <p className="mt-1 text-[16px]">{kstDate(new Date(notice))} {kstTime(new Date(notice))} · 플러그가 보낸 전력 신호예요. 실제 식사 여부는 알 수 없어요.</p>
+        </article>}
         {!view ? (
           <Skeleton className="h-24" />
-        ) : alerts.length === 0 ? (
+        ) : alerts.length === 0 && !notice ? (
           <div className="mt-12 flex flex-col items-center text-center text-muted">
             <span className="grid h-16 w-16 place-items-center rounded-full bg-butter-soft text-cocoa">
               <IconBell className="h-7 w-7" />
@@ -44,6 +52,7 @@ export default function AlertsPage() {
               emergency: view.alertSettings.emergencyHours,
               plugRegistered: !!view.plug.deviceId,
               payload: a.payload,
+              issuedAt: a.triggeredAt,
             });
             const t = new Date(a.triggeredAt);
             const done = !!a.acknowledgedAt;
@@ -86,7 +95,7 @@ function PushCard({ mode, alertIds }: { mode: "demo" | "live" | null; alertIds: 
   if (state === "granted")
     return (
       <p className="flex items-center gap-1.5 text-[13px] font-semibold text-sage-deep">
-        <IconCheck className="h-4 w-4" /> 휴대폰 알림을 받고 있어요
+        <IconCheck className="h-4 w-4" /> 이 브라우저에서 알림을 허용했어요
       </p>
     );
   return (
@@ -98,7 +107,7 @@ function PushCard({ mode, alertIds }: { mode: "demo" | "live" | null; alertIds: 
         <p className="mt-1 text-[14px] leading-relaxed text-cocoa/75">알림이 꺼져 있어요. 브라우저(또는 휴대폰) 설정에서 밥뭇나 알림을 허용해 주세요.</p>
       ) : (
         <>
-          <p className="mt-1 text-[14px] leading-relaxed text-cocoa/75">식사 소식이 끊기거나 어르신이 버튼을 누르시면 바로 알려 드려요. iPhone은 홈 화면에 추가한 뒤 켤 수 있어요.</p>
+          <p className="mt-1 text-[14px] leading-relaxed text-cocoa/75">어르신이 남긴 소식과 설정한 기준에 따른 알림을 받을 수 있어요. iPhone은 홈 화면에 추가한 뒤 켤 수 있어요.</p>
           <button
             disabled={busy}
             onClick={async () => {

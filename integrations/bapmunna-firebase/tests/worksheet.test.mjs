@@ -4,7 +4,7 @@ import {readFile} from 'node:fs/promises';
 import {spawnSync} from 'node:child_process';
 import {emptyPower,samplePower} from '../docs/power.mjs';
 import {DETECTION} from '../docs/shared/config/detection.mjs';
-const COOK_W=DETECTION.COOK_MIN_WATTS,COOK_MIN=DETECTION.COOK_MIN_MINUTES;
+const COOK_W=DETECTION.COOK_MIN_WATTS;
 import {createState,ingestDevice,advance,evaluate,setDeviceOnline,setConsent,setAway,cancelAway,confirmMeal,mealStreak,report,status,DAY} from '../docs/engine.mjs';
 import {setupDraft,validateSetup,applySetup,readSetupForm,patternComparison,dateInput,parseDateInput} from '../docs/worksheet.mjs';
 const run=(s,w,n)=>{let result;for(let i=0;i<=n;i++){if(i)advance(s,1);result=ingestDevice(s,'cooker','power',w);}return result;};
@@ -12,8 +12,8 @@ const complete=s=>({...setupDraft(s),plug:true,wifi:true});
 test('v1.1 defaults are two slots, 48h, 72h and household quantities',()=>{
   const s=createState();assert.equal(s.rules.consecutiveMissed,2);assert.equal(s.rules.inactiveHours,48);assert.equal(s.rules.followupHours,72);assert.equal(s.profile.residents,1);assert.equal(s.profile.pets,0);
 });
-test('the canonical cooking watt threshold is inclusive; COOK_MIN_MINUTES one-minute readings match the canonical interval convention',()=>{
-  for(const watts of [COOK_W-1,COOK_W,900]){const s=createState(false);run(s,watts,COOK_MIN-2);assert.equal(report(s,1)[0].cook,0);advance(s,1);ingestDevice(s,'cooker','power',watts);assert.equal(report(s,1)[0].cook,watts>=COOK_W?1:0);}
+test('the first sample at or above the canonical threshold is a cooking signal',()=>{
+  for(const watts of [COOK_W-1,COOK_W,900]){const s=createState(false);ingestDevice(s,'cooker','power',watts);assert.equal(report(s,1)[0].cook,watts>=COOK_W?1:0);}
 });
 test('sustained high power is one confirmed cooking slot without a manual record',()=>{
   const s=createState(false);run(s,900,15);assert.equal(report(s,1)[0].cook,1);assert.equal(report(s,1)[0].confirmed,1);assert.equal(s.records['0:lunch'].manual,false);assert.equal(s.lastLidAt,null);
@@ -21,11 +21,12 @@ test('sustained high power is one confirmed cooking slot without a manual record
 test('both canonical keep-warm boundaries are excluded from usage',()=>{
   for(const watts of [DETECTION.KEEP_WARM_MIN_WATTS,45,DETECTION.KEEP_WARM_MAX_WATTS]){const s=createState(false);run(s,watts,9);assert.equal(s.power.mode,'keep-warm');assert.equal(report(s,1)[0].cook,0);assert.equal(report(s,1)[0].signals,0);assert.equal(s.devices.cooker.lastActivity,null);}
 });
-test('a one-minute high-power spike does not count',()=>{
-  const s=createState(false);run(s,900,1);advance(s,1);ingestDevice(s,'cooker','power',0);assert.equal(report(s,1)[0].cook,0);
+test('a single high sample counts once, even if the next sample is low',()=>{
+  const s=createState(false);run(s,900,1);advance(s,1);ingestDevice(s,'cooker','power',0);assert.equal(report(s,1)[0].cook,1);
 });
-test('more than the canonical maximum gap restarts observation',()=>{
-  const s=createState(false);run(s,900,2);advance(s,5);ingestDevice(s,'cooker','power',900);assert.equal(report(s,1)[0].cook,0);run(s,900,COOK_MIN);assert.equal(report(s,1)[0].cook,1);
+test('ten minutes from the latest high stays one run, eleven starts another',()=>{
+  const s=createState(false);ingestDevice(s,'cooker','power',900);advance(s,10);ingestDevice(s,'cooker','power',700);
+  assert.equal(report(s,1)[0].cook,1);advance(s,11);ingestDevice(s,'cooker','power',700);assert.equal(report(s,1)[0].cook,2);
 });
 test('repeated or out-of-order sample times do not inflate duration',()=>{
   const first=samplePower(emptyPower(),900,10);for(const t of [10,9]){const next=samplePower(first.meter,900,t);assert.equal(next.ignored,true);assert.deepEqual(next.meter,first.meter);}
@@ -46,7 +47,7 @@ test('couples and pets retain household-level warnings, not multiplied meals',()
   const s=createState(false),d=complete(s);d.residents=2;d.pets=2;applySetup(s,d);ingestDevice(s,'cooker','lid');s.now+=48*60;evaluate(s);assert.ok(s.careAlerts.inactive);assert.match(s.careAlerts.inactive.detail,/가구/);assert.equal(s.profile.meals.length,3);assert.equal(s.profile.household,'together');
 });
 test('offline and reconnect restart observation instead of retroactive danger',()=>{
-  const s=createState(false);run(s,900,4);setDeviceOnline(s,'cooker',false);s.now+=72*60;evaluate(s);assert.equal(s.careAlerts.inactive,undefined);assert.ok(s.careAlerts.offline);setDeviceOnline(s,'cooker',true);assert.equal(s.careAlerts.inactive,undefined);run(s,900,1);assert.equal(report(s,1)[0].cook,0);
+  const s=createState(false);run(s,900,4);setDeviceOnline(s,'cooker',false);s.now+=72*60;evaluate(s);assert.equal(s.careAlerts.inactive,undefined);assert.ok(s.careAlerts.offline);setDeviceOnline(s,'cooker',true);assert.equal(s.careAlerts.inactive,undefined);run(s,900,1);assert.equal(report(s,1)[0].cook,1);
 });
 test('away and return do not cause immediate inactivity escalation',()=>{
   const s=createState(false);setAway(s,s.now,s.now+4*DAY);s.now+=3*DAY;evaluate(s);assert.equal(s.careAlerts.inactive,undefined);cancelAway(s);assert.equal(s.careAlerts.inactive,undefined);

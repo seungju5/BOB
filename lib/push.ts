@@ -4,7 +4,7 @@
 // - 알림 권한을 받고 서비스 워커(public/sw.js)를 등록한다.
 // - 실서비스: VAPID 공개키(NEXT_PUBLIC_VAPID_PUBLIC_KEY)가 있으면 구독을 push_subscriptions에 저장해,
 //   앱을 닫아 둬도 서버(Edge Function)가 보낸 알림을 받는다.
-// - 데모·키 없음: 앱이 열려 있는 동안 새 알림을 휴대폰 알림으로 띄운다 (useAlertNotifications).
+// - 앱이 열려 있는 보호자에게도 같은 ID로 실제 안부 알림을 표시한다.
 // iPhone은 홈 화면에 추가한 앱에서만 알림을 받을 수 있다 (iOS 16.4+).
 
 import { useEffect, useSyncExternalStore } from "react";
@@ -46,7 +46,7 @@ function base64ToBytes(b64: string) {
 
 /** 알림 켜기: 권한 요청 → 서비스 워커 등록 → (실서비스+키 있으면) 서버 구독 저장 */
 export async function enablePush(mode: "demo" | "live" | null, alertIds: string[]): Promise<PushState> {
-  if (readState() === "unsupported") return "unsupported";
+  if (mode !== "live" || readState() === "unsupported") return "unsupported";
   const permission = await Notification.requestPermission();
   window.dispatchEvent(new Event(EVENT));
   if (permission !== "granted") return permission as PushState;
@@ -55,7 +55,7 @@ export async function enablePush(mode: "demo" | "live" | null, alertIds: string[
   // 지금 있는 알림은 이미 본 것으로 두어, 켜자마자 알림이 쏟아지지 않게 한다
   markSeen(alertIds);
 
-  if (mode === "live" && supabaseConfigured && VAPID) {
+  if (supabaseConfigured && VAPID) {
     const sub = (await reg.pushManager.getSubscription()) ?? (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: base64ToBytes(VAPID) }));
     const json = sub.toJSON();
     const { data } = await supabase().auth.getUser();
@@ -88,12 +88,14 @@ function markSeen(ids: string[]) {
 export function useAlertNotifications(view: AppView | null) {
   const state = usePushState();
   useEffect(() => {
-    if (!view || state !== "granted") return;
+    if (view?.mode !== "live" || !view.seniorConsent || state !== "granted") return;
     const seen = new Set(readSeen());
     const fresh = view.alerts.filter((a) => !a.acknowledgedAt && !a.resolvedAt && !seen.has(a.id));
     if (!fresh.length) return;
-    markSeen(fresh.map((a) => a.id));
+    let active = true;
     void navigator.serviceWorker.getRegistration(appPath("/")).then((reg) => {
+      if (!active) return;
+      markSeen(fresh.map((a) => a.id));
       for (const a of fresh) {
         const copy = alertCopy(a.type, view.senior.relation, {
           missed: view.alertSettings.missedMealsThreshold,
@@ -101,11 +103,13 @@ export function useAlertNotifications(view: AppView | null) {
           emergency: view.alertSettings.emergencyHours,
           plugRegistered: !!view.plug.deviceId,
           payload: a.payload,
+          issuedAt: a.triggeredAt,
         });
         const options = { body: copy.body, tag: a.id, icon: appPath("/icon.svg"), data: { url: appPath(alertUrl(a.type)) } };
-        if (reg) void reg.showNotification(copy.title, options);
+        if (reg) void reg.showNotification(copy.title, options).catch(() => {});
         else new Notification(copy.title, options);
       }
-    });
+    }).catch(() => {});
+    return () => { active = false; };
   }, [view, state]);
 }

@@ -1,16 +1,17 @@
 // 주기 작업 (pg_cron이 호출). design.md 6장의 ingest-power / judge-events / check-alerts / create-daily-slots를 한 함수에 모았다.
-//   ?job=ingest  1분: SmartThings 전력값 수집
+//   ?job=ingest 10분: SmartThings 전력값 수집
 //   ?job=judge   5분: 이벤트 판정, 원시값 삭제, 오늘 끼니 상태 갱신
 //   ?job=alerts 10분: 알림 판단
 //   ?job=daily  00:00 KST: 어제 확정, 지난 이벤트 삭제
 //   ?job=weekly 월 09:00 KST: 주간 리포트 소식
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { DETECTION, RAW_RETENTION_HOURS } from "@/config/detection.ts";
+import { ALERT_DEFAULTS, DETECTION, RAW_RETENTION_HOURS } from "@/config/detection.ts";
 import { detectEvents } from "@/lib/judge/detectEvents.ts";
 import { evaluateAlerts } from "@/lib/judge/evaluateAlerts.ts";
-import { addDays, HOUR_MS, kstDate, MINUTE_MS } from "@/lib/judge/time.ts";
-import type { AlertType, MealSlot } from "@/lib/judge/types.ts";
-import { dayRange, db, getAbsences, json, must, readPower, recomputeDay, refreshActivity } from "@/_shared/core.ts";
+import { addDays, HOUR_MS, kstDate, kstDateTime, MINUTE_MS } from "@/lib/judge/time.ts";
+import type { AlertType, MealSlot, MealWindow } from "@/lib/judge/types.ts";
+import type { MeterKind } from "@/lib/smartthings/meter.ts";
+import { dayRange, db, getAbsences, json, must, readMeterKind, readPower, recordObservation, recomputeDay, refreshActivity } from "@/_shared/core.ts";
 import { pushAlerts, type SentAlert } from "@/_shared/push.ts";
 
 /** 판단 로직이 만들지 않는 '소식' 알림. 열려 있어도 판단에 넣지 않는다. */
@@ -19,7 +20,7 @@ const NEWS_ALERTS: AlertType[] = ["help_request", "eat_out", "away", "weekly_rep
 /** 판정에 쓰는 원시값 창. 이보다 오래된 값은 판정이 끝난 것으로 보고 지운다. */
 const JUDGE_WINDOW_MIN = 90;
 
-type Plug = { id: string; household_id: string; st_device_id: string };
+type Plug = { id: string; household_id: string; st_device_id: string; meter_kind: MeterKind | null; last_reading_at: string | null };
 type ConsentedHousehold = { id: string; senior_consent_at: string | null };
 
 function consentRecorded(house: { senior_consent_at: string | null } | null): boolean {
@@ -37,34 +38,35 @@ async function activeHouseholds(): Promise<string[]> {
 }
 
 async function ingest() {
-  const plugs = must(await db.from("smart_plugs").select("id, household_id, st_device_id")) as Plug[];
-  const now = new Date();
-  const minute = new Date(Math.floor(now.getTime() / MINUTE_MS) * MINUTE_MS).toISOString();
+  const plugs = must(await db.from("smart_plugs").select("id, household_id, st_device_id, meter_kind, last_reading_at")) as Plug[];
   let ok = 0;
-  for (const p of plugs) {
-    if (!await hasSeniorConsent(p.household_id)) continue;
-    let watts: number;
+  const poll = async (p: Plug) => {
+    if (!await hasSeniorConsent(p.household_id)) return;
+    let kind: MeterKind;
+    let reading: Awaited<ReturnType<typeof readPower>>;
     try {
       const token = must(await db.rpc("get_plug_token", { plug: p.id })) as string | null;
       if (!token) throw new Error("no token");
-      watts = await readPower(p.st_device_id, token);
+      [kind, reading] = await Promise.all([
+        p.meter_kind ?? readMeterKind(p.st_device_id, token), readPower(p.st_device_id, token),
+      ]);
     } catch {
-      console.error("ingest device read failed", p.id);
-      must(await db.from("smart_plugs").update({ status: "offline" }).eq("id", p.id));
-      continue;
+      console.error("ingest device read failed");
+      const update = db.from("smart_plugs").update({ status: "offline" }).eq("id", p.id).eq("st_device_id", p.st_device_id);
+      must(await (p.last_reading_at ? update.eq("last_reading_at", p.last_reading_at) : update.is("last_reading_at", null)));
+      return;
     }
-    // A withdrawal while awaiting SmartThings must not persist the returned sample.
-    if (!await hasSeniorConsent(p.household_id)) continue;
-    must(await db.from("power_readings_raw").upsert({ plug_id: p.id, measured_at: minute, watts }, { onConflict: "plug_id,measured_at" }));
-    must(await db.from("smart_plugs").update({ status: "online", last_reading_at: now.toISOString() }).eq("id", p.id));
-    ok++;
-  }
+    if (!await hasSeniorConsent(p.household_id)) return;
+    if (await recordObservation(p.household_id, p.st_device_id, kind, reading, { plug: p.id })) ok++;
+  };
+  // Bound concurrency so one slow outlet cannot consume the whole 30-device pilot's invocation.
+  for (let start = 0; start < plugs.length; start += 5) await Promise.all(plugs.slice(start, start + 5).map(poll));
   return { plugs: plugs.length, ok };
 }
 
 async function judge() {
   const now = new Date();
-  const plugs = must(await db.from("smart_plugs").select("id, household_id, st_device_id")) as Plug[];
+  const plugs = must(await db.from("smart_plugs").select("id, household_id, st_device_id, meter_kind, last_reading_at").eq("meter_kind", "recognized")) as Plug[];
   for (const p of plugs) {
     if (!await hasSeniorConsent(p.household_id)) continue;
     const rows = must(
@@ -77,14 +79,14 @@ async function judge() {
     // 창 양 끝에서 잘린 구간은 다음 회차에 온전히 판정되도록 건너뛴다.
     const closed = detectEvents(readings).filter(
       (e) =>
-        e.startedAt.getTime() > first + DETECTION.READING_INTERVAL_MIN * MINUTE_MS &&
-        e.endedAt.getTime() <= last - DETECTION.COOK_MERGE_GAP_MIN * MINUTE_MS,
+        e.type === "lid_open" && e.startedAt.getTime() > first + DETECTION.READING_INTERVAL_MIN * MINUTE_MS &&
+        e.endedAt.getTime() <= last - DETECTION.LID_OPEN_DEBOUNCE_MIN * MINUTE_MS,
     );
     if (!await hasSeniorConsent(p.household_id)) continue;
     if (closed.length) {
       must(
         await db.from("cooker_events").upsert(
-          closed.map((e) => ({ household_id: p.household_id, type: e.type, started_at: e.startedAt.toISOString(), ended_at: e.endedAt.toISOString() })),
+          closed.map((e) => ({ household_id: p.household_id, source_device: p.st_device_id, type: e.type, started_at: e.startedAt.toISOString(), ended_at: e.endedAt.toISOString() })),
           { onConflict: "household_id,type,started_at", ignoreDuplicates: true },
         ),
       );
@@ -94,7 +96,11 @@ async function judge() {
     must(await db.from("power_readings_raw").delete().eq("plug_id", p.id).lt("measured_at", new Date(now.getTime() - JUDGE_WINDOW_MIN * MINUTE_MS).toISOString()));
   }
   const households = await activeHouseholds();
-  for (const h of households) if (await hasSeniorConsent(h)) await recomputeDay(h, kstDate(now), now);
+  const observed = new Set(plugs.map(p => p.household_id));
+  for (const h of households) if (observed.has(h) && await hasSeniorConsent(h)) await recomputeDay(h, kstDate(now), now);
+  // Keep just the latest opt-in notification timestamp for its 24-hour display window.
+  must(await db.from("smart_plugs").update({ last_power_notice_at: null })
+    .lt("last_power_notice_at", new Date(now.getTime() - RAW_RETENTION_HOURS * HOUR_MS).toISOString()));
   return { plugs: plugs.length, households: households.length };
 }
 
@@ -104,32 +110,43 @@ async function alerts() {
   const households = await activeHouseholds();
   let created = 0;
   for (const h of households) {
-    const [house, settings, plug, slots, open, absences] = await Promise.all([
+    const [house, settings, profile, plug, slots, open, absences] = await Promise.all([
       db.from("households").select("last_activity_at").eq("id", h).single().then(must),
       db.from("alert_settings").select("missed_meals_threshold, fasting_hours, emergency_hours").eq("household_id", h).single().then(must),
-      db.from("smart_plugs").select("last_reading_at").eq("household_id", h).maybeSingle().then(must),
-      db.from("meal_slots").select("date, slot, status, source").eq("household_id", h).gte("date", addDays(today, -2)).lte("date", today).then(must),
+      db.from("meal_profiles").select("meal_windows").eq("household_id", h).single().then(must),
+      db.from("smart_plugs").select("last_reading_at, meter_kind, observing_since, status").eq("household_id", h).maybeSingle().then(must),
+      db.from("meal_slots").select("date, slot, status, source, meter_observed").eq("household_id", h).gte("date", addDays(today, -2)).lte("date", today).then(must),
       // 판단 대상만 (도움 요청·외식·자리 비움·주간 리포트 같은 '소식' 알림은 빼고)
       db.from("alerts").select("type").eq("household_id", h).is("resolved_at", null).not("type", "in", `(${NEWS_ALERTS.join(",")})`).then(must),
       getAbsences(h),
     ]);
     if (!await hasSeniorConsent(h)) continue;
     const order = { breakfast: 0, lunch: 1, dinner: 2, fourth: 3 } as const;
-    const sorted = ((slots ?? []) as MealSlot[]).sort((a, b) => a.date.localeCompare(b.date) || order[a.slot] - order[b.slot]);
+    const sorted = ((slots ?? []) as (MealSlot & { meter_observed?: boolean })[]).filter(slot => slot.meter_observed || slot.source === "senior_check" || slot.source === "absence").sort((a, b) => a.date.localeCompare(b.date) || order[a.slot] - order[b.slot]);
     const s = settings as { missed_meals_threshold: number; fasting_hours: number; emergency_hours: number };
     const last = (house as { last_activity_at: string | null }).last_activity_at;
-    const reading = (plug as { last_reading_at: string | null } | null)?.last_reading_at ?? null;
+    const meter = plug as { last_reading_at: string | null; meter_kind: MeterKind | null; observing_since: string | null; status: string } | null;
+    if (!meter || meter.meter_kind !== "recognized" || !meter.last_reading_at) continue;
+    if (!meter.observing_since) continue;
+    const reading = meter.last_reading_at;
+    if (meter.status === "offline" && now.getTime() - Date.parse(reading) < ALERT_DEFAULTS.DEVICE_OFFLINE_HOURS * HOUR_MS) continue;
+    const observedSince = new Date(meter.observing_since);
+    const windows = (profile as { meal_windows: MealWindow[] }).meal_windows;
+    const usable = sorted.filter(slot => {
+      const window = windows.find(w => w.slot === slot.slot);
+      return window && kstDateTime(slot.date, window.start).getTime() >= observedSince.getTime();
+    });
     const result = evaluateAlerts({
       now,
-      slots: sorted,
-      lastActivityAt: last ? new Date(last) : null,
+      slots: usable,
+      lastActivityAt: new Date(Math.max(last ? Date.parse(last) : 0, observedSince.getTime())),
       settings: { missedMealsThreshold: s.missed_meals_threshold, fastingHours: s.fasting_hours, emergencyHours: s.emergency_hours },
       absences,
-      lastReadingAt: reading ? new Date(reading) : null,
+      lastReadingAt: new Date(reading),
       openAlerts: ((open ?? []) as { type: AlertType }[]).map((a) => a.type),
     });
     if (result.create.length) {
-      const rows = must(await db.from("alerts").insert(result.create.map((type) => ({ household_id: h, type }))).select("id, type, payload")) as SentAlert[];
+      const rows = must(await db.from("alerts").insert(result.create.map((type) => ({ household_id: h, type, payload: { meterObserved: true } }))).select("id, type, payload")) as SentAlert[];
       await pushAlerts(h, rows);
       created += result.create.length;
     }
@@ -153,7 +170,8 @@ async function daily() {
     await recomputeDay(h, today, now); // 오늘 pending 슬롯 생성
   }
   // 집계가 끝난 이벤트 삭제: 취사·열림 시각은 하루만 둔다
-  must(await db.from("cooker_events").delete().lt("started_at", dayRange(today).from));
+  const mergeBoundary = new Date(Date.parse(dayRange(today).from) - DETECTION.COOK_MERGE_GAP_MIN * MINUTE_MS).toISOString();
+  must(await db.from("cooker_events").delete().lt("ended_at", mergeBoundary));
   // 판정 안 된 원시값도 24시간이 지나면 삭제
   must(await db.from("power_readings_raw").delete().lt("measured_at", new Date(now.getTime() - RAW_RETENTION_HOURS * HOUR_MS).toISOString()));
   return { households: households.length };
@@ -170,13 +188,13 @@ async function weekly() {
   let sent = 0;
   for (const h of households) {
     const slots = must(
-      await db.from("meal_slots").select("status").eq("household_id", h).gte("date", addDays(today, -7)).lte("date", addDays(today, -1)),
-    ) as { status: MealSlot["status"] }[];
+      await db.from("meal_slots").select("status, source, meter_observed").eq("household_id", h).gte("date", addDays(today, -7)).lte("date", addDays(today, -1)),
+    ) as (Pick<MealSlot,"status" | "source"> & { meter_observed: boolean })[];
     if (!await hasSeniorConsent(h)) continue;
-    const counted = slots.filter((s) => s.status !== "away" && s.status !== "pending");
+    const counted = slots.filter((s) => (s.meter_observed || s.source === "senior_check") && s.status !== "away" && s.status !== "pending");
     if (!counted.length) continue; // 기록이 없는 주는 보내지 않는다
     const rate = Math.round((counted.filter((s) => s.status === "confirmed" || s.status === "eat_out").length / counted.length) * 100);
-    const rows = must(await db.from("alerts").insert({ household_id: h, type: "weekly_report", payload: { rate } }).select("id, type, payload")) as SentAlert[];
+    const rows = must(await db.from("alerts").insert({ household_id: h, type: "weekly_report", payload: { rate, meterObserved: counted.some(s => s.meter_observed), seniorReported: counted.some(s => s.source === "senior_check") } }).select("id, type, payload")) as SentAlert[];
     await pushAlerts(h, rows);
     sent++;
   }

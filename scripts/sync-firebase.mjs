@@ -8,7 +8,7 @@ const root = resolve(import.meta.dirname, '..');
 const target = resolve(root, 'integrations/bapmunna-firebase/docs/shared');
 const check = process.argv.includes('--check');
 const files = ['config/detection.ts', 'lib/judge/time.ts', 'lib/judge/types.ts',
-  'lib/judge/detectEvents.ts', 'lib/judge/resolveMealSlots.ts', 'lib/judge/evaluateAlerts.ts', 'lib/data/view.ts'];
+  'lib/judge/detectEvents.ts', 'lib/judge/resolveMealSlots.ts', 'lib/judge/evaluateAlerts.ts', 'lib/data/senior-schedule.ts', 'lib/data/view.ts'];
 const manifest = { canonical: 'repository root: Next.js/Supabase', files: {} };
 let stale = false;
 async function output(path, content) {

@@ -62,8 +62,7 @@ export function mealStatusClass(status: MealStatus, palette: MealPaletteId = "so
   if (status === "eat_out") return palette === "clear" ? "bg-butter-deep text-cocoa" : "bg-butter text-cocoa";
   if (status === "away") return palette === "clear" ? "bg-sky-deep text-white" : "bg-sky text-sky-deep";
   if (status === "unconfirmed") return palette === "clear" ? "bg-neutral-500 text-white" : "bg-neutral-300 text-neutral-800";
-  // 대기 중은 아직 판단 전이라 글자까지 흐리게 둔다.
-  return "bg-white text-muted/60 ring-1 ring-inset ring-line";
+  return "bg-paper text-muted ring-1 ring-inset ring-line";
 }
 
 export function mealDayClass(tone: MealDayTone, palette: MealPaletteId = "soft"): string {

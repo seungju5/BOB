@@ -40,10 +40,14 @@ function SettingsGroup({ id, title, summary, children }: { id: string; title: st
   const details = useRef<HTMLDetailsElement>(null);
   useEffect(() => {
     const openTarget = () => {
-      if (location.hash !== "#" + id || !details.current) return;
-      details.current.open = true;
-      details.current.querySelector("summary")?.focus({ preventScroll: true });
-      details.current.scrollIntoView({ block: "start" });
+      if (!location.hash) return;
+      const group = details.current;
+      const target = document.getElementById(location.hash.slice(1));
+      if (!group || !target || !group.contains(target)) return;
+      group.open = true;
+      const focusTarget = target === group ? group.querySelector("summary") : target;
+      focusTarget?.focus({ preventScroll: true });
+      target.scrollIntoView({ block: target === group ? "start" : "center" });
     };
     openTarget();
     window.addEventListener("hashchange", openTarget);
@@ -93,12 +97,12 @@ function Settings({ app, view, now }: { app: App; view: AppView; now: Date }) {
         <SettingsGroup id="life" title="생활 기준" summary="가족·가구 정보, 식사 시간과 밥솥 사용">
           <LifestyleSettings view={view} actions={app.actions} />
           {careDataAvailable(view) ? <AbsenceSettings view={view} actions={app.actions} now={now} /> : <p className="mt-5 border-t border-line pt-4 text-[16px] leading-relaxed text-muted">부재 일정은 가족 연결이 준비된 뒤 사용할 수 있어요.</p>}
-          <AppearanceSettings />
         </SettingsGroup>
         <SettingsGroup id="device" title="기기" summary={view.plug.deviceId ? "연결 상태·마지막 수신·어르신 휴대폰" : "기기 연결·어르신 동의·휴대폰 연결"}>
           <DeviceSettings app={app} view={view} />
           {app.mode === "demo" ? <DemoTools view={view} /> : null}
         </SettingsGroup>
+        <AppearanceSettings />
       </div>
       <div className="mt-6 flex flex-col gap-3 border-t border-line pt-5">
         <Link href="/account" className="flex min-h-12 items-center justify-between gap-3 rounded-2xl px-2 text-[16px] font-bold text-cocoa hover:bg-butter-soft">내 정보 센터<IconArrowRight className="h-5 w-5" /></Link>
@@ -212,7 +216,16 @@ function AbsenceSettings({ view, actions, now }: { view: AppView; actions: AppAc
 function AppearanceSettings() {
   const value = useMealPalette();
   const [message, setMessage] = useState("");
-  return <details className="mt-5 border-t border-line pt-4"><summary className="min-h-12 cursor-pointer py-3 text-[17px] font-bold text-cocoa">기록 색상</summary><div className="mt-2 flex flex-col gap-3"><p className="text-[16px] leading-relaxed text-muted">이 기기의 기록과 리포트에 적용돼요. 색과 함께 상태 글자도 보여요.</p><Choice cols={1} value={value} options={MEAL_PALETTES.map((palette) => ({ value: palette.id, label: palette.label }))} onChange={(palette) => { const saved = setMealPalette(palette); setMessage(saved ? "이 기기에 기록 색상을 저장했어요." : "이번 화면에 적용했어요. 브라우저가 저장을 허용하지 않아 다시 접속하면 초기화될 수 있어요."); }} />{message ? <p role="status" className="text-[16px] leading-relaxed text-cocoa">{message}</p> : null}</div></details>;
+  return (
+    <SettingsGroup id="appearance" title="기록 색상" summary={value === "clear" ? "현재 선명한 색" : "현재 부드러운 색"}>
+      <p className="mb-3 text-base leading-relaxed text-muted">이 기기의 소개, 홈, 기록과 리포트에 적용돼요.</p>
+      <Choice cols={1} value={value} options={MEAL_PALETTES.map(({ id, label }) => ({ value: id, label }))} onChange={(palette) => {
+        const saved = setMealPalette(palette);
+        setMessage(saved ? "이 기기에 기록 색상을 저장했어요." : "이번 화면에 적용했어요. 브라우저가 저장을 허용하지 않아 다시 접속하면 초기화될 수 있어요.");
+      }} />
+      {message ? <p role="status" className="mt-3 text-base leading-relaxed text-cocoa">{message}</p> : null}
+    </SettingsGroup>
+  );
 }
 
 function DeviceSettings({ app, view }: { app: App; view: AppView }) {

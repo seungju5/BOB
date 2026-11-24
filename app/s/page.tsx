@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRef, useState, type ReactNode } from "react";
-import { IconCheck, IconHeart, IconInfo, IconSuitcase, IconUtensils } from "@/components/icons";
+import { IconArrowRight, IconCheck, IconHeart, IconHome, IconSuitcase, IconUtensils } from "@/components/icons";
 import { Logo, Mascot } from "@/components/Mascot";
 import { Button, Skeleton } from "@/components/ui";
 import { SeniorSheet as Sheet } from "@/components/senior/SeniorSheet";
@@ -69,8 +69,8 @@ function Pairing({ pair, startDemo, canPair }: { pair: (code: string) => Promise
   return (
     <main className="flex flex-1 flex-col px-6 pt-8 pb-8">
       <Logo />
-      <h1 className="mt-10 text-[30px] leading-snug font-extrabold text-cocoa">
-        {canPair ? <>가족에게 받은<br />숫자 여섯 개를<br />눌러 주세요</> : <>어르신 화면을<br />체험해 보세요</>}
+      <h1 className="mt-7 text-[30px] leading-snug font-extrabold text-cocoa">
+        {canPair ? <>가족에게 받은<br />숫자 여섯 개를 눌러 주세요</> : <>어르신 화면을<br />체험해 보세요</>}
       </h1>
       {canPair ? <>
         <input
@@ -90,15 +90,15 @@ function Pairing({ pair, startDemo, canPair }: { pair: (code: string) => Promise
         <Button onClick={submit} disabled={busy || code.length !== 6} className="mt-6 min-h-16 text-2xl">
           {busy ? "연결하는 중…" : "연결하기"}
         </Button>
-      </> : <p className="mt-6 text-2xl text-muted">실제 가족 연결은 아직 준비 중이에요.</p>}
+      </> : <p className="mt-4 text-xl leading-relaxed text-muted">가족 연결을 준비하고 있어요. 먼저 세 가지 소식 버튼을 눌러 보세요.</p>}
       <div className="mt-6">
-        <p className="text-2xl leading-relaxed text-muted">가족 연결과 별개로 내 휴대폰의 걸음수를 확인할 수 있어요.</p>
+        <Button variant={canPair ? "outline" : "dark"} onClick={startDemo} disabled={busy} className="min-h-16 text-2xl">예시로 체험하기</Button>
+        <p className="mt-2 text-xl leading-relaxed text-muted">체험 중에는 가족에게 소식을 보내지 않아요.</p>
+      </div>
+      <div className="mt-8 border-t border-line pt-5">
+        <p className="text-xl leading-relaxed text-muted">가족 연결 전에도 산책과 걸음수를 이용할 수 있어요.</p>
         <HealthConnectionLink />
         <Link href="/walking" className="mt-3 flex min-h-16 items-center justify-center rounded-2xl border-2 border-line px-4 py-3 text-center text-2xl font-bold text-cocoa">워밍이의 산책과 옷장</Link>
-      </div>
-      <div className="mt-auto pt-8">
-        <p className="mb-3 text-2xl text-muted">예시 체험은 가족에게 소식을 보내지 않아요.</p>
-        <Button variant="outline" onClick={startDemo} disabled={busy} className="min-h-16 text-2xl">예시로 체험하기</Button>
       </div>
     </main>
   );
@@ -139,54 +139,40 @@ function SeniorHome({ status, now, act, isDemo, endDemo }: { status: SeniorStatu
   };
 
   return (
-    <main className="bapmunna-senior-home flex flex-1 flex-col px-6 pt-6 pb-6">
+    <main className="bapmunna-senior-home flex flex-1 flex-col px-5 pt-4 pb-6">
       <header className="flex items-center justify-between">
         <Logo />
-        <Link href="/" aria-label="처음 화면" className="grid h-12 w-12 place-items-center rounded-full border-2 border-line text-cocoa">
-          <IconInfo className="h-6 w-6" />
+        <Link href="/" className="flex min-h-12 items-center gap-1.5 rounded-lg px-1 text-lg font-semibold text-muted">
+          <IconHome aria-hidden className="h-5 w-5" />처음 화면
         </Link>
       </header>
-
-      {isDemo ? (
-        <aside className="mt-4 rounded-3xl border-2 border-butter-deep bg-butter-soft p-4">
-          <DemoNotice />
-          <Button variant="outline" className="mt-3 min-h-16 text-2xl" onClick={endDemo}>체험 끝내기</Button>
-        </aside>
-      ) : null}
-
-      <h1 className="mt-4 text-[30px] leading-tight font-extrabold text-cocoa">
-        {status.seniorName ? `${status.seniorName}님,` : "안녕하세요,"}
-        <br />
-        오늘도 반가워요.
-      </h1>
-
-      <div className="relative mt-5 rounded-[2rem] bg-butter-soft px-6 py-5">
-        <p className="font-hand text-[34px] leading-[1.15] whitespace-pre-line text-cocoa">{cheer}</p>
-        <span className="absolute -bottom-2 right-16 h-5 w-5 rotate-45 bg-butter-soft" aria-hidden />
-      </div>
-
-      <div className="bapmunna-senior-encouragement mt-3 flex items-end justify-between gap-2">
-        <div className="min-w-0 pb-4">
-          <IconHeart className="h-6 w-6 fill-blush-deep/70 text-blush-deep/70" aria-hidden />
-          <p className="mt-3 text-2xl font-bold text-cocoa">오늘의 작은 응원</p>
-          <p className="mt-1 text-2xl text-muted">당신의 하루를 응원해요.</p>
+      <div className="bapmunna-senior-greeting">
+        <div>
+          <h1>{status.seniorName ? `${status.seniorName}님, 반가워요` : "오늘도 반가워요"}</h1>
+          <p>{cheer.replace("\n", " ")}</p>
         </div>
-        <Mascot className="h-28 w-28 shrink-0" />
+        <Mascot className="bapmunna-senior-mascot" />
       </div>
 
-      <div className="my-auto py-5">
-        <p className="mb-4 text-2xl text-muted">{isDemo ? "세 가지 버튼을 체험해 보세요." : "필요한 소식만 가볍게 남겨요."}</p>
+      <section className="mt-6" aria-labelledby="senior-actions-title">
+        <h2 id="senior-actions-title" className="text-2xl font-bold text-cocoa">가족에게 소식 전하기</h2>
+        {isDemo ? <p className="mt-1 text-lg leading-relaxed text-muted">예시 체험 중 · 가족에게 보내지 않아요.</p> : null}
         {away ? <p className="mb-4 text-2xl text-sky-deep">{fmtDate(away.endDate)}까지 {isDemo ? "예시 외출 기간이에요." : "잘 다녀오세요."}</p> : null}
-        <div className="bapmunna-senior-actions" aria-label="어르신의 세 가지 소식">
-          <BigButton label="외식했어요" lines={["외식", "했어요"]} icon={<IconUtensils className="h-9 w-9" />} onClick={() => setSheet("eat_out")} />
-          <BigButton label="놀러가요" lines={["놀러", "가요"]} icon={<IconSuitcase className="h-9 w-9" />} onClick={() => setSheet("away")} />
-          <BigButton label="도와줘요" lines={["도와", "줘요"]} icon={<IconHeart className="h-9 w-9" />} onClick={() => setSheet("help")} tone="help" />
+        <div className="bapmunna-senior-actions">
+          <BigButton label="외식했어요" tone="meal" icon={<IconUtensils />} onClick={() => setSheet("eat_out")} />
+          <BigButton label={away ? "외출·귀가 알리기" : "놀러가요"} tone="away" icon={<IconSuitcase />} onClick={() => setSheet("away")} />
+          <BigButton label="도와줘요" tone="help" icon={<IconHeart />} onClick={() => setSheet("help")} />
         </div>
-      </div>
+      </section>
+      <Link href={isDemo ? "/walking/demo" : "/walking"} className="mt-7 flex min-h-16 items-center justify-between gap-3 rounded-2xl bg-sage px-5 py-3 text-xl font-bold text-sage-deep">
+        {isDemo ? "워밍이 산책 하트 체험" : "워밍이의 산책과 옷장"}<IconArrowRight aria-hidden className="h-5 w-5 shrink-0" />
+      </Link>
       <CookerBadge lastCookerAt={status.lastCookerAt} today={today} />
-      <PhoneStepsCard demo={isDemo} />
-      <Link href={isDemo?'/walking/demo':'/walking'} className="mt-4 flex min-h-16 items-center justify-center rounded-2xl bg-butter-soft px-4 py-3 text-center text-2xl font-bold text-cocoa">{isDemo ? '워밍이 산책 하트 체험' : '워밍이의 산책과 옷장'}</Link>
-      <Link href="/privacy" className="mt-5 block min-h-12 py-3 text-center text-2xl text-muted underline underline-offset-4">개인정보 이용·제공 안내</Link>
+      <div className="mt-3"><PhoneStepsCard demo={isDemo} /></div>
+      <footer className="mt-6 flex flex-wrap items-center justify-between gap-2 border-t border-line pt-2">
+        <Link href="/privacy" className="flex min-h-12 items-center text-lg text-muted underline underline-offset-4">개인정보 이용·제공 안내</Link>
+        {isDemo ? <button type="button" className="min-h-12 rounded-lg px-2 text-lg font-semibold text-cocoa underline underline-offset-4" onClick={endDemo}>체험 끝내기</button> : null}
+      </footer>
 
       <Sheet open={sheet === "eat_out"} onClose={close} label="외식했어요">
         {done ? (
@@ -202,7 +188,7 @@ function SeniorHome({ status, now, act, isDemo, endDemo }: { status: SeniorStatu
         )}
       </Sheet>
 
-      <Sheet open={sheet === "away"} onClose={close} label="놀러가요">
+      <Sheet open={sheet === "away"} onClose={close} label={away ? "외출·귀가 알리기" : "놀러가요"}>
         {done ? (
           <Done text={done} onClose={close} />
         ) : (
@@ -265,17 +251,12 @@ function DemoNotice() {
   return <p className="mb-3 text-2xl font-bold text-cocoa">예시 체험 중이에요.<br />실제 가족에게 보내지 않아요.</p>;
 }
 
-function BigButton({ label, lines, icon, onClick, tone }: { label: string; lines: [string, string]; icon: ReactNode; onClick: () => void; tone?: "help" }) {
+function BigButton({ label, icon, onClick, tone }: { label: string; icon: ReactNode; onClick: () => void; tone: "meal" | "away" | "help" }) {
   return (
-    <button
-      onClick={onClick}
-      aria-label={label}
-      className={`bapmunna-senior-action rounded-[1.75rem] text-cocoa transition-transform active:scale-95 ${
-        tone === "help" ? "bg-blush" : "bg-butter-soft"
-      }`}
-    >
-      <span aria-hidden>{icon}</span>
-      <span aria-hidden className="bapmunna-senior-action-label text-2xl font-extrabold tracking-[-0.05em]"><span>{lines[0]}</span><span>{lines[1]}</span></span>
+    <button type="button" aria-haspopup="dialog" className="bapmunna-senior-action" data-tone={tone} onClick={onClick}>
+      <span className="bapmunna-senior-action-icon" aria-hidden>{icon}</span>
+      <strong>{label}</strong>
+      <IconArrowRight aria-hidden className="h-5 w-5 shrink-0 text-muted" />
     </button>
   );
 }
@@ -365,6 +346,7 @@ function AwaySheet({
       <Button className="mt-5 min-h-16 text-2xl" disabled={busy} onClick={() => run("away", days, fromTomorrow ? { startDate: start } : undefined)}>
         {isDemo ? "외출 소식 체험하기" : "외출 기간 남기기"}
       </Button>
+      <Button variant="ghost" className="mt-1 min-h-16 text-2xl" disabled={busy} onClick={onClose}>취소</Button>
     </>
   );
 }

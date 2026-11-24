@@ -1,7 +1,7 @@
 .meal-companion-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0}
 .meal-companion-copy{min-width:0;flex:1}
-.meal-companion-copy h2{font-size:1rem;font-weight:700;color:var(--color-cocoa)}
-.meal-companion-caption{margin-top:.25rem;font-size:.875rem;line-height:1.55;color:var(--color-muted);min-height:2.8em}
+.meal-companion-copy h2{font-size:1.25rem;font-weight:700;color:var(--color-cocoa)}
+.meal-companion-caption{margin-top:.25rem;font-size:1rem;line-height:1.5;color:var(--color-muted)}
 .meal-companion-button{width:76px;height:76px;flex:none;position:relative;display:grid;place-items:center;border-radius:50%;background:radial-gradient(ellipse,var(--color-butter-soft) 0%,transparent 68%);cursor:pointer;touch-action:manipulation}
 .meal-companion-button:active{background:var(--color-butter-soft)}
 .cooker-art{display:block;width:100%;height:100%;overflow:visible;color:var(--color-blush-deep);pointer-events:none}

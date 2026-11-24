@@ -27,7 +27,7 @@ export function BottomNav() {
               <Link
                 href={href}
                 aria-current={active ? "page" : undefined}
-                className={`relative flex flex-col items-center gap-1 rounded-2xl py-1.5 text-xs font-semibold ${
+                className={`relative flex min-h-12 flex-col items-center gap-0.5 rounded-2xl py-1 text-[16px] leading-snug font-semibold ${
                   active ? "text-cocoa" : "text-muted"
                 }`}
               >
@@ -36,7 +36,7 @@ export function BottomNav() {
                 </span>
                 {label}
                 {href === "/more" && badge > 0 ? (
-                  <span className="absolute top-0 right-3 grid h-5 min-w-5 place-items-center rounded-full bg-blush-deep px-1 text-[11px] text-paper">
+                  <span aria-label={`미확인 알림 ${badge}개`} className="absolute top-0 right-3 grid h-5 min-w-5 place-items-center rounded-full bg-blush-deep px-1 text-[13px] text-paper">
                     {badge}
                   </span>
                 ) : null}

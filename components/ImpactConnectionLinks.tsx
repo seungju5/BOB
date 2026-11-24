@@ -14,13 +14,16 @@ export function ImpactConnectionLinks({compact=false}:{compact?:boolean}) {
   if(compact){
     return <section className="mt-5" aria-label="기기 연결 안내">
       <Link href="/connect" className="flex min-h-12 items-center gap-3 rounded-2xl border border-line px-4 py-3 text-[16px] font-bold text-cocoa focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-cocoa">
-        <IconPlug className="h-5 w-5 shrink-0"/><span className="min-w-0 flex-1">{view?.plug.deviceId?'기기 신호 확인':'삼성 기기 연결 안내'}</span><IconArrowRight className="h-5 w-5"/>
+        <IconPlug className="h-5 w-5 shrink-0"/><span className="min-w-0 flex-1">{view?.plug.deviceId?'기기 신호 확인':'기기 연결 준비하기'}</span><IconArrowRight className="h-5 w-5"/>
       </Link>
-      <SmartThingsAccountCard compact />
-      {!dismissed?<div className="mt-2 rounded-2xl bg-butter-soft p-4 text-[16px] leading-relaxed text-cocoa">
-        <p>기기 연결은 여기에서 시작해요. 나중에도 더보기 → 설정 → 기기에서 찾을 수 있어요.</p>
-        <button className="mt-2 min-h-12 rounded-full bg-paper px-5 font-semibold" onClick={()=>{try{localStorage.setItem(key,'seen');}catch{}window.dispatchEvent(new Event(CHANGE));}}>알겠어요</button>
-      </div>:null}
+      <details className="mt-1 text-[16px] text-muted">
+        <summary className="min-h-12 cursor-pointer content-center rounded-lg px-2 py-2 font-semibold">현재 기기 상태와 연결 도움말</summary>
+        <SmartThingsAccountCard compact />
+        {!dismissed ? <div className="mt-2 rounded-2xl bg-butter-soft p-4 leading-relaxed text-cocoa">
+          <p>더보기의 ‘생활·알림 설정’에서도 기기 연결을 찾을 수 있어요.</p>
+          <button type="button" className="mt-2 min-h-12 rounded-full bg-paper px-5 font-semibold" onClick={()=>{try{localStorage.setItem(key,'seen');}catch{}window.dispatchEvent(new Event(CHANGE));}}>알겠어요</button>
+        </div> : null}
+      </details>
     </section>;
   }
   return <section className="mt-5 rounded-[1.75rem] border border-line p-5" aria-label="계정과 기기 연결">

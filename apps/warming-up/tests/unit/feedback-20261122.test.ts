@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { alertCopy, weeklyReportLabel } from "../../lib/alerts/copy";
 import { missedMealsHint } from "../../components/forms";
-import { mealRecordTime, performSeniorAction } from "../../lib/data/senior";
+import { mealRecordTime, performSeniorAction, seniorDemoStatus } from "../../lib/data/senior";
 import { createDemoState, type DemoState } from "../../lib/demo/state";
 
 describe("주간 리포트 이름", () => {
@@ -22,6 +22,30 @@ describe("결식 알림 안내", () => {
   it("하루 3끼에 2끼면 하루가 안 됨", () => expect(missedMealsHint(2, 3)).toContain("하루가 채 안 되는 동안"));
   it("하루 3끼에 6끼면 이틀", () => expect(missedMealsHint(6, 3)).toContain("이틀 동안"));
   it("하루 2끼에 5끼면 이틀 하고 1끼", () => expect(missedMealsHint(5, 2)).toContain("이틀 하고 1끼 동안"));
+});
+
+describe("어르신 홈의 오늘 취사 소식", () => {
+  const now = new Date("2026-11-24T11:42:00+09:00");
+  function event(type: "cook" | "lid_open", at: string) {
+    return { type, startedAt: at, endedAt: at };
+  }
+
+  it("뚜껑 열림, 어제 취사, 미래 시각은 오늘의 취사 소식으로 표시하지 않는다", () => {
+    const demo = createDemoState(now);
+    demo.events = [
+      event("cook", "2026-11-23T23:59:59+09:00"),
+      event("lid_open", now.toISOString()),
+      event("cook", "2026-11-24T11:42:01+09:00"),
+    ];
+    expect(seniorDemoStatus(demo, now).hasCookSignalToday).toBe(false);
+  });
+
+  it("한국 시간 자정의 취사는 표시하고 다음 날에는 다시 기다린다", () => {
+    const demo = createDemoState(now);
+    demo.events = [event("cook", "2026-11-23T15:00:00Z"), event("lid_open", now.toISOString())];
+    expect(seniorDemoStatus(demo, now).hasCookSignalToday).toBe(true);
+    expect(seniorDemoStatus(demo, new Date("2026-11-25T00:00:00+09:00")).hasCookSignalToday).toBe(false);
+  });
 });
 
 describe("어르신이 선택한 날짜와 보호자 알림", () => {

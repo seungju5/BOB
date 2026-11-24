@@ -4,35 +4,44 @@ import { useEffect, useRef, useState } from "react";
 import { appPath } from "@/lib/app-path";
 import { Mascot } from "@/components/Mascot";
 import { createBunnyGreeting } from "./bunny/bunny-greeting.mjs";
+import { WARMING_REACTIONS } from "./bunny/bunny-reactions.mjs";
 import "./bunny/bunny-greeting.css";
 
-export function BunnyGreeting({ className = "" }: { className?: string }) {
+type Reaction = keyof typeof WARMING_REACTIONS;
+const reactions: Reaction[] = ['wave', 'curious', 'cheer', 'bow', 'rest'];
+
+/** Tapping tells a short story; the original welcome and every entry link stay immediate. */
+export function BunnyGreeting({ className = "", autoPlay = true }: { className?: string; autoPlay?: boolean }) {
   const scene = useRef<HTMLDivElement>(null);
   const greeting = useRef<ReturnType<typeof createBunnyGreeting> | null>(null);
   const hideReply = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const [replyVisible, setReplyVisible] = useState(false);
+  const nextReaction = useRef(0);
+  const [reply, setReply] = useState('');
+  const [reaction, setReaction] = useState<Reaction>('wave');
 
   useEffect(() => {
     if (!scene.current) return;
     const controller = createBunnyGreeting(scene.current, {imageUrl: appPath("/brand/bunny.png"), underlayUrl: appPath("/brand/bunny-underlay.webp")});
     greeting.current = controller;
-    void controller.play();
+    if (autoPlay) void controller.play();
     return () => {
       clearTimeout(hideReply.current);
       controller.dispose();
       greeting.current = null;
     };
-  }, []);
+  }, [autoPlay]);
 
   function greet() {
-    void greeting.current?.play();
-    setReplyVisible(true);
+    const next = reactions[nextReaction.current++ % reactions.length];
+    void greeting.current?.play(next);
+    setReaction(next);
+    setReply(WARMING_REACTIONS[next].reply);
     clearTimeout(hideReply.current);
-    hideReply.current = setTimeout(() => setReplyVisible(false), 2600);
+    hideReply.current = setTimeout(() => setReply(''), 3200);
   }
 
   return (
-    <div ref={scene} className={className}>
+    <div ref={scene} className={`warming-greeting ${className}`} data-reaction={reaction} data-reply={Boolean(reply)}>
       <button
         type="button"
         aria-label="토끼에게 인사하기"
@@ -44,10 +53,9 @@ export function BunnyGreeting({ className = "" }: { className?: string }) {
           <Mascot variant="bunny" className="h-full w-full" />
         </span>
       </button>
-      <span role="status" className={replyVisible
-        ? "pointer-events-none absolute right-0 -bottom-3 rounded-full bg-paper px-3 py-1 text-base font-semibold text-cocoa"
-        : "sr-only"}>
-        {replyVisible ? "반가워요!" : ""}
+      <span className="warming-reaction-mark" aria-hidden="true">{reaction === 'cheer' ? '♥' : reaction === 'curious' ? '?' : reaction === 'rest' ? '· · ·' : ''}</span>
+      <span role="status" className={reply ? 'warming-reply' : 'sr-only'}>
+        {reply}
       </span>
     </div>
   );

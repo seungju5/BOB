@@ -12,8 +12,40 @@ import { demoPowerTranscript } from "@/lib/power/power-transcription-model";
 import { PowerSampleFigure } from "@/components/power/PowerSampleFigure";
 import RecordsPage from "@/app/(guardian)/records/page";
 import ReportPage from "@/app/(guardian)/report/page";
+import HomePage from "@/app/(guardian)/home/page";
 
 const disconnected = (): AppView => firebaseView({settings: null, household: null});
+
+describe("보호자 홈의 다음 행동", () => {
+  it("keeps device setup and contact registration available on an empty account", () => {
+    const view = disconnected();
+    context.view = view;
+    const html = renderToStaticMarkup(createElement(HomePage));
+    expect(html).toContain("기기 연결 준비하기");
+    expect(html).toContain("연락처 등록하기");
+    expect(html).toContain("아직 연결된 식사 기록이 없어요");
+    expect(html).not.toMatch(/href="tel:|끼니 확인율/);
+    expect(html).toMatch(/href="\/settings\/?#device"/);
+    view.seniorConsent = true;
+    expect(renderToStaticMarkup(createElement(HomePage))).toMatch(/href="\/settings\/?#settings-senior-phone"/);
+  });
+
+  it("offers one call action and moves it into a help alert when needed", () => {
+    const view = disconnected();
+    view.senior.phone = "+123";
+    context.view = view;
+    const ordinary = renderToStaticMarkup(createElement(HomePage));
+    expect(ordinary.match(/href="tel:\+123"/g)).toHaveLength(1);
+    view.alerts = [{ id: "example-help", type: "help_request", triggeredAt: context.now.toISOString(), acknowledgedAt: null, resolvedAt: null }];
+    const alert = renderToStaticMarkup(createElement(HomePage));
+    expect(alert.match(/href="tel:\+123"/g)).toHaveLength(1);
+    expect(alert.indexOf('href="tel:+123"')).toBeLessThan(alert.indexOf("오늘의 끼니"));
+    expect(alert).toContain("확인했어요");
+    for (const path of ["records", "report", "alerts", "connect"]) {
+      expect(alert).toMatch(new RegExp(`href="/${path}/?"`));
+    }
+  });
+});
 
 describe("기록·리포트 표시 계약 (서버 렌더, 실제 브라우저 검사 아님)", () => {
   it("Firebase 로그인만 된 계정에 식사 미확인·사용 0회·0%를 만들지 않는다", () => {

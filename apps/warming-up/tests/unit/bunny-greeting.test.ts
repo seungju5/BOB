@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import StartPage from '@/app/page';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { BUNNY_BEATS, BUNNY_DURATION, bunnyLiftAt, bunnyPoseAt, bunnyRigAt, bunnyPointAt, bunnyTransformAt, createBunnyGreeting } from '../../components/bunny/bunny-greeting.mjs';
+import { WARMING_REACTIONS, warmingReactionAt } from '../../components/bunny/bunny-reactions.mjs';
 
 function browser({reduced = false, decode = () => Promise.resolve(), canvasAvailable = true} = {}) {
   const frames = new Map<number, FrameRequestCallback>(); let next = 0;
@@ -32,6 +33,46 @@ function browser({reduced = false, decode = () => Promise.resolve(), canvasAvail
 }
 
 afterEach(() => vi.unstubAllGlobals());
+
+describe('Warming reactions', () => {
+  it('has distinct finite gestures that settle to the original without stretching the artwork', () => {
+    const signatures = new Set<string>();
+    for (const [name, {duration}] of Object.entries(WARMING_REACTIONS)) {
+      expect(duration).toBeLessThanOrEqual(3000);
+      expect(warmingReactionAt(name, 0)).toEqual({lift:0,arm:0,lean:0,bodyY:0});
+      expect(warmingReactionAt(name, duration)).toEqual({lift:0,arm:0,lean:0,bodyY:0});
+      signatures.add(JSON.stringify(warmingReactionAt(name, 650)));
+      for (let time=0;time<duration;time+=25) {
+        const rig=warmingReactionAt(name,time);
+        expect(rig.lift).toBeGreaterThanOrEqual(0);
+        expect(rig.lift).toBeLessThanOrEqual(24);
+        for(const part of ['body','hand']) {
+          const [a,b,c,d]=bunnyTransformAt(rig,part);
+          expect(a*d-b*c).toBeCloseTo(1,12);
+        }
+      }
+    }
+    expect(signatures.size).toBe(5);
+  });
+  it('replaces a running reaction with one animation and stops at that reaction’s end', async () => {
+    const env=browser(), greeting=env.mount();
+    await greeting.play('cheer'); env.advance(0); env.advance(490);
+    expect(env.scene.dataset.greetingPhase).toBe('cheer');
+    await greeting.play('bow');
+    expect(env.frames.size).toBe(1);
+    env.advance(1000); env.advance(1000+WARMING_REACTIONS.bow.duration+1);
+    expect(env.frames.size).toBe(0);
+    expect(env.canvas.hidden).toBe(true);
+    greeting.dispose();
+  });
+  it('never starts a new gesture when reduced motion is enabled', async () => {
+    const env=browser({reduced:true}), greeting=env.mount();
+    for(const name of Object.keys(WARMING_REACTIONS)) await greeting.play(name);
+    expect(env.decodeSpy).not.toHaveBeenCalled();
+    expect(env.frames.size).toBe(0);
+    greeting.dispose();
+  });
+});
 
 describe('finite bunny greeting', () => {
   it('makes the original bunny the greeting button and keeps both start links directly available', () => {

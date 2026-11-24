@@ -1,54 +1,62 @@
-// 밥뭇나 서비스 워커: 푸시 알림 표시와 알림을 눌렀을 때 앱 열기.
-// 서버(Edge Function)는 { title, body, tag, url } JSON을 보낸다. tag는 알림 id라 같은 알림이 두 번 뜨지 않는다.
-
-self.addEventListener("install", () => self.skipWaiting());
-self.addEventListener("activate", (event) => event.waitUntil(self.clients.claim()));
-
+// Keep service worker registration compatible with already installed web apps.
+importScripts("./notification-content.js");
 const appScope = new URL(self.registration.scope);
-function appNotificationURL(value) {
-  const fallback = new URL("alerts/", appScope);
-  if (typeof value !== "string" || value.includes("\\")) return fallback.href;
-  let candidate;
-  try { candidate = new URL(value, appScope); } catch { return fallback.href; }
-  if (candidate.origin !== appScope.origin) return fallback.href;
-  if (candidate.pathname.startsWith(appScope.pathname)) return candidate.href;
-  // Existing server payloads use /alerts or /report, independent of the hosting mount.
-  if (["/alerts", "/report"].includes(candidate.pathname)) {
-    return new URL(candidate.pathname.slice(1) + "/" + candidate.search + candidate.hash, appScope).href;
+self.addEventListener("install", () => self.skipWaiting());
+self.addEventListener("activate", event => event.waitUntil(self.clients.claim()));
+
+function safeClickURL(value) {
+  const fallback = new URL("alerts/", appScope).href;
+  if (typeof value !== "string" || value.includes("\\")) return fallback;
+  let url;
+  try { url = new URL(value, appScope); } catch { return fallback; }
+  if (url.origin !== appScope.origin) return fallback;
+  const path = url.pathname.startsWith(appScope.pathname) ? url.pathname.slice(appScope.pathname.length) : url.pathname.slice(1);
+  switch (path.replace(/\/$/, "")) {
+    case "records": {
+      const day = noticeDay(url.searchParams.get("day"));
+      return new URL(day ? "records/?day=" + day : "records/", appScope).href;
+    }
+    case "settings": return new URL("settings/#device", appScope).href;
+    case "report": return new URL("report/", appScope).href;
+    case "alerts": return new URL("alerts/" + (/^#notice-[a-zA-Z0-9_-]{1,100}$/.test(url.hash) ? url.hash : ""), appScope).href;
+    default: return fallback;
   }
-  return fallback.href;
 }
 
-self.addEventListener("push", (event) => {
-  let data = {};
+async function showIncoming(data) {
+  let showFeature = false;
   try {
-    data = event.data?.json() ?? {};
-  } catch {
-    // A legacy or non-JSON payload still receives a private lock-screen message.
-  }
-  event.waitUntil(
-    self.registration.showNotification("밥뭇나", {
-      body: "워밍이가 새 소식을 가져왔어요. 앱에서 확인해 주세요.",
-      tag: typeof data.tag === "string" ? data.tag : undefined,
-      icon: new URL("icon.svg", appScope).href,
-      badge: new URL("icon.svg", appScope).href,
-      data: { url: appNotificationURL(data.url) },
-    }),
-  );
+    const preference = await self.caches.match(noticePreferenceKey(appScope), {cacheName: noticePreferenceCache});
+    showFeature = Boolean(preference && await preference.text());
+  } catch { /* Private copy is the default, including during a storage failure. */ }
+  const text = noticeText(data.kind, showFeature);
+  const relative = noticePath(data).slice(1);
+  return self.registration.showNotification(text.title, {
+    body: text.body, ...(typeof data.tag === "string" && data.tag.length <= 160 && {tag: data.tag}),
+    icon: new URL("brand/rice-logo.png", appScope).href,
+    badge: new URL("brand/notification-badge.png", appScope).href,
+    lang: "ko", data: {url: new URL(relative, appScope).href},
+  });
+}
+
+self.addEventListener("push", event => {
+  let data;
+  try { data = event.data?.json(); } catch { /* Legacy text payload. */ }
+  event.waitUntil(showIncoming(data && typeof data === "object" ? data : {}));
 });
 
-self.addEventListener("notificationclick", (event) => {
+self.addEventListener("notificationclick", event => {
   event.notification.close();
-  const url = appNotificationURL(event.notification.data?.url);
-  event.waitUntil(
-    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(async (list) => {
-      for (const c of list) {
-        if (c.url.startsWith(appScope.href) && typeof c.navigate === "function" && "focus" in c) {
-          const destination = await c.navigate(url).catch(() => null);
-          if (destination) return destination.focus();
-        }
-      }
-      return self.clients.openWindow(url);
-    }),
-  );
+  const clicked = new URL(safeClickURL(event.notification.data?.url));
+  clicked.searchParams.set("from", "notice");
+  const url = clicked.href;
+  event.waitUntil((async () => {
+    const list = await self.clients.matchAll({type: "window", includeUncontrolled: true});
+    for (const client of list) {
+      if (!client.url.startsWith(appScope.href) || typeof client.navigate !== "function") continue;
+      const target = await client.navigate(url).catch(() => null);
+      if (target) { await target.focus(); return; }
+    }
+    await self.clients.openWindow(url);
+  })());
 });

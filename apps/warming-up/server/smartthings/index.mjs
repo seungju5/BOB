@@ -8,11 +8,15 @@ import { ApiError, readConfig, webhookVerifier } from './security.mjs';
 import { configured, createService } from './service.mjs';
 import { smartThingsClient } from './smartthings.mjs';
 import { firestoreStore } from './store.mjs';
+import { createNotifier, vapidKeys } from './notifications.mjs';
 
 export function createRuntime(env = process.env) {
   const config = readConfig(env);
   const ready = configured(config);
-  const app = ready
+  const keys = vapidKeys(env);
+  const protectionKey = env.WEB_PUSH_ENCRYPTION_KEY || config.key;
+  const pushReady = Boolean(keys && Buffer.from(protectionKey || '', 'base64').length === 32);
+  const app = ready || pushReady
     ? initializeApp({ projectId: config.projectId, credential: applicationDefault() })
     : null;
   const store = app ? firestoreStore(getFirestore(app)) : null;
@@ -42,6 +46,8 @@ export function createRuntime(env = process.env) {
     verifyUser: (token) => getAuth(app).verifyIdToken(token, true),
     smartthings: smartThingsClient(config),
     verifyWebhook: webhookVerifier(),
+    notifier: pushReady ? createNotifier({ db: getFirestore(app), store, verifyAccount,
+      config: { origin: config.origin, key: protectionKey }, keys }) : null,
   });
   return { config, ready, store, handle };
 }

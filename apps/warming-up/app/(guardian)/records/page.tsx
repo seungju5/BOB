@@ -12,6 +12,8 @@ import { useApp } from "@/lib/data/useApp";
 import { careDataAvailable, mealDaySummary, mealSlotLabel, slotsForDate, type AppView } from "@/lib/data/view";
 import { demoPowerTranscript } from "@/lib/power/power-transcription-model";
 import { PowerTranscriptionSection } from "@/components/power/PowerTranscriptionSection";
+import { PowerNotice } from "@/components/SmartThingsAccountCard";
+import { noticeDay } from "@/public/notification-content";
 
 const RANGES = [{ id: "day", label: "일" }, { id: "week", label: "주" }, { id: "month", label: "월" }] as const;
 
@@ -23,6 +25,13 @@ export default function RecordsPage() {
   const titleRef = useRef<HTMLHeadingElement>(null);
   const pendingFocus = useRef<"title" | "date" | null>(null);
   const today = now ? kstDate(now) : null;
+  const launchDay = useRef<string | null>(null);
+  useLayoutEffect(() => {
+    const day = noticeDay(new URLSearchParams(location.search).get("day"));
+    if (!today || !day || day > today || launchDay.current === day) return;
+    launchDay.current = day;
+    navigate({type: "day", date: day});
+  }, [today]);
   const anchor = selectedDate ?? today;
   const period = anchor ? recordPeriod(anchor, range) : null;
   const currentPeriod = today ? recordPeriod(today, range) : null;
@@ -57,6 +66,10 @@ export default function RecordsPage() {
 
   const demoTranscript = demoPowerTranscript(view);
   const noCareData = view && !careDataAvailable(view) && !view.slots.length && !Object.keys(view.stats).length;
+  const signal = view?.plug.powerNoticeAt;
+  const daySignal = range === "day" && signal && view.mode === "live" && view.seniorConsent &&
+    view.plug.status === "connected" && view.plug.isVirtual === false &&
+    kstDate(new Date(signal)) === anchor ? signal : null;
 
   return (
     <main className="flex flex-col pb-8">
@@ -89,7 +102,8 @@ export default function RecordsPage() {
               <button type="button" onClick={goToToday} className="min-h-11 rounded-full bg-butter-soft px-4 text-sm font-bold text-cocoa">오늘로 돌아가기</button>
             </div>
             {view.mode === "demo" ? <p className="mb-3 text-[12px] text-muted">체험용 가상 기록이에요.</p> : null}
-            {noCareData ? (
+            {daySignal && <PowerNotice at={daySignal}/>}
+            {noCareData && daySignal ? <p className="py-4 text-[15px] text-muted">이날의 끼니별 기록은 아직 없어요.</p> : noCareData ? (
               <section className="mt-3 rounded-[1.75rem] border border-line bg-paper p-6">
                 <h2 className="text-[18px] font-bold text-cocoa">아직 연결된 식사 기록이 없어요</h2>
                 <p className="mt-2 text-[15px] leading-relaxed text-muted">가족과 기기의 실제 소식이 연결되면 이곳에 기록을 보여 드려요. 연결 전에는 식사 여부를 판단하지 않아요.</p>

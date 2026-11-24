@@ -48,6 +48,11 @@ export function PrivacyContent() {
       <p className="mt-3">설정의 기기 메뉴에서 어르신 정보 이용 동의를 취소하면 새 어르신 정보 저장을 멈춰요. 동의 철회가 저장되면 기기 상태 조회와 새 신호 기록도 멈추고, 홈에서 마지막 기기 정보가 사라져요.</p>
       <p className="mt-3">삼성과의 연결도 지우려면 기기 화면에서 ‘연결 해제’를 선택해 주세요. 해제에 성공하면 삼성 기기 알림 구독을 해제하고 밥뭇나 서버에서 해당 기기 연결과 저장된 토큰을 삭제해요. 이미 권한이 만료된 경우에는 SmartThings에서 밥뭇나 접근 권한을 해제한 뒤 앱 안내에 따라 기존 연결을 지워 주세요.</p>
     </section>
+    <section>
+      <h2 className="text-[21px] font-bold">이 기기의 안부 알림</h2>
+      <p className="mt-3">보호자가 알림을 켠 기기에서만 소식을 받아요. 잠금화면에는 기본으로 새 소식이 있다는 문구가 보여요. 알림함에서 소식 종류 표시를 켜거나 끌 수 있어요.</p>
+      <p className="mt-3">홈 화면 알림을 연결하면 팀 발송 서버는 이 계정의 기기 구독 주소와 발송에 필요한 열쇠를 암호화해 보관해요. 알림함에서 ‘이 기기 알림 끄기’를 누르면 수신을 해제해요. 시험 알림은 직접 누른 기기로만 보내요.</p>
+    </section>
     <section className="rounded-2xl border border-line p-5">
       <h2 className="text-[21px] font-bold">6. 운영팀에 문의하기</h2>
       <a className="mt-3 block min-h-12 break-all py-2 font-bold underline underline-offset-4" href={`mailto:${PRIVACY_SUPPORT_EMAIL}`}>{PRIVACY_SUPPORT_EMAIL}</a>

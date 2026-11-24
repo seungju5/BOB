@@ -10,7 +10,7 @@ export function createHeartsDemo(now=new Date()):HeartsDemo{
   const messages:HeartMessage[]=[{id:'demo-letter',text:'오늘도 어머니의 하루를 응원해요. 무리하지 말고, 좋아하는 길로 천천히 걸어요. 사랑해요!',photo:null,createdAt:now.toISOString(),readAt:null,unlockedAt:now.toISOString(),unlockPercent:25,locked:false,type:'message'}];
   return {enabled:true,joined:true,state,messages,leagueEnabled:true,region:'세종 조치원'};
 }
-export function readHeartsDemo(now=new Date()):HeartsDemo{
+export function readStoredHeartsDemo(now=new Date()):HeartsDemo|null{
   try{
     const stored=JSON.parse(localStorage.getItem(KEY)||'null');
     if(stored?.joined===true&&Array.isArray(stored.messages)&&stored.messages.length<=20){
@@ -19,8 +19,9 @@ export function readHeartsDemo(now=new Date()):HeartsDemo{
       if(valid)return unlockDemoMessages({...stored,state:advanceHearts(state,{date:heartDate(now),count:heartDate(now)===state.date?state.days[state.date]?.count??null:null,now})},now);
     }
   }catch{/* A damaged example never affects the real account. */}
-  return createHeartsDemo(now);
+  return null;
 }
+export function readHeartsDemo(now=new Date()):HeartsDemo{return readStoredHeartsDemo(now)??createHeartsDemo(now);}
 export function saveHeartsDemo(value:HeartsDemo){try{localStorage.setItem(KEY,JSON.stringify(value));return true;}catch{return false;}}
 export function actHeartsDemo(value:HeartsDemo,action:HeartAction,body:Record<string,unknown>={},now=new Date()):HeartsDemo{
   const next={...value,messages:[...value.messages]};

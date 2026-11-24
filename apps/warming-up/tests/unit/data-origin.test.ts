@@ -90,9 +90,8 @@ describe("출처에 따른 기기 저장소와 알림 격리", () => {
     vi.advanceTimersByTime(1200);
     live.alerts = [{...view.alerts[0], id:"a-new-alert", triggeredAt:new Date().toISOString()}];
     useAlertNotifications(live, "parent:2");
-    await Promise.resolve();
-    expect(display).toHaveBeenCalledTimes(1);
-    expect(display).toHaveBeenCalledWith("밥뭇나", expect.objectContaining({body: "워밍이가 새 소식을 가져왔어요. 앱에서 확인해 주세요.", tag:"a-new-alert", data:{url:"/alerts"}}));
+    await vi.waitFor(() => expect(display).toHaveBeenCalledTimes(1));
+    expect(display).toHaveBeenCalledWith("밥뭇나", expect.objectContaining({body: "워밍이가 새 소식을 가져왔어요. 앱에서 확인해 주세요.", tag:"a-new-alert", data:{url:"/alerts/#notice-a-new-alert"}}));
   });
 
   it("only shows new real cooker signals for the opted-in account until it turns them off", async () => {
@@ -108,14 +107,12 @@ describe("출처에 따른 기기 저장소와 알림 격리", () => {
     expect(registration).not.toHaveBeenCalled();
     useAlertNotifications(live, "parent:1");
     await Promise.resolve();
-    await Promise.resolve();
-    expect(display).toHaveBeenCalledTimes(1);
+    await vi.waitFor(() => expect(display).toHaveBeenCalledTimes(1));
     useAlertNotifications(live, "parent:2");
     await disablePush("parent");
     vi.advanceTimersByTime(1000);
     live.plug.powerNoticeAt = new Date().toISOString();
     useAlertNotifications(live, "parent:3");
-    await Promise.resolve();
-    expect(display).toHaveBeenCalledTimes(1);
+    await vi.waitFor(() => expect(display).toHaveBeenCalledTimes(1));
   });
 });

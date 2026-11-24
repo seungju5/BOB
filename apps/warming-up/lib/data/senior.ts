@@ -5,7 +5,7 @@
 import { useSyncExternalStore } from "react";
 import { addDays, kstDate, kstDateTime } from "@/lib/judge/time";
 import type { Absence, MealSlotName, MealWindow } from "@/lib/judge/types";
-import { lastCookerAt } from "@/lib/demo/derive";
+import type { DemoState } from "@/lib/demo/state";
 import { updateDemo, useDemo } from "@/lib/demo/store";
 import { resetSeniorStepsConsent } from "@/lib/steps/consent";
 import { mealSlotLabel } from "@/lib/data/view";
@@ -14,7 +14,7 @@ const KEY = "bapmutna.senior.token";
 const EVENT = "bapmutna:senior";
 const DEMO = "demo";
 
-export type SeniorStatus = { seniorName: string; lastCookerAt: string | null; absence: Absence | null; mealWindows: MealWindow[] };
+export type SeniorStatus = { seniorName: string; hasCookSignalToday: boolean; absence: Absence | null; mealWindows: MealWindow[] };
 /** 기본은 지금·오늘부터. 어르신이 따로 고르면 그 끼니나 시작일로 남긴다. */
 export type SeniorWhen = { meal?: { date: string; slot: MealSlotName }; startDate?: string };
 export type SeniorOp = "eat_out" | "help" | "away" | "back";
@@ -110,20 +110,28 @@ export async function performSeniorAction(token: string | null | undefined, op: 
   });
 }
 
+export function seniorDemoStatus(demo: DemoState, now: Date): SeniorStatus {
+  const today = kstDate(now);
+  const midnight = kstDateTime(today, "00:00").getTime();
+  const until = now.getTime();
+  const hasCookSignalToday = demo.events.some(event => {
+    if (event.type !== "cook") return false;
+    const started = Date.parse(event.startedAt);
+    return started >= midnight && started <= until;
+  });
+  return {
+    seniorName: demo.senior.name,
+    hasCookSignalToday,
+    absence: demo.absences.find(a => a.startDate <= today && today <= a.endDate) ?? null,
+    mealWindows: demo.mealProfile.windows,
+  };
+}
+
 export function useSenior() {
   const token = useSyncExternalStore(subscribe, readToken, () => undefined);
   const isDemo = token === DEMO;
   const demo = useDemo(isDemo);
-  const status: SeniorStatus | null = isDemo
-    ? demo
-      ? {
-          seniorName: demo.senior.name,
-          lastCookerAt: lastCookerAt(demo)?.toISOString() ?? null,
-          absence: demo.absences.find((a) => a.startDate <= kstDate(new Date()) && kstDate(new Date()) <= a.endDate) ?? null,
-          mealWindows: demo.mealProfile.windows,
-        }
-      : null
-    : null;
+  const status = isDemo && demo ? seniorDemoStatus(demo, new Date()) : null;
 
   const act = (op: SeniorOp, days?: number, when?: SeniorWhen) => performSeniorAction(token, op, days, when);
   return {

@@ -11,3 +11,12 @@
 .welcome-replay[hidden],.bunny-motion[hidden]{display:none!important}
 .welcome-replay:disabled{opacity:.6;cursor:progress}
 @media(prefers-reduced-motion:reduce){.bunny-stage .bunny-shadow{transition:none}.bunny-stage .bunny-motion{display:none}.bunny-stage.has-bunny-motion>img{visibility:visible}.welcome-replay{display:none!important}}
+
+.warming-greeting{isolation:isolate}
+.warming-reply{position:absolute;z-index:3;pointer-events:none;right:0;bottom:-.85rem;max-width:100%;padding:.45rem .75rem;border:1px solid var(--color-line);border-radius:1rem;background:var(--color-paper);color:var(--color-cocoa);font-size:1rem;font-weight:600;line-height:1.45;text-align:center;box-shadow:0 3px 10px #3c302608}
+.warming-reply::before{content:"";position:absolute;right:30%;top:-5px;width:8px;height:8px;border-top:1px solid var(--color-line);border-left:1px solid var(--color-line);background:var(--color-paper);transform:rotate(45deg)}
+.warming-reaction-mark{position:absolute;right:7%;top:24%;pointer-events:none;color:var(--color-blush-deep);font-weight:700;font-size:1.2rem;opacity:0}
+.warming-greeting[data-reply=true] .warming-reaction-mark{opacity:1;animation:warming-reaction-mark 1.6s ease-out both}
+.warming-greeting[data-reaction=rest] .warming-reaction-mark{color:var(--color-muted)}
+@keyframes warming-reaction-mark{0%{opacity:0;transform:translateY(6px) scale(.8)}25%,75%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-6px) scale(1)}}
+@media(prefers-reduced-motion:reduce){.warming-greeting[data-reply=true] .warming-reaction-mark{animation:none;opacity:1}}

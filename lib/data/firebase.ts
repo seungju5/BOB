@@ -55,7 +55,7 @@ function connectionPlug(connection: SmartThingsConnection | null, consent: boole
     ...(event !== null && received !== null && event <= received && {lastEventAt: new Date(event).toISOString()}),
     ...(checked !== null && {lastCheckedAt: new Date(checked).toISOString()}),
     ...(pollEvidence !== null && {lastPolledMeasurementAt: new Date(pollEvidence).toISOString()}),
-    ...(connection.device.isVirtual === true && {isVirtual: true}),
+    ...(typeof connection.device.isVirtual === "boolean" && {isVirtual: connection.device.isVirtual}),
     ...(connection.device.isVirtual === false && connection.powerNotice?.enabled && noticeAt !== null &&
       noticeAt <= witnessedAt && at - noticeAt < 86400000 &&
       {powerNoticeAt: new Date(noticeAt).toISOString()}),
@@ -130,7 +130,10 @@ async function refreshFirebaseConnection(uid: string, revision: number, dueDevic
 }
 async function observeUser(user:FirebaseUser|null) {
   if(state.user!==undefined&&state.user?.uid!==user?.uid){
-    if (state.user?.uid) void cancelPendingSmartThings(state.user.uid).catch(()=>{});
+    if (state.user?.uid) {
+      void cancelPendingSmartThings(state.user.uid).catch(()=>{});
+      void retireDeviceNotices(state.user.uid);
+    }
     resetSeniorStepsConsent();
   }
   cancelStatusRequest();
@@ -218,6 +221,20 @@ export function useFirebaseAccount(enabled=true) {
   },[enabled]);
   return snapshot;
 }
+async function retireDeviceNotices(owner: string) {
+  if (typeof window === "undefined") return;
+  try {
+    const {disablePush} = await import("@/lib/push");
+    await disablePush(owner);
+  } catch {
+    // A retired worker can no longer show old-account messages on a shared device.
+    if (typeof navigator !== "undefined" && "serviceWorker" in navigator) {
+      const {appPath} = await import("@/lib/app-path");
+      await navigator.serviceWorker.getRegistration(appPath("/")).then(worker => worker?.unregister()).catch(() => {});
+    }
+  }
+}
+
 export async function signOutFirebase() {
   const uid = state.user?.uid;
   // Discard private UI state before any provider or network wait. A pending
@@ -225,7 +242,7 @@ export async function signOutFirebase() {
   cancelStatusRequest();pollableUid=null;pendingWithdrawals=0;
   consentProbe=null;mustConfirmConsent=false;
   resetSeniorStepsConsent();const at=++epoch;emit({...EMPTY,user:null,loading:false,revision:state.revision+1});
-  if (uid) await within(cancelPendingSmartThings(uid), 1200).catch(()=>{});
+  if (uid) await Promise.all([within(cancelPendingSmartThings(uid), 1200).catch(()=>{}), retireDeviceNotices(uid)]);
   const p=await within(connectFirebase());
   if (at!==epoch) return;
   await within(p.signOut());
@@ -297,7 +314,10 @@ function applySavedPreferences(uid: string, saved: SavedPreferences, source: 'wr
   const resume = source === 'confirmation' && mustConfirmConsent;
   if (source === 'confirmation') mustConfirmConsent = false;
   if (changed || resume) cancelStatusRequest();
-  if (changed && !hasConsent && !pendingWithdrawals) void cancelPendingSmartThings(uid).catch(()=>{});
+  if (changed && !hasConsent) {
+    void retireDeviceNotices(uid);
+    if (!pendingWithdrawals) void cancelPendingSmartThings(uid).catch(()=>{});
+  }
   const connection = hasConsent && !changed && !mustConfirmConsent && !pendingWithdrawals ? state.connection : null;
   const revision = changed || resume ? state.revision + 1 : state.revision;
   emit({saved, connection, revision, view: firebaseView(saved, connection), error: null});

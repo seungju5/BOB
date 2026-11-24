@@ -11,5 +11,6 @@
 !store.mjs
 !cooking-signal.mjs
 !power-notice.mjs
+!notifications.mjs
 !power-criteria.json
 !maintenance.mjs

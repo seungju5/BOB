@@ -1,21 +1,54 @@
-/* S-02: three central actions, reflowing at narrow widths or enlarged text.
- * Prefixes keep these rules scoped to the senior screen in both build pipelines.
- */
-.bapmunna-senior-home { container-type: inline-size; background: var(--color-paper); }
-.bapmunna-senior-home button { font-size: 1.5rem; }
-.bapmunna-senior-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .625rem; }
-.bapmunna-senior-action { display: flex; min-width: 0; min-height: 9.5rem; flex-direction: column; align-items: center; justify-content: center; gap: .875rem; padding: .875rem .25rem; }
-.bapmunna-senior-action-label { line-height: 1.35; text-align: center; }
-.bapmunna-senior-action-label span { display: block; }
-@container (max-width: 19rem) {
-  .bapmunna-senior-actions { grid-template-columns: 1fr; }
-  .bapmunna-senior-action { min-height: 4.75rem; flex-direction: row; padding: .875rem; }
-  .bapmunna-senior-action-label span { display: inline; }
+.bapmunna-senior-home {
+  container-type: inline-size;
+  background: var(--color-paper);
+  color: var(--color-cocoa);
+  overflow-wrap: anywhere;
 }
-@container (max-width: 14rem) {
-  .bapmunna-senior-home p { overflow-wrap: anywhere; word-break: normal; }
-  .bapmunna-senior-action { flex-direction: column; }
-  .bapmunna-senior-action-label span { display: block; }
-  .bapmunna-senior-encouragement { flex-direction: column; align-items: stretch; }
-  .bapmunna-senior-encouragement img { align-self: flex-end; }
+.bapmunna-senior-home dialog button { font-size: 1.5rem; }
+.bapmunna-senior-greeting {
+  display: flex; align-items: center; justify-content: space-between; gap: .5rem;
+  padding: .8rem 1.15rem; margin-top: .8rem; border-radius: 1.4rem; background: var(--color-butter-soft);
+}
+.bapmunna-senior-greeting h1 { font-size: 1.75rem; line-height: 1.3; letter-spacing: -.045em; font-weight: 760; }
+.bapmunna-senior-greeting p { margin-top: .25rem; font-size: 1.125rem; line-height: 1.5; color: var(--color-muted); }
+.bapmunna-senior-mascot { width: 4.5rem; height: 4.5rem; flex: none; object-fit: contain; transform: scale(1.25); }
+.bapmunna-senior-actions { display: grid; gap: .55rem; margin-top: .75rem; }
+.bapmunna-senior-action {
+  display: flex; align-items: center; gap: .85rem; min-height: 4.4rem; width: 100%;
+  border: 1px solid var(--color-line); border-radius: 1.15rem; padding: .6rem 1rem .6rem .7rem;
+  background: var(--color-paper); color: var(--color-cocoa); text-align: start; cursor: pointer;
+}
+.bapmunna-senior-action strong { flex: 1; font-size: 1.5rem; line-height: 1.4; letter-spacing: -.035em; }
+.bapmunna-senior-action:focus-visible { outline: 3px solid var(--color-cocoa); }
+.bapmunna-senior-action:active { background: var(--color-cream); }
+.bapmunna-senior-action-icon {
+  display: grid; place-items: center; flex: none; width: 2.85rem; height: 2.85rem;
+  color: var(--color-cocoa); background: var(--color-butter); border-radius: .9rem;
+}
+.bapmunna-senior-action-icon svg { width: 1.65rem; height: 1.65rem; }
+.bapmunna-senior-action[data-tone="away"] .bapmunna-senior-action-icon { background: var(--color-sky); color: var(--color-sky-deep); }
+.bapmunna-senior-action[data-tone="help"] .bapmunna-senior-action-icon { background: var(--color-blush); color: var(--color-blush-deep); }
+.bapmunna-cooker-note {
+  display: grid; grid-template-columns: 3.1rem minmax(0, 1fr); align-items: center; gap: .9rem;
+  margin-top: .85rem; padding: 1rem; border: 1px solid var(--color-line); border-radius: 1.2rem;
+  background: var(--color-paper);
+}
+.bapmunna-cooker-note[data-received="true"] {
+  background: color-mix(in srgb, var(--color-butter-soft) 60%, var(--color-paper));
+}
+.bapmunna-cooker-note > img { width: 100%; height: auto; }
+.bapmunna-cooker-note h2 { font-size: 1.375rem; line-height: 1.4; font-weight: 730; letter-spacing: -.035em; }
+.bapmunna-cooker-note p { display: flex; align-items: flex-start; gap: .35rem; margin-top: .2rem; color: var(--color-muted); font-size: 1.125rem; line-height: 1.55; }
+.bapmunna-cooker-note p svg { flex: none; width: 1.1em; height: 1.1em; margin-top: .22em; }
+.bapmunna-cooker-note[data-received="true"] p svg { color: var(--color-blush-deep); }
+@container (max-width: 19rem) {
+  .bapmunna-cooker-note { grid-template-columns: 2.4rem minmax(0, 1fr); gap: .6rem; padding: .85rem .75rem; }
+}
+@container (max-width: 13rem) {
+  .bapmunna-cooker-note { grid-template-columns: minmax(0, 1fr); }
+  .bapmunna-cooker-note > img { width: 2.4rem; }
+}
+@container (max-width: 17rem) {
+  .bapmunna-senior-greeting { flex-wrap: wrap; }
+  .bapmunna-senior-action { gap: .5rem; padding-inline: .5rem; }
 }

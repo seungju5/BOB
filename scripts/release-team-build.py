@@ -30,7 +30,10 @@ ROUTES = {
     "admin/": "admin/index.html",
     "records/": "records/index.html",
     "alerts/": "alerts/index.html",
+    "tutorial/": "tutorial/index.html",
     "sw.js": "sw.js",
+    "notification-content.js": "notification-content.js",
+    "brand/notification-badge.png": "brand/notification-badge.png",
 }
 
 

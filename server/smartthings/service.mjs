@@ -293,15 +293,21 @@ export function createService({
   },
   smartthings,
   verifyWebhook,
+  notifier = null,
   now = () => Date.now(),
 }) {
   const ready = configured(config),
     secrets = ready ? vault(config.key) : null;
   const tokens = createTokenManager({ store, secrets, smartthings, verifyAccount, verifyConsent, now });
   const authorized = tokens.authorized;
+  async function notifyCooker(uid) {
+    // Notification delivery is optional and must not roll back a power reading,
+    // or cause Samsung to retransmit a successful mixed-lifecycle webhook.
+    if (notifier) await notifier.deliverCooker(uid).catch(() => {});
+  }
   async function pollPower(uid, deviceId, installId) {
     let claim;
-    return authorized(uid, async (current, token) => {
+    const checked = await authorized(uid, async (current, token) => {
       if (!matchesPowerCheck(current, claim)) return false;
       const status = await smartthings.status(token, deviceId);
       const at = now();
@@ -316,6 +322,8 @@ export function createService({
       if (!claim && error.code === 'busy') return false;
       throw error;
     });
+    if (checked) await notifyCooker(uid);
+    return checked;
   }
   // Firebase Hosting forwards only __session to Cloud Run. Restrict this nonce
   // cookie to the integration path so it does not replace an app-wide session.
@@ -458,13 +466,25 @@ export function createService({
         }),
       });
     }
+    if (selectedDevice) await notifyCooker(owner.uid);
     return response({ ok: true });
   }
   const handle = async (request) => {
     const url = new URL(request.url),
       path = url.pathname.slice(PREFIX.length);
+    // Only the two notification routes can be hosted on a separate, pinned
+    // team origin while static Firebase Hosting stays on the free plan.
+    const pushRoute = path === '/notification-subscription' || path === '/config';
+    const site = request.headers.get('origin');
+    const cors = pushRoute && site === config.origin
+      ? { 'Access-Control-Allow-Origin': config.origin, Vary: 'Origin' } : {};
     try {
       if (!url.pathname.startsWith(PREFIX + '/')) throw new ApiError(404, 'not_found');
+      if (pushRoute && request.method === 'OPTIONS') {
+        if (site !== config.origin) throw new ApiError(403, 'invalid_origin');
+        return new Response(null, {status:204, headers:{...cors, 'Access-Control-Allow-Methods':'GET, POST, OPTIONS',
+          'Access-Control-Allow-Headers':'Authorization, Content-Type', 'Access-Control-Max-Age':'300'}});
+      }
       if (path === '/config' && request.method === 'GET')
         return response({
           projectId: TEAM_PROJECT_ID,
@@ -472,7 +492,14 @@ export function createService({
           enabled: ready,
           connectionReady: ready && config.connectionEnabled === true,
           consentVersion: CONSENT,
-        });
+          ...(notifier && { webPush: { publicKey: notifier.publicKey } }),
+        }, 200, cors);
+      if (path === '/notification-subscription' && request.method === 'POST') {
+        if (!notifier) throw new ApiError(503, 'push_setup_required');
+        if (!equal(request.headers.get('origin') || '', config.origin)) throw new ApiError(403, 'invalid_origin');
+        const { uid, authTime } = await user(request);
+        return response(await notifier.handle(uid, authTime, await json(request)), 200, cors);
+      }
       if (path === '/events' && request.method === 'POST' && identifier(config.appId))
         return await webhook(request, url);
       if (!ready) throw new ApiError(503, 'setup_required');
@@ -789,6 +816,7 @@ export function createService({
       return response(
         { error: error instanceof ApiError ? error.code : 'temporarily_unavailable' },
         error instanceof ApiError ? error.status : 503,
+        cors,
       );
     }
   };

@@ -17,7 +17,7 @@ export default function MorePage() {
     <p className="mt-2 text-muted">가족의 안부를 편하게 살펴보세요.</p>
     <div className="mt-6 overflow-hidden rounded-[1.75rem] border border-line">
       {[
-        { href: view?.mode === 'demo' ? '/walking/demo' : '/walking', label: '오늘의 산책', detail: '산책 하트·가족 응원·토끼 꾸미기', Icon: IconChart },
+        { href: view?.mode === 'demo' ? '/walking/demo' : '/walking', label: '워밍이의 산책', detail: view?.mode === 'demo' ? '예시 산책 하트와 가족 응원' : '옷을 입히고 산책길을 골라요', Icon: IconChart },
         { href: "/alerts", label: "받은 알림", detail: count ? `확인할 소식 ${count}개` : "지나간 소식도 함께 봐요", Icon: IconBell },
         { href: "/report", label: "패턴 리포트", detail: "평소와 어떻게 달라졌는지 살펴요", Icon: IconChart },
         { href: "/settings", label: "생활·알림 설정", detail: "식사 시간, 가족 연결과 계정", Icon: IconSettings },

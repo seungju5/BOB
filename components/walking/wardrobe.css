@@ -1,0 +1,173 @@
+.app-frame:has(.warming-walk) {
+  max-width: 1040px;
+  background: #fffcf6;
+  box-shadow: 0 0 0 1px #e9e0d3;
+}
+.warming-walk, .ward-editor {
+  --ward-ink: #42362f;
+  --ward-muted: #706158;
+  --ward-berry: #903e50;
+  --ward-blush: #f9e8e4;
+  --ward-edge: #e8ddd3;
+  --ward-paper: #fffdf8;
+  color: var(--ward-ink);
+  font-family: var(--font-sans);
+  letter-spacing: -.018em;
+}
+.warming-walk { min-height: 100dvh; }
+.warming-walk a, .ward-editor button { touch-action: manipulation; }
+.ward-editor button, .ward-saved button { font: inherit; color: inherit; cursor: pointer; }
+.ward-editor button:disabled { cursor: default; opacity: .58; }
+.warming-walk :focus-visible, .bapmunna-hearts .ward-editor :focus-visible { outline: 3px solid #346654; outline-offset: 3px; }
+.ward-header {
+  display: flex; align-items: center; justify-content: space-between;
+  min-height: 65px; padding: 7px clamp(16px, 4vw, 44px); border-bottom: 1px solid var(--ward-edge);
+}
+.ward-header > a { display: inline-flex; align-items: center; min-height: 44px; }
+.ward-header .font-hand { font-size: 31px; }
+.ward-header img { width: 37px; height: 37px; }
+.ward-menu { gap: 6px; font-weight: 650; font-size: .94rem; }
+.ward-menu svg { width: 18px; }
+.ward-shell { padding: 0 clamp(14px, 4.3vw, 44px) max(24px, env(safe-area-inset-bottom)); }
+.ward-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 19px 0 17px; }
+.ward-heading h1 { font-size: clamp(1.53rem, 4.4vw, 2.4rem); line-height: 1.16; letter-spacing: -.06em; font-weight: 850; }
+.ward-heading h1:focus { outline: none; }
+.ward-views { display: inline-flex; flex: none; padding: 3px; border: 1px solid var(--ward-edge); background: #f5f0e9; border-radius: 24px; }
+.ward-views a { display: inline-flex; align-items: center; justify-content: center; gap: 4px; min-height: 44px; min-width: 53px; padding: 0 9px; font-size: .86rem; font-weight: 720; color: #695b53; border-radius: 22px; }
+.ward-views a[aria-current] { background: #fffdf9; color: var(--ward-berry); box-shadow: 0 1px 3px #48352529; }
+.ward-views svg { width: 17px; height: 17px; }
+.ward-editor { display: grid; gap: 15px; align-items: start; }
+.ward-stage {
+  isolation: isolate; position: relative; overflow: hidden; display: block; width: 100%; aspect-ratio: 1.48;
+  border-radius: 23px; background: #f0ded1; box-shadow: inset 0 0 0 1px #6e50362b;
+}
+.ward-stage::after { content: ''; pointer-events: none; position: absolute; z-index: 2; inset: 0; border: 1px solid #714f3325; border-radius: inherit; }
+.ward-stage-landscape { z-index: -1; object-fit: cover; object-position: 50% 60%; }
+.ward-stage.is-walking .ward-stage-landscape { animation: warming-pan 12s ease-in-out infinite alternate; }
+.ward-place, .ward-play {
+  position: absolute; z-index: 3; display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+  border-radius: 24px; font-size: .76rem; line-height: 1; font-weight: 760; color: #493b32;
+  background: #fffaf0f2; box-shadow: 0 2px 5px #573e3121;
+}
+.ward-place { top: 11px; left: 11px; padding: 7px 10px 7px 8px; }
+.ward-place svg { width: 14px; height: 14px; color: #965163; }
+.ward-editor .ward-play { right: 11px; bottom: 11px; min-height: 44px; padding: 0 12px; border: 1px solid #fff9f0; font-size: .79rem; font-weight: 750; }
+.ward-play svg { width: 15px; height: 15px; }
+.ward-stage-bunny { position: absolute; height: 75%; aspect-ratio: 310 / 500; bottom: 10.5%; left: 50%; transform: translateX(-50%); }
+.ward-editor .ward-greet { position: absolute; inset: 0; border: 0; border-radius: 46%; background: transparent; }
+.ward-greet-heart { position: absolute; top: 26%; right: -11%; width: 23%; color: #a6435b; pointer-events: none; animation: warming-heart .9s ease-out both; }
+.ward-greet-heart svg { width: 100%; fill: #ee859c; stroke-width: 1.3px; filter: drop-shadow(0 1px 1px #fffbf8); }
+.is-greeting .warming-rabbit { animation: warming-hop .55s ease-in-out; }
+@keyframes warming-hop { 0%,100% { transform: none; } 23% { transform: scale(1.035,.97); } 53% { transform: translateY(-8%) rotate(-3deg); } 78% { transform: translateY(-2%) rotate(1deg); } }
+@keyframes warming-heart { 0% { opacity: 0; transform: translateY(14%) scale(.5); } 30%,65% { opacity: 1; } 100% { opacity: 0; transform: translateY(-38%) scale(1.1); } }
+.warming-rabbit { position: relative; width: 100%; height: 100%; pointer-events: none; user-select: none; }
+.warming-rabbit-shadow { position: absolute; width: 76%; height: 7%; bottom: -1.3%; left: 12%; border-radius: 50%; background: radial-gradient(ellipse,#63452e66, #63452e26 54%,transparent 72%); }
+.warming-rabbit-pose, .warming-feet { position: absolute; inset: 0; }
+.warming-rabbit-pose { transform-origin: 50% 88%; }
+.warming-body, .warming-feet img { display: block; width: 100%; height: 100%; }
+.warming-feet { display: none; }
+.warming-layer { position: absolute; display: block; height: auto; max-width: none; filter: drop-shadow(0 1px 1px #4b2b2529); }
+.wear-berry-beret { width: 52%; left: 23%; top: 7%; transform: rotate(-12deg); }
+.wear-straw-hat { width: 76%; left: 12%; top: 4.5%; transform: rotate(-9deg); }
+.wear-hiking-cap { width: 67%; left: 16%; top: 6%; transform: scaleX(-1) rotate(7deg); }
+.wear-crown { width: 43%; left: 32%; top: 7.6%; transform: rotate(-6deg); }
+.wear-rose-bow { width: 33%; left: 14%; top: 18%; transform: rotate(-16deg); }
+.wear-scarf { width: 54%; left: 27%; top: 57%; transform: rotate(-5deg); }
+.wear-basket { width: 48%; left: -3%; top: 66%; transform: rotate(-8deg); }
+.wear-rice-pouch { width: 37%; left: 5%; top: 66%; transform: rotate(-12deg); }
+.wear-daisy-pin { width: 18%; left: 57%; top: 62%; transform: rotate(8deg); }
+.is-walking .warming-rabbit-pose { animation: warming-steps .92s ease-in-out infinite; }
+.is-walking .warming-rabbit-shadow { animation: warming-shadow .46s ease-in-out infinite alternate; }
+.is-walking .warming-body { clip-path: inset(0 0 11.7% 0); }
+.is-walking .warming-feet { display: block; }
+.warming-feet img { position: absolute; inset: 0; }
+.warming-foot-left { clip-path: polygon(0 85%,49.8% 85%,49.8% 100%,0 100%); transform-origin: 38% 85%; animation: warming-left .92s ease-in-out infinite; }
+.warming-foot-right { clip-path: polygon(49.6% 85%,100% 85%,100% 100%,49.6% 100%); transform-origin: 63% 85%; animation: warming-right .92s ease-in-out infinite; }
+@keyframes warming-steps { 0%,100% { transform: translate(-1%,0) rotate(-2deg); } 25%,75% { transform: translate(0,-2%) rotate(0); } 50% { transform: translate(1%,0) rotate(2deg); } }
+@keyframes warming-left { 0%,100% { transform: rotate(7deg); } 50% { transform: rotate(-8deg); } }
+@keyframes warming-right { 0%,100% { transform: rotate(-8deg); } 50% { transform: rotate(7deg); } }
+@keyframes warming-shadow { to { transform: scaleX(.86); opacity: .7; } }
+@keyframes warming-pan { from { transform: scale(1.055) translateX(-1.9%); } to { transform: scale(1.055) translateX(1.9%); } }
+.ward-picker { min-width: 0; border: 1px solid var(--ward-edge); background: var(--ward-paper); border-radius: 22px; padding: clamp(14px, 3.4vw, 24px); }
+.ward-picker-title, .ward-picker h2 { display: flex; align-items: center; }
+.ward-picker-title { justify-content: space-between; gap: 10px; }
+.ward-picker h2, .bapmunna-hearts .ward-picker h2 { gap: 9px; margin: 0; font-size: 1.35rem; font-weight: 800; letter-spacing: -.05em; line-height: 1.3; }
+.ward-picker h2 > svg { width: 27px; height: 27px; color: var(--ward-berry); }
+.ward-wallet { display: inline-flex; gap: 5px; align-items: center; padding: 3px 10px; font-weight: 780; border-radius: 15px; font-size: .88rem; background: var(--ward-blush); color: var(--ward-berry); }
+.ward-wallet svg, .ward-price svg { fill: #d96f75; width: 15px; height: 15px; }
+.ward-tabs { display: grid; grid-template-columns: repeat(4,1fr); margin: 15px 0 14px; border-bottom: 1px solid var(--ward-edge); }
+.ward-tabs button { position: relative; display: flex; align-items: center; justify-content: center; gap: 5px; min-height: 47px; padding: 3px; color: #685d55; background: transparent; border: 0; font-size: .87rem; font-weight: 660; }
+.ward-tabs button::after { content: ''; position: absolute; bottom: -1px; left: 12%; right: 12%; height: 3px; border-radius: 3px; background: transparent; }
+.ward-tabs button[aria-pressed=true] { color: var(--ward-berry); font-weight: 820; }
+.ward-tabs button[aria-pressed=true]::after { background: var(--ward-berry); }
+.ward-tabs svg { width: 19px; height: 19px; }
+.ward-options { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); align-items: start; gap: 12px 8px; }
+.ward-options:has(> :nth-child(4)) { grid-template-columns: repeat(4,minmax(0,1fr)); }
+.ward-options .ward-option { display: flex; flex-direction: column; align-items: stretch; padding: 0; border: 0; background: transparent; border-radius: 13px; text-align: center; }
+.ward-swatch, .ward-worn-art { display: grid; overflow: hidden; position: relative; place-items: center; border-radius: 14px; border: 1px solid #e4d8cb; background: #f6efe2; }
+.ward-swatch { width: 100%; aspect-ratio: 1.34; }
+.ward-option:nth-child(3n+2) .ward-swatch { background: #f5e9e4; }
+.ward-option:nth-child(3n+3) .ward-swatch { background: #edf0e6; }
+.ward-option[aria-pressed=true] .ward-swatch { border: 2px solid var(--ward-berry); box-shadow: inset 0 0 0 2px #fff9ef; }
+.ward-option[aria-pressed=true] .ward-item-name { color: var(--ward-berry); font-weight: 800; }
+.ward-selected { position: absolute; display: grid; place-items: center; top: 4px; right: 4px; width: 18px; height: 18px; border: 1px solid white; border-radius: 50%; background: var(--ward-berry); color: white; }
+.ward-selected svg { width: 13px; height: 13px; stroke-width: 2.8px; }
+.ward-item-art { width: 73%; height: 77%; object-fit: contain; }
+.ward-item-art-outfit { width: 82%; height: 82%; }
+.ward-item-art-background { width: 100%; height: 100%; object-fit: cover; }
+.ward-basic-art { display: grid; place-items: center; width: 49%; height: 63%; color: #837563; }
+.ward-basic-art svg { width: 100%; height: 100%; stroke-width: 1.15px; }
+.ward-item-name { margin-top: 6px; font-size: .88rem; line-height: 1.4; font-weight: 660; overflow-wrap: anywhere; }
+.ward-price { display: inline-flex; align-self: center; align-items: center; gap: 2px; color: var(--ward-muted); font-size: .75rem; line-height: 1.35; }
+.ward-price svg { width: 13px; }
+.ward-hint, .ward-error { margin: 10px 0 0; font-size: .83rem; color: var(--ward-muted); }
+.ward-error { text-align: center; color: #8d3446; }
+.ward-actions { display: grid; gap: 4px; margin-top: 20px; }
+.ward-editor .ward-primary { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; min-height: 49px; padding: 9px 14px; border: 1px solid #813648; border-radius: 13px; background: var(--ward-berry); box-shadow: 0 3px 0 #692e3c; color: white; font-size: 1rem; font-weight: 760; }
+.ward-primary svg { width: 19px; height: 19px; }
+.ward-editor .ward-primary:active:enabled { transform: translateY(1px); box-shadow: 0 2px 0 #692e3c; }
+.ward-editor .ward-cancel { min-height: 44px; padding: 5px; border: 0; background: transparent; color: var(--ward-muted); font-size: .81rem; font-weight: 600; }
+.ward-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 2px 12px; margin-top: 16px; padding: 12px 0 0; border-top: 1px solid var(--ward-edge); font-size: .77rem; color: var(--ward-muted); }
+.ward-footer div { display: inline-flex; flex-wrap: wrap; gap: 0 16px; }
+.ward-footer a { display: inline-flex; align-items: center; min-height: 44px; gap: 3px; font-weight: 660; }
+.ward-footer svg { width: 13px; height: 13px; }
+.ward-worn { margin: 12px 0 3px; }
+.ward-worn button { display: flex; align-items: center; width: 100%; text-align: start; gap: 12px; padding: 7px 0; min-height: 52px; background: none; border-bottom: 1px solid #eee7df; }
+.ward-worn-art { flex: none; width: 46px; height: 43px; border-radius: 10px; }
+.ward-worn small, .ward-worn strong { display: block; }
+.ward-worn small { color: var(--ward-muted); font-size: .71rem; }
+.ward-worn strong { font-size: .9rem; font-weight: 740; }
+.ward-worn button > svg { width: 16px; height: 16px; margin-left: auto; color: var(--ward-muted); }
+.ward-notice { display: flex; gap: 4px; align-items: center; min-height: 18px; margin: 8px 0; font-size: .8rem; color: #456249; }
+.ward-notice svg { width: 16px; height: 16px; flex: none; }
+.ward-hearts-closet { padding: 12px 14px; }
+@media (hover:hover) {
+  .ward-option:hover:enabled .ward-swatch { border-color: #a56a73; }
+  .ward-primary:hover:enabled { background: #823649; }
+  .ward-footer a:hover, .ward-menu:hover { text-decoration: underline; }
+}
+@media (min-width: 760px) {
+  .ward-header { min-height: 74px; }
+  .ward-heading { padding: 32px 0 24px; }
+  .ward-views a { padding: 0 14px; font-size: .91rem; }
+  .warming-walk .ward-editor { grid-template-columns: minmax(0,1.16fr) minmax(0,1fr); gap: 20px; align-items: start; }
+  .warming-walk .ward-stage { aspect-ratio: 1.13; min-height: 365px; }
+  .warming-walk .ward-picker { min-height: 365px; }
+  .ward-place { left: 16px; top: 16px; padding: 8px 12px 8px 10px; }
+  .ward-stage-bunny { height: 71%; }
+  .ward-footer { margin-top: 24px; }
+}
+@media (max-width: 360px) {
+  .ward-views a { padding: 0 6px; min-width: 45px; }
+  .ward-views a svg { display: none; }
+  .ward-stage { aspect-ratio: 1.37; }
+  .ward-tabs button { gap: 2px; font-size: .79rem; }
+  .ward-tabs svg { width: 16px; }
+  .ward-item-name { font-size: .77rem; }
+  .ward-options:has(> :nth-child(4)) { grid-template-columns: repeat(2,minmax(0,1fr)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .is-walking .warming-rabbit *, .ward-stage.is-walking .ward-stage-landscape, .is-greeting .warming-rabbit, .ward-greet-heart { animation: none !important; }
+  .is-walking .warming-body { clip-path: none; }
+  .is-walking .warming-feet { display: none; }
+}

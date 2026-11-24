@@ -1,0 +1,30 @@
+.meal-companion-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0}
+.meal-companion-copy{min-width:0;flex:1}
+.meal-companion-copy h2{font-size:1.25rem;font-weight:700;color:var(--color-cocoa)}
+.meal-companion-caption{margin-top:.25rem;font-size:1rem;line-height:1.5;color:var(--color-muted)}
+.meal-companion-button{width:76px;height:76px;flex:none;position:relative;display:grid;place-items:center;border-radius:50%;background:radial-gradient(ellipse,var(--color-butter-soft) 0%,transparent 68%);cursor:pointer;touch-action:manipulation}
+.meal-companion-button:active{background:var(--color-butter-soft)}
+.cooker-art{display:block;width:100%;height:100%;overflow:visible;color:var(--color-blush-deep);pointer-events:none}
+.cooker-body{transform-origin:625px 985px;animation:cooker-settle 1.4s ease-in-out both}
+.cooker-lid{transform-origin:790px 480px;animation:cooker-lid-hello 1.4s ease-in-out both}
+.cooker-kindness{opacity:0}
+.cooker-art[data-gesture=hello] .cooker-body{animation:cooker-hello 1.65s ease-in-out both}
+.cooker-art[data-gesture=hello] .cooker-lid{animation:cooker-lid-hello 1.65s ease-in-out both}
+.cooker-art[data-gesture=happy] .cooker-body{animation:cooker-hop 1.7s ease-in-out both}
+.cooker-art[data-gesture=happy] .cooker-kindness{animation:cooker-heart 1.7s ease-out both}
+.cooker-art[data-gesture=bow] .cooker-body{animation:cooker-bow 1.8s ease-in-out both}
+.cooker-art[data-gesture=bow] .cooker-lid{animation:cooker-lid-bow 1.8s ease-in-out both}
+.cooker-art[data-gesture=rest] .cooker-body{animation:cooker-rest 2.5s ease-in-out both}
+.cooker-art[data-gesture=rest] .cooker-lid{animation:none}
+.home-loading-companion{display:flex;align-items:center;gap:12px;min-height:72px;color:var(--color-muted);font-size:1rem;line-height:1.5;animation:companion-appear 160ms ease-out 240ms both}
+.home-loading-character{width:60px;height:64px;flex:none}
+@keyframes cooker-settle{0%,100%{transform:none}35%{transform:rotate(-3deg)}65%{transform:rotate(2deg)}}
+@keyframes cooker-hello{0%,100%{transform:none}25%,65%{transform:rotate(-5deg)}45%,80%{transform:rotate(4deg)}}
+@keyframes cooker-lid-hello{0%,100%{transform:none}30%,65%{transform:rotate(-4deg)}45%,80%{transform:rotate(2deg)}}
+@keyframes cooker-hop{0%,25%,65%,100%{transform:none}15%{transform:translateY(-38px) rotate(-3deg)}48%{transform:translateY(-24px) rotate(3deg)}}
+@keyframes cooker-heart{0%,100%{opacity:0;transform:translateY(0)}25%,70%{opacity:1;transform:translateY(-60px)}}
+@keyframes cooker-bow{0%,100%{transform:none}35%,60%{transform:translateY(12px) rotate(5deg)}}
+@keyframes cooker-lid-bow{0%,100%{transform:none}35%,60%{transform:rotate(7deg)}}
+@keyframes cooker-rest{0%,100%{transform:none}50%{transform:translateY(7px) rotate(-2deg)}}
+@keyframes companion-appear{from{opacity:0}to{opacity:1}}
+@media(prefers-reduced-motion:reduce){.cooker-art *{animation:none!important}.home-loading-companion{animation:none}.cooker-art[data-gesture=happy] .cooker-kindness{opacity:1}}

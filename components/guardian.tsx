@@ -16,6 +16,7 @@ export function StatusIcon({ status, className = "h-4 w-4" }: { status: MealStat
   if (status === "confirmed") return <IconCheck className={className} />;
   if (status === "eat_out") return <IconUtensils className={className} />;
   if (status === "away") return <IconSuitcase className={className} />;
+  if (status === "unconfirmed") return <span aria-hidden className={`inline-grid shrink-0 place-items-center ${className}`}><span className="w-2/3 border-t-2 border-current" /></span>;
   return <IconClock className={className} />;
 }
 
@@ -36,11 +37,15 @@ export const ALERT_TONE: Record<AlertType, string> = {
 export const ALERT_PRIORITY: AlertType[] = ["help_request", "emergency", "fasting", "missed_meals", "device_offline", "eat_out", "away", "weekly_report"];
 
 /** 알림 카드 아래 바로가기: 외식·도움 요청은 전화, 주간 리포트는 리포트 화면 */
+export function hasAlertCall(type: AlertType | undefined, phone: string) {
+  return Boolean(phone) && (type === "eat_out" || type === "help_request");
+}
+
 export function AlertShortcut({ type, relation, phone }: { type: AlertType; relation: string; phone: string }) {
-  const pill = "flex h-9 items-center gap-1.5 rounded-full border-2 border-cocoa/15 bg-paper px-4 text-[13px] font-bold text-cocoa";
-  if ((type === "eat_out" || type === "help_request") && phone)
+  const pill = "flex min-h-12 items-center gap-1.5 rounded-full border border-cocoa/20 bg-paper px-4 text-[16px] font-bold text-cocoa";
+  if (hasAlertCall(type, phone))
     return (
-      <a href={`tel:${phone.replace(/\D/g, "")}`} className={pill}>
+      <a href={`tel:${phone.replace(/(?!^\+)\D/g, "")}`} className={pill}>
         <IconPhone className="h-4 w-4" />
         {relation}께 전화하기
       </a>

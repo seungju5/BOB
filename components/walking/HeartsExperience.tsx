@@ -5,10 +5,12 @@ import { PRIVACY_SUPPORT_EMAIL } from '@/lib/privacy/notice';
 import {useCallback,useEffect,useRef,useState} from 'react';
 import {PhoneSteps} from '@bapmunna/phone-steps';
 import {Logo} from '@/components/Mascot';
-import {HEART_ITEMS,HEART_LEAGUE_TIERS,advanceHearts,createHeartState,heartDate,heartSummary,type HeartCategory,type HeartItem,type HeartLeague} from '@/packages/walking-hearts/core.mjs';
+import {HEART_ITEMS,HEART_LEAGUE_TIERS,advanceHearts,createHeartState,heartDate,heartSummary,type HeartLeague} from '@/packages/walking-hearts/core.mjs';
 import {HEARTS_CONSENT,heartsError,validateHeartsSnapshot,type HeartAction,type HeartMessage,type HeartsSnapshot,type HeartTransport} from '@/lib/hearts/client';
-import {actHeartsDemo,createHeartsDemo,demoLeague,readHeartsDemo,saveHeartsDemo,type HeartsDemo} from '@/lib/hearts/demo';
-import {BunnyScene,EquippedNames,HeartIcon,HeartsGarden} from './HeartsScene';
+import {actHeartsDemo,createHeartsDemo,demoLeague,readHeartsDemo,readStoredHeartsDemo,saveHeartsDemo,type HeartsDemo} from '@/lib/hearts/demo';
+import {applyHeartOutfit,heartOutfitPlan,saveWithWardrobeLock,type LookChanges} from '@/lib/walking/wardrobe';
+import {WarmingWardrobe} from './WarmingWardrobe';
+import {HeartIcon,HeartsGarden} from './HeartsScene';
 import {validateHeartsLeague} from '@/lib/hearts/presentation';
 import {unlockDemoMessages} from '@/lib/hearts/demo';
 import './hearts.css';
@@ -17,7 +19,6 @@ type Tab='today'|'family'|'closet'|'league';
 type League=HeartLeague&{myPublicId?:string;practice?:boolean;minimumForPromotion?:number;promotion?:unknown};
 const terminalConnectionError=(reason:unknown)=>/device_expired|device_revoked|unauthorized|login_required|auth\/user-changed|participation_required|not_joined|confirmation_required|revocation_pending/.test(String(reason&&typeof reason==='object'&&'code'in reason?reason.code:reason instanceof Error?reason.message:''));
 type Props={mode:'demo'|'web'|'native';transport?:HeartTransport;embedded?:boolean};
-const categories:{id:HeartCategory;name:string}[]=[{id:'hat',name:'모자'},{id:'outfit',name:'옷'},{id:'accessory',name:'소품'},{id:'background',name:'배경'}];
 const EMPTY:HeartsSnapshot={enabled:false,joined:false,state:null,messages:[],leagueEnabled:false,region:''};
 const num=(n:number)=>n.toLocaleString('ko-KR');
 
@@ -25,7 +26,7 @@ export function HeartsExperience({mode,transport,embedded=false}:Props){
   const [snapshot,setSnapshot]=useState<HeartsSnapshot>(EMPTY),[loaded,setLoaded]=useState(false),[busy,setBusy]=useState(false);
   const [error,setError]=useState(''),[notice,setNotice]=useState(''),[tab,setTab]=useState<Tab>('today');
   const [today,setToday]=useState(''),[league,setLeague]=useState<League|null>(null),[settings,setSettings]=useState(false);
-  const [openMessage,setOpenMessage]=useState<HeartMessage|null>(null),[category,setCategory]=useState<HeartCategory>('hat'),[preview,setPreview]=useState<HeartItem|null>(null);
+  const [openMessage,setOpenMessage]=useState<HeartMessage|null>(null);
   const [demoFamily,setDemoFamily]=useState(false);
   const current=useRef(snapshot),life=useRef({active:true,revision:0,busy:false,abort:new AbortController()});
   const demo=mode==='demo',guardian=mode==='web'||demo&&demoFamily;
@@ -42,7 +43,7 @@ export function HeartsExperience({mode,transport,embedded=false}:Props){
     try{
       const next=validateHeartsSnapshot(await transport.request('hearts',undefined,run.abort.signal));
       if(run.active&&run.revision===revision){current.current=next;setSnapshot(next);setError('');}
-    }catch(reason){if(run.active&&run.revision===revision){if(terminalConnectionError(reason)){life.current.revision++;life.current.abort.abort();life.current.abort=new AbortController();setBusy(false);setLoaded(true);current.current=EMPTY;setSnapshot(EMPTY);setOpenMessage(null);setLeague(null);setPreview(null);setSettings(false);}setError(heartsError(reason));}}
+    }catch(reason){if(run.active&&run.revision===revision){if(terminalConnectionError(reason)){life.current.revision++;life.current.abort.abort();life.current.abort=new AbortController();setBusy(false);setLoaded(true);current.current=EMPTY;setSnapshot(EMPTY);setOpenMessage(null);setLeague(null);setSettings(false);}setError(heartsError(reason));}}
     finally{if(run.active&&run.revision===revision)setLoaded(true);}
   },[transport]);
 
@@ -67,8 +68,9 @@ export function HeartsExperience({mode,transport,embedded=false}:Props){
         const next=action==='heartleave'?EMPTY:validateHeartsSnapshot(result);
         if(live.active&&live.revision===revision){current.current=next;setSnapshot(next);setNotice(success);}
       }
-      return true;
-    }catch(reason){if(live.active&&live.revision===revision){if(terminalConnectionError(reason)){life.current.revision++;life.current.abort.abort();life.current.abort=new AbortController();setBusy(false);setLoaded(true);current.current=EMPTY;setSnapshot(EMPTY);setOpenMessage(null);setLeague(null);setPreview(null);setSettings(false);}setError(heartsError(reason));}return false;}
+      else return false;
+      return live.active && life.current===live && live.revision===revision;
+    }catch(reason){if(live.active&&live.revision===revision){if(terminalConnectionError(reason)){life.current.revision++;life.current.abort.abort();life.current.abort=new AbortController();setBusy(false);setLoaded(true);current.current=EMPTY;setSnapshot(EMPTY);setOpenMessage(null);setLeague(null);setSettings(false);}setError(heartsError(reason));}return false;}
     finally{live.busy=false;if(live.active&&live.revision===revision)setBusy(false);}
   }
   useEffect(()=>{
@@ -105,8 +107,45 @@ export function HeartsExperience({mode,transport,embedded=false}:Props){
     });
     return()=>{active=false;};
   },[tab,snapshot.leagueEnabled,snapshot.region,demo,date,transport]);
-  function switchTab(next:Tab){setTab(next);setPreview(null);}
-  const heading=tab==='family'?'가족의 응원':tab==='closet'?'토끼 꾸미기':tab==='league'?'밥심 리그':'오늘의 산책';
+  function switchTab(next:Tab){setTab(next);}
+  async function saveOutfit(changes: LookChanges) {
+    const live = life.current;
+    const activeState = current.current.state;
+    if (!live.active || live.busy || !activeState) return false;
+    try {
+      if (demo) {
+        const saved = await saveWithWardrobeLock('demo', () => {
+          if (!live.active || life.current !== live) return false;
+          const latest = readStoredHeartsDemo() ?? current.current as HeartsDemo;
+          current.current = latest;
+          setSnapshot(latest);
+          const next = { ...latest, state: applyHeartOutfit(latest.state, changes) };
+          current.current = next;
+          setSnapshot(next);
+          setError('');
+          setNotice(saveHeartsDemo(next) ? '예시 산책에 고른 차림을 입혔어요.' : '이번 방문 동안 예시 차림을 입어요. 브라우저에 저장하지 못했어요.');
+          return true;
+        });
+        if (!saved || !live.active) return false;
+      } else {
+        if (!transport) return false;
+        for (const action of heartOutfitPlan(activeState, changes)) {
+          if (!live.active || life.current !== live) return false;
+          if (action.buy && !await run('heartbuy', { itemId: action.buy }, '')) return false;
+          if (!live.active || life.current !== live) return false;
+          if (!await run('heartequip', { itemId: action.equip }, '')) return false;
+        }
+        if (!live.active || life.current !== live) return false;
+        setNotice('산책에 고른 차림을 입혔어요.');
+      }
+      setTab('today');
+      return true;
+    } catch (reason) {
+      if (live.active) setError(heartsError(reason));
+      return false;
+    }
+  }
+  const heading=tab==='family'?'가족의 응원':tab==='closet'?'워밍이의 하트 옷장':tab==='league'?'밥심 리그':'오늘의 산책';
   const content=<>
     {!embedded?<header className="hearts-header"><Logo/><div><Link href="/more" className="hearts-header-link">메뉴</Link><button onClick={()=>setSettings(true)} aria-label="산책 하트 설정">⚙<span className="sr-only">설정</span></button></div></header>:<div className="hearts-embedded-heading"><h2>산책 하트</h2><button onClick={()=>setSettings(true)}>설정</button></div>}
     {demo?<aside className="hearts-demo-label"><strong>예시 체험</strong><span>가상 걸음·가상 가족이에요</span></aside>:null}
@@ -131,7 +170,7 @@ export function HeartsExperience({mode,transport,embedded=false}:Props){
         <section className="hearts-today-stats"><div><HeartIcon filled/><span>이번 달 모은 하트<strong>{num(summary.monthEarned)}개</strong></span></div><div><span aria-hidden="true">🍚</span><span>밥솥·외식 소식<strong>{summary.streak?`${num(summary.streak)}일 이어졌어요`:'소식을 기다려요'}</strong></span></div></section>
         {guardian&&summary.percent!==null&&summary.percent>=50?<section className="hearts-card"><h2>오늘 {summary.percent>=200?'200':summary.percent>=100?'100':'50'}%까지 걸으셨어요</h2><p>작은 산책이 반가운 안부가 됐어요. 칭찬 한마디를 남겨볼까요?</p><button className="hearts-primary" onClick={()=>switchTab('family')}>가족에게 응원 남기기</button></section>:null}
         <button className="hearts-letter-card" onClick={()=>switchTab('family')}><span className="hearts-letter-illustration" aria-hidden="true">💌</span><span><strong>{unread?`가족 응원 ${unread}개가 왔어요`:'가족의 마음을 담는 곳'}</strong><small>{unread?'산책길에 따뜻한 마음을 열어봐요':'작은 칭찬 한마디를 나눠요'}</small></span><span aria-hidden="true">›</span></button>
-        <button className="hearts-wardrobe-link" onClick={()=>switchTab('closet')}><span>토끼에게 새 차림을 입혀볼까요?</span><strong><HeartIcon filled/>{num(summary.balance)} <span aria-hidden="true">›</span></strong></button>
+        <button className="hearts-wardrobe-link" onClick={()=>switchTab('closet')}><span>워밍이의 하트 옷장 열기</span><strong><HeartIcon filled/>{num(summary.balance)} <span aria-hidden="true">›</span></strong></button>
         {summary.percent!==null&&summary.percent>=100?<p className="hearts-rest-note">목표를 채웠어요. 더 걷지 않아도 충분해요.<br/>불편한 날은 편하게 쉬세요.</p>:null}
         <details className="hearts-explainer"><summary>하트는 어떻게 채워지나요?</summary><p>취사 소식과 25%·50%·100%·200% 단계를 저절로 표시해요. 취사는 실제 식사 완료를 뜻하지 않아요. 취사 소식이 없어도 산책 하트는 받을 수 있어요.</p><p>50%까지 꾸미기 하트 1개, 100%까지 총 3개, 200%까지 총 5개예요. 같은 기록으로 두 번 받지 않아요. 오늘의 진행은 한국 시간 자정에 새로 시작하고 모은 하트와 옷은 남아요.</p><p>목표는 내가 정한 걸음 수예요. 식사량·칼로리를 추정하지 않으며, 몸 상태에 맞게 설정해 주세요.</p></details>
       </>:null}
@@ -142,15 +181,10 @@ export function HeartsExperience({mode,transport,embedded=false}:Props){
         {guardian?<FamilyComposer busy={busy} onSend={body=>run('heartmessage',body,demo?'가상 가족 응원함에 담았어요. 실제로 전송하지 않았어요.':'연결된 휴대폰의 가족 응원함에 담았어요. 앱을 열면 볼 수 있어요.')} onGift={id=>run('heartgift',{itemId:id},'모은 하트로 선물을 담았어요.')} balance={summary.balance} owned={summary.owned}/>:null}
         <p className="hearts-small">가족 응원은 연결된 계정과 휴대폰 안에서만 보여요. 별도 잠금화면 푸시 발송을 뜻하지 않아요.</p>
       </section>:null}
-      {tab==='closet'?<section className="hearts-closet">
-        <div className="hearts-wallet"><span>함께 모은 하트</span><strong><HeartIcon filled/>{num(summary.balance)}개</strong></div>
-        <BunnyScene compact equipped={preview?{...summary.equipped,[preview.category]:preview.id}:summary.equipped} summary={summary}/>
-        <EquippedNames equipped={preview?{...summary.equipped,[preview.category]:preview.id}:summary.equipped}/>
-        <div className="hearts-category-tabs" role="group" aria-label="꾸미기 종류">{categories.map(item=><button aria-pressed={category===item.id} key={item.id} onClick={()=>{setCategory(item.id);setPreview(null);}}>{item.name}</button>)}</div>
-        <div className="hearts-items">{HEART_ITEMS.filter(item=>item.category===category).map(item=><button key={item.id} className={preview?.id===item.id?'is-selected':''} aria-pressed={preview?.id===item.id} onClick={()=>setPreview(item)}><span className="hearts-item-medallion" aria-hidden="true">{item.icon}</span><strong>{item.name}</strong><small>{summary.equipped[category]===item.id?'입고 있어요':summary.owned.includes(item.id)?'가지고 있어요':`하트 ${item.price}개`}</small></button>)}</div>
-        {preview?<div className="hearts-card hearts-item-detail"><h2>{preview.name}</h2><p>{summary.owned.includes(preview.id)?'이미 가지고 있는 차림이에요.':`하트 ${preview.price}개로 바꿀 수 있어요.`}</p>{preview.unlockDays?<p className="hearts-small">밥솥·외식 소식 {preview.unlockDays}일이 이어져도 받을 수 있어요. 기록이 없다고 식사를 거른 것은 아니에요.</p>:null}<button className="hearts-primary" disabled={busy||(!summary.owned.includes(preview.id)&&summary.balance<preview.price)} onClick={async()=>{if(!summary.owned.includes(preview.id)){const bought=await run('heartbuy',{itemId:preview.id},'새 차림을 준비했어요.');if(!bought)return;}await run('heartequip',{itemId:preview.id},`${preview.name}를 입혔어요.`);}}>{summary.equipped[category]===preview.id?'지금 입고 있어요':summary.owned.includes(preview.id)?'입히기':summary.balance<preview.price?'하트를 조금 더 모아요':`하트 ${preview.price}개로 바꾸고 입히기`}</button></div>:null}
-        <button className="hearts-text-button" disabled={busy} onClick={()=>void run('heartequip',{itemId:`default-${category}`},'기본 차림으로 바꿨어요.')}>이 부분은 기본 차림으로</button>
-        <p className="hearts-small">돈을 결제하는 상점이 아니에요. 꾸미기를 하지 않아도 산책 하트는 그대로 채워져요.</p>
+      {tab==='closet'?<section className="ward-hearts-closet">
+        <WarmingWardrobe equipped={summary.equipped} items={HEART_ITEMS} wallet={{balance:summary.balance,owned:summary.owned}}
+          busy={busy} onSave={saveOutfit} onCancel={()=>switchTab('today')}/>
+        {!embedded && <Link className="hearts-text-button" href="/walking/wardrobe">무료 기본 옷장 열기</Link>}
       </section>:null}
       {tab==='league'?<section className="hearts-league"><p className="hearts-intro">함께 걷는 즐거움, 선택해서 나눠요.</p>
         {!snapshot.leagueEnabled?<div className="hearts-card"><h2>순위 없이 걸어도 좋아요</h2><p>주간 리그는 별도로 참여한 분끼리 별명·하트 점수·선택한 지역을 나눠요.</p><button className="hearts-primary" onClick={()=>setSettings(true)}>주간 리그 참여 설정</button></div>:league?<>
@@ -163,7 +197,7 @@ export function HeartsExperience({mode,transport,embedded=false}:Props){
     </>:null}
     {demo&&snapshot.joined?<details className="hearts-demo-controls"><summary>예시 걸음·취사 소식 바꿔보기</summary><label htmlFor="hearts-demo-count">가상 걸음 {num(summary.count??0)}걸음</label><input id="hearts-demo-count" type="range" min="0" max="20000" step="100" value={summary.count??0} disabled={!snapshot.enabled} onChange={event=>updateDemo(Number(event.target.value))}/><div className="hearts-demo-presets">{[25,50,100,200,300].map(percent=><button disabled={!snapshot.enabled} key={percent} onClick={()=>updateDemo(Math.floor(summary.goal*percent/100))}>{percent}%</button>)}</div><button className="hearts-secondary" disabled={!snapshot.enabled||summary.cooking} onClick={()=>updateDemo(summary.count,true)}>{summary.cooking?'오늘 취사 소식 예시가 있어요':'취사 소식 예시 도착'}</button><button className="hearts-text-button" onClick={()=>{const fresh=createHeartsDemo();current.current=fresh;setSnapshot(fresh);saveHeartsDemo(fresh);setNotice('가상 기록과 꾸미기를 처음으로 돌렸어요.');}}>체험 기록 처음으로</button></details>:null}
     {!demo&&snapshot.joined?<button className="hearts-text-button" disabled={busy} onClick={()=>void refresh()}>오늘 기록 다시 확인</button>:null}
-    {!embedded?<footer className="hearts-footer"><Link href={demo?'/walking':'/walking/demo'}>{demo?'실제 계정 연결 안내':'예시로 먼저 체험하기'}</Link><Link href="/more">기존 메뉴로 돌아가기</Link></footer>:null}
+    {!embedded?<footer className="hearts-footer"><Link href={demo?'/walking':'/walking/demo'}>{demo?'워밍이의 산책으로 돌아가기':'예시로 먼저 체험하기'}</Link><Link href="/more">기존 메뉴로 돌아가기</Link></footer>:null}
     {settings?<SettingsDialog error={error} snapshot={snapshot} summaryGoal={summary.configuredGoal} busy={busy} demo={demo} onClose={()=>setSettings(false)} onSave={async body=>{if(await run('heartsettings',body,'설정을 저장했어요. 목표 변경은 내일부터 적용해요.'))setSettings(false);}} onDelete={async()=>{if(await run('heartleave',{},demo?'체험을 처음으로 돌렸어요.':'하트 기록과 응원을 삭제했어요. 휴대폰 건강 기록은 그대로예요.'))setSettings(false);}}/>:null}
     {openMessage?<div className="hearts-dialog-shade"><section className="hearts-dialog hearts-open-letter" role="dialog" aria-modal="true" aria-label="가족의 응원 편지"><span aria-hidden="true">💌</span><h2>가족의 마음이 도착했어요</h2><p>{openMessage.text}</p>{openMessage.photo?<img src={openMessage.photo} alt="가족이 함께 보낸 사진"/>:null}<button autoFocus className="hearts-primary" onClick={()=>setOpenMessage(null)}>잘 읽었어요</button></section></div>:null}
   </>;

@@ -70,7 +70,7 @@ for (const name of ['app', 'components', 'config', 'firebase', 'lib', 'packages'
   for await (const file of files(join(root, name))) {
     if (name === 'public') {
       const asset = routeName(join(root, name), file);
-      assert(/^(?:brand\/[^/]+\.(?:png|webp|woff2|ttf|txt)|walking\/[^/]+\.(?:jpg|png)|bapmunna-app-qr\.(?:png|svg)|icon\.svg|sw\.js|service-status\/smartthings\.json)$/.test(asset), 'Unexpected public asset: ' + asset);
+      assert(/^(?:brand\/[^/]+\.(?:png|webp|woff2|ttf|txt)|walking\/[^/]+\.(?:jpg|png)|walking\/wardrobe\/(?:body|item|trail)-[a-z]+(?:-[a-z]+)*\.webp|bapmunna-app-qr\.(?:png|svg)|icon\.svg|sw\.js|service-status\/smartthings\.json)$/.test(asset), 'Unexpected public asset: ' + asset);
       publicAssets.add(asset);
     }
     await inspectFile(file, root, name === 'public');

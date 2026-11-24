@@ -22,14 +22,14 @@ function appNotificationURL(value) {
 self.addEventListener("push", (event) => {
   let data = {};
   try {
-    data = event.data ? event.data.json() : {};
+    data = event.data?.json() ?? {};
   } catch {
-    data = { body: event.data ? event.data.text() : "" };
+    // A legacy or non-JSON payload still receives a private lock-screen message.
   }
   event.waitUntil(
-    self.registration.showNotification(data.title || "밥뭇나", {
-      body: data.body || "새 소식이 있어요.",
-      tag: data.tag,
+    self.registration.showNotification("밥뭇나", {
+      body: "워밍이가 새 소식을 가져왔어요. 앱에서 확인해 주세요.",
+      tag: typeof data.tag === "string" ? data.tag : undefined,
       icon: new URL("icon.svg", appScope).href,
       badge: new URL("icon.svg", appScope).href,
       data: { url: appNotificationURL(data.url) },
@@ -41,11 +41,11 @@ self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   const url = appNotificationURL(event.notification.data?.url);
   event.waitUntil(
-    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((list) => {
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(async (list) => {
       for (const c of list) {
-        if (c.url.startsWith(appScope.href) && "focus" in c) {
-          void c.navigate(url);
-          return c.focus();
+        if (c.url.startsWith(appScope.href) && typeof c.navigate === "function" && "focus" in c) {
+          const destination = await c.navigate(url).catch(() => null);
+          if (destination) return destination.focus();
         }
       }
       return self.clients.openWindow(url);

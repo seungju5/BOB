@@ -10,24 +10,25 @@ export default function StartPage() {
         <Logo />
       </div>
 
-      <div className="relative flex min-h-[414px] flex-1 flex-col px-7 pt-10">
-        <h1 className="animate-rise text-[44px] leading-[1.15] font-extrabold tracking-[-0.03em] text-cocoa">
+      <div className="flex min-h-[414px] flex-1 flex-col pt-10">
+        <h1 className="animate-rise px-7 text-[44px] leading-[1.15] font-extrabold tracking-[-0.03em] text-cocoa">
           안부가
           <br />
           폴짝
           <br />
           찾아왔어요
         </h1>
-        <p className="mt-auto mb-10 text-[19px] leading-relaxed text-cocoa/80">
-          매일 쓰는 밥솥이
-          <br />
-          대신 전하는 안부
-        </p>
-        <BunnyGreeting className="absolute right-3 bottom-8 h-40 w-40 min-[360px]:right-6 min-[360px]:h-48 min-[360px]:w-48" />
+        <div className="mt-auto flex items-end justify-between gap-2 pr-3 pb-8 pl-7 min-[360px]:pr-6">
+          <p className="min-w-0 pb-2 text-[19px] leading-relaxed text-cocoa/80">
+            매일 쓰는 밥솥이
+            <br />
+            대신 전하는 안부
+          </p>
+          <BunnyGreeting className="relative aspect-square w-40 max-w-[56%] shrink-0 min-[360px]:w-48" />
+        </div>
       </div>
 
       <div className="rounded-t-[2.25rem] bg-paper px-6 pt-8 pb-8">
-        <p className="mb-5 text-[19px] font-bold text-cocoa">밥 한 끼로 전하는 안부</p>
         <div className="flex flex-col gap-3">
           <ButtonLink href="/login" className="text-[19px]">
             보호자로 시작

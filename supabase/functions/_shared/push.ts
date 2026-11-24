@@ -14,7 +14,7 @@ const SUBJECT = Deno.env.get("VAPID_SUBJECT");
 const ready = Boolean(PUBLIC && PRIVATE && SUBJECT);
 if (ready) webpush.setVapidDetails(SUBJECT!, PUBLIC!, PRIVATE!);
 
-export type SentAlert = { id: string; type: AlertType; payload: AlertPayload | null };
+export type SentAlert = { id: string; type: AlertType; payload: AlertPayload | null; triggered_at: string };
 
 function consentRecorded(house: { senior_consent_at: string | null } | null): boolean {
   return typeof house?.senior_consent_at === "string" && Number.isFinite(Date.parse(house.senior_consent_at));
@@ -29,28 +29,50 @@ export async function pushAlerts(householdId: string, alerts: SentAlert[]) {
     const guardians = must(await db.from("household_guardians").select("user_id").eq("household_id", householdId));
     const users = (guardians as { user_id: string }[]).map((g) => g.user_id);
     if (!users.length) return;
-    const subs = must(await db.from("push_subscriptions").select("id, endpoint, keys").in("user_id", users)) as {
+    const subs = must(await db.from("push_subscriptions").select("id, user_id, endpoint, keys").in("user_id", users)) as {
       id: string;
+      user_id: string;
       endpoint: string;
       keys: { p256dh: string; auth: string };
     }[];
     for (const a of alerts) {
-      const message = JSON.stringify({title: "밥뭇나", body: "워밍이가 새 소식을 가져왔어요. 앱에서 확인해 주세요.", tag: a.id, url: alertUrl(a.type)});
+      // Keep raw readings, names, alert thresholds, dates away from home and
+      // other private contents on the authenticated screen. Old workers can
+      // still open their original destination from url.
+      const timestamp = Date.parse(a.triggered_at);
+      const mealDay = a.type === "eat_out" ? a.payload?.meal?.date : undefined;
+      const message = JSON.stringify({ kind: a.type, tag: a.id, url: alertUrl(a.type),
+        ...(Number.isFinite(timestamp) && {at: new Date(timestamp).toISOString()}),
+        ...(mealDay && /^\d{4}-\d{2}-\d{2}$/.test(mealDay) && {date: mealDay}) });
       for (const sub of subs) {
         // Check again after database/previous network waits, immediately before sending.
-        const current = must(await db.from("households").select("senior_consent_at").eq("id", householdId).maybeSingle()) as { senior_consent_at: string | null } | null;
+        let host;
+        try {
+          const address = new URL(sub.endpoint);
+          if (address.protocol !== "https:" || address.port || address.username || address.password || address.hash) continue;
+          host = address.hostname;
+        } catch { continue; }
+        if (!(host === "fcm.googleapis.com" || host.endsWith(".push.apple.com") ||
+            host === "updates.push.services.mozilla.com" || host.endsWith(".notify.windows.com"))) continue;
+        const [houseResult, guardianResult, subscriptionResult] = await Promise.all([
+          db.from("households").select("senior_consent_at").eq("id", householdId).maybeSingle(),
+          db.from("household_guardians").select("user_id").eq("household_id", householdId).eq("user_id", sub.user_id).limit(1),
+          db.from("push_subscriptions").select("id").eq("user_id", sub.user_id).eq("id", sub.id).limit(1),
+        ]);
+        const current = must(houseResult) as { senior_consent_at: string | null } | null;
         if (!consentRecorded(current)) return;
+        if (!must(guardianResult).length || !must(subscriptionResult).length) continue;
         try {
           await webpush.sendNotification({ endpoint: sub.endpoint, keys: sub.keys }, message, { TTL: 60 * 60 * 12 });
         } catch (e) {
           const status = (e as { statusCode?: number }).statusCode;
           // 구독이 만료·해지됐으면 지운다
           if (status === 404 || status === 410) await db.from("push_subscriptions").delete().eq("id", sub.id);
-          else console.error("push", sub.id, status ?? "delivery_failed");
+          else console.error("push", status ?? "delivery_failed");
         }
       }
     }
   } catch {
-    console.error("pushAlerts stopped", householdId);
+    console.error("pushAlerts stopped");
   }
 }

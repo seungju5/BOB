@@ -21,14 +21,14 @@ describe("Firebase 하위 경로", () => {
 
   it("서버 알림 경로를 해당 앱으로 보내고 다른 사이트 주소는 거부한다", () => {
     const source=readFileSync(new URL("../../public/sw.js",import.meta.url),"utf8");
-    const {appNotificationURL}=runInNewContext(source+";({appNotificationURL})",{
-      URL,
+    const {safeClickURL}=runInNewContext(source+";({safeClickURL})",{
+      URL, importScripts:vi.fn(),
       self:{registration:{scope:"https://impact-series.web.app/bapmunna/app/"},addEventListener:vi.fn()},
     });
-    expect(appNotificationURL("/report")).toBe("https://impact-series.web.app/bapmunna/app/report/");
-    expect(appNotificationURL("/bapmunna/app/alerts?example=1")).toBe("https://impact-series.web.app/bapmunna/app/alerts?example=1");
-    expect(appNotificationURL("https://other.example/")).toBe("https://impact-series.web.app/bapmunna/app/alerts/");
-    expect(appNotificationURL("http://[")).toBe("https://impact-series.web.app/bapmunna/app/alerts/");
+    expect(safeClickURL("/report")).toBe("https://impact-series.web.app/bapmunna/app/report/");
+    expect(safeClickURL("/bapmunna/app/alerts?example=1")).toBe("https://impact-series.web.app/bapmunna/app/alerts/");
+    expect(safeClickURL("https://other.example/")).toBe("https://impact-series.web.app/bapmunna/app/alerts/");
+    expect(safeClickURL("http://[")).toBe("https://impact-series.web.app/bapmunna/app/alerts/");
   });
 
   it("홈 화면 설치가 루트와 하위 경로에서 각각 자기 앱에 머문다", () => {

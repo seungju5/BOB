@@ -2,10 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { appPath } from "@/lib/app-path";
-import { alertUrl } from "@/lib/alerts/copy";
 import type { AppView } from "@/lib/data/view";
 import { supabase, supabaseConfigured } from "@/lib/supabase";
-import { listenForPushChanges, permissionState, pushOwner, requestNotificationWorker, saveDevicePreference, showNewNotices, useEnabledSince, usePushState } from "./push-device";
+import { clearFeaturePreview, listenForPushChanges, permissionState, pushOwner, requestNotificationWorker, saveDevicePreference, showNewNotices, useEnabledSince, usePushState } from "./push-device";
 
 const VAPID = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
 export const backgroundAvailable = (source?: AppView["dataSource"]) =>
@@ -123,6 +122,7 @@ export async function disablePush(owner: string, source?: AppView["dataSource"])
     if (source === "supabase" && "serviceWorker" in navigator) await retireSubscription(owner);
   } finally {
     saveDevicePreference(owner, false);
+    await clearFeaturePreview(owner);
   }
 }
 
@@ -147,13 +147,14 @@ export function useAlertNotifications(view: AppView | null, accountKey?: string)
   const owner = pushOwner(accountKey);
   const since = useEnabledSince(owner);
   const permission = usePushState();
+  const delivery = useDelivery(owner, view?.dataSource);
   useEffect(() => {
-    if (!owner || !since || permission !== "granted" || view?.mode !== "live" ||
+    if (!owner || !since || permission !== "granted" || delivery === "background" || delivery === "checking" || view?.mode !== "live" ||
         (view.dataSource !== "supabase" && view.dataSource !== "firebase") || !view.seniorConsent) return;
     const notices = view.alerts.filter(a => !a.acknowledgedAt && !a.resolvedAt)
-      .map(a => ({id: a.id, at: a.triggeredAt, url: alertUrl(a.type)}));
+      .map(a => ({id: a.id, at: a.triggeredAt, kind: a.type, date: a.payload?.meal?.date}));
     let active = true;
     void showNewNotices(owner, notices, () => active).catch(() => {});
     return () => { active = false; };
-  }, [view, owner, since, permission]);
+  }, [view, owner, since, permission, delivery]);
 }

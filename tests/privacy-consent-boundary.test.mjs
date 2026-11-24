@@ -222,7 +222,7 @@ test('daily skips non-consenting summaries while retaining existing expiry clean
   assert.deepEqual(f.calls.writes.map(write=>[write.table,write.kind]),[['cooker_events','delete'],['power_readings_raw','delete']]);
 });
 
-function pushFixture({consents=[consentAt]}={}){
+function pushFixture({consents=[consentAt],signedOut=false,leftHouse=false,endpoint}={}){
   const calls={sent:[],reads:[],consent:0};
   const db=queryDatabase(operation=>{
     calls.reads.push(operation.table);let data;
@@ -230,16 +230,16 @@ function pushFixture({consents=[consentAt]}={}){
       const consent=consents[Math.min(calls.consent++,consents.length-1)];
       if(consent instanceof Error)return {data:null,error:consent};
       data={senior_relation:'테스트 가족',senior_consent_at:consent};
-    }else if(operation.table==='household_guardians')data=[{user_id:'synthetic-owner'}];
+    }else if(operation.table==='household_guardians')data=leftHouse && operation.filters.some(f=>f[1]==='user_id')?[]:[{user_id:'synthetic-owner'}];
     else if(operation.table==='alert_settings')data={missed_meals_threshold:2,fasting_hours:48,emergency_hours:72};
     else if(operation.table==='smart_plugs')data={id:'synthetic-plug'};
-    else if(operation.table==='push_subscriptions')data=[1,2].map(id=>({id:String(id),endpoint:`https://fixture.invalid/push/${id}`,keys:{p256dh:'synthetic',auth:'synthetic'}}));
+    else if(operation.table==='push_subscriptions')data=signedOut && operation.fields==='id'?[]:[1,2].map(id=>({id:String(id),user_id:'synthetic-owner',endpoint:endpoint??`https://web.push.apple.com/synthetic/${id}`,keys:{p256dh:'synthetic',auth:'synthetic'}}));
     else throw Error(`Unexpected table: ${operation.table}`);
     return {data,error:null};
   });
   const webpush={setVapidDetails(){},sendNotification:async(subscription,message)=>{calls.sent.push({subscription,message});}};
   const edge=loadEdge('_shared/push.ts',{'./core.ts':{db,must},'npm:web-push@3.6.7':{default:webpush},'@/lib/alerts/copy.ts':{alertCopy:()=>({title:'테스트 알림',body:'테스트 본문'}),alertUrl:()=> '/alerts'}});
-  return {calls,run:()=>edge.exports.pushAlerts('synthetic-house',[{id:'synthetic-alert',type:'fasting',payload:null}])};
+  return {calls,run:(type='fasting',payload=null)=>edge.exports.pushAlerts('synthetic-house',[{id:'synthetic-alert',type,payload,triggered_at:'2026-11-24T01:32:00Z'}])};
 }
 
 test('push without consent stops before reading guardian subscriptions',async()=>{
@@ -257,12 +257,23 @@ test('push fails closed when the final consent check cannot complete',async()=>{
 
 test('withdrawal between two recipient sends prevents the remaining delivery',async()=>{
   const f=pushFixture({consents:[consentAt,consentAt,null]});await f.run();
-  assert.equal(f.calls.sent.length,1);assert.equal(f.calls.sent[0].subscription.endpoint,'https://fixture.invalid/push/1');
+  assert.equal(f.calls.sent.length,1);assert.equal(f.calls.sent[0].subscription.endpoint,'https://web.push.apple.com/synthetic/1');
 });
 
 test('consented push still delivers to the existing recipients',async()=>{
   const f=pushFixture();await f.run();assert.equal(f.calls.sent.length,2);
   assert.equal(f.calls.consent,3);assert.ok(f.calls.sent.every(sent=>JSON.parse(sent.message).tag==='synthetic-alert'));
+});
+
+test('push omits personal payload and keeps the user-selected meal date',async()=>{
+  const f=pushFixture();await f.run('eat_out',{meal:{date:'2026-11-23',label:'private meal'},startDate:'private data'});
+  assert.deepEqual(JSON.parse(f.calls.sent[0].message),{kind:'eat_out',tag:'synthetic-alert',url:'/alerts',at:'2026-11-24T01:32:00.000Z',date:'2026-11-23'});
+});
+
+test('revoked subscriptions, removed guardians and arbitrary URLs are skipped',async()=>{
+  for(const setup of [{signedOut:true},{leftHouse:true},{endpoint:'https://fixture.invalid/anywhere'}]){
+    const f=pushFixture(setup);await f.run();assert.equal(f.calls.sent.length,0);
+  }
 });
 
 const seniorTime=loadEdge('../../lib/judge/time.ts',{}).exports;

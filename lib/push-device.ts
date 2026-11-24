@@ -2,6 +2,7 @@
 
 import { useSyncExternalStore } from "react";
 import { appPath } from "@/lib/app-path";
+import {noticeText, noticePath, noticePreferenceKey, noticePreferenceCache} from "@/public/notification-content";
 
 const eventName = "bapmunna:device-notifications";
 const storagePrefix = "bapmunna.notifications.";
@@ -36,6 +37,10 @@ export function usePushState(): PermissionState {
   return useSyncExternalStore(listenForPushChanges, permissionState, () => "loading");
 }
 
+export function notifyPushChange() {
+  window.dispatchEvent(new Event(eventName));
+}
+
 export function pushOwner(accountKey?: string) {
   // Firebase adds a render revision to the UID. Supabase supplies the bare UID.
   const owner = accountKey?.replace(/:\d+$/, "");
@@ -62,7 +67,7 @@ export function saveDevicePreference(owner: string, enabled: boolean) {
     localStorage.removeItem(prefKey(owner));
     localStorage.removeItem(prefKey(owner) + ".seen");
   }
-  window.dispatchEvent(new Event(eventName));
+  notifyPushChange();
 }
 
 export async function requestNotificationWorker() {
@@ -70,14 +75,49 @@ export async function requestNotificationWorker() {
   if (state !== "default" && state !== "granted") return null;
   // Ask inside the user's click, before awaiting any server or service-worker work.
   if (state === "default" && await Notification.requestPermission() !== "granted") {
-    window.dispatchEvent(new Event(eventName));
+    notifyPushChange();
     return null;
   }
-  await navigator.serviceWorker.register(appPath("/sw.js"), {scope: appPath("/")});
+  await navigator.serviceWorker.register(appPath("/sw.js"), {scope: appPath("/"), updateViaCache: "none"});
   return navigator.serviceWorker.ready;
 }
 
-export type DeviceNotice = { id: string; at: string; url: string };
+export type DeviceNotice = { id: string; at: string; kind: string; date?: string };
+
+function previewKey() {
+  return noticePreferenceKey(new URL(appPath("/"), window.location.origin));
+}
+
+export async function previewOwner(): Promise<string | null> {
+  try {
+    const saved = await caches.match(previewKey(), {cacheName: noticePreferenceCache});
+    return saved ? await saved.text() : null;
+  } catch { return null; }
+}
+
+export async function setFeaturePreview(owner: string, enabled: boolean) {
+  const cache = await caches.open(noticePreferenceCache);
+  if (enabled) await cache.put(previewKey(), new Response(owner));
+  else if (await previewOwner() === owner) await cache.delete(previewKey());
+}
+
+export async function clearFeaturePreview(owner: string) {
+  if (await previewOwner() === owner) await setFeaturePreview(owner, false);
+}
+
+function display(worker: ServiceWorkerRegistration, kind: string, feature: boolean, tag: string, path: string) {
+  const text = noticeText(kind, feature);
+  return worker.showNotification(text.title, {body: text.body, tag, lang: "ko",
+    icon: appPath("/brand/rice-logo.png"), badge: appPath("/brand/notification-badge.png"), data: {url: appPath(path)}});
+}
+
+/** Delivers only to the device whose user pressed the button. It never registers a subscription. */
+export async function testDeviceNotice() {
+  const worker = await requestNotificationWorker();
+  if (!worker) return false;
+  await display(worker, "delivery_test", false, "bapmunna-device-test", "/alerts/");
+  return true;
+}
 
 export async function showNewNotices(owner: string, notices: DeviceNotice[], active: () => boolean) {
   const since = enabledSince(owner);
@@ -96,12 +136,10 @@ export async function showNewNotices(owner: string, notices: DeviceNotice[], act
   if (!pending.length) return;
   const worker = await navigator.serviceWorker.getRegistration(appPath("/"));
   if (!worker) return;
+  const feature = await previewOwner() === owner;
   for (const notice of pending) {
     if (!active() || enabledSince(owner) !== since || permissionState() !== "granted") return;
-    await worker.showNotification("밥뭇나", {
-      body: "워밍이가 새 소식을 가져왔어요. 앱에서 확인해 주세요.",
-      tag: notice.id, icon: appPath("/icon.svg"), data: {url: appPath(notice.url)},
-    });
+    await display(worker, notice.kind, feature, notice.id, noticePath({...notice, tag: notice.id}));
     seen.push(notice.id);
     localStorage.setItem(key, JSON.stringify(seen.slice(-200)));
   }

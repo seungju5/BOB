@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { NoticePreview } from "@/components/NoticePreview";
 import { ALERT_TONE, alertCopy, AlertShortcut } from "@/components/guardian";
 import { IconBell, IconCheck } from "@/components/icons";
 import { PageHeader, Skeleton } from "@/components/ui";
@@ -10,12 +11,20 @@ import { useApp } from "@/lib/data/useApp";
 import { Mascot } from "@/components/Mascot";
 import type { AppView } from "@/lib/data/view";
 import { backgroundAvailable, disablePush, enablePush, useDelivery } from "@/lib/push";
-import { pushOwner, usePushState } from "@/lib/push-device";
+import { testDeviceNotice, pushOwner, usePushState } from "@/lib/push-device";
 
 export default function AlertsPage() {
   const { view, actions, accountKey, now } = useApp();
   const notice = view && now ? recentPowerNotice(view, now) : null;
   const alerts = view ? [...view.alerts].sort((a, b) => b.triggeredAt.localeCompare(a.triggeredAt)) : [];
+
+  const opened = useRef("");
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (!/^#notice-[a-zA-Z0-9_-]{1,100}$/.test(hash) || opened.current === hash) return;
+    const article = document.getElementById(hash.slice(1));
+    if (article) { opened.current = hash; article.focus(); }
+  }, [view]);
 
   return (
     <main className="flex flex-col pb-8">
@@ -58,7 +67,7 @@ export default function AlertsPage() {
             const t = new Date(a.triggeredAt);
             const done = !!a.acknowledgedAt;
             return (
-              <article key={a.id} className={`rounded-[1.5rem] p-5 ${done ? "border border-line" : ALERT_TONE[a.type]}`}>
+              <article key={a.id} id={"notice-" + a.id} tabIndex={-1} className={`rounded-[1.5rem] p-5 ${done ? "border border-line" : ALERT_TONE[a.type]}`}>
                 <div className="flex items-start justify-between gap-3">
                   <p className={`text-[16px] font-bold ${done ? "text-cocoa/60" : "text-cocoa"}`}>{copy.title}</p>
                   <time className="shrink-0 text-[12px] text-muted">
@@ -94,12 +103,13 @@ function PushCard({ view, accountKey }: { view: AppView; accountKey?: string }) 
   const delivery = useDelivery(owner, view.dataSource);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [tested, setTested] = useState("");
   const remote = backgroundAvailable(view.dataSource);
   const eligible = view.seniorConsent && (view.seniorPaired || view.careAvailable !== false);
   const enabled = delivery === "foreground" || delivery === "background";
   const canAsk = eligible && owner && (permission === "default" || permission === "granted");
   let detail: string;
-  if (view.mode === "demo") detail = "예시 알림은 이 체험 화면에서만 볼 수 있어요.";
+  if (view.mode === "demo") detail = "소식을 골라 잠금화면 예시를 확인해 보세요. 이 체험에서는 휴대폰으로 발송하지 않아요.";
   else if (permission === "install") detail = "아이폰은 공유 버튼에서 ‘홈 화면에 추가’를 누른 뒤 밥뭇나 아이콘으로 열어 주세요.";
   else if (permission === "denied") detail = "기기 설정에서 밥뭇나 알림을 허용하면 여기서 켤 수 있어요.";
   else if (permission === "unsupported") detail = "이 브라우저에서는 앱 안의 알림 목록을 확인해 주세요.";
@@ -136,6 +146,17 @@ function PushCard({ view, accountKey }: { view: AppView; accountKey?: string }) 
           {remote ? "홈 화면 알림 연결" : "앱 사용 중 알림 켜기"}</button>}
       {(enabled || delivery === "unknown") && <button type="button" disabled={busy} onClick={() => void change(false)} className="min-h-11 rounded-full border border-cocoa/35 px-5 text-[15px] font-semibold disabled:opacity-50">이 기기 알림 끄기</button>}
     </div>}
+    {view.mode === "live" && owner && (permission === "default" || permission === "granted") &&
+      <button type="button" disabled={busy} className="mt-2 min-h-11 rounded-full border border-cocoa/35 bg-paper px-4 font-semibold" onClick={async () => {
+        setBusy(true); setTested(""); setError("");
+        try {
+          if (await testDeviceNotice()) setTested("이 기기에 시험 알림을 표시했어요. 알림 센터에서 눌러 보세요.");
+          else setError("기기 알림을 허용한 뒤 다시 눌러 주세요.");
+        } catch { setError("시험 알림을 표시하지 못했어요. 기기의 알림 설정을 확인해 주세요."); }
+        finally { setBusy(false); }
+      }}>이 기기에 시험 알림</button>}
+    <NoticePreview key={owner ?? "demo"} owner={owner} enabled={enabled} demo={view.mode === "demo"}/>
+    {tested && <p role="status" className="mt-2 text-sm">{tested}</p>}
     {error && <p role="alert" className="mt-2 text-sm font-semibold">{error}</p>}
   </section>;
 }

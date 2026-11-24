@@ -12,6 +12,7 @@ import { useApp } from "@/lib/data/useApp";
 import { careDataAvailable, mealDaySummary, mealSlotLabel, slotsForDate, type AppView } from "@/lib/data/view";
 import { demoPowerTranscript } from "@/lib/power/power-transcription-model";
 import { PowerTranscriptionSection } from "@/components/power/PowerTranscriptionSection";
+import { noticeDay } from "@/public/notification-content";
 
 const RANGES = [{ id: "day", label: "일" }, { id: "week", label: "주" }, { id: "month", label: "월" }] as const;
 
@@ -23,6 +24,13 @@ export default function RecordsPage() {
   const titleRef = useRef<HTMLHeadingElement>(null);
   const pendingFocus = useRef<"title" | "date" | null>(null);
   const today = now ? kstDate(now) : null;
+  const launchDay = useRef<string | null>(null);
+  useLayoutEffect(() => {
+    const day = noticeDay(new URLSearchParams(location.search).get("day"));
+    if (!today || !day || day > today || launchDay.current === day) return;
+    launchDay.current = day;
+    navigate({type: "day", date: day});
+  }, [today]);
   const anchor = selectedDate ?? today;
   const period = anchor ? recordPeriod(anchor, range) : null;
   const currentPeriod = today ? recordPeriod(today, range) : null;

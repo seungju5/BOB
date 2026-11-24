@@ -45,7 +45,7 @@ export function alertCopy(
     case "fasting":
       return { title: `${s.fasting}시간 넘게 밥솥 소식이 없어요`, body: `${relation}께 한번 연락해 보세요.` };
     case "emergency":
-      return { title: `${s.emergency}시간째 소식이 없어요`, body: "지정한 연락처에도 알렸어요. 바로 확인해 주세요." };
+      return { title: `${s.emergency}시간째 소식이 없어요`, body: "지금 직접 연락해 안부를 확인해 주세요." };
     case "help_request":
       return { title: `${relation}께서 도움을 요청하셨어요`, body: "지금 바로 연락해 주세요." };
     case "device_offline":

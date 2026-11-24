@@ -17,6 +17,7 @@ import {
 } from "@/components/icons";
 import { Mascot } from "@/components/Mascot";
 import { FlowProgress } from "@/components/onboarding/FlowProgress";
+import { MealWeekExample } from "@/components/onboarding/MealWeekExample";
 import { completeTutorial } from "@/components/onboarding/tutorial-flow";
 import { Button, Skeleton } from "@/components/ui";
 import { useApp } from "@/lib/data/useApp";
@@ -44,9 +45,9 @@ const SLIDES: Slide[] = [
     ),
   },
   {
-    title: "하루 식사를\n색으로 한눈에",
-    body: "기록에서 날짜를 누르면\n그날의 소식을 살펴봐요.\n한 분씩의 실제 식사를 뜻하지는 않아요.",
-    content: <div className="flex w-full flex-col gap-4"><WeekLegend /><InfoCard icon={IconLock} text={"카메라·마이크는 쓰지 않아요.\n가족에게는 끼니별 요약만 보여요."} /></div>,
+    title: "밥솥 소식을 살펴봐요",
+    body: "요일을 눌러 보세요. 채워진 점은\n밥솥을 쓴 시간대를 뜻해요.",
+    content: <MealWeekExample />,
   },
   {
     title: "어르신도\n버튼 하나로\n소식을 보내요",
@@ -142,7 +143,7 @@ export default function TutorialPage() {
       </div>
 
       {/* 시작 화면처럼 아래쪽은 흰 시트 */}
-      <div className="flex flex-1 flex-col rounded-t-[2.25rem] bg-paper px-6 pt-5 pb-6">
+      <div className={`flex flex-1 flex-col rounded-t-[2.25rem] bg-paper pt-5 pb-6 ${index === 2 ? "px-4" : "px-6"}`}>
         <div key={index} className="animate-rise motion-reduce:animate-none flex flex-1 items-center justify-center pb-5">
           {slide.content}
         </div>
@@ -187,49 +188,6 @@ function IntroFlow() {
           </span>
         ))}
       </div>
-    </div>
-  );
-}
-
-// 예시 한 주. 색은 그날 확인된 끼니 수를 뜻한다.
-const TONES = {
-  three: { label: "세 끼", className: "bg-sage-deep" },
-  two: { label: "두 끼", className: "bg-tangerine" },
-  one: { label: "한 끼", className: "bg-blush-deep" },
-  unknown: { label: "미확인", className: "bg-muted/60" },
-  pending: { label: "대기 중", className: "border-2 border-cocoa bg-paper" },
-} as const;
-type Tone = keyof typeof TONES;
-const WEEK: [string, Tone][] = [
-  ["월", "three"],
-  ["화", "three"],
-  ["수", "two"],
-  ["목", "three"],
-  ["금", "one"],
-  ["토", "pending"],
-  ["일", "unknown"],
-];
-
-function WeekLegend() {
-  return (
-    <div className="flex w-full flex-col gap-4">
-      <div className="flex justify-between px-1">
-        {WEEK.map(([day, tone]) => (
-          <div key={day} className="flex flex-col items-center gap-1.5">
-            <span className={`h-9 w-9 rounded-full ${TONES[tone].className}`} aria-label={`${day}요일 ${TONES[tone].label}`} />
-            <span className="text-[16px] font-semibold text-cocoa">{day}</span>
-          </div>
-        ))}
-      </div>
-      <p className="text-[16px] text-muted">이 그림은 이해를 돕기 위한 예시예요.</p>
-      <ul className="grid grid-cols-2 gap-x-4 gap-y-2.5 rounded-[1.25rem] bg-butter-soft px-5 py-4">
-        {(Object.keys(TONES) as Tone[]).map((tone) => (
-          <li key={tone} className="flex items-center gap-2 text-[16px] font-semibold text-cocoa">
-            <span className={`h-4 w-4 shrink-0 rounded-full ${TONES[tone].className}`} />
-            {TONES[tone].label}
-          </li>
-        ))}
-      </ul>
     </div>
   );
 }

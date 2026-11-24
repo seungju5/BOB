@@ -19,7 +19,7 @@ npm ci
 npm run dev
 ```
 
-11월 24일 날짜 이동·워밍이 인사·기기 알림 변경의 Firebase 소스는 `62d3216`입니다. 운영 브랜치의 빌드를 확인한 뒤 `main`에서 `git subtree pull --prefix=apps/warming-up origin codex/warming-up-firebase --squash`로 전체 소스를 갱신합니다. [팀 Firebase 워크플로](https://github.com/seungju5/BOB/actions/workflows/firebase-hosting.yml?query=branch%3Acodex%2Fwarming-up-firebase) · [화면에서 확인하는 방법](apps/warming-up/docs/feedback/2026-11-24-records-and-greeting.md)
+팀 Firebase판 전체 소스는 `apps/warming-up/`에서 볼 수 있습니다. 팀 운영 브랜치의 검증된 소스를 `git subtree pull --prefix=apps/warming-up origin codex/warming-up-firebase --squash`로 이 경로에 반영합니다. [운영 빌드](https://github.com/seungju5/BOB/actions/workflows/firebase-hosting.yml?query=branch%3Acodex%2Fwarming-up-firebase) · [한 주의 밥상](apps/warming-up/docs/feedback/2026-11-24-weekly-meal-interface.md) · [기기 알림 확인 방법](apps/warming-up/docs/feedback/2026-11-24-notification-experience.md)
 
 공용 Firebase 프로젝트 ID는 `warming-up-bapmunna`입니다. 로그인·Firestore·Hosting은 이 프로젝트에서 관리합니다. 팀 배포와 복구는 [운영 가이드](apps/warming-up/README.md)를 따르세요.
 

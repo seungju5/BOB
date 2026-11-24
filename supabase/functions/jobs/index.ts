@@ -146,7 +146,7 @@ async function alerts() {
       openAlerts: ((open ?? []) as { type: AlertType }[]).map((a) => a.type),
     });
     if (result.create.length) {
-      const rows = must(await db.from("alerts").insert(result.create.map((type) => ({ household_id: h, type, payload: { meterObserved: true } }))).select("id, type, payload")) as SentAlert[];
+      const rows = must(await db.from("alerts").insert(result.create.map((type) => ({ household_id: h, type, payload: { meterObserved: true } }))).select("id, type, payload, triggered_at")) as SentAlert[];
       await pushAlerts(h, rows);
       created += result.create.length;
     }
@@ -194,7 +194,7 @@ async function weekly() {
     const counted = slots.filter((s) => (s.meter_observed || s.source === "senior_check") && s.status !== "away" && s.status !== "pending");
     if (!counted.length) continue; // 기록이 없는 주는 보내지 않는다
     const rate = Math.round((counted.filter((s) => s.status === "confirmed" || s.status === "eat_out").length / counted.length) * 100);
-    const rows = must(await db.from("alerts").insert({ household_id: h, type: "weekly_report", payload: { rate, meterObserved: counted.some(s => s.meter_observed), seniorReported: counted.some(s => s.source === "senior_check") } }).select("id, type, payload")) as SentAlert[];
+    const rows = must(await db.from("alerts").insert({ household_id: h, type: "weekly_report", payload: { rate, meterObserved: counted.some(s => s.meter_observed), seniorReported: counted.some(s => s.source === "senior_check") } }).select("id, type, payload, triggered_at")) as SentAlert[];
     await pushAlerts(h, rows);
     sent++;
   }

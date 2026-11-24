@@ -140,7 +140,7 @@ Deno.serve(async (req) => {
           const noticeId = await allowed(async () => scheduledResult(await db.rpc("record_selected_senior_meal", {
             h, selected_date: meal.date, selected_slot: meal.slot, selected_label: meal.label, recorded_at: meal.at.toISOString(),
           })));
-          if (noticeId) await allowed(() => pushAlerts(h, [{id: noticeId, type: "eat_out", payload: {meal: {date: meal.date, label: meal.label}}}]));
+          if (noticeId) await allowed(() => pushAlerts(h, [{id: noticeId, type: "eat_out", triggered_at: now.toISOString(), payload: {meal: {date: meal.date, label: meal.label}}}]));
           applied = {meal: {date: meal.date, slot: meal.slot}};
           refreshToday = false; // The transaction updated the selected slot without recomputing pruned history.
           break;
@@ -148,7 +148,7 @@ Deno.serve(async (req) => {
         await allowed(async () => must(await db.from("senior_actions").insert({ household_id: h, type: body.op, at: now.toISOString() })));
         // 가족에게 소식: 도움 요청은 긴급, 외식은 안부 전화 권유 (0003 마이그레이션 필요)
         const type = body.op === "help" ? "help_request" : "eat_out";
-        const rows = await allowed(async () => must(await db.from("alerts").insert({ household_id: h, type }).select("id, type, payload"))) as SentAlert[];
+        const rows = await allowed(async () => must(await db.from("alerts").insert({ household_id: h, type }).select("id, type, payload, triggered_at"))) as SentAlert[];
         await allowed(() => pushAlerts(h, rows));
         break;
       }
@@ -160,7 +160,7 @@ Deno.serve(async (req) => {
           if (typeof startDate !== "string" || ![today, addDays(today, 1)].includes(startDate)) return json({error: "오늘 또는 내일을 선택해 주세요."}, 400);
           const endDate = addDays(startDate, days - 1);
           const noticeId = await allowed(async () => scheduledResult(await db.rpc("record_planned_senior_absence", {h, away_start: startDate, away_end: endDate})));
-          if (noticeId) await allowed(() => pushAlerts(h, [{id: noticeId, type: "away", payload: {startDate, endDate}}]));
+          if (noticeId) await allowed(() => pushAlerts(h, [{id: noticeId, type: "away", triggered_at: now.toISOString(), payload: {startDate, endDate}}]));
           applied = {startDate};
           refreshToday = startDate === today;
           break;
@@ -169,7 +169,7 @@ Deno.serve(async (req) => {
         await allowed(async () => must(await db.from("absences").delete().eq("household_id", h).lte("start_date", today).gte("end_date", today)));
         await allowed(async () => must(await db.from("absences").insert({ household_id: h, start_date: today, end_date: endDate, created_by: "senior" })));
         await allowed(async () => must(await db.from("senior_actions").insert({ household_id: h, type: "away", at: now.toISOString() })));
-        const rows = await allowed(async () => must(await db.from("alerts").insert({ household_id: h, type: "away", payload: { endDate } }).select("id, type, payload"))) as SentAlert[];
+        const rows = await allowed(async () => must(await db.from("alerts").insert({ household_id: h, type: "away", payload: { endDate } }).select("id, type, payload, triggered_at"))) as SentAlert[];
         await allowed(() => pushAlerts(h, rows));
         break;
       }

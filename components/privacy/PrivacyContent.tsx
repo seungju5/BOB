@@ -36,6 +36,10 @@ export function PrivacyContent() {
       <p className="mt-3">정보 확인·수정·동의 철회·삭제를 원하면 아래 운영팀 이메일로 요청해 주세요. 로그아웃이나 준비 동의 취소만으로 계정 정보가 삭제되지는 않아요.</p>
       <p className="mt-3">정보 이용 동의 확인을 취소하면 새로운 삼성 기기 소식을 읽거나 저장하지 않아요. 암호화된 연결 열쇠와 기기 연결 정보는 연결 해제 전까지 남아 있어요. 연결 화면에서 해제하면 이 정보를 지워요. 삼성 쪽 서비스 권한은 SmartThings 앱에서 별도로 해제해 주세요.</p>
     </section>
+    <section>
+      <h2 className="text-[21px] font-bold">이 기기의 안부 알림</h2>
+      <p className="mt-3">홈 화면 알림을 연결하면 발송에 필요한 이 기기의 구독 주소와 열쇠를 보호자 계정에 등록해요. 알림함에서 ‘이 기기 알림 끄기’를 누르면 수신을 해제해요. 잠금화면에는 기본으로 새 소식이 있다는 문구가 보이고, 원하면 이 기기에서 소식 종류 표시를 켤 수 있어요.</p>
+    </section>
     <section className="rounded-2xl border border-line p-5">
       <h2 className="text-[21px] font-bold">5. 운영팀에 문의하기</h2>
       <a className="mt-3 block min-h-12 break-all py-2 font-bold underline underline-offset-4" href={`mailto:${PRIVACY_SUPPORT_EMAIL}`}>{PRIVACY_SUPPORT_EMAIL}</a>

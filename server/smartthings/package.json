@@ -3,7 +3,16 @@
   "private": true,
   "type": "module",
   "version": "0.1.0",
-  "engines": { "node": ">=22 <27" },
-  "scripts": { "start": "node index.mjs", "maintenance": "node maintenance.mjs", "test": "node --test test/*.test.mjs" },
-  "dependencies": { "firebase-admin": "14.5.0" }
+  "engines": {
+    "node": ">=22 <27"
+  },
+  "scripts": {
+    "start": "node index.mjs",
+    "maintenance": "node maintenance.mjs",
+    "test": "node --test test/*.test.mjs"
+  },
+  "dependencies": {
+    "firebase-admin": "14.5.0",
+    "web-push": "4.0.0"
+  }
 }

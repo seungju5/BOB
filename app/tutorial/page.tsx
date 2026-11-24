@@ -46,8 +46,8 @@ const SLIDES: Slide[] = [
     ),
   },
   {
-    title: "하루 식사를\n색으로 한눈에",
-    body: "기록에서 날짜를 누르면\n그날의 소식을 살펴봐요.\n한 분씩의 실제 식사를 뜻하지는 않아요.",
+    title: "밥솥 소식을 살펴봐요",
+    body: "요일을 눌러 보세요. 채워진 점은\n밥솥을 쓴 시간대를 뜻해요.",
     content: <MealWeekExample />,
   },
   {
@@ -144,7 +144,7 @@ export default function TutorialPage() {
       </div>
 
       {/* 시작 화면처럼 아래쪽은 흰 시트 */}
-      <div className="flex flex-1 flex-col rounded-t-[2.25rem] bg-paper px-6 pt-5 pb-6">
+      <div className={`flex flex-1 flex-col rounded-t-[2.25rem] bg-paper pt-5 pb-6 ${index === 2 ? "px-4" : "px-6"}`}>
         <div key={index} className="animate-rise motion-reduce:animate-none flex flex-1 items-center justify-center pb-5">
           {slide.content}
         </div>

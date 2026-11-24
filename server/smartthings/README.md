@@ -1,5 +1,7 @@
 # 워밍업 밥뭇나 SmartThings 서버
 
+기기별 Web Push 등록과 발송을 운영할 때는 [알림 서버 연결과 검증 방법](notifications.md)을 따른다.
+
 사용자가 삼성 계정에 동의하고 밥솥 플러그 하나를 고르면, 밥뭇나가 그 기기의 최근 전력값을 읽고 새 신호 도착을 표시합니다. 기기 종류와 측정 시각도 함께 확인합니다. 이 서버의 배포 대상은 팀 프로젝트 `warming-up-bapmunna`, 서울 `asia-northeast3`, 서비스 `warming-up-smartthings`입니다.
 
 ## 팀에서 한 번 준비할 일

@@ -4,7 +4,8 @@ import Link from "next/link";
 import { ImpactConnectionLinks } from "@/components/ImpactConnectionLinks";
 import { ALERT_PRIORITY, ALERT_TONE, alertCopy, AlertShortcut, fmtDateLong, STATUS_META, StatusIcon, withWa } from "@/components/guardian";
 import { IconArrowRight, IconChart, IconClock, IconPhone, IconSuitcase } from "@/components/icons";
-import { Logo, Mascot } from "@/components/Mascot";
+import { Logo } from "@/components/Mascot";
+import { HomeLoadingCompanion, HomeMealCompanion } from "@/components/companions/CookerCompanion";
 import { buttonClass, Skeleton } from "@/components/ui";
 import { countMissedMeals } from "@/lib/judge/evaluateAlerts";
 import { kstDate } from "@/lib/judge/time";
@@ -22,6 +23,7 @@ export default function HomePage() {
         <Skeleton className="h-20 w-60" />
         <Skeleton className="h-36" />
         <Skeleton className="h-24" />
+        <HomeLoadingCompanion />
       </main>
     );
   }
@@ -113,7 +115,7 @@ export default function HomePage() {
       </Link>
 
       <section className="mt-4 rounded-[1.75rem] border border-line p-5">
-        <h2 className="text-[16px] font-bold text-cocoa">오늘의 끼니</h2>
+        <HomeMealCompanion />
         {!slots.length ? <p className="mt-3 text-[16px] text-muted">아직 연결된 식사 기록이 없어요. 연결 전에는 식사 여부를 판단하지 않아요.</p> : null}
         <ul className="mt-3 grid gap-2" style={{ gridTemplateColumns: `repeat(${Math.max(slots.length, 1)}, minmax(0, 1fr))` }}>
           {slots.map((s) => (
@@ -131,9 +133,8 @@ export default function HomePage() {
 
       <ImpactConnectionLinks compact />
 
-      <div className="mt-6 flex items-end gap-3">
-        <Mascot className="h-16 w-16 shrink-0" mood={top ? "worried" : "happy"} />
-        <p className="pb-2 text-[16px] leading-relaxed text-cocoa/80">
+      <div className="mt-5">
+        <p className="text-[16px] leading-relaxed text-cocoa/80">
           {top ? "소식이 뜸할 땐 목소리가 제일 좋아요." : "짧은 전화로 오늘의 안부를 나눠 보세요."}
         </p>
       </div>

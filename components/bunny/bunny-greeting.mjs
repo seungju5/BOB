@@ -1,5 +1,6 @@
 // Original artwork layers: hand and pencil rotate together without changing their shape.
 // The same controller is shared by the static app and the Next.js welcome page.
+import { WARMING_REACTIONS, warmingReactionAt } from './bunny-reactions.mjs';
 export const BUNNY_BEATS = [
   [0, 300, 'ready'],
   [1, 110, 'crouch'], [2, 90, 'spring'], [3, 150, 'hop'], [4, 90, 'descend'], [5, 110, 'land'], [6, 140, 'settle'],
@@ -128,7 +129,7 @@ export function createBunnyGreeting(scene, {imageUrl, underlayUrl, spriteUrl} = 
   const sourceUrl = imageUrl || original?.currentSrc || original?.src || spriteUrl;
   const preference = window.matchMedia('(prefers-reduced-motion: reduce)');
   let image, underlay, loading, disposed = false, ready = false, failed = false, playing = false, queued = false;
-  let raf = 0, elapsed = 0, previousTime = null, generation = 0;
+  let raf = 0, elapsed = 0, previousTime = null, generation = 0, action = 'hello';
   slot?.append(canvas);
 
   function layout() {
@@ -154,7 +155,8 @@ export function createBunnyGreeting(scene, {imageUrl, underlayUrl, spriteUrl} = 
   }
   function draw(time) {
     if (!ready || !renderer) return;
-    const pose = bunnyPoseAt(time), rig = bunnyRigAt(time);
+    const pose = action === 'hello' ? bunnyPoseAt(time) : {frame: 0, phase: action};
+    const rig = action === 'hello' ? bunnyRigAt(time) : warmingReactionAt(action, time);
     renderer.draw(rig);
     canvas.style.setProperty('--bunny-lift', `${-rig.lift}px`);
     scene.dataset.greetingFrame = String(pose.frame);
@@ -176,7 +178,7 @@ export function createBunnyGreeting(scene, {imageUrl, underlayUrl, spriteUrl} = 
     if (disposed || !playing || document.hidden || !scene.isConnected) { raf = 0; return; }
     if (previousTime !== null) elapsed += now - previousTime;
     previousTime = now;
-    if (elapsed >= BUNNY_DURATION) { stop(); return; }
+    if (elapsed >= (WARMING_REACTIONS[action]?.duration ?? BUNNY_DURATION)) { stop(); return; }
     draw(elapsed); raf = requestAnimationFrame(tick);
   }
   async function load() {
@@ -201,9 +203,11 @@ export function createBunnyGreeting(scene, {imageUrl, underlayUrl, spriteUrl} = 
     }
     return loading;
   }
-  async function play() {
+  async function play(reaction = 'hello') {
     if (disposed || preference.matches || failed) return;
-    stop(); const request = generation; setStatus('loading');
+    stop(); action = Object.hasOwn(WARMING_REACTIONS, reaction) ? reaction : 'hello';
+    scene.dataset.greetingAction = action;
+    const request = generation; setStatus('loading');
     const loaded = await load();
     if (disposed || request !== generation || preference.matches) return;
     if (!loaded) { failed = true; setStatus('unavailable'); if (button) button.hidden = true; return; }
@@ -213,7 +217,7 @@ export function createBunnyGreeting(scene, {imageUrl, underlayUrl, spriteUrl} = 
   }
   function visibilityChanged() {
     if (document.hidden) { cancelAnimationFrame(raf); raf = 0; previousTime = null; }
-    else if (queued) void play();
+    else if (queued) void play(action);
     else if (playing && !raf) raf = requestAnimationFrame(tick);
   }
   function preferenceChanged() {
@@ -230,6 +234,7 @@ export function createBunnyGreeting(scene, {imageUrl, underlayUrl, spriteUrl} = 
   preferenceChanged(); layout();
   return {
     play,
+    stop,
     dispose() {
       stop(); disposed = true;
       document.removeEventListener('visibilitychange', visibilityChanged);

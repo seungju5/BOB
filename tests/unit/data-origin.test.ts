@@ -23,7 +23,7 @@ vi.mock("@/lib/data/firebase", () => ({
 }));
 import { useApp } from "@/lib/data/useApp";
 import { useSenior } from "@/lib/data/senior";
-import { enablePush, useAlertNotifications } from "@/lib/push";
+import { disablePush, enablePush, useAlertNotifications } from "@/lib/push";
 import { createDemoState } from "@/lib/demo/state";
 import { toView } from "@/lib/demo/derive";
 
@@ -32,6 +32,7 @@ const values = new Map<string,string>();
 const storage = {
   getItem:vi.fn((id:string) => values.get(id) ?? null),
   setItem:vi.fn((id:string, value:string) => { values.set(id, value); }),
+  removeItem:vi.fn((id:string) => { values.delete(id); }),
 };
 const permission = vi.fn(async () => "granted");
 const display = vi.fn();
@@ -45,7 +46,7 @@ beforeEach(() => {
   vi.stubGlobal("localStorage", storage);
   vi.stubGlobal("window", Object.assign(new EventTarget(), {Notification:notification}));
   vi.stubGlobal("Notification", notification);
-  vi.stubGlobal("navigator", {serviceWorker:{getRegistration:registration}});
+  vi.stubGlobal("navigator", {serviceWorker:{getRegistration:registration, register:vi.fn(), ready:Promise.resolve({showNotification:display})}});
 });
 afterEach(() => {
   for (const cleanup of hooks.cleanups.splice(0)) cleanup();
@@ -75,13 +76,45 @@ describe("출처에 따른 기기 저장소와 알림 격리", () => {
     const now = new Date();
     const view = toView(createDemoState(now), now);
     view.alerts = [{id:"example",type:"help_request",triggeredAt:now.toISOString(),acknowledgedAt:null,resolvedAt:null}];
-    useAlertNotifications(view);
-    expect(await enablePush("demo", ["example"])).toBe("unsupported");
+    useAlertNotifications(view, "parent:1");
+    expect(await enablePush("demo", "parent")).toBe("unsupported");
     expect(permission).not.toHaveBeenCalled();
     expect(registration).not.toHaveBeenCalled();
     expect(display).not.toHaveBeenCalled();
-    const live: AppView = {...view,mode:"live",dataSource:"firebase"};
-    useAlertNotifications(live);
+    const live: AppView = {...view,mode:"live",dataSource:"firebase",seniorConsent:true};
+    useAlertNotifications(live, "parent:1");
+    expect(display).not.toHaveBeenCalled();
+    await enablePush("live", "parent");
+    useAlertNotifications(live, "parent:2");
+    expect(registration).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(1200);
+    live.alerts = [{...view.alerts[0], id:"a-new-alert", triggeredAt:new Date().toISOString()}];
+    useAlertNotifications(live, "parent:2");
+    await Promise.resolve();
+    expect(display).toHaveBeenCalledTimes(1);
+    expect(display).toHaveBeenCalledWith("밥뭇나", expect.objectContaining({body: "워밍이가 새 소식을 가져왔어요. 앱에서 확인해 주세요.", tag:"a-new-alert", data:{url:"/alerts"}}));
+  });
+
+  it("only shows new real cooker signals for the opted-in account until it turns them off", async () => {
+    const base = toView(createDemoState(new Date()), new Date());
+    const live: AppView = {...base, mode:"live", dataSource:"firebase", seniorConsent:true, alerts:[],
+      plug: {deviceId:"test-plug", online:true, lastReadingAt:null, status:"connected", isVirtual:false}};
+    await enablePush("live", "parent");
+    vi.advanceTimersByTime(1000);
+    live.plug.powerNoticeAt = new Date().toISOString();
+    useAlertNotifications(live, "other:1");
+    useAlertNotifications({...live, seniorConsent:false}, "parent:1");
+    useAlertNotifications({...live, plug:{...live.plug, isVirtual:true}}, "parent:1");
+    expect(registration).not.toHaveBeenCalled();
+    useAlertNotifications(live, "parent:1");
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(display).toHaveBeenCalledTimes(1);
+    useAlertNotifications(live, "parent:2");
+    await disablePush("parent");
+    vi.advanceTimersByTime(1000);
+    live.plug.powerNoticeAt = new Date().toISOString();
+    useAlertNotifications(live, "parent:3");
     await Promise.resolve();
     expect(display).toHaveBeenCalledTimes(1);
   });

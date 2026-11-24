@@ -1,3 +1,6 @@
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import StartPage from '@/app/page';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { BUNNY_BEATS, BUNNY_DURATION, bunnyLiftAt, bunnyPoseAt, bunnyRigAt, bunnyPointAt, bunnyTransformAt, createBunnyGreeting } from '../../components/bunny/bunny-greeting.mjs';
 
@@ -31,6 +34,17 @@ function browser({reduced = false, decode = () => Promise.resolve(), canvasAvail
 afterEach(() => vi.unstubAllGlobals());
 
 describe('finite bunny greeting', () => {
+  it('makes the original bunny the greeting button and keeps both start links directly available', () => {
+    const html = renderToStaticMarkup(createElement(StartPage));
+    const button = html.match(/<button\b[^>]*aria-label="토끼에게 인사하기"[^>]*>([\s\S]*?)<\/button>/)?.[1];
+    expect(button).toContain('bunny.png');
+    expect(html).toContain('role="status"');
+    expect(html).not.toContain('다시 인사하기');
+    expect(html).not.toContain('밥 한 끼로 전하는 안부');
+    expect(html).toContain('보호자로 시작');
+    expect(html).toContain('어르신으로 시작');
+  });
+
   it('keeps two hops and includes actual wave and bow poses within five seconds', () => {
     expect(BUNNY_DURATION).toBeLessThan(5000);
     expect(BUNNY_BEATS.filter(beat => beat[2] === 'hop')).toHaveLength(2);

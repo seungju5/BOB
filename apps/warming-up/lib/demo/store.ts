@@ -69,16 +69,28 @@ export function useDemo(enabled: boolean): DemoState | null {
   return state;
 }
 
-/** 1분마다 갱신되는 현재 시각. 서버에서는 null. */
+/** 실제 분 경계와 앱을 다시 연 시각에 맞춘다. 서버에서는 null. */
 export function useNow(): Date | null {
   const [now, setNow] = useState<Date | null>(null);
   useEffect(() => {
-    const tick = () => setNow(new Date());
-    const first = setTimeout(tick, 0);
-    const id = setInterval(tick, 60_000);
+    if (typeof document === "undefined") return;
+    let timer: ReturnType<typeof setTimeout>;
+    function tick() {
+      clearTimeout(timer);
+      const time = new Date();
+      setNow(time);
+      timer = setTimeout(tick, 60_000 - time.getTime() % 60_000);
+    }
+    const onVisible = () => { if (document.visibilityState === "visible") tick(); };
+    timer = setTimeout(tick, 0);
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("pageshow", tick);
+    window.addEventListener("focus", tick);
     return () => {
-      clearTimeout(first);
-      clearInterval(id);
+      clearTimeout(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("pageshow", tick);
+      window.removeEventListener("focus", tick);
     };
   }, []);
   return now;

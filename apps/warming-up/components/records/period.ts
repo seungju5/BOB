@@ -2,6 +2,37 @@ import { addDays } from "@/lib/judge/time";
 
 export type RecordRange = "day" | "week" | "month";
 
+export interface RecordSelection {
+  range: RecordRange;
+  date: string | null; // null follows the current KST date, including after midnight.
+  openedFrom?: "week" | "month";
+}
+
+type RecordAction =
+  | { type: "range"; range: RecordRange }
+  | { type: "day"; date: string }
+  | { type: "today" }
+  | { type: "overview" }
+  | { type: "move"; direction: -1 | 1; today: string };
+
+export function navigateRecords(current: RecordSelection, action: RecordAction): RecordSelection {
+  switch (action.type) {
+    case "today":
+      return { range: "day", date: null };
+    case "day":
+      return { range: "day", date: action.date, openedFrom: current.range === "day" ? current.openedFrom : current.range };
+    case "overview":
+      return current.openedFrom ? { range: current.openedFrom, date: current.date } : current;
+    case "range":
+      if (current.range === action.range) return current;
+      return { range: action.range, date: current.date, openedFrom: action.range === "day" && current.range !== "day" ? current.range : undefined };
+    case "move": {
+      const date = shiftRecordPeriod(current.date ?? action.today, current.range, action.direction);
+      return { ...current, date: date > action.today ? action.today : date };
+    }
+  }
+}
+
 const utcDate = (date: string) => new Date(`${date}T00:00:00Z`);
 const dateString = (date: Date) => date.toISOString().slice(0, 10);
 

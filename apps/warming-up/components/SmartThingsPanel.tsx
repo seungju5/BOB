@@ -8,14 +8,14 @@ import { useMode } from "@/lib/data/mode";
 import { ONBOARDING_COMPLETE } from "@/lib/data/view";
 import { ACCOUNT_CONSENT_VERSION } from "@/lib/firebase/bridge";
 import { openSmartThings, SMARTTHINGS_CONSENT_VERSION, SmartThingsError, type CheckedConnection, type SmartThingsConnection, type SmartThingsDevice } from "@/lib/firebase/smartthings";
-import { DETECTION } from "@/config/detection";
+import { COOKER_RECORD_DAYS, DETECTION } from "@/config/detection";
 import { MeterReadings } from "./MeterReadings";
 import { PersonalMeterCheck } from "./PersonalMeterCheck";
 import { callbackMessage, deviceStageCopy, formatDeviceTime, smartThingsErrorMessage, type DisplayStage } from "@/lib/smartthings/presentation";
 import { returnedToAccount } from "@/lib/smartthings/pending";
 
 type Client = Awaited<ReturnType<typeof openSmartThings>>;
-type Operation = "status" | "start" | "list" | "select" | "check" | "remove" | "power-notice";
+type Operation = "status" | "start" | "list" | "select" | "check" | "remove" | "power-notice" | "meal-records";
 const panelClass = "rounded-2xl border border-line bg-paper p-5";
 const textClass = "text-[16px] leading-relaxed text-muted";
 
@@ -122,6 +122,16 @@ function AccountPanel({ uid, revision, consent, latest, showConsentLink, onboard
   const canRemove = !consent || ["choose_device", "subscribing", "connected", "reconnect_required"].includes(stage);
   const selected = state?.device;
   const copy = deviceStageCopy(stage, selected?.isVirtual);
+  const setMealRecords = (enabled: boolean) => {
+    if (!api || !selected) return;
+    void run("meal-records", async (signal, current) => {
+      await api.setMealRecords(selected.id, enabled, signal);
+      current();
+      const next = await api.status(signal);
+      current(); publish(next);
+      setNotice(enabled ? "이제 새로 들어오는 취사 소식을 날짜별로 모을게요." : "날짜별 끼니 기록을 끄고 저장한 요약을 지웠어요.");
+    });
+  };
   const setCookerNotice = (enabled: boolean) => {
     if (!api || !selected) return;
     void run("power-notice", async (signal, current) => {
@@ -207,6 +217,14 @@ function AccountPanel({ uid, revision, consent, latest, showConsentLink, onboard
           <Button type="button" variant="outline" className="mt-2" disabled={!!busy || !api} onClick={() => setCookerNotice(!state?.powerNotice?.enabled)}>
             {state?.powerNotice?.enabled ? "취사 신호 알림 끄기" : "이 플러그에 밥솥을 꽂았어요 · 알림 켜기"}
           </Button>
+          {state?.powerNotice?.enabled && <div className="mt-4 border-t border-line pt-3">
+            <h3 className="text-[17px] font-bold text-cocoa">날짜별 끼니 기록</h3>
+            <p className={textClass}>켜면 지금부터 들어온 밥솥 소식을 우리 집 끼니 시간대에 맞춰 기록해요. 내 계정에 최근 {COOKER_RECORD_DAYS}일의 날짜별 요약을 보관해요. 끄면 저장한 요약도 지워져요.</p>
+            {state.mealRecords && <Link href="/records/" className="mt-2 inline-flex min-h-12 items-center font-bold text-cocoa underline">우리 집 기록 보기</Link>}
+            <Button type="button" variant="outline" className="mt-2" disabled={!!busy || !api} onClick={() => setMealRecords(!state.mealRecords)}>
+              {state.mealRecords ? "날짜별 기록 끄고 지우기" : "동의하고 날짜별 기록 켜기"}
+            </Button>
+          </div>}
         </div>}
       </>}
     </div>}

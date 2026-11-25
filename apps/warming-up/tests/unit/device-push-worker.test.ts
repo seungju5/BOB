@@ -1,20 +1,22 @@
 import { readFileSync } from "node:fs";
 import { createContext, runInContext } from "node:vm";
 import { expect, it, vi } from "vitest";
-import { noticeDay } from "@/public/notification-content";
+import { noticeDay, scopedNotice } from "@/public/notification-content";
 
 type WorkerEvent = {data?: {json(): unknown}; notification?: object; waitUntil(task: Promise<unknown>): void};
 const source = readFileSync("public/sw.js", "utf8");
 const content = readFileSync("public/notification-content.js", "utf8");
+const ticket = "n1." + "t".repeat(84);
 
-function worker(previews = false, withWindow = true) {
+function worker(previews = false, withWindow = true, delivery?:object) {
   const events: Record<string, (event: WorkerEvent) => void> = {};
   const show = vi.fn(), focus = vi.fn(), openWindow = vi.fn();
   const navigate = vi.fn(async () => ({focus}));
   const scope = "https://example.invalid/app/";
-  const context = createContext({URL, self: {
+  const context = createContext({URL, crypto, TextEncoder, self: {
     registration:{scope, showNotification:show},
-    caches: {match:async () => previews ? new Response("this-device-owner") : undefined},
+    caches: {match:async (path:string) => path.endsWith("/.notice-delivery")
+      ? delivery && Response.json(delivery) : previews ? new Response("this-device-owner") : undefined},
     clients:{openWindow, matchAll:async () => withWindow ? [{url:scope, navigate}] : []},
     addEventListener:(key:string, fn:(event: WorkerEvent) => void) => { events[key]=fn; },
   }});
@@ -39,7 +41,7 @@ it("keeps family details private unless this device opts in and handles prior no
     expect(title).toBe("밥뭇나");
     expect(opts.body).toBe("워밍이가 새 소식을 가져왔어요. 앱에서 확인해 주세요.");
   }
-  expect(w.show.mock.calls[0][1].data.url).toBe(w.scope + "records/?day=2026-11-25");
+  expect(w.show.mock.calls[0][1].data.url).toBe(w.scope + "alerts/");
   expect(w.show.mock.calls[1][1].data.url).toBe(w.scope + "report/");
   expect(w.show.mock.calls[2][1].data.url).toBe(w.scope + "alerts/");
 });
@@ -53,7 +55,8 @@ it.each([
   ["not-supported","밥뭇나","alerts/"], ["constructor","밥뭇나","alerts/"],
 ])("shows fixed local copy and opens the correct screen for %s", async (kind, title, route) => {
   const w = worker(true);
-  await w.fire("push", {data:{json:() => ({kind,at:"2026-11-24T15:02:03Z",tag:"abc",
+  const scope = await scopedNotice("this-device-owner", "a".repeat(32));
+  await w.fire("push", {data:{json:() => ({kind,scope,ticket,at:"2026-11-24T15:02:03Z",tag:"abc",
     date: kind === "eat_out" ? "2026-11-23" : undefined, body:"private", url:"https://foreign.invalid/"})}});
   expect(w.show.mock.calls[0][0]).toBe(title);
   expect(w.show.mock.calls[0][1].data.url).toBe(w.scope + route);
@@ -74,6 +77,49 @@ it("opens a new app window, rejects foreign and unrelated targets and removes ex
     await w.fire("notificationclick", {notification:{data:{url},close:vi.fn()}});
   }
   expect(w.openWindow.mock.calls.map(v=>v[0])).toEqual([w.scope+"alerts/?from=notice", w.scope+"alerts/?from=notice",
-    w.scope+"records/?day=2026-11-23&from=notice"]);
+    w.scope+"alerts/?from=notice"]);
   expect(noticeDay("2026-02-30")).toBeNull();
+});
+
+
+it("retains only a matching KST day and an allowed meal, including after a cold start", async () => {
+  const scope = await scopedNotice("this-device-owner", "c".repeat(32));
+  const w = worker(true,false);
+  await w.fire("push",{data:{json:()=>({kind:"cooker_signal",at:"2026-11-24T15:01:00Z",date:"2026-11-25",slot:"fourth",scope,ticket})}});
+  const notification = w.show.mock.calls[0][1];
+  expect(notification.data.url).toBe(w.scope+"records/?day=2026-11-25&slot=fourth");
+  await w.fire("notificationclick",{notification:{...notification,close:vi.fn()}});
+  const opened = new URL(w.openWindow.mock.calls[0][0]);
+  expect(opened.pathname).toBe("/app/alerts/");
+  expect(opened.searchParams.has("slot")).toBe(false);
+  expect(opened.searchParams.get("cookTicket")).toBe(ticket);
+  expect(opened.searchParams.get("noticeFor")).toBe(scope);
+  expect(opened.searchParams.get("from")).toBe("notice");
+  await w.fire("push",{data:{json:()=>({kind:"cooker_signal",scope,ticket,at:"2026-11-24T15:01:00Z",date:"2026-11-24",slot:"fourth"})}});
+  expect(w.show.mock.calls[1][1].data.url).toBe(w.scope+"records/?day=2026-11-25");
+});
+
+it("hides other-account previews and does not show an expired cooker signal", async () => {
+  const w = worker(true);
+  const scope = await scopedNotice("previous-user", "x".repeat(32));
+  await w.fire("push",{data:{json:()=>({kind:"cooker_signal",scope,date:"2026-11-24",slot:"private"})}});
+  expect(w.show.mock.calls[0][0]).toBe("밥뭇나");
+  expect(w.show.mock.calls[0][1].data.url).toBe(w.scope+"alerts/");
+  await w.fire("push",{data:{json:()=>({kind:"cooker_signal",scope,expiresAt:1})}});
+  expect(w.show).toHaveBeenCalledTimes(1);
+});
+
+it("honors a later sign-out, account switch or KST quiet-hours change for an already queued packet", async()=>{
+  const owner="this-device-owner", scope=await scopedNotice(owner,"a".repeat(32));
+  const stamp=Date.now(), at=new Date(stamp).toISOString();
+  const timeAt=(ms:number)=>new Date(ms+9*3600_000).toISOString().slice(11,16);
+  const quiet={start:timeAt(stamp-60_000),end:timeAt(stamp+120_000)};
+  const packet={data:{json:()=>({kind:"cooker_signal",at,scope,ticket})}};
+  for (const policy of [{enabled:false},{enabled:true,owner:"next-owner",quiet:null},{enabled:true,owner,quiet}]) {
+    const w=worker(true,true,policy);
+    await w.fire("push",packet);
+    expect(w.show).not.toHaveBeenCalled();
+  }
+  const current=worker(true,true,{enabled:true,owner,quiet:null});
+  await current.fire("push",packet); expect(current.show).toHaveBeenCalledOnce();
 });

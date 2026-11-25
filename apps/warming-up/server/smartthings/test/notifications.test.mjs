@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createECDH, randomBytes } from 'node:crypto';
+import { createECDH, randomBytes, createHash } from 'node:crypto';
 import { generateVAPIDKeys, generateRequestDetails } from 'web-push';
 import { createNotifier, vapidKeys } from '../notifications.mjs';
 import { ApiError, CONSENT, TEAM_ORIGIN } from '../security.mjs';
@@ -59,7 +59,7 @@ function fixture(send) {
     assert.equal(request.headers['Content-Encoding'], 'aes128gcm');
     assert.equal(request.body.includes(Buffer.from('cooker_signal')), false);
     if (send) await send();
-    delivered.push({sub,payload:JSON.parse(payload)});
+    delivered.push({sub,payload:JSON.parse(payload),ttl:opts.TTL});
   }});
   const run = (op, uid = 'fixture', sub = device) =>
     notifier.handle(uid,authTime,{op,endpoint:sub.endpoint,subscription:sub});
@@ -93,7 +93,12 @@ test('a fresh verified cooker event emits one private KST-day notification after
   await f.notifier.deliverCooker('fixture');
   assert.equal(f.delivered.length,1);
   const at = new Date(f.now()).toISOString();
-  assert.deepEqual(f.delivered[0].payload,{kind:'cooker_signal',at,tag:'cooker-'+at,date:'2026-11-25'});
+  const {scope, ticket, expiresAt, ...content} = f.delivered[0].payload;
+  assert.deepEqual(content,{kind:'cooker_signal',at,tag:'cooker-'+at,date:'2026-11-25'});
+  assert.equal(expiresAt, f.now() + 3_600_000);
+  assert.match(ticket,/^n1\.[\w-]{70,120}$/);
+  const [nonce, checksum] = scope.split('.');
+  assert.equal(checksum, createHash('sha256').update('bapmunna-notice-v1/'+nonce+'/fixture').digest('hex'));
   f.tick(3600001); await f.run('register'); await f.notifier.deliverCooker('fixture');
   assert.equal(f.delivered.length,1);
 });
@@ -163,4 +168,62 @@ test('a notifications-only runtime accepts same-site verified owners without ena
   assert.equal((await post('https://example.invalid','fixture-token')).status,403);
   assert.equal((await post(TEAM_ORIGIN,'fixture-token')).status,200);
   assert.deepEqual(await f.run('check','second'),{registered:false});
+});
+
+test('uses an actual consented meal target only for the owner and the observed KST day', async()=>{
+  const f=fixture(); await f.run('register');
+  let target={date:'2026-11-25',slot:'fifth'};
+  f.store.getCookerNoticeTarget=async(uid,at)=>{assert.equal(uid,'fixture');assert.equal(at,f.now());return target;};
+  f.tick(125000); f.observed(); await f.notifier.deliverCooker('fixture');
+  assert.equal(f.delivered[0].payload.slot,'fifth');
+  for (target of [{date:'2026-11-24',slot:'lunch'},{date:'2026-11-25',slot:'unsafe'},null]) {
+    f.tick(1200000); f.observed(); await f.notifier.deliverCooker('fixture');
+    assert.equal(f.delivered.at(-1).payload.slot,undefined);
+  }
+});
+
+test('the original encrypted receipt opens the corrected prior KST day at tap; wrong owner, forgery, revocation and expiration fail closed', async()=>{
+  const f=fixture(); await f.run('register');
+  f.tick(70_000); f.observed(); // A 00:00:10 high arrived before the preceding 23:59:15 high.
+  const at = f.now(), authTime=f.connection.authTime;
+  const first={date:'2026-11-25',slot:'breakfast'};
+  let corrected={date:'2026-11-24',slot:'dinner'};
+  f.store.getCookerNoticeTarget=async()=>first;
+  let reads=0;
+  f.store.resolveCookerNoticeTarget=async(uid,observed,{recorded})=>{
+    reads++;assert.equal(uid,'fixture');assert.equal(observed,at);
+    return recorded ? corrected : {date:'2026-11-24'};
+  };
+  const resolve=(ticket, uid='fixture')=>f.notifier.handle(uid,authTime,{op:'resolve',ticket});
+  await f.notifier.deliverCooker('fixture');
+  const {ticket,slot,date}=f.delivered[0].payload;
+  assert.equal(date,first.date);assert.equal(slot,'breakfast');
+  assert.deepEqual(await resolve(ticket,'other'),{target:null});
+  const forged=ticket.slice(0,10)+(ticket[10]==='A'?'B':'A')+ticket.slice(11);
+  assert.deepEqual(await resolve(forged),{target:null});assert.equal(reads,0);
+  assert.deepEqual(await resolve(ticket),{target:corrected});
+  corrected=null;assert.deepEqual(await resolve(ticket),{target:null});
+  f.store.getCookerNoticeTarget=async()=>null;
+  const local=await f.notifier.handle('fixture',authTime,{op:'ticket',at});
+  assert.deepEqual(await resolve(local.ticket),{target:{date:'2026-11-24'}});
+  assert.deepEqual(await f.notifier.handle('fixture',authTime,{op:'ticket',at:at-1}),{ticket:null});
+  f.tick(24*3_600_000);const previous=reads;
+  assert.deepEqual(await resolve(ticket),{target:null});assert.equal(reads,previous);
+});
+
+test('per-device KST quiet hours include overnight starts, exclude ends, cap service TTL and leave requested self-tests available',async()=>{
+  const f=fixture(); await f.run('register');
+  const change=(hours,uid='fixture')=>f.notifier.handle(uid,0,{op:'quiet',endpoint:f.device.endpoint,quietHours:hours});
+  await assert.rejects(()=>change({start:'00:00',end:'00:00'}),{code:'invalid_quiet_hours'});
+  await assert.rejects(()=>change({start:'21:00',end:'08:00'},'second'),{code:'subscription_required'});
+  await change({start:'00:00',end:'00:10'});
+  f.tick(1000);f.observed();await f.notifier.deliverCooker('fixture');
+  assert.equal(f.delivered[0].ttl,59);
+  f.tick(59_000);f.observed();await f.notifier.deliverCooker('fixture');assert.equal(f.delivered.length,1);
+  await f.run('test');assert.equal(f.delivered.length,2);
+  f.tick(600000);await f.notifier.deliverCooker('fixture');assert.equal(f.delivered.length,2);
+  f.observed();await f.notifier.deliverCooker('fixture');assert.equal(f.delivered.length,3);
+  await change({start:'22:00',end:'07:30'});f.tick(1000);f.observed();await f.notifier.deliverCooker('fixture');assert.equal(f.delivered.length,3);
+  await change(null);await f.notifier.deliverCooker('fixture');assert.equal(f.delivered.length,3);
+  f.tick(1000); f.observed(); await f.notifier.deliverCooker('fixture');assert.equal(f.delivered.length,4);
 });

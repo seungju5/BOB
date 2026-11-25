@@ -171,11 +171,11 @@ export function safeDevice(device) {
       (component.capabilities || []).map((item) => item.id),
     ),
   );
-  // Use the manufacturer's plug category on the metered component. A display
-  // name or a user-assigned category alone cannot classify a direct device.
-  const directPlug = device.type === 'MQTT' && components.some(hasMeteredPlugCategory);
+  // Samsung reports direct Wi-Fi devices as MQTT and partner Schema devices as
+  // VIPER. In both cases classify the outlet from its manufacturer's profile.
+  const meteredPlug = (device.type === 'MQTT' || device.type === 'VIPER') && components.some(hasMeteredPlugCategory);
   const virtual =
-    device.type === 'VIRTUAL' ? true : knownTransports.has(device.type) || directPlug ? false : undefined;
+    device.type === 'VIRTUAL' ? true : knownTransports.has(device.type) || meteredPlug ? false : undefined;
   return {
     id: device.deviceId,
     label: String(device.label || device.name || '이름 없는 기기').slice(0, 100),

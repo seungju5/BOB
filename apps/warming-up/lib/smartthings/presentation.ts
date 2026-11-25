@@ -30,6 +30,7 @@ const errorCopy: Record<string, string> = {
   consent_updated: "삼성 연결 동의 안내가 바뀌었어요. 새 안내가 반영된 화면에서 내용을 읽고 다시 연결해 주세요.",
   permission_required: "삼성에서 기기 읽기를 허용했는지 확인해 주세요.",
   plan_required: "삼성에서 이 연결을 허용하지 않았어요. 밥뭇나 운영팀의 확인이 필요해요.",
+  pilot_invite_required: "지금은 초대받은 가구만 밥솥을 새로 연결할 수 있어요. 참여를 원하시면 밥뭇나 운영팀에 문의해 주세요.",
   invalid_authorization: "삼성 로그인 주소를 확인하지 못했어요. 잠시 후 다시 시도해 주세요.",
   storage_unavailable: "이 브라우저에 연결 진행 상태를 잠시 보관할 수 없어요. Safari 또는 Chrome의 일반 탭에서 다시 시도해 주세요.",
   attempt_cancelled: "이 연결 요청은 종료됐어요. 원할 때 다시 시작해 주세요.",
@@ -38,6 +39,7 @@ const errorCopy: Record<string, string> = {
   disconnect_first: "다른 플러그를 쓰려면 기존 연결을 먼저 해제해 주세요.",
   power_not_supported: "이 기기는 전력 측정을 제공하지 않아요. 다른 플러그를 선택해 주세요.",
   test_device: "삼성에 가상 기기로 등록된 플러그예요. 밥솥이 꽂힌 실물 플러그에서 알림을 켜 주세요.",
+  power_notice_required: "실물 밥솥 플러그에서 취사 신호 알림을 먼저 켜 주세요.",
   ambiguous_meter: "이 기기에서 밥솥 전력계 한 개를 구분할 수 없어요. 밥솥에 연결한 단일 전력 측정 플러그를 선택해 주세요.",
   device_missing: "삼성에서 그 기기를 찾지 못했어요. SmartThings 앱에서 확인해 주세요.",
   check_later: "방금 확인했어요. 30초 후 다시 시도해 주세요.",
@@ -58,6 +60,7 @@ export function callbackMessage(result: string | null) {
     case "connected": return "삼성 화면에서 돌아왔어요. 아래에서 내 계정의 연결 상태를 확인하세요.";
     case "cancelled": return "삼성 연결을 취소했어요. 원할 때 다시 시작할 수 있어요.";
     case "disconnect_first": return errorCopy.disconnect_first;
+    case "pilot_invite_required": return errorCopy.pilot_invite_required;
     case "failed": return "삼성 연결을 마치지 못했어요. 아래에서 연결 상태를 확인한 뒤 다시 시도해 주세요.";
     default: return "";
   }

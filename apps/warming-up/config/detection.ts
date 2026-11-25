@@ -2,6 +2,8 @@
 // (가정) 표시는 밥솥 실측 전 초기값이다. 실측 후 확정하고 adr.md에 근거를 남긴다.
 import cookerCriteria from "../server/smartthings/power-criteria.json";
 
+export const COOKER_RECORD_DAYS = cookerCriteria.mealRecordDays;
+
 export const DETECTION = {
   /** 동의한 밥솥 전용 플러그를 삼성에 다시 조회하는 간격(분). */
   POWER_CHECK_INTERVAL_MIN: cookerCriteria.checkIntervalMinutes,

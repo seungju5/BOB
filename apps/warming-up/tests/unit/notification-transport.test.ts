@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { TEAM_PROJECT_ID } from "@/config/team";
-import { checkBackgroundPush, disableBackgroundPush, enableBackgroundPush, testBackgroundPush } from "@/lib/notification-transport";
+import {checkBackgroundPush, disableBackgroundPush, enableBackgroundPush, readBackgroundQuiet, setBackgroundQuiet, testBackgroundPush} from "@/lib/notification-transport";
+import {localQuietHours, type QuietHours} from "@/lib/push-device";
 
 const identity = vi.hoisted(() => ({ token: vi.fn() }));
 vi.mock("@/lib/firebase/bridge", () => ({connectFirebase: async () => ({getIdToken: identity.token})}));
@@ -13,6 +14,7 @@ const worker = {pushManager:{getSubscription,subscribe}} as unknown as ServiceWo
 let config: object;
 let ops: string[];
 let registered: boolean;
+let quiet: QuietHours | null;
 const fetcher = vi.fn(async (url: string, init: RequestInit) => {
   if (url.endsWith("/config")) {
     expect(init.headers).not.toHaveProperty("Authorization");
@@ -25,11 +27,14 @@ const fetcher = vi.fn(async (url: string, init: RequestInit) => {
   expect(body).not.toHaveProperty("uid");
   if (body.op === "register") registered=true;
   if (body.op === "remove") registered=false;
-  return Response.json(body.op === "test" ? {accepted:true} : {registered});
+  if (body.op === "quiet" && registered) quiet=body.quietHours;
+  return Response.json(body.op === "test" ? {accepted:true} : {registered,quietHours:quiet});
 });
 beforeEach(()=>{
   config={projectId:TEAM_PROJECT_ID,webPush:{publicKey:key}};
-  ops=[]; registered=false;
+  ops=[]; registered=false; quiet=null;
+  const saved = new Map<string, string>();
+  vi.stubGlobal("localStorage",{getItem:(id:string)=>saved.get(id) ?? null, setItem:(id:string,v:string)=>saved.set(id,v), removeItem:(id:string)=>saved.delete(id)});
   identity.token.mockResolvedValue("fixture-auth");
   unsubscribe.mockResolvedValue(true); subscribe.mockResolvedValue(sub); getSubscription.mockResolvedValue(null);
   vi.stubGlobal("window",{PushManager:class {}});
@@ -77,4 +82,19 @@ it("an offline logout retires this browser independently of the unavailable serv
   expect(unsubscribe).toHaveBeenCalledOnce();
   unsubscribe.mockResolvedValueOnce(false); fetcher.mockRejectedValueOnce(new TypeError("offline"));
   await expect(disableBackgroundPush("owner")).rejects.toThrow("해제");
+});
+
+it("round trips opted-in hours for this owner's enrolled device and does not remember a denied update",async()=>{
+  getSubscription.mockResolvedValue(sub);
+  const hours = {start:"22:00", end:"07:00"};
+  await expect(setBackgroundQuiet("owner",hours)).rejects.toThrow("저장");
+  expect(localQuietHours("owner")).toBeNull();
+  registered=true;
+  await setBackgroundQuiet("owner", hours);
+  expect(await readBackgroundQuiet("owner")).toEqual(hours);
+  expect(localQuietHours("other")).toBeNull();
+  await setBackgroundQuiet("owner",null);
+  expect(await readBackgroundQuiet("owner")).toBeNull();
+  await expect(setBackgroundQuiet("owner",{start:"06:30",end:"06:30"})).rejects.toThrow("서로 다른");
+  expect(ops).toEqual(["quiet","quiet","check","quiet","check"]);
 });

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { randomBytes, generateKeyPairSync, sign, createHash } from 'node:crypto';
 import { createService, CONSENT } from '../service.mjs';
-import { ApiError, hash, readConfig, vault, webhookVerifier } from '../security.mjs';
+import { ApiError, readConfig, vault, webhookVerifier } from '../security.mjs';
 import { smartThingsClient, readingSummary, meterObservation, safeDevice } from '../smartthings.mjs';
 import { POWER_NOTICE_CONSENT, POWER_CHECK_MS, advancePowerNotice, hasPowerChecks, matchesPowerCheck } from '../power-notice.mjs';
 
@@ -15,7 +15,7 @@ const config = readConfig({
   SMARTTHINGS_CLIENT_SECRET: 'secret',
   SMARTTHINGS_ENCRYPTION_KEY: randomBytes(32).toString('base64'),
 });
-function fixture({ connectionEnabled = true } = {}) {
+function fixture({ connectionEnabled = true, pilotUids } = {}) {
   let time = instant,
     refreshes = 0,
     subscriptions = 0;
@@ -180,7 +180,7 @@ function fixture({ connectionEnabled = true } = {}) {
   let validAccount = true,
     consented = true;
   const handle = createService({
-    config: { ...config, connectionEnabled },
+    config: { ...config, connectionEnabled, acceptsPilotUid: readConfig({SMARTTHINGS_PILOT_UIDS: pilotUids}).acceptsPilotUid },
     store,
     smartthings,
     now: () => time,
@@ -595,6 +595,73 @@ test('operator admission is closed by default and never hides an existing connec
     (await paused.call('/connection', { method: 'DELETE', body: { confirm: true } })).status,
     200,
   );
+});
+
+test('pilot enrollment is optional; malformed or over-capacity lists fail without disclosing their values', () => {
+  assert.equal(readConfig({}).acceptsPilotUid, undefined);
+  assert.equal(readConfig({SMARTTHINGS_PILOT_UIDS: ''}).acceptsPilotUid('trial-one'), false);
+  const pilot = readConfig({SMARTTHINGS_PILOT_UIDS: 'trial-one, kakao:trial.two, 가구-3'});
+  for (const uid of ['trial-one', 'kakao:trial.two', '가구-3']) assert.equal(pilot.acceptsPilotUid(uid), true);
+  assert.equal(pilot.acceptsPilotUid('trial'), false);
+  assert.ok(!JSON.stringify(pilot).includes('trial-one'));
+  for (const value of [null, ' ', 'first,,third', 'first,first', 'first,', '1,2,3,4', 'first/second',
+    'first second', 'first\nsecond', '*', '..', 'team@example.test', 'a'.repeat(129)]) {
+    assert.throws(() => readConfig({SMARTTHINGS_PILOT_UIDS:value}), error =>
+      error.message === 'SMARTTHINGS_PILOT_UIDS에는 서로 다른 Firebase UID를 최대 3개까지 쉼표로 구분해 입력해 주세요.');
+  }
+});
+
+test('only invited verified accounts start a pilot grant; config and errors do not reveal the list', async () => {
+  const f = fixture({pilotUids:'alice,bob,carol'});
+  const start = user => f.call('/start', {method:'POST', user, body:{consentVersion:CONSENT}});
+  for (const uid of ['alice','bob','carol']) assert.equal((await start(uid)).status, 200);
+  const denied = await start('outside');
+  assert.equal(denied.status, 403);
+  assert.deepEqual(await denied.json(), {error:'pilot_invite_required'});
+  assert.equal(f.states.size, 3);
+  const visible = await (await f.call('/config')).text();
+  assert.equal(visible, await (await fixture().call('/config')).text());
+  const closed = fixture({pilotUids:''});
+  assert.equal((await closed.call('/start', {method:'POST', body:{consentVersion:CONSENT}})).status, 403);
+  assert.equal(closed.states.size, 0);
+});
+
+test('removing a pending invitation cancels its callback before exchanging a Samsung code', async () => {
+  const before = fixture({pilotUids:'alice'});
+  const started = await before.call('/start', {method:'POST', body:{consentVersion:CONSENT}});
+  const {url} = await started.json();
+  const state = new URL(url).searchParams.get('state');
+  const cookie = started.headers.get('set-cookie').split(';')[0];
+  const after = fixture({pilotUids:'bob'}); // Same pending state across a server configuration change.
+  after.states.set(state, before.states.get(state));
+  let exchanged = false;
+  after.smartthings.exchange = async () => { exchanged = true; throw Error('Unexpected Samsung call'); };
+  const finish = () => after.call('/callback?state=' + state + '&code=trial-code', {headers:{cookie}});
+  const returned = await finish();
+  assert.equal(returned.status, 303);
+  assert.equal(new URL(returned.headers.get('location')).searchParams.get('smartthings'), 'pilot_invite_required');
+  assert.equal(exchanged, false);
+  assert.equal(after.connections.size, 0);
+  assert.equal(after.states.get(state).cancelled, true);
+  assert.equal((await finish()).status, 400);
+});
+
+test('closing pilot enrollment preserves an existing grant and owner controls until explicitly unlinked', async () => {
+  const original = fixture();
+  await original.link();
+  await original.call('/device', {method:'POST', body:{deviceId:'mine'}});
+  const saved = await original.store.get('alice');
+  const f = fixture({pilotUids:''});
+  f.connections.set('alice', saved);
+  assert.equal((await (await f.call('/status')).json()).stage, 'connected');
+  assert.deepEqual(await f.store.get('alice'), saved);
+  await f.store.patch('alice', {stage:'reconnect_required'});
+  await f.link();
+  assert.equal((await f.store.get('alice')).installId, saved.installId);
+  assert.equal((await f.call('/power-notice', {method:'POST', body:{deviceId:'mine',enabled:false}})).status, 200);
+  assert.equal((await f.call('/connection', {method:'DELETE', body:{confirm:true}})).status, 200);
+  const newAttempt = await f.call('/start', {method:'POST', body:{consentVersion:CONSENT}});
+  assert.deepEqual(await newAttempt.json(), {error:'pilot_invite_required'});
 });
 test('saved consent is checked at start, callback, device access and event receipt; unlink still works', async () => {
   const f = fixture();
@@ -1151,12 +1218,13 @@ test('virtual type is retained from Samsung through device list, selection, stat
   assert.equal(safeDevice({ ...device, type: 'ZIGBEE' }).isVirtual, false);
 });
 
-test('a previously unclassified MQTT outlet is recognized on check without re-linking or opting in', async () => {
+for (const transport of ['MQTT', 'VIPER']) {
+test(`a previously unclassified ${transport} outlet is recognized on check without re-linking or opting in`, async () => {
   const f=fixture();
   await f.link();
   const info=await f.smartthings.device(null,'mine');
   const component=info.components[0];
-  info.type='MQTT';component.id='main';
+  info.type=transport;component.id='main';
   component.categories=[{name:'SmartPlug',categoryType:'user'}];
   await f.call('/device',{method:'POST',body:{deviceId:'mine'}});
   assert.equal((await (await f.call('/status')).json()).device.isVirtual,undefined);
@@ -1170,6 +1238,7 @@ test('a previously unclassified MQTT outlet is recognized on check without re-li
   const separated={...info,components:[{categories:component.categories},{capabilities:component.capabilities}]};
   assert.equal(safeDevice(separated).isVirtual,undefined);
 });
+}
 
 test('only one read scope and the canonical team callback appear in the authorization URL', async () => {
   const f = fixture();

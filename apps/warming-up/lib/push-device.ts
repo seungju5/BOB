@@ -2,8 +2,11 @@
 
 import { useSyncExternalStore } from "react";
 import { appPath } from "@/lib/app-path";
-import {noticeText, noticePath, noticePreferenceKey, noticePreferenceCache} from "@/public/notification-content";
+import {matchesNoticeOwner, noticeDeliveryKey, noticeText, noticePath, noticePreferenceKey, noticePreferenceCache, scopedNotice} from "@/public/notification-content";
 
+import {isQuietHours, untilQuiet} from "@/server/smartthings/notification-policy.mjs";
+
+export type QuietHours = {start:string; end:string};
 const eventName = "bapmunna:device-notifications";
 const storagePrefix = "bapmunna.notifications.";
 export type PermissionState = NotificationPermission | "install" | "unsupported" | "loading";
@@ -48,6 +51,17 @@ export function pushOwner(accountKey?: string) {
 }
 
 const prefKey = (owner: string) => storagePrefix + owner;
+export function localQuietHours(owner: string): QuietHours | null {
+  try {
+    const saved: unknown = JSON.parse(localStorage.getItem(prefKey(owner) + ".quiet") ?? "null");
+    return isQuietHours(saved) ? saved : null;
+  } catch { return null; }
+}
+export function saveQuietHours(owner: string, quiet: QuietHours | null) {
+  if (quiet) localStorage.setItem(prefKey(owner) + ".quiet", JSON.stringify(quiet));
+  else localStorage.removeItem(prefKey(owner) + ".quiet");
+}
+
 export function enabledSince(owner: string | null) {
   if (!owner) return 0;
   try {
@@ -82,7 +96,7 @@ export async function requestNotificationWorker() {
   return navigator.serviceWorker.ready;
 }
 
-export type DeviceNotice = { id: string; at: string; kind: string; date?: string };
+export type DeviceNotice = { id: string; at: string; kind: string; date?: string; slot?: string };
 
 function previewKey() {
   return noticePreferenceKey(new URL(appPath("/"), window.location.origin));
@@ -105,10 +119,36 @@ export async function clearFeaturePreview(owner: string) {
   if (await previewOwner() === owner) await setFeaturePreview(owner, false);
 }
 
-function display(worker: ServiceWorkerRegistration, kind: string, feature: boolean, tag: string, path: string) {
-  const text = noticeText(kind, feature);
+export async function syncWorkerDelivery(owner: string, action: "enable" | "disable" | "quiet", quiet = localQuietHours(owner)) {
+  if (typeof caches === "undefined") return;
+  const key = noticeDeliveryKey(new URL(appPath("/"), window.location.origin));
+  const write = async () => {
+    const cache = await caches.open(noticePreferenceCache);
+    const saved = await (await cache.match(key))?.json();
+    // A delayed settings response or cleanup from a previous user must not
+    // reactivate that user or silence the newly enrolled account.
+    if (action !== "enable" && saved?.enabled && saved.owner !== owner) return;
+    if (action === "quiet" && saved?.enabled === false) return;
+    const next = action === "disable" ? {enabled:false} : {enabled:true, owner, quiet};
+    await cache.put(key, new Response(JSON.stringify(next), {headers:{"Content-Type":"application/json"}}));
+  };
+  if (navigator.locks) await navigator.locks.request(key, write);
+  else await write();
+}
+
+export async function closeOwnerNotices(owner: string) {
+  const worker = await navigator.serviceWorker?.getRegistration(appPath("/"));
+  if (!worker?.getNotifications) return;
+  const notices = await worker.getNotifications();
+  await Promise.all(notices.map(async notice => {
+    if (await matchesNoticeOwner(owner, notice.data?.scope)) notice.close();
+  }));
+}
+
+function display(worker: ServiceWorkerRegistration, kind: string, feature: boolean, tag: string, path: string, scope?: string, ticket?: string | null) {
+  const text = noticeText(kind, feature, Boolean(ticket));
   return worker.showNotification(text.title, {body: text.body, tag, lang: "ko",
-    icon: appPath("/brand/rice-logo.png"), badge: appPath("/brand/notification-badge.png"), data: {url: appPath(path)}});
+    icon: appPath("/brand/rice-logo.png"), badge: appPath("/brand/notification-badge.png"), data: {url: appPath(path), ...(scope && {scope}), ...(ticket && {ticket})}});
 }
 
 /** Delivers only to the device whose user pressed the button. It never registers a subscription. */
@@ -119,7 +159,7 @@ export async function testDeviceNotice() {
   return true;
 }
 
-export async function showNewNotices(owner: string, notices: DeviceNotice[], active: () => boolean) {
+export async function showNewNotices(owner: string, notices: DeviceNotice[], active: () => boolean, cookerTicket?: (at:string) => Promise<string | null | undefined>) {
   const since = enabledSince(owner);
   if (!since || permissionState() !== "granted") return;
   const key = prefKey(owner) + ".seen";
@@ -129,9 +169,9 @@ export async function showNewNotices(owner: string, notices: DeviceNotice[], act
     if (Array.isArray(stored)) seen = stored.filter((id): id is string => typeof id === "string");
   } catch { /* Start a fresh list if older browser data is missing. */ }
   const now = Date.now();
-  const pending = notices.filter(({id, at}) => {
+  const pending = notices.filter(({id, at, kind}) => {
     const time = Date.parse(at);
-    return time > since && time <= now && !seen.includes(id);
+    return time > since && time <= now && (kind !== "cooker_signal" || now - time < 3600_000) && !seen.includes(id);
   });
   if (!pending.length) return;
   const worker = await navigator.serviceWorker.getRegistration(appPath("/"));
@@ -139,7 +179,18 @@ export async function showNewNotices(owner: string, notices: DeviceNotice[], act
   const feature = await previewOwner() === owner;
   for (const notice of pending) {
     if (!active() || enabledSince(owner) !== since || permissionState() !== "granted") return;
-    await display(worker, notice.kind, feature, notice.id, noticePath({...notice, tag: notice.id}));
+    const hours = notice.kind === "cooker_signal" ? localQuietHours(owner) : null;
+    if (untilQuiet(Date.parse(notice.at), hours) && untilQuiet(Date.now(), hours)) {
+      const scope = await scopedNotice(owner, crypto.randomUUID().replaceAll("-", ""));
+      const cooker = notice.kind === "cooker_signal";
+      const ticket = cooker ? await cookerTicket?.(notice.at).catch(() => null) : null;
+      if (!active() || enabledSince(owner) !== since) return;
+      // A local-only device can still announce the signal. An unavailable receipt
+      // opens the inbox rather than promising a potentially reassigned meal/date.
+      const path = cooker && !ticket ? "/alerts/" : noticePath({...notice, tag: notice.id});
+      if (!cooker || untilQuiet(Date.now(), localQuietHours(owner)))
+        await display(worker, notice.kind, feature, notice.id, path, scope, ticket);
+    }
     seen.push(notice.id);
     localStorage.setItem(key, JSON.stringify(seen.slice(-200)));
   }

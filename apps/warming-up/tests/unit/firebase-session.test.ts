@@ -3,7 +3,10 @@ import type { AccountProfile, FirebaseProvider, FirebaseUser, Household, Prefere
 
 const bridgeMock=vi.hoisted(()=>({connect:vi.fn(),smartThings:vi.fn(),cancelPending:vi.fn(),resetSteps:vi.fn()}));
 vi.mock('@/lib/steps/consent',()=>({resetSeniorStepsConsent:bridgeMock.resetSteps}));
-vi.mock('@/lib/firebase/smartthings',()=>({readSmartThingsConnection:bridgeMock.smartThings,cancelPendingSmartThings:bridgeMock.cancelPending}));
+vi.mock('@/lib/firebase/smartthings',async original=>({
+  ...await original<typeof import('@/lib/firebase/smartthings')>(),
+  readSmartThingsConnection:bridgeMock.smartThings,cancelPendingSmartThings:bridgeMock.cancelPending,
+}));
 vi.mock('@/lib/firebase/bridge',async original=>({
   ...await original<typeof import('@/lib/firebase/bridge')>(),
   connectFirebase:bridgeMock.connect,
@@ -74,6 +77,26 @@ afterEach(()=>{
 // Synthetic promises and Auth callbacks, with the production 12s timeout.
 // These tests do not claim browser, emulator, network or live account evidence.
 describe('Firebase account store asynchronous session isolation',()=>{
+  it('refreshes dated cooking on visible focus and rejects the previous owner’s in-flight history after an account change',async()=>{
+    const browser=Object.assign(new EventTarget(),{setInterval,clearInterval});
+    vi.stubGlobal('window',browser);
+    vi.stubGlobal('document',Object.assign(new EventTarget(),{visibilityState:'visible'}));
+    vi.setSystemTime(new Date('2026-11-26T20:00:00+09:00'));
+    const f=await fixture();
+    const spring={stage:'connected',device:{id:'owner-plug',label:'시험',isVirtual:false},powerNotice:{enabled:true,lastObservedAt:null}};
+    bridgeMock.smartThings.mockResolvedValue(spring);
+    await f.mount(); await f.emit(f.user('A'));
+    const report={...spring,mealRecords:{days:[{date:'2026-11-25',cook:1,confirmed:['dinner'],
+      windows:[{slot:'dinner',start:'18:00',end:'21:00'}]}]}};
+    bridgeMock.smartThings.mockResolvedValueOnce(report);
+    browser.dispatchEvent(new Event('focus')); await flush();
+    expect(f.snapshot().view?.slots).toEqual([{date:'2026-11-25',slot:'dinner',status:'confirmed',source:'cooker'}]);
+    const old=deferred<typeof report>(); bridgeMock.smartThings.mockReturnValueOnce(old.promise);
+    browser.dispatchEvent(new Event('focus')); await flush();
+    await f.emit(f.user('B')); old.resolve(report); await flush();
+    expect(f.snapshot().view?.slots).toEqual([]);
+    expect(f.snapshot().view?.stats).toEqual({});
+  });
   it('uses a due physical plug only once across visible views and shows the Samsung time without inventing a webhook or a meal',async()=>{
     const doc=Object.assign(new EventTarget(),{visibilityState:'visible'});
     vi.stubGlobal('document',doc);

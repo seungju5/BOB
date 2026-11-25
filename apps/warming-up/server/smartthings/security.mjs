@@ -120,6 +120,20 @@ export const TEAM_ORIGIN = 'https://warming-up-bapmunna.web.app';
 export const ACCOUNT_CONSENT = '2026-10-16';
 export const CONSENT = 'smartthings-read-2026-11-22';
 
+// Keep the invitation list inside the server. Unset keeps the previous admission
+// policy; an explicitly empty list pauses new households.
+function pilotAdmission(value) {
+  if (value === undefined) return undefined;
+  const invalid = 'SMARTTHINGS_PILOT_UIDS에는 서로 다른 Firebase UID를 최대 3개까지 쉼표로 구분해 입력해 주세요.';
+  if (typeof value !== 'string' || /[\u0000-\u001f\u007f]/u.test(value)) throw Error(invalid);
+  const uids = value === '' ? [] : value.split(',').map(uid => uid.trim());
+  const members = new Set(uids);
+  if (uids.length > 3 || members.size !== uids.length || uids.some(uid =>
+    uid.length > 128 || !/^[\p{L}\p{N}_.:|-]+$/u.test(uid) || uid === '.' || uid === '..' || /^__.*__$/u.test(uid)
+  )) throw Error(invalid);
+  return uid => members.has(uid);
+}
+
 export function readConfig(env = {}) {
   for (const declared of [env.FIREBASE_PROJECT_ID, env.GOOGLE_CLOUD_PROJECT, env.GCLOUD_PROJECT]) {
     if (declared && declared !== TEAM_PROJECT_ID) throw Error('Unexpected Firebase project.');
@@ -138,6 +152,7 @@ export function readConfig(env = {}) {
     secure: true,
     redirect: TEAM_ORIGIN + '/api/smartthings/callback',
     connectionEnabled: env.SMARTTHINGS_CONNECTION_ENABLED === 'true',
+    acceptsPilotUid: pilotAdmission(env.SMARTTHINGS_PILOT_UIDS),
     appId: env.SMARTTHINGS_APP_ID || '',
     clientId: env.SMARTTHINGS_CLIENT_ID || '',
     secret: env.SMARTTHINGS_CLIENT_SECRET || '',

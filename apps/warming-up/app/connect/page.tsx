@@ -51,7 +51,19 @@ export default function ConnectPage() {
       ? <p role="status" className="text-[16px]">{error || '내 계정을 확인하고 있어요…'}</p>
       : provider === 'firebase' && !view.seniorConsent && returnTo === '/tutorial'
         ? <BeforeHouseholdConsent />
-        : provider === 'firebase' ? <SmartThingsPanel showConsentLink /> : <SmartThingsAccountCard />}
+        : provider === 'firebase' ? <SmartThingsPanel showConsentLink /> : <>
+          <SmartThingsAccountCard />
+          <Link href="/login/?next=connect" className="flex min-h-12 items-center justify-center rounded-full bg-cocoa px-4 py-3 text-[16px] font-bold text-white">내 계정으로 플러그 연결하기</Link>
+        </>}
+    <details id="hejhome" className="rounded-2xl border border-line bg-paper px-4 text-cocoa">
+      <summary className="cursor-pointer py-4 text-[17px] font-bold">헤이홈 미니 플러그를 쓰시나요?</summary>
+      <ol className="ml-5 list-decimal space-y-2 text-[16px] leading-relaxed">
+        <li>헤이홈 앱에 플러그를 추가해요. 이미 등록했다면 그 기기를 열어 전력이 보이는지 확인해요.</li>
+        <li>SmartThings의 기기 추가에서 제휴사 ‘Hejhome(헤이홈)’을 찾아 같은 헤이홈 계정을 연결해요.</li>
+        <li>SmartThings에 나타난 플러그에서 전력(W)과 측정 시각을 확인해요. 밥뭇나에서 삼성 연결이 열리면 그 플러그를 선택해요.</li>
+      </ol>
+      <a href="https://hej.life/article/%EC%83%81%ED%92%88-qa/6/109236/" rel="noopener noreferrer" target="_blank" className="inline-flex min-h-12 items-center text-[16px] font-bold underline">헤이홈 공식 안내 <span className="sr-only">(새 창)</span></a>
+    </details>
     {returnTo && !needsLogin && !(returnTo === '/onboarding' && provider === 'firebase' && !view?.seniorConsent) &&
       <Link href={returnTo} className="flex min-h-12 items-center justify-center rounded-full border border-line px-4 py-3 text-[16px] font-bold text-cocoa">{returnTo === '/tutorial' ? '나중에 연결하고 앱 소개 보기' : returnTo === '/onboarding' ? '우리 집 설정 이어가기' : '홈으로 돌아가기'}</Link>}
   </main>;

@@ -24,6 +24,8 @@ vi.mock("@/lib/data/firebase", () => ({
 import { useApp } from "@/lib/data/useApp";
 import { useSenior } from "@/lib/data/senior";
 import { disablePush, enablePush, useAlertNotifications } from "@/lib/push";
+import {matchesNoticeOwner, scopedNotice} from "@/public/notification-content";
+import {closeOwnerNotices, saveQuietHours, showNewNotices} from "@/lib/push-device";
 import { createDemoState } from "@/lib/demo/state";
 import { toView } from "@/lib/demo/derive";
 
@@ -91,7 +93,8 @@ describe("출처에 따른 기기 저장소와 알림 격리", () => {
     live.alerts = [{...view.alerts[0], id:"a-new-alert", triggeredAt:new Date().toISOString()}];
     useAlertNotifications(live, "parent:2");
     await vi.waitFor(() => expect(display).toHaveBeenCalledTimes(1));
-    expect(display).toHaveBeenCalledWith("밥뭇나", expect.objectContaining({body: "워밍이가 새 소식을 가져왔어요. 앱에서 확인해 주세요.", tag:"a-new-alert", data:{url:"/alerts/#notice-a-new-alert"}}));
+    expect(display).toHaveBeenCalledWith("밥뭇나", expect.objectContaining({body: "워밍이가 새 소식을 가져왔어요. 앱에서 확인해 주세요.", tag:"a-new-alert", data:{url:"/alerts/#notice-a-new-alert", scope:expect.any(String)}}));
+    expect(await matchesNoticeOwner("parent", display.mock.calls[0][1].data.scope)).toBe(true);
   });
 
   it("only shows new real cooker signals for the opted-in account until it turns them off", async () => {
@@ -114,5 +117,20 @@ describe("출처에 따른 기기 저장소와 알림 격리", () => {
     live.plug.powerNoticeAt = new Date().toISOString();
     useAlertNotifications(live, "parent:3");
     await vi.waitFor(() => expect(display).toHaveBeenCalledTimes(1));
+  });
+
+  it("never replays a locally muted signal and closes only the retiring account's notifications",async()=>{
+    vi.setSystemTime(new Date("2026-11-25T15:01:00Z"));
+    await enablePush("live","guardian-a"); vi.advanceTimersByTime(1000);
+    const notices=[{at:new Date().toISOString(),kind:"cooker_signal",id:"muted"}];
+    saveQuietHours("guardian-a",{start:"22:00",end:"07:00"});
+    await showNewNotices("guardian-a",notices,()=>true);
+    saveQuietHours("guardian-a",null);
+    await showNewNotices("guardian-a",notices,()=>true);
+    expect(display).not.toHaveBeenCalled();
+    const cards=await Promise.all(["guardian-a","guardian-b"].map(async owner=>({close:vi.fn(),data:{scope:await scopedNotice(owner,"d".repeat(32))}})));
+    registration.mockResolvedValueOnce({showNotification:display,getNotifications:async()=>cards} as Awaited<ReturnType<typeof registration>>);
+    await closeOwnerNotices("guardian-a");
+    expect(cards[0].close).toHaveBeenCalledOnce();expect(cards[1].close).not.toHaveBeenCalled();
   });
 });

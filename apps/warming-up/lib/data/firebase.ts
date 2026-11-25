@@ -3,10 +3,11 @@
 import { useEffect, useSyncExternalStore } from 'react';
 import { resetSeniorStepsConsent } from '@/lib/steps/consent';
 import { ALERT_DEFAULTS } from '@/config/detection';
+import { kstDate } from '@/lib/judge/time';
 import { accountError, ACCOUNT_CONSENT_VERSION, connectFirebase, within, type AccountProfile, type FirebaseUser, type Household, type Preferences, type SavedPreferences } from '@/lib/firebase/bridge';
 import { DEFAULT_WINDOWS, type AppActions, type AppView, type OnboardingPatch } from './view';
 import { assertOnboardingConsent } from './consent';
-import { cancelPendingSmartThings, readSmartThingsConnection, type SmartThingsConnection } from '@/lib/firebase/smartthings';
+import { cancelPendingSmartThings, readCookerMealRecords, readSmartThingsConnection, type SmartThingsConnection } from '@/lib/firebase/smartthings';
 
 type State = { user: FirebaseUser|null|undefined; profile: AccountProfile|null; saved: SavedPreferences|null; connection:SmartThingsConnection|null; view: AppView|null; error:string|null; loading:boolean; operator:boolean; revision:number };
 const EMPTY: State = {user:undefined,profile:null,saved:null,connection:null,view:null,error:null,loading:true,operator:false,revision:0};
@@ -63,11 +64,22 @@ function connectionPlug(connection: SmartThingsConnection | null, consent: boole
 }
 export function firebaseView(saved:SavedPreferences,connection:SmartThingsConnection|null=null,at=Date.now()):AppView {
   const p=saved.settings??defaultPreferences(),h=saved.household;
+  const records = p.preparationAcknowledged && connection?.stage === 'connected' && connection.device?.isVirtual === false &&
+    typeof connection.device.id === 'string' && connection.device.id.trim() &&
+    connection.powerNotice?.enabled ? readCookerMealRecords(connection.mealRecords, at) : null;
+  const plug = connectionPlug(connection,p.preparationAcknowledged,at);
+  const observedDate = plug.powerNoticeAt && kstDate(new Date(plug.powerNoticeAt));
   return {mode:'live',dataSource:'firebase',careAvailable:false,onboardingStep:h?p.onboardingStep:Math.min(p.onboardingStep,3),
     senior:{name:h?.alias??'',relation:h?.relation==='other'&&p.relationLabel?p.relationLabel:relationLabels[h?.relation??'mother'],phone:p.phone},household:{residentCount:h?.residentCount??1,hasPet:h?.hasPet??false},
     mealProfile:{windows:p.windows,eatOutPerWeek:p.eatOutPerWeek,usesKeepWarm:p.usesKeepWarm,cooksPerWeek:p.cooksPerWeek},
     alertSettings:{missedMealsThreshold:p.missedMealsThreshold,fastingHours:p.fastingHours,emergencyHours:p.emergencyHours},seniorConsent:p.preparationAcknowledged,
-    plug:connectionPlug(connection,p.preparationAcknowledged,at),pairingCode:null,seniorPaired:false,slots:[],stats:{},lastCookerAt:null,lastActivityAt:null,absences:[],alerts:[]};
+    plug,pairingCode:null,seniorPaired:false,slots:records?.days.flatMap(day => day.confirmed.map(slot => ({
+      date:day.date,slot,status:'confirmed' as const,source:'cooker' as const,
+    }))) ?? [],
+    stats:Object.fromEntries(records?.days.map(day => [day.date,{cook:day.cook,lid:null}]) ?? []),
+    ...(records && {cookerMealDays:Object.fromEntries(records.days.map(day => [day.date,day.windows]))}),
+    lastCookerAt:observedDate && records?.days.some(day => day.date === observedDate) ? plug.powerNoticeAt! : null,
+    lastActivityAt:null,absences:[],alerts:[]};
 }
 function cancelStatusRequest() {
   statusRequest?.abort();
@@ -93,6 +105,7 @@ export function updateFirebaseConnection(uid: string, result: SmartThingsConnect
   if (result.stage === 'connected') {
     if (typeof result.device?.id === 'string' && result.device.id.trim()) {
       const now = Date.now();
+      const mealRecords = result.device.isVirtual === false && result.powerNotice?.enabled ? readCookerMealRecords(result.mealRecords, now) : null;
       connection = {
         stage: 'connected',
         device: { id: result.device.id, label: result.device.label, ...(typeof result.device.isVirtual === 'boolean' && {isVirtual: result.device.isVirtual}) },
@@ -103,6 +116,7 @@ export function updateFirebaseConnection(uid: string, result: SmartThingsConnect
         ...(result.device.isVirtual !== true && result.powerNotice?.enabled && {
           powerNotice: {enabled: true, lastObservedAt: checkedTimestamp(result.powerNotice.lastObservedAt, now)},
         }),
+        ...(mealRecords && {mealRecords}),
         ...(result.device.isVirtual === false && result.powerNotice?.enabled && result.powerChecks && {
           powerChecks: {nextAt: result.powerChecks.nextAt, checkedAt: checkedTimestamp(result.powerChecks.checkedAt, now),
             measuredAt: checkedTimestamp(result.powerChecks.measuredAt, now)},
@@ -193,6 +207,15 @@ export async function refreshFirebaseAccount() {
   const at=epoch,user=await within(p.refreshUser());
   if(epoch===at)await observeUser(user);
 }
+function readVisibleSignal() {
+  const uid = state.user?.uid;
+  if (document.visibilityState !== 'visible' || !uid || uid !== pollableUid || statusRequest ||
+      !canReadConnection(uid, state.revision)) return;
+  const connection = state.connection;
+  const due = connection?.stage === 'connected' && connection.device?.isVirtual === false &&
+    connection.powerChecks && connection.powerChecks.nextAt <= Date.now();
+  void refreshFirebaseConnection(uid, state.revision, due ? connection.device?.id : undefined);
+}
 export function useFirebaseAccount(enabled=true) {
   const snapshot=useSyncExternalStore(subscribe,()=>state,()=>EMPTY);
   useEffect(()=>{
@@ -201,21 +224,18 @@ export function useFirebaseAccount(enabled=true) {
     if (typeof window === 'undefined' || typeof window.setInterval !== 'function') return;
     // The minute tick refreshes the team summary. Only an opted-in physical
     // plug that is due can also trigger the server's ten-minute Samsung check.
-    const readVisibleSignal = () => {
-      const uid = state.user?.uid;
-      if (document.visibilityState === 'visible' && uid && uid === pollableUid && !statusRequest &&
-          canReadConnection(uid, state.revision)) {
-        const connection = state.connection;
-        const due = connection?.stage === 'connected' && connection.device?.isVirtual === false &&
-          connection.powerChecks && connection.powerChecks.nextAt <= Date.now();
-        void refreshFirebaseConnection(uid, state.revision, due ? connection.device?.id : undefined);
-      }
-    };
-    if (++signalObservers === 1) signalTimer = window.setInterval(readVisibleSignal, 60000);
+    if (++signalObservers === 1) {
+      signalTimer = window.setInterval(readVisibleSignal, 60000);
+      window.addEventListener('focus', readVisibleSignal);
+      document.addEventListener('visibilitychange', readVisibleSignal);
+      readVisibleSignal();
+    }
     return () => {
       if (--signalObservers === 0 && signalTimer !== null) {
         window.clearInterval(signalTimer);
         signalTimer = null;
+        window.removeEventListener('focus', readVisibleSignal);
+        document.removeEventListener('visibilitychange', readVisibleSignal);
       }
     };
   },[enabled]);

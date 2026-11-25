@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useLayoutEffect, useReducer, useRef, useState } from "react";
+import { useLayoutEffect, useReducer, useRef, useState, useSyncExternalStore } from "react";
 import { fmtDateLong, fmtMonthDay, StatusIcon } from "@/components/guardian";
 import { MealStatusChip, MealStatusLegend } from "@/components/MealStatus";
 import { PageHeader, Skeleton } from "@/components/ui";
@@ -14,9 +14,14 @@ import { careDataAvailable, mealDaySummary, type AppView } from "@/lib/data/view
 import { demoPowerTranscript } from "@/lib/power/power-transcription-model";
 import { PowerTranscriptionSection } from "@/components/power/PowerTranscriptionSection";
 import { PowerNotice } from "@/components/SmartThingsAccountCard";
-import { noticeDay } from "@/public/notification-content";
+import { noticeDay, noticeSlot } from "@/public/notification-content";
 
 const RANGES = [{ id: "day", label: "일" }, { id: "week", label: "주" }, { id: "month", label: "월" }] as const;
+
+function listenRecordLink(refresh: () => void) {
+  window.addEventListener("popstate", refresh);
+  return () => window.removeEventListener("popstate", refresh);
+}
 
 export default function RecordsPage() {
   const { view, now } = useApp();
@@ -24,15 +29,21 @@ export default function RecordsPage() {
   const { range, date: selectedDate, openedFrom } = selection;
   const sectionRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
-  const pendingFocus = useRef<"title" | "date" | null>(null);
+  const pendingFocus = useRef<"title" | "date" | "linkedDay" | "meal" | null>(null);
   const today = now ? kstDate(now) : null;
   const launchDay = useRef<string | null>(null);
+  const search = useSyncExternalStore(listenRecordLink, () => location.search, () => "");
+  const query = new URLSearchParams(search);
+  const linkedDate = noticeDay(query.get("day"));
+  const linkedSlot = noticeSlot(query.get("slot"));
   useLayoutEffect(() => {
-    const day = noticeDay(new URLSearchParams(location.search).get("day"));
-    if (!today || !day || day > today || launchDay.current === day) return;
-    launchDay.current = day;
-    navigate({type: "day", date: day});
-  }, [today]);
+    if (!today || !linkedDate || linkedDate > today) return;
+    const target = linkedDate + "/" + (linkedSlot ?? "");
+    if (launchDay.current === target) return;
+    launchDay.current = target;
+    pendingFocus.current = linkedSlot ? "meal" : "linkedDay";
+    navigate({type: "day", date: linkedDate});
+  }, [today, linkedDate, linkedSlot]);
   const anchor = selectedDate ?? today;
   const period = anchor ? recordPeriod(anchor, range) : null;
   const currentPeriod = today ? recordPeriod(today, range) : null;
@@ -56,14 +67,17 @@ export default function RecordsPage() {
   useLayoutEffect(() => {
     const focus = pendingFocus.current;
     if (!focus || !anchor || !titleRef.current) return;
+    if ((focus === "meal" || focus === "linkedDay") && (range !== "day" || anchor !== linkedDate)) return;
+    const meal = focus === "meal" ? sectionRef.current?.querySelector<HTMLElement>("[data-notice-meal]") : null;
+    if (focus === "meal" && view?.mode === "live" && view.seniorConsent && !meal && !view.cookerMealDays) return;
     pendingFocus.current = null;
     const calendarDate = focus === "date"
       ? sectionRef.current?.querySelector<HTMLButtonElement>(`[data-record-date="${anchor}"]`)
       : null;
-    (calendarDate ?? titleRef.current).focus({ preventScroll: true });
-    if (calendarDate) calendarDate.scrollIntoView({ block: "center", inline: "nearest" });
+    (meal ?? calendarDate ?? titleRef.current).focus({ preventScroll: true });
+    if (meal || calendarDate) (meal ?? calendarDate)?.scrollIntoView({ block: "center", inline: "nearest" });
     else sectionRef.current?.scrollIntoView({ block: "start" });
-  }, [selection, anchor]);
+  }, [selection, range, anchor, linkedDate, view]);
 
   const demoTranscript = demoPowerTranscript(view);
   const noCareData = view && !careDataAvailable(view) && !view.slots.length && !Object.keys(view.stats).length;
@@ -114,7 +128,7 @@ export default function RecordsPage() {
               <div key={`${range}:${period.from}`} className={range === "day" ? "mt-2 animate-rise" : "mt-2"}>
                 <section aria-labelledby="meal-status-heading" className="rounded-[1.75rem] border border-line p-4">
                   <h2 id="meal-status-heading" className="text-[17px] font-bold text-cocoa">끼니 상태</h2>
-                  {range === "day" ? <DayMeals view={view} date={anchor} now={now} /> : range === "week" ? <WeekMeals view={view} dates={period.dates} now={now} onOpenDay={openDay} /> : <MonthGrid view={view} dates={period.dates} now={now} onOpenDay={openDay} />}
+                  {range === "day" ? <DayMeals view={view} date={anchor} now={now} highlight={linkedDate === anchor && view.mode === "live" && view.seniorConsent && view.cookerMealDays?.[anchor]?.some(w => w.slot === linkedSlot) ? linkedSlot : null} /> : range === "week" ? <WeekMeals view={view} dates={period.dates} now={now} onOpenDay={openDay} /> : <MonthGrid view={view} dates={period.dates} now={now} onOpenDay={openDay} />}
                 </section>
                 {range === "month" ? <MonthLegend /> : <MealStatusLegend />}
                 <p className="mt-2 text-[12px] leading-relaxed text-muted">소식 확인은 밥솥 사용이나 어르신의 외식 알림을 뜻해요. 실제 식사·건강 상태의 판단은 아니에요.</p>
@@ -129,15 +143,16 @@ export default function RecordsPage() {
   );
 }
 
-function DayMeals({ view, date, now }: { view: AppView; date: string; now: Date }) {
+function DayMeals({ view, date, now, highlight }: { view: AppView; date: string; now: Date; highlight: string | null }) {
   const slots = datedMealSlots(view, date, now);
   if (!slots.length) return <p className="py-5 text-[15px] text-muted">이날의 끼니 기록이 없어요.</p>;
-  return <ul className="mt-3 flex flex-col gap-2">{slots.map((slot) => (
-    <li key={slot.slot} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-line px-4 py-4">
+  return <ul className="mt-3 flex flex-col gap-2">{slots.map((slot) => {
+    const match = slot.slot === highlight && slot.status === "confirmed" && slot.source === "cooker";
+    return <li key={slot.slot} tabIndex={-1} data-notice-meal={match || undefined} className={'flex flex-wrap items-center justify-between gap-2 rounded-2xl border px-4 py-4 ' + (match ? "border-cocoa bg-butter-soft" : "border-line")}>
       <span className="text-[16px] font-bold text-cocoa">{slot.label}</span>
       <MealStatusChip status={slot.status} />
-    </li>
-  ))}</ul>;
+    </li>;
+  })}</ul>;
 }
 
 function WeekMeals({ view, dates, now, onOpenDay }: { view: AppView; dates: string[]; now: Date; onOpenDay: (date: string) => void }) {
@@ -190,16 +205,21 @@ function MonthLegend() {
   return <div aria-label="하루 확인 비율 범례" className="mt-4 flex flex-wrap gap-2">{(["all", "half", "low", "pending", "away", "empty"] as const).map((tone) => <span key={tone} className={`rounded-full px-3 py-1.5 text-[12px] font-semibold ${mealDayClass(tone, palette)}`}>{MEAL_DAY_LABEL[tone]}</span>)}</div>;
 }
 
+function usageText(stats: {cook:number; lid:number | null}) {
+  return `취사 ${stats.cook}회 · 뚜껑 열림 ${stats.lid === null ? "미측정" : stats.lid + "회"}`;
+}
+
 function CookerUsage({ view, dates, now, day, onOpenDay }: { view: AppView; dates: string[]; now: Date; day: boolean; onOpenDay: (date: string) => void }) {
   const [selected, setSelected] = useState<string | null>(null);
   const today = kstDate(now);
   const knownDates = dates.filter((date) => date <= today && view.stats[date]);
-  const max = Math.max(3, ...knownDates.map((date) => view.stats[date].cook + view.stats[date].lid));
-  const totals = knownDates.reduce((sum, date) => ({ cook: sum.cook + view.stats[date].cook, lid: sum.lid + view.stats[date].lid }), { cook: 0, lid: 0 });
+  const max = Math.max(3, ...knownDates.map((date) => view.stats[date].cook + (view.stats[date].lid ?? 0)));
+  const totals = knownDates.reduce((sum, date) => ({ cook: sum.cook + view.stats[date].cook, lid: sum.lid + (view.stats[date].lid ?? 0) }), { cook: 0, lid: 0 });
+  const lidUnmeasured = knownDates.some(date => view.stats[date].lid === null);
   const selectedStats = selected ? view.stats[selected] : null;
   return <section aria-labelledby="cooker-use-heading" className="mt-6 rounded-[1.75rem] border border-line p-4">
     <h2 id="cooker-use-heading" className="text-[17px] font-bold text-cocoa">밥솥 사용</h2>
-    <div className="mt-3 grid grid-cols-2 gap-3"><Stat label="취사" value={knownDates.length ? totals.cook : null} /><Stat label="뚜껑 열림" value={knownDates.length ? totals.lid : null} /></div>
+    <div className="mt-3 grid grid-cols-2 gap-3"><Stat label="취사" value={knownDates.length ? totals.cook : null} /><Stat label="뚜껑 열림" value={knownDates.length && !lidUnmeasured ? totals.lid : null} missing={lidUnmeasured ? "미측정" : "기록 없음"} /></div>
     {!day ? <>
       <p className="mt-4 text-sm text-muted">막대를 누르면 그날의 기록이 열려요.</p>
       <div className="mt-2 overflow-x-auto pb-2">
@@ -207,23 +227,23 @@ function CookerUsage({ view, dates, now, day, onOpenDay }: { view: AppView; date
           {dates.map((date) => {
             const stats = date <= today ? view.stats[date] : null;
             const future = date > today;
-            const label = `${fmtDateLong(date)} ${stats ? `취사 ${stats.cook}회, 뚜껑 열림 ${stats.lid}회` : future ? "아직 오지 않은 날" : "기록 없음"}`;
+            const label = `${fmtDateLong(date)} ${stats ? usageText(stats) : future ? "아직 오지 않은 날" : "기록 없음"}`;
             return <button key={date} type="button" disabled={future} onClick={() => onOpenDay(date)} onFocus={() => setSelected(date)} onPointerEnter={() => { if (!future) setSelected(date); }} aria-label={future ? label : `${label}. 하루 기록 보기`} className={`flex min-w-10 flex-1 flex-col rounded-lg px-1 pt-1 disabled:opacity-30 ${selected === date ? "ring-2 ring-cocoa" : "hover:bg-butter-soft"}`}>
               <span className="flex w-full flex-1 flex-col justify-end gap-0.5" aria-hidden="true">
-                {stats && stats.cook + stats.lid > 0 ? <><span className="min-h-0 rounded-t-md bg-butter-deep/45" style={{ height: `${stats.lid / max * 100}%` }} /><span className={`bg-butter-deep ${stats.lid ? "" : "rounded-t-md"}`} style={{ height: `${stats.cook / max * 100}%` }} /></> : <span className="mb-1 text-[12px] text-muted">{stats ? "0" : "–"}</span>}
+                {stats && stats.cook + (stats.lid ?? 0) > 0 ? <>{stats.lid !== null && <span className="min-h-0 rounded-t-md bg-butter-deep/45" style={{ height: `${stats.lid / max * 100}%` }} />}<span className={`bg-butter-deep ${stats.lid ? "" : "rounded-t-md"}`} style={{ height: `${stats.cook / max * 100}%` }} /></> : <span className="mb-1 text-[12px] text-muted">{stats ? "0" : "–"}</span>}
               </span>
               <span className="py-2 text-[11px] text-muted">{fmtMonthDay(date)}</span>
             </button>;
           })}
         </div>
       </div>
-      <p role="status" className="mt-3 min-h-11 rounded-xl bg-butter-soft px-3 py-3 text-[13px] text-cocoa">{selected ? `${fmtDateLong(selected)} · ${selectedStats ? `취사 ${selectedStats.cook}회 · 뚜껑 열림 ${selectedStats.lid}회` : "기록 없음"}` : "막대에 마우스를 올리거나 키보드로 선택하면 횟수를 볼 수 있어요."}</p>
+      <p role="status" className="mt-3 min-h-11 rounded-xl bg-butter-soft px-3 py-3 text-[13px] text-cocoa">{selected ? `${fmtDateLong(selected)} · ${selectedStats ? usageText(selectedStats) : "기록 없음"}` : "막대에 마우스를 올리거나 키보드로 선택하면 횟수를 볼 수 있어요."}</p>
       <div className="mt-3 flex flex-wrap gap-4 text-[12px] text-muted"><span className="flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-sm bg-butter-deep" />취사</span><span className="flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-sm bg-butter-deep/45" />뚜껑 열림</span></div>
     </> : null}
     {!knownDates.length ? <p className="mt-3 text-[13px] text-muted">이 기간에는 수신된 밥솥 사용 기록이 없어요.</p> : knownDates.length < dates.filter((date) => date <= today).length ? <p className="mt-3 text-[12px] text-muted">수신된 {knownDates.length}일의 사용 횟수만 합산했어요. 기록 없는 날은 0회로 판단하지 않아요.</p> : null}
   </section>;
 }
 
-function Stat({ label, value }: { label: string; value: number | null }) {
-  return <div className="rounded-2xl bg-butter-soft px-4 py-4"><p className="text-[13px] text-cocoa/70">{label}</p><p className="mt-1 text-[28px] font-extrabold text-cocoa">{value ?? "–"}{value !== null ? <span className="ml-0.5 text-[15px] font-bold">회</span> : <span className="ml-1 text-[12px] font-medium">기록 없음</span>}</p></div>;
+function Stat({ label, value, missing = "기록 없음" }: { label: string; value: number | null; missing?: string }) {
+  return <div className="rounded-2xl bg-butter-soft px-4 py-4"><p className="text-[13px] text-cocoa/70">{label}</p><p className="mt-1 text-[28px] font-extrabold text-cocoa">{value ?? "–"}{value !== null ? <span className="ml-0.5 text-[15px] font-bold">회</span> : <span className="ml-1 text-[12px] font-medium">{missing}</span>}</p></div>;
 }

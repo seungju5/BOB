@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { IconChart, IconCooker, IconHeart } from "@/components/icons";
 import { previewOwner, setFeaturePreview } from "@/lib/push-device";
 import { noticeText } from "@/public/notification-content";
 import { appPath } from "@/lib/app-path";
 
 const examples = [
-  { kind: "cooker_signal", label: "밥솥 소식", target: "그날의 일별 기록", Icon: IconCooker },
+  { kind: "cooker_signal", label: "밥솥 소식", target: "그날의 기록 · 연결된 끼니가 있으면 그 끼니", Icon: IconCooker },
   { kind: "help_request", label: "받은 안부", target: "해당 안부가 있는 알림함", Icon: IconHeart },
   { kind: "weekly_report", label: "주간 리포트", target: "한 주 패턴 리포트", Icon: IconChart },
 ] as const;
@@ -48,7 +49,7 @@ export function NoticePreview({owner, enabled, demo}: {owner: string | null; ena
       </div>
       <div aria-live="polite" aria-atomic="true" className="mt-3">
         <div className="flex items-center gap-3 rounded-2xl border border-line bg-paper p-3.5 shadow-sm">
-          <span aria-hidden="true" className="grid h-12 w-12 shrink-0 place-items-center rounded-[14px] bg-butter"><img src={appPath("/brand/rice-logo.png")} alt="" width="38" height="38"/></span>
+          <span aria-hidden="true" className="grid h-12 w-12 shrink-0 place-items-center rounded-[14px] bg-butter"><Image src={appPath("/brand/rice-logo.png")} alt="" width={38} height={38}/></span>
           <div className="min-w-0"><p className="text-[16px] font-bold leading-snug">{message.title}</p>
           <p className="mt-1 text-[14px] leading-snug">{message.body}</p></div>
         </div>

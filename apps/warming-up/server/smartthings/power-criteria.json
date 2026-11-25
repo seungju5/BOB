@@ -4,5 +4,7 @@
   "maxGapMinutes": 3,
   "readingIntervalMinutes": 1,
   "mergeGapMinutes": 10,
-  "noticeConsentVersion": "cooker-power-notice-v2"
+  "noticeConsentVersion": "cooker-power-notice-v2",
+  "mealRecordConsentVersion": "cooker-meal-days-v1",
+  "mealRecordDays": 35
 }

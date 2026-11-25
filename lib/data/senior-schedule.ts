@@ -3,8 +3,8 @@ import type { MealSlotName, MealWindow } from "../judge/types.ts";
 
 export type SeniorWhen = { meal?: { date: string; slot: MealSlotName }; startDate?: string };
 
-export const SLOT_LABEL = { breakfast: "첫 끼", lunch: "두 끼", dinner: "세 끼", fourth: "네 끼" } as const;
-const ORDINAL_LABELS = ["첫 끼", "두 끼", "세 끼", "네 끼"] as const;
+export const SLOT_LABEL = { breakfast: "첫 끼", lunch: "두 끼", dinner: "세 끼", fourth: "네 끼", fifth: "다섯 끼" } as const;
+const ORDINAL_LABELS = ["첫 끼", "두 끼", "세 끼", "네 끼", "다섯 끼"] as const;
 
 export function mealSlotLabel(slot: MealSlotName, windows: Pick<MealWindow, "slot">[]) {
   const index = windows.findIndex((window) => window.slot === slot);

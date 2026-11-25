@@ -6,6 +6,7 @@
 //   { op: "back", token }           부재를 어제로 끝냄
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { resolveMealChoice } from "@/lib/data/senior-schedule.ts";
+import { mealWindowsOn, validMealWindows } from "@/lib/judge/resolveMealSlots.ts";
 import type { MealWindow } from "@/lib/judge/types.ts";
 import { addDays, kstDate } from "@/lib/judge/time.ts";
 import { cors, db, json, must, recomputeDay, refreshActivity, sha256 } from "@/_shared/core.ts";
@@ -13,13 +14,13 @@ import { pushAlerts, type SentAlert } from "@/_shared/push.ts";
 
 type SeniorRequest = { op?: string; code?: string; token?: string; days?: number; includeSchedule?: boolean; meal?: unknown; startDate?: unknown };
 
-async function mealSchedule(h: string): Promise<MealWindow[]> {
-  const profile = must(await db.from("meal_profiles").select("meal_windows").eq("household_id", h).single());
-  const windows: MealWindow[] = Array.isArray(profile?.meal_windows) ? profile.meal_windows : [];
-  const clock = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
-  return windows.filter(w => w && ["breakfast", "lunch", "dinner", "fourth"].includes(w.slot) &&
-    clock.test(w.start) && clock.test(w.end) && w.start < w.end)
-    .map(({slot, start, end}) => ({slot, start, end}));
+async function mealSchedule(h: string, today: string) {
+  const profile = must(await db.from("meal_profiles").select("*").eq("household_id", h).single());
+  const current = profile?.meal_windows;
+  if (!validMealWindows(current)) throw new Error("Invalid household meal schedule");
+  const previous = mealWindowsOn(addDays(today, -1), current, profile.window_history);
+  if (!validMealWindows(previous)) throw new Error("Invalid previous meal schedule");
+  return { mealWindows: current, yesterdayMealWindows: previous };
 }
 
 type Device = { id: string; household_id: string };
@@ -108,10 +109,10 @@ Deno.serve(async (req) => {
         )) as { start_date: string; end_date: string }[];
         // Older web clients receive the original response shape. The new badge
         // only describes a physical meter the household has actually observed.
-        let schedule: {scheduledActions: true; mealWindows: MealWindow[]; cookerObserved: boolean} | undefined;
+        let schedule: {scheduledActions: true; mealWindows: MealWindow[]; yesterdayMealWindows: MealWindow[]; cookerObserved: boolean} | undefined;
         let lastCookerAt = house.last_cooker_at;
         if (body.includeSchedule === true) {
-          const mealWindows = await allowed(() => mealSchedule(h));
+          const windows = await allowed(() => mealSchedule(h, today));
           const meterRead = await allowed(async () => await db.from("smart_plugs")
             .select("meter_kind, observing_since, last_reading_at").eq("household_id", h).maybeSingle());
           const legacy = meterRead.error?.code === "42703" || meterRead.error?.code === "PGRST204";
@@ -120,7 +121,7 @@ Deno.serve(async (req) => {
           const measured = Date.parse(meter?.last_reading_at ?? "");
           const cookerObserved = meter?.meter_kind === "recognized" && measured >= since && measured <= now.getTime();
           if (!cookerObserved || Date.parse(lastCookerAt ?? "") < since) lastCookerAt = null;
-          if (!legacy) schedule = {scheduledActions: true, mealWindows, cookerObserved};
+          if (!legacy) schedule = {scheduledActions: true, ...windows, cookerObserved};
         }
         return json({
           ...schedule,
@@ -134,8 +135,9 @@ Deno.serve(async (req) => {
       case "selected_meal":
       case "help": {
         if (body.op === "selected_meal" || (body.op === "eat_out" && body.meal !== undefined)) {
-          const windows = await allowed(() => mealSchedule(h));
-          const meal = resolveMealChoice(body.meal, windows, now);
+          const schedule = await allowed(() => mealSchedule(h, today));
+          const previous = typeof body.meal === "object" && body.meal !== null && "date" in body.meal && body.meal.date === addDays(today, -1);
+          const meal = resolveMealChoice(body.meal, previous ? schedule.yesterdayMealWindows : schedule.mealWindows, now);
           if (!meal) return json({error: "오늘 또는 어제의 이미 시작한 끼니를 골라 주세요."}, 400);
           const noticeId = await allowed(async () => scheduledResult(await db.rpc("record_selected_senior_meal", {
             h, selected_date: meal.date, selected_slot: meal.slot, selected_label: meal.label, recorded_at: meal.at.toISOString(),

@@ -4,6 +4,7 @@
 
 import { useEffect, useSyncExternalStore } from "react";
 import { FunctionsHttpError } from "@supabase/supabase-js";
+import { validMealWindows } from "@/lib/judge/resolveMealSlots";
 import { addDays, kstDate } from "@/lib/judge/time";
 import type { AlertPayload, AlertType, MealSlot, MealWindow } from "@/lib/judge/types";
 import { supabase } from "@/lib/supabase";
@@ -127,6 +128,7 @@ async function load(startedAt: number, generation: number) {
     },
     senior: { name: H.senior_name, relation: H.senior_relation, phone: H.senior_phone },
     household: { residentCount: H.resident_count, hasPet: H.has_pet },
+    mealScheduleHistory: P.window_history,
     mealProfile: {
       windows: P.meal_windows as MealWindow[],
       eatOutPerWeek: P.eat_out_per_week,
@@ -232,10 +234,19 @@ async function act(fn: (h: string) => Promise<unknown>, requireConsent = false) 
 
 const db = () => supabase();
 
+function assertMealSchedule(windows: MealWindow[]) {
+  if (!validMealWindows(windows)) throw new Error("끼니 수와 겹치지 않는 시간대를 확인해 주세요.");
+  // Before migration 0009 the profile JSON accepts five entries but the meal table and senior RPC reject the fifth.
+  if (windows.length === 5 && !Array.isArray(state.view?.mealScheduleHistory)) {
+    throw new Error("다섯 끼는 서버 업데이트 후 저장할 수 있어요.");
+  }
+}
+
 export const liveActions: AppActions = {
   saveOnboarding: (step, patch = {}) =>
     act(async (h) => {
       assertOnboardingConsent({ onboardingStep: state.view?.onboardingStep ?? 1, seniorConsent: state.view?.seniorConsent ?? false }, step, patch);
+      if (patch.mealProfile) assertMealSchedule(patch.mealProfile.windows);
       const saved = await db().rpc("save_household_setup", { h, next_step: step, patch });
       if (!saved.error) return;
       // A project that still has the original schema keeps its existing save path.
@@ -309,7 +320,10 @@ export const liveActions: AppActions = {
   saveAlertSettings: (alertSettings) =>
     liveActions.saveOnboarding(state.view?.onboardingStep ?? 8, { alertSettings }),
 
-  saveWindows: (w) => act(async (h) => must(await db().from("meal_profiles").update({ meal_windows: w, meals_per_day: w.length }).eq("household_id", h)), true),
+  saveWindows: (windows) => act(async h => {
+    assertMealSchedule(windows);
+    return must(await db().from("meal_profiles").update({ meal_windows: windows, meals_per_day: windows.length }).eq("household_id", h));
+  }, true),
 
   saveSenior: (s) =>
     act(async (h) => {

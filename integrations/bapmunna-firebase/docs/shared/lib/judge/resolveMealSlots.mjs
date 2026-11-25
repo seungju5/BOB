@@ -1,5 +1,31 @@
 // GENERATED from lib/judge/resolveMealSlots.ts. Run npm run sync:firebase at repository root.
 import { kstDate, kstDateTime } from "./time.mjs";
+import { MEAL_SLOT_NAMES } from "./types.mjs";
+export function validMealWindows(value) {
+    if (!Array.isArray(value) || value.length < 1 || value.length > MEAL_SLOT_NAMES.length)
+        return false;
+    const slots = new Set();
+    const clock = /^(?:[01][0-9]|2[0-3]):[0-5][0-9]$/;
+    let end = "";
+    for (const window of value) {
+        if (!window || Object.keys(window).length !== 3 || !Object.hasOwn(window, "slot") || !Object.hasOwn(window, "start")
+            || !Object.hasOwn(window, "end") || !MEAL_SLOT_NAMES.includes(window.slot) || slots.has(window.slot)
+            || typeof window.start !== "string" || typeof window.end !== "string"
+            || !clock.test(window.start) || !clock.test(window.end) || window.start < end || window.start >= window.end)
+            return false;
+        slots.add(window.slot);
+        end = window.end;
+    }
+    return true;
+}
+/** The former schedule covers completed KST days; edits apply on the day they are made. */
+export function mealWindowsOn(date, current, history = []) {
+    return history.find(change => date <= change.through)?.windows ?? current;
+}
+/** Days before the first saved change can contain records from earlier, unknown settings. */
+export function recordedMealWindows(date, today, current, history = []) {
+    return date === today || (history.length > 0 && date > history[0].through) ? mealWindowsOn(date, current, history) : null;
+}
 export const inAbsence = (date, absences) => absences.some((a) => a.startDate <= date && date <= a.endDate);
 /**
  * 하루치 끼니 상태. design.md 4.2.
@@ -21,7 +47,11 @@ export function resolveMealSlots({ date, windows, events, eatOutChecks, absences
         let best = ranges[0];
         let bestDist = Infinity;
         for (const r of ranges) {
-            const dist = within(t, r) ? 0 : Math.min(Math.abs(t - r.start), Math.abs(t - r.end));
+            if (within(t, r)) {
+                best = r;
+                break;
+            }
+            const dist = Math.min(Math.abs(t - r.start), Math.abs(t - r.end));
             if (dist < bestDist) {
                 best = r;
                 bestDist = dist;

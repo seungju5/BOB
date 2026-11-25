@@ -61,7 +61,7 @@ export async function pushAlerts(householdId: string, alerts: SentAlert[]) {
         ]);
         const current = must(houseResult) as { senior_consent_at: string | null } | null;
         if (!consentRecorded(current)) return;
-        if (!must(guardianResult).length || !must(subscriptionResult).length) continue;
+        if (!must(guardianResult)?.length || !must(subscriptionResult)?.length) continue;
         try {
           await webpush.sendNotification({ endpoint: sub.endpoint, keys: sub.keys }, message, { TTL: 60 * 60 * 12 });
         } catch (e) {

@@ -1,5 +1,11 @@
 # log.md — Dev Log
 
+## 2026-11-25 워밍이 의상과 가구별 끼니 시간
+
+워밍이의 모자·목도리·가방이 몸에 맞게 움직인다. 코디북에서 별자수 망토와 한복을 시착한 뒤 하트로 소장할 수 있다. Firebase 기본 옷장에서는 세 산책길 도장을 모아 망토를 얻는다. 어르신 인사는 “오늘 하루는 어떠셨을까요?”로 바꿨다. [시착·획득과 화면 확인 경로](apps/warming-up/docs/feedback/2026-11-25-wardrobe-and-meals.md)
+
+가구별 하루 1~5끼를 홈·기록·리포트에 연결했다. BOB 운영 DB에서 다섯 번째 끼니와 날짜별 설정을 저장하려면 마이그레이션 `0009_five_meal_windows.sql`과 변경된 `senior`·`jobs` 함수를 적용한다. [BOB 배포 절차](docs/bob-supabase.md)
+
 ## 2026-11-25 팀 주말 변경을 main에서 대조
 
 11월 22일 화면 변경은 `8b17152`와 `d9a8336`, 작업 규칙 추가는 `8bda755`에 들어 있다. Firebase판은 세 커밋의 변경을 이미 포함했고, 이전에는 `apps/warming-up/`을 한 번에 가져와 원 커밋이 main 이력에 표시되지 않았다. 세 커밋의 이력을 연결했으며, 이 과정 전후의 Firebase 소스는 운영 브랜치 `5cdedc7`과 파일 단위로 일치한다. [팀원의 마지막 원 커밋](https://github.com/seungju5/BOB/commit/8bda755fba2216525dcc89a4c4e2952b4b8224ba) · [당시 피드백과 후속 결정](apps/warming-up/docs/feedback/2026-11-22-mvp-frontend.md)

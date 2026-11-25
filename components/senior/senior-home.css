@@ -16,6 +16,4 @@
   .bapmunna-senior-home p { overflow-wrap: anywhere; word-break: normal; }
   .bapmunna-senior-action { flex-direction: column; }
   .bapmunna-senior-action-label span { display: block; }
-  .bapmunna-senior-encouragement { flex-direction: column; align-items: stretch; }
-  .bapmunna-senior-encouragement img { align-self: flex-end; }
 }

@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { AlertThresholdFields, missedMealsHint, Choice, Field, MealWindowsEditor, RelationPicker, Slider, TextInput, Toggle, windowsValid } from "@/components/forms";
+import { AlertThresholdFields, missedMealsHint, Choice, Field, MealWindowsEditor, RelationPicker, Slider, TextInput, Toggle, useMealWindowDraft, windowsValid } from "@/components/forms";
 import { IconArrowRight, IconLock, IconSuitcase } from "@/components/icons";
 import { PlugForm } from "@/components/PlugForm";
 import { SmartThingsPanel } from "@/components/SmartThingsPanel";
@@ -15,9 +15,8 @@ import { Button, PageHeader, Skeleton } from "@/components/ui";
 import { addDays, kstDate, MINUTE_MS } from "@/lib/judge/time";
 import { setMode } from "@/lib/data/mode";
 import { useApp, type App } from "@/lib/data/useApp";
-import { FOUR_MEAL_WINDOWS, familyPairingAvailable, mealSlotsForCount, type AppActions, type AppView } from "@/lib/data/view";
+import { MAX_MEALS, familyPairingAvailable, type AppActions, type AppView } from "@/lib/data/view";
 import { MEAL_PALETTES, setMealPalette, useMealPalette } from "@/lib/data/appearance";
-import type { MealSlotName, MealWindow } from "@/lib/judge/types";
 import { resetDemo, updateDemo } from "@/lib/demo/store";
 
 
@@ -40,10 +39,14 @@ function SettingsGroup({ id, title, summary, children }: { id: string; title: st
   const details = useRef<HTMLDetailsElement>(null);
   useEffect(() => {
     const openTarget = () => {
-      if (location.hash !== "#" + id || !details.current) return;
-      details.current.open = true;
-      details.current.querySelector("summary")?.focus({ preventScroll: true });
-      details.current.scrollIntoView({ block: "start" });
+      if (!location.hash) return;
+      const group = details.current;
+      const target = document.getElementById(location.hash.slice(1));
+      if (!group || !target || !group.contains(target)) return;
+      group.open = true;
+      const focusTarget = target === group ? group.querySelector("summary") : target;
+      focusTarget?.focus({ preventScroll: true });
+      target.scrollIntoView({ block: target === group ? "start" : "center" });
     };
     openTarget();
     window.addEventListener("hashchange", openTarget);
@@ -128,9 +131,7 @@ function LifestyleSettings({ view, actions }: { view: AppView; actions: AppActio
   const router = useRouter();
   const [senior, setSenior] = useState(view.senior);
   const [household, setHousehold] = useState(view.household);
-  const [meals, setMeals] = useState(Math.max(1, Math.min(4, view.mealProfile.windows.length)));
-  const [times, setTimes] = useState(() => Object.fromEntries(FOUR_MEAL_WINDOWS.map((window) => [window.slot, view.mealProfile.windows.find((item) => item.slot === window.slot) ?? window])) as Record<MealSlotName, MealWindow>);
-  const windows = mealSlotsForCount(meals).map((slot) => times[slot]);
+  const { meals, setMeals, windows, setWindows, resetWindows } = useMealWindowDraft(view.mealProfile.windows);
   const [eatOut, setEatOut] = useState(Math.max(0, Math.min(20, view.mealProfile.eatOutPerWeek)));
   const [keepWarm, setKeepWarm] = useState(view.mealProfile.usesKeepWarm);
   const [cooks, setCooks] = useState(Math.max(1, Math.min(21, view.mealProfile.cooksPerWeek)));
@@ -164,10 +165,10 @@ function LifestyleSettings({ view, actions }: { view: AppView; actions: AppActio
           <Choice cols={2} value={household.hasPet} options={[{ value: false, label: "없어요" }, { value: true, label: "있어요" }]} onChange={(hasPet) => { setHousehold({ ...household, hasPet }); feedback.clear(); }} />
         </Field>
         <h2 className="border-t border-line pt-5 text-[17px] font-bold text-cocoa">식사 시간과 밥솥 사용</h2>
-        <Field label="하루 식사 시간대 수" hint="최대 네 시간대까지 각각 정해요. 줄였다가 늘려도 입력 중인 시간은 남아 있어요.">
-          <Slider value={meals} min={1} max={4} unit="끼" label="하루 식사 시간대 수" onChange={(value) => { setMeals(value); feedback.clear(); }} />
+        <Field label="하루 식사 시간대 수" htmlFor="settings-meal-count" hint="평소 드시는 횟수를 고른 뒤, 아래에서 끼니마다 시간을 정해 주세요.">
+          <Slider id="settings-meal-count" value={meals} min={1} max={MAX_MEALS} unit="끼" label="하루 식사 시간대 수" onChange={(value) => { setMeals(value); feedback.clear(); }} />
         </Field>
-        <MealWindowsEditor windows={windows} onChange={(next) => { setTimes({ ...times, ...Object.fromEntries(next.map((window) => [window.slot, window])) }); feedback.clear(); }} />
+        <MealWindowsEditor windows={windows} onChange={(next) => { setWindows(next); feedback.clear(); }} onReset={() => { resetWindows(); feedback.clear(); }} />
         {!windowsValid(windows) ? <p className="text-[16px] font-semibold text-blush-deep">표시된 시간을 확인해 주세요. 겹침이 없어야 저장할 수 있어요.</p> : null}
         <Field label="일주일에 외식은 몇 번쯤?">
           <Slider value={eatOut} min={0} max={20} unit="번" label="일주일에 외식 횟수" marks={[0, 7, 14, 20]} onChange={(value) => { setEatOut(value); feedback.clear(); }} />

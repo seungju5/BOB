@@ -20,7 +20,8 @@ type Props = Record<string, unknown>;
 type Node = { type: unknown; props: Props; key?: unknown; rendered?: unknown };
 type Effect = { deps?: readonly unknown[]; cleanup?: () => void };
 type Frame = { slots: unknown[]; cursor: number; cleanups: Set<Effect>; alive: boolean };
-const files = ['components/walking/HeartsExperience.tsx', 'components/walking/HeartsEntry.tsx', 'components/senior/HealthConnectionPage.tsx'];
+const lookbookFile = 'apps/warming-up/components/walking/OutfitLookbook.tsx';
+const files = ['components/walking/HeartsExperience.tsx', 'components/walking/HeartsEntry.tsx', 'components/senior/HealthConnectionPage.tsx', lookbookFile];
 const compiled = Object.fromEntries(files.map(file => [file, ts.transpileModule(readFileSync(new URL(`../../${file}`, import.meta.url), 'utf8'), {
   compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
 }).outputText]));
@@ -66,18 +67,20 @@ function snapshot(label = 'A', leagueEnabled = false): client.HeartsSnapshot {
 const disconnected: RankingLinkStatus = { linked: false, confirmed: false, revokePending: false };
 const link = (id: string): RankingLinkStatus => ({ linked: true, confirmed: true, revokePending: false, publicId: `public-${id}`, nickname: `가상 ${id}`, sharingScope: 'private', expiresAt: '2026-12-18T03:00:00.000Z' });
 
-function fixture({ nativePage = false, mode = 'web' as 'web' | 'native' } = {}) {
+function fixture({ nativePage = false, mode = 'web' as 'web' | 'native', search = '' } = {}) {
   const request = vi.fn<client.HeartTransport['request']>(async () => snapshot());
   const transport = { request };
   const openWalkingWebApp = vi.fn(async () => {});
   const frames = new Map<string, Frame>(), cache = new Map<string, Record<string, unknown>>();
   const listeners = new Map<string, Set<() => void>>();
+  const location = new URL('https://example.test/walking/' + search);
   let active: Frame, effects: Array<() => void> = [], seen: Set<string>;
   const events = {
     addEventListener(name: string, fn: () => void) { if (!listeners.has(name)) listeners.set(name, new Set()); listeners.get(name)!.add(fn); },
     removeEventListener(name: string, fn: () => void) { listeners.get(name)?.delete(fn); },
   };
   const react = {
+    useId() { const i = active.cursor++; return (active.slots[i] ??= randomUUID()); },
     useState<T>(initial: T | (() => T)): [T, (value: T | ((old: T) => T)) => void] {
       const owner = active, i = owner.cursor++;
       if (!(i in owner.slots)) owner.slots[i] = typeof initial === 'function' ? (initial as () => T)() : initial;
@@ -105,7 +108,8 @@ function fixture({ nativePage = false, mode = 'web' as 'web' | 'native' } = {}) 
   const jsx = (type: unknown, props: Props, key?: unknown): Node => ({ type, props, key });
   const modules: Record<string, unknown> = {
     react, 'react/jsx-runtime': { jsx, jsxs: jsx, Fragment: 'Fragment' },
-    'next/link': { __esModule: true, default: 'Link' },
+    'next/link': { __esModule: true, default: 'Link' }, 'next/image': { __esModule: true, default: 'Image' },
+    './DressedRabbit': { DressedRabbit: 'DressedRabbit' }, './heart-rabbit-art': { heartRabbitSprite: (name: string) => '/art/' + name },
     '@capacitor/core': { Capacitor: { isNativePlatform: () => true, getPlatform: () => 'android' } },
     '@bapmunna/phone-steps': { PhoneSteps: { openWalkingWebApp, openWebApp: vi.fn(async () => {}), heartsRequest: ({ action, body }: { action: client.HeartAction; body?: Props }) => request(action, body) } },
     '@/components/Mascot': { Logo: 'Logo', Mascot: 'Mascot' }, '@/components/ui': { Button: 'Button' },
@@ -122,10 +126,13 @@ function fixture({ nativePage = false, mode = 'web' as 'web' | 'native' } = {}) 
     const exports: Record<string, unknown> = {}; cache.set(file, exports);
     runInNewContext(compiled[file], {
       exports, module: { exports }, Date, Error, DOMException, AbortController, crypto: { randomUUID }, setTimeout, clearTimeout, setInterval, clearInterval,
-      navigator: { userAgent: 'Android synthetic test' }, window: events, document: { ...events, visibilityState: 'visible', body: { style: { overflow: '' } }, querySelector: () => null },
+      navigator: { userAgent: 'Android synthetic test' }, URL, URLSearchParams,
+      window: { ...events, location, history: { state: null, replaceState: (_state: unknown, _title: string, url: URL) => { location.href = url.href; } } },
+      document: { ...events, visibilityState: 'visible', body: { style: { overflow: '' } }, querySelector: () => null },
       require(id: string) {
         if (id.endsWith('.css')) return {};
         if (id === './HeartsExperience') return load('components/walking/HeartsExperience.tsx');
+        if (id === '@/apps/warming-up/components/walking/OutfitLookbook') return load(lookbookFile);
         if (id === '@/components/walking/HeartsEntry') return load('components/walking/HeartsEntry.tsx');
         if (!(id in modules)) throw Error(`Unexpected heart runtime import: ${id}`);
         return modules[id];
@@ -163,7 +170,7 @@ function fixture({ nativePage = false, mode = 'web' as 'web' | 'native' } = {}) 
     return render();
   }
   disposals.push(() => { for (const frame of frames.values()) disposeFrame(frame); frames.clear(); });
-  return { request, openWalkingWebApp, render, settle, reportLink, focus: () => { for (const fn of listeners.get('focus') ?? []) fn(); } };
+  return { request, openWalkingWebApp, render, settle, reportLink, location, focus: () => { for (const fn of listeners.get('focus') ?? []) fn(); } };
 }
 async function openLetter(f: ReturnType<typeof fixture>) {
   click(button(f.render(), '가족 응원')); const tree = f.render();
@@ -173,6 +180,33 @@ beforeEach(() => { vi.useFakeTimers(); vi.setSystemTime(new Date('2026-11-18T03:
 afterEach(() => { for (const dispose of disposals.splice(0)) dispose(); vi.clearAllTimers(); vi.useRealTimers(); });
 
 describe('heart screen identity, consent and committed mutations', () => {
+  it('tries both lookbook outfits without spending, and only buys after explicit confirmation', async () => {
+    const f = fixture({ search: '?from=closet&outfit=star-cape' });
+    const value = snapshot();
+    value.state = { ...value.state!, balance: 12, totalEarned: 12 };
+    f.request.mockImplementation(async (action, body) => {
+      if (action === 'heartbuy') value.state = core.buyHeartItem(value.state!, String(body?.itemId));
+      if (action === 'heartequip') value.state = core.equipHeartItem(value.state!, String(body?.itemId));
+      return value;
+    });
+    f.render();
+    let tree = await f.settle();
+    expect(button(tree, '별빛 산책').props['aria-pressed']).toBe(true);
+    click(button(tree, '꽃마중')); tree = f.render();
+    expect(f.location.searchParams.get('outfit')).toBe('hanbok');
+    expect(button(tree, '꽃마중').props['aria-pressed']).toBe(true);
+    expect(button(tree, '하트를 조금 더 모아요').props.disabled).toBe(true);
+    click(button(tree, '별빛 산책')); tree = f.render();
+    expect(f.request.mock.calls.map(([action]) => action)).toEqual(['hearts']);
+    expect(value.state.balance).toBe(12);
+    await click(button(tree, '하트 12개로 바꾸고 입히기')); tree = await f.settle();
+    expect(f.request.mock.calls.map(([action]) => action)).toEqual(['hearts', 'heartbuy', 'heartequip']);
+    expect(value.state.balance).toBe(0);
+    expect(value.state.equipped.outfit).toBe('star-cape');
+    expect(f.location.search).toBe('?from=closet');
+    expect(text(button(tree, '별빛 산책'))).toContain('보유 · 무료 착용');
+  });
+
   it('clears an open private letter and photo when a refresh revokes the connection', async () => {
     const f = fixture({ mode: 'native' }); f.render(); await f.settle();
     expect(text(await openLetter(f))).toContain('A private letter');

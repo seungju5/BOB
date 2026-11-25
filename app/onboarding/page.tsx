@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { AlertThresholdFields, missedMealsHint, Choice, Field, MealWindowsEditor, RelationPicker, Slider, TextInput, windowsValid } from "@/components/forms";
+import { AlertThresholdFields, missedMealsHint, Choice, Field, MealWindowsEditor, RelationPicker, Slider, TextInput, useMealWindowDraft, windowsValid } from "@/components/forms";
 import { IconCheck, IconInfo } from "@/components/icons";
 import { SeniorConsentField } from "@/components/privacy/SeniorConsentField";
 import { Mascot } from "@/components/Mascot";
@@ -13,8 +13,7 @@ import { seniorDetailsProblems } from "@/components/onboarding/settings-validati
 import { Button, ProgressBar, Skeleton } from "@/components/ui";
 import { refreshLive } from "@/lib/data/live";
 import { useApp } from "@/lib/data/useApp";
-import { FOUR_MEAL_WINDOWS, HOUSEHOLD_STEP, ONBOARDING_COMPLETE, familyPairingAvailable, mealSlotsForCount, visibleOnboardingStep, type AppActions, type AppView, type OnboardingPatch } from "@/lib/data/view";
-import type { MealSlotName, MealWindow } from "@/lib/judge/types";
+import { HOUSEHOLD_STEP, MAX_MEALS, ONBOARDING_COMPLETE, familyPairingAvailable, visibleOnboardingStep, type AppActions, type AppView, type OnboardingPatch } from "@/lib/data/view";
 
 const TITLES: Record<number, string> = {
   3: "누구의 안부가\n듣고 싶으세요?",
@@ -111,25 +110,19 @@ function HouseholdStep({ state, next }: StepProps) {
 }
 
 function MealStep({ state, next }: StepProps) {
-  const [meals, setMeals] = useState(Math.max(1, Math.min(4, state.mealProfile.windows.length)));
-  // 끼니 수를 바꿨다 되돌려도 고친 시간이 남도록 시간대별로 기억한다
-  const [times, setTimes] = useState(() =>
-    Object.fromEntries(FOUR_MEAL_WINDOWS.map((d) => [d.slot, state.mealProfile.windows.find((w) => w.slot === d.slot) ?? d])) as Record<MealSlotName, MealWindow>,
-  );
-  const windows = mealSlotsForCount(meals).map((s) => times[s]);
-  const setWindows = (ws: MealWindow[]) => setTimes({ ...times, ...Object.fromEntries(ws.map((w) => [w.slot, w])) });
+  const { meals, setMeals, windows, setWindows, resetWindows } = useMealWindowDraft(state.mealProfile.windows);
   const [eatOut, setEatOut] = useState(Math.max(0, Math.min(20, state.mealProfile.eatOutPerWeek)));
   return (
     <>
       <div className="flex flex-col gap-5">
-        <Field label="하루 평균 끼니 수" hint="하루 1~4개의 시간대를 각각 설정할 수 있어요.">
-          <Slider value={meals} min={1} max={4} unit="끼" label="하루 평균 끼니 수" onChange={setMeals} />
+        <Field label="하루 평균 끼니 수" htmlFor="onboarding-meal-count" hint="평소 드시는 횟수만큼 홈에 식사 시간대가 생겨요.">
+          <Slider id="onboarding-meal-count" value={meals} min={1} max={MAX_MEALS} unit="끼" label="하루 평균 끼니 수" onChange={setMeals} />
         </Field>
         <Field
           label="주로 드시는 시간대"
           hint="이 시간 안에 받은 밥솥 소식을 살펴요. 실제 식사 여부와는 달라요."
         >
-          <MealWindowsEditor windows={windows} onChange={setWindows} />
+          <MealWindowsEditor windows={windows} onChange={setWindows} onReset={resetWindows} />
         </Field>
         {!windowsValid(windows) ? <p className="text-[16px] font-semibold text-blush-deep">표시된 시간을 확인해 주세요. 겹침이 없어야 다음으로 갈 수 있어요.</p> : null}
         <Field label="일주일에 외식은 몇 번쯤?">

@@ -1,7 +1,7 @@
 // GENERATED from lib/data/senior-schedule.ts. Run npm run sync:firebase at repository root.
 import { addDays, kstDate, kstDateTime } from "../judge/time.mjs";
-export const SLOT_LABEL = { breakfast: "첫 끼", lunch: "두 끼", dinner: "세 끼", fourth: "네 끼" };
-const ORDINAL_LABELS = ["첫 끼", "두 끼", "세 끼", "네 끼"];
+export const SLOT_LABEL = { breakfast: "첫 끼", lunch: "두 끼", dinner: "세 끼", fourth: "네 끼", fifth: "다섯 끼" };
+const ORDINAL_LABELS = ["첫 끼", "두 끼", "세 끼", "네 끼", "다섯 끼"];
 export function mealSlotLabel(slot, windows) {
     const index = windows.findIndex((window) => window.slot === slot);
     return ORDINAL_LABELS[index] ?? SLOT_LABEL[slot];

@@ -1,10 +1,11 @@
 // 데모 상태. Supabase를 붙이기 전까지 브라우저 localStorage에 둔다.
 // 같은 브라우저의 시니어 화면과 보호자 화면이 이 상태를 함께 쓴다.
 
+import { validMealWindows } from "@/lib/judge/resolveMealSlots";
 import { ALERT_DEFAULTS } from "@/config/detection";
 import { DEFAULT_WINDOWS } from "@/lib/data/view";
 import { addDays, kstDate, kstDateTime, MINUTE_MS } from "@/lib/judge/time";
-import type { Absence, AlertPayload, AlertType, MealWindow } from "@/lib/judge/types";
+import type { Absence, AlertPayload, AlertType, MealScheduleChange, MealWindow } from "@/lib/judge/types";
 
 export type StoredEvent = { type: "cook" | "lid_open"; startedAt: string; endedAt: string };
 export type StoredAlert = {
@@ -23,6 +24,7 @@ export type DemoState = {
   plug: { deviceId: string; online: boolean; offlineSince: string | null };
   senior: { name: string; relation: string; phone: string };
   household: { residentCount: number; hasPet: boolean };
+  mealScheduleHistory?: MealScheduleChange[];
   mealProfile: { windows: MealWindow[]; eatOutPerWeek: number; usesKeepWarm: boolean; cooksPerWeek: number };
   alertSettings: { missedMealsThreshold: number; fastingHours: number; emergencyHours: number };
   seniorConsent: boolean;
@@ -33,6 +35,20 @@ export type DemoState = {
   absences: Absence[];
   alerts: StoredAlert[];
 };
+
+/** Freeze completed days on the first schedule change of each KST date. */
+export function preserveDemoSchedule(previous: DemoState, next: DemoState, now: Date): DemoState {
+  const before = previous.mealProfile.windows;
+  const after = next.mealProfile.windows;
+  if (before === after || (before.length === after.length && before.every((row, i) =>
+    row.slot === after[i].slot && row.start === after[i].start && row.end === after[i].end))) return next;
+  if (!validMealWindows(after)) throw new Error("끼니 수와 겹치지 않는 시간대를 확인해 주세요.");
+  const today = kstDate(now);
+  const through = addDays(today, -1);
+  const history = (previous.mealScheduleHistory ?? []).filter(change => change.through >= addDays(today, -35));
+  if (history.at(-1)?.through !== through) history.push({ through, windows: before });
+  return { ...next, mealScheduleHistory: history };
+}
 
 /** 날짜마다 같은 값을 내는 의사 난수 */
 function rng(seed: string) {

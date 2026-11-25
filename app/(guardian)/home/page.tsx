@@ -2,19 +2,18 @@
 
 import Link from "next/link";
 import { ImpactConnectionLinks } from "@/components/ImpactConnectionLinks";
-import { ALERT_PRIORITY, ALERT_TONE, alertCopy, AlertShortcut, fmtDateLong, StatusIcon, withWa } from "@/components/guardian";
+import { ALERT_PRIORITY, ALERT_TONE, alertCopy, AlertShortcut, fmtDateLong, withWa } from "@/components/guardian";
 import { IconArrowRight, IconChart, IconClock, IconPhone, IconSuitcase } from "@/components/icons";
 import { Logo, Mascot } from "@/components/Mascot";
+import { MealScheduleLink, TodayMealList } from "@/components/TodayMeals";
 import { buttonClass, Skeleton } from "@/components/ui";
 import { countMissedMeals } from "@/lib/judge/evaluateAlerts";
 import { kstDate } from "@/lib/judge/time";
-import { MEAL_STATUS_LABEL, mealStatusClass, useMealPalette } from "@/lib/data/appearance";
 import { useApp } from "@/lib/data/useApp";
-import { recentSlots, reportSummary, mealSlotLabel, slotsForDate, unackedAlerts } from "@/lib/data/view";
+import { recentSlots, reportSummary, slotsForDate, unackedAlerts } from "@/lib/data/view";
 
 export default function HomePage() {
   const { view, now, actions, mode } = useApp();
-  const palette = useMealPalette();
   if (!view || !now) {
     return (
       <main className="flex flex-col gap-4 p-6">
@@ -112,20 +111,13 @@ export default function HomePage() {
         )}
       </Link>
 
-      <section className="mt-4 rounded-[1.75rem] border border-line p-5">
-        <h2 className="text-[16px] font-bold text-cocoa">오늘의 끼니</h2>
-        {!slots.length ? <p className="mt-3 text-[16px] text-muted">아직 연결된 식사 기록이 없어요. 연결 전에는 식사 여부를 판단하지 않아요.</p> : null}
-        <ul className="mt-3 grid gap-2" style={{ gridTemplateColumns: `repeat(${Math.max(slots.length, 1)}, minmax(0, 1fr))` }}>
-          {slots.map((s) => (
-            <li key={s.slot} className={`flex flex-col items-center gap-1.5 rounded-2xl py-3 ${mealStatusClass(s.status, palette)}`}>
-              <span className="text-[16px] font-semibold opacity-80">{mealSlotLabel(s.slot, view.mealProfile.windows)}</span>
-              <span className="flex items-center gap-1 text-[16px] font-bold">
-                <StatusIcon status={s.status} />
-                {MEAL_STATUS_LABEL[s.status]}
-              </span>
-            </li>
-          ))}
-        </ul>
+      <section aria-label="오늘의 끼니" className="mt-4 rounded-[1.75rem] border border-line p-5">
+        <div className="flex flex-wrap items-center justify-between gap-x-3">
+          <h2 className="text-[18px] font-bold text-cocoa">오늘의 끼니</h2>
+          <MealScheduleLink count={view.mealProfile.windows.length} />
+        </div>
+        <TodayMealList windows={view.mealProfile.windows} slots={slots} />
+        {!slots.length && <p className="mt-3 text-[16px] text-muted">아직 연결된 식사 기록이 없어요. 연결 전에는 식사 여부를 판단하지 않아요.</p>}
         <p className="mt-3 text-[16px] leading-relaxed text-muted">밥솥 사용 여부만 전해요. 무엇을 얼마나 드셨는지는 알 수 없어요.</p>
       </section>
 

@@ -4,6 +4,7 @@
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { FunctionsHttpError } from "@supabase/supabase-js";
+import { mealWindowsOn } from "@/lib/judge/resolveMealSlots";
 import { addDays, kstDate } from "@/lib/judge/time";
 import type { Absence, MealWindow } from "@/lib/judge/types";
 import { lastCookerAt } from "@/lib/demo/derive";
@@ -19,7 +20,7 @@ const KEY = "bapmutna.senior.token";
 const EVENT = "bapmutna:senior";
 const DEMO = "demo";
 
-export type SeniorStatus = { seniorName: string; lastCookerAt: string | null; absence: Absence | null; cookerObserved?: boolean; mealWindows?: MealWindow[]; scheduledActions?: boolean };
+export type SeniorStatus = { seniorName: string; lastCookerAt: string | null; absence: Absence | null; cookerObserved?: boolean; mealWindows?: MealWindow[]; yesterdayMealWindows?: MealWindow[]; scheduledActions?: boolean };
 export type SeniorOp = "eat_out" | "help" | "away" | "back";
 
 function readToken(): string | null {
@@ -90,7 +91,7 @@ export async function performSeniorAction(token: string | null | undefined, op: 
     const iso = now.toISOString();
     const today = kstDate(now);
     updateDemo((s) => {
-      const meal = op === "eat_out" && when.meal ? resolveMealChoice(when.meal, s.mealProfile.windows, now) : null;
+      const meal = op === "eat_out" && when.meal ? resolveMealChoice(when.meal, mealWindowsOn(when.meal.date, s.mealProfile.windows, s.mealScheduleHistory), now) : null;
       if (when.meal && !meal) throw new Error("선택한 날짜와 끼니를 다시 확인해 주세요.");
       const actions = [...s.seniorActions, { type: op === "back" ? ("away" as const) : op, at: meal?.at.toISOString() ?? iso }];
       if (op === "help")
@@ -169,6 +170,7 @@ export function useSenior() {
       ? {
           seniorName: demo.senior.name,
           mealWindows: demo.mealProfile.windows,
+          yesterdayMealWindows: mealWindowsOn(addDays(kstDate(new Date()), -1), demo.mealProfile.windows, demo.mealScheduleHistory),
           scheduledActions: true,
           lastCookerAt: lastCookerAt(demo)?.toISOString() ?? null,
           absence: demo.absences.find((a) => a.startDate <= kstDate(new Date()) && kstDate(new Date()) <= a.endDate) ?? null,

@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import {useCallback,useEffect,useRef,useState} from 'react';
 import {PhoneSteps} from '@bapmunna/phone-steps';
@@ -10,6 +11,8 @@ import {actHeartsDemo,createHeartsDemo,demoLeague,readHeartsDemo,saveHeartsDemo,
 import {BunnyScene,EquippedNames,HeartIcon,HeartsGarden} from './HeartsScene';
 import {validateHeartsLeague} from '@/lib/hearts/presentation';
 import {unlockDemoMessages} from '@/lib/hearts/demo';
+import {linkedOutfit,OutfitLookbook,setOutfitLink,type LookbookStyle} from '@/apps/warming-up/components/walking/OutfitLookbook';
+import {heartRabbitSprite} from './heart-rabbit-art';
 import './hearts.css';
 import {PRIVACY_SUPPORT_EMAIL} from '@/lib/deployment';
 
@@ -48,13 +51,22 @@ export function HeartsExperience({mode,transport,embedded=false}:Props){
 
   useEffect(()=>{
     const live={active:true,revision:0,busy:false,abort:new AbortController()};life.current=live;
+    function openLinkedFitting() {
+      const style = linkedOutfit(window.location.search, true);
+      if (!style) return;
+      setTab('closet');
+      const item = HEART_ITEMS.find(entry => entry.id === style.pieces.outfit);
+      if (item) { setCategory(item.category); setPreview(item); }
+    }
+    window.addEventListener('popstate',openLinkedFitting);
     const initial=setTimeout(()=>{
+      openLinkedFitting();
       setToday(heartDate(new Date()));
       if(demo){const next=readHeartsDemo();current.current=next;setSnapshot(next);setLoaded(true);}else if(transport)void refresh();else setLoaded(true);
     },0);
     const tick=()=>{if(document.visibilityState!=='visible')return;setToday(heartDate(new Date()));if(!demo)void refresh();};
     const timer=setInterval(tick,60000);window.addEventListener('focus',tick);document.addEventListener('visibilitychange',tick);
-    return()=>{live.active=false;live.revision++;live.abort.abort();clearTimeout(initial);clearInterval(timer);window.removeEventListener('focus',tick);document.removeEventListener('visibilitychange',tick);};
+    return()=>{live.active=false;live.revision++;live.abort.abort();clearTimeout(initial);clearInterval(timer);window.removeEventListener('focus',tick);window.removeEventListener('popstate',openLinkedFitting);document.removeEventListener('visibilitychange',tick);};
   },[demo,refresh,transport]);
 
   async function run(action:HeartAction,body:Record<string,unknown>={},success='저장했어요.'){
@@ -105,7 +117,14 @@ export function HeartsExperience({mode,transport,embedded=false}:Props){
     });
     return()=>{active=false;};
   },[tab,snapshot.leagueEnabled,snapshot.region,demo,date,transport]);
-  function switchTab(next:Tab){setTab(next);setPreview(null);}
+  function switchTab(next:Tab){setOutfitLink(null);setTab(next);setPreview(null);}
+  function tryOutfit(style: LookbookStyle) {
+    const item = HEART_ITEMS.find(entry => entry.id === style.pieces.outfit);
+    if (!item) return;
+    setCategory(item.category);
+    setPreview(item);
+    setOutfitLink(style.id);
+  }
   const heading=tab==='family'?'가족의 응원':tab==='closet'?'토끼 꾸미기':tab==='league'?'밥심 리그':'오늘의 산책';
   const content=<>
     {!embedded?<header className="hearts-header"><Logo/><div><Link href="/more" className="hearts-header-link">메뉴</Link><button onClick={()=>setSettings(true)} aria-label="산책 하트 설정">⚙<span className="sr-only">설정</span></button></div></header>:<div className="hearts-embedded-heading"><h2>산책 하트</h2><button onClick={()=>setSettings(true)}>설정</button></div>}
@@ -146,10 +165,12 @@ export function HeartsExperience({mode,transport,embedded=false}:Props){
         <div className="hearts-wallet"><span>함께 모은 하트</span><strong><HeartIcon filled/>{num(summary.balance)}개</strong></div>
         <BunnyScene compact equipped={preview?{...summary.equipped,[preview.category]:preview.id}:summary.equipped} summary={summary}/>
         <EquippedNames equipped={preview?{...summary.equipped,[preview.category]:preview.id}:summary.equipped}/>
-        <div className="hearts-category-tabs" role="group" aria-label="꾸미기 종류">{categories.map(item=><button aria-pressed={category===item.id} key={item.id} onClick={()=>{setCategory(item.id);setPreview(null);}}>{item.name}</button>)}</div>
-        <div className="hearts-items">{HEART_ITEMS.filter(item=>item.category===category).map(item=><button key={item.id} className={preview?.id===item.id?'is-selected':''} aria-pressed={preview?.id===item.id} onClick={()=>setPreview(item)}><span className="hearts-item-medallion" aria-hidden="true">{item.icon}</span><strong>{item.name}</strong><small>{summary.equipped[category]===item.id?'입고 있어요':summary.owned.includes(item.id)?'가지고 있어요':`하트 ${item.price}개`}</small></button>)}</div>
-        {preview?<div className="hearts-card hearts-item-detail"><h2>{preview.name}</h2><p>{summary.owned.includes(preview.id)?'이미 가지고 있는 차림이에요.':`하트 ${preview.price}개로 바꿀 수 있어요.`}</p>{preview.unlockDays?<p className="hearts-small">밥솥·외식 소식 {preview.unlockDays}일이 이어져도 받을 수 있어요. 기록이 없다고 식사를 거른 것은 아니에요.</p>:null}<button className="hearts-primary" disabled={busy||(!summary.owned.includes(preview.id)&&summary.balance<preview.price)} onClick={async()=>{if(!summary.owned.includes(preview.id)){const bought=await run('heartbuy',{itemId:preview.id},'새 차림을 준비했어요.');if(!bought)return;}await run('heartequip',{itemId:preview.id},`${preview.name}를 입혔어요.`);}}>{summary.equipped[category]===preview.id?'지금 입고 있어요':summary.owned.includes(preview.id)?'입히기':summary.balance<preview.price?'하트를 조금 더 모아요':`하트 ${preview.price}개로 바꾸고 입히기`}</button></div>:null}
-        <button className="hearts-text-button" disabled={busy} onClick={()=>void run('heartequip',{itemId:`default-${category}`},'기본 차림으로 바꿨어요.')}>이 부분은 기본 차림으로</button>
+        <OutfitLookbook equipped={summary.equipped} items={HEART_ITEMS} asset={heartRabbitSprite}
+          wallet={{balance:summary.balance,owned:summary.owned}} selected={preview?.id ?? null} disabled={busy} onTry={tryOutfit}/>
+        <div className="hearts-category-tabs" role="group" aria-label="꾸미기 종류">{categories.map(item=><button disabled={busy} aria-pressed={category===item.id} key={item.id} onClick={()=>{setCategory(item.id);setPreview(null);setOutfitLink(null);}}>{item.name}</button>)}</div>
+        <div className="hearts-items">{HEART_ITEMS.filter(item=>item.category===category).map(item=><button disabled={busy} key={item.id} className={preview?.id===item.id?'is-selected':''} aria-pressed={preview?.id===item.id} onClick={()=>{setPreview(item);setOutfitLink(item.id==='star-cape'||item.id==='hanbok'?item.id:null);}}><span className="hearts-item-medallion" aria-hidden="true">{item.category==='outfit'?<Image src={heartRabbitSprite('body-'+item.id)} alt="" width={46} height={40} unoptimized className="lookbook-worn-item"/>:item.icon}</span><strong>{item.name}</strong><small>{summary.equipped[category]===item.id?'입고 있어요':summary.owned.includes(item.id)?'가지고 있어요':`하트 ${item.price}개`}</small></button>)}</div>
+        {preview?<div className="hearts-card hearts-item-detail"><h2>{preview.name}</h2><p>{summary.owned.includes(preview.id)?'이미 가지고 있는 차림이에요.':`하트 ${preview.price}개로 바꿀 수 있어요.`}</p>{preview.unlockDays?<p className="hearts-small">밥솥·외식 소식 {preview.unlockDays}일이 이어져도 받을 수 있어요. 기록이 없다고 식사를 거른 것은 아니에요.</p>:null}<button className="hearts-primary" disabled={busy||summary.equipped[category]===preview.id||(!summary.owned.includes(preview.id)&&summary.balance<preview.price)} onClick={async()=>{if(!summary.owned.includes(preview.id)){const bought=await run('heartbuy',{itemId:preview.id},'새 차림을 준비했어요.');if(!bought)return;}if(await run('heartequip',{itemId:preview.id},`${preview.name}를 입혔어요.`)){setPreview(null);setOutfitLink(null);}}}>{summary.equipped[category]===preview.id?'지금 입고 있어요':summary.owned.includes(preview.id)?'입히기':summary.balance<preview.price?'하트를 조금 더 모아요':`하트 ${preview.price}개로 바꾸고 입히기`}</button></div>:null}
+        <button className="hearts-text-button" disabled={busy} onClick={async()=>{if(await run('heartequip',{itemId:`default-${category}`},'기본 차림으로 바꿨어요.')){setPreview(null);setOutfitLink(null);}}}>이 부분은 기본 차림으로</button>
         <p className="hearts-small">돈을 결제하는 상점이 아니에요. 꾸미기를 하지 않아도 산책 하트는 그대로 채워져요.</p>
       </section>:null}
       {tab==='league'?<section className="hearts-league"><p className="hearts-intro">함께 걷는 즐거움, 선택해서 나눠요.</p>

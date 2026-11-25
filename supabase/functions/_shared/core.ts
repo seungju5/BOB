@@ -3,9 +3,9 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { ALERT_DEFAULTS, DETECTION } from "@/config/detection.ts";
 import { isCookingPower } from "@/lib/judge/detectEvents.ts";
 import { classifyMeter, parseMeterStatus, type MeterKind, type MeterObservation } from "@/lib/smartthings/meter.ts";
-import { resolveMealSlots } from "@/lib/judge/resolveMealSlots.ts";
+import { mealWindowsOn, resolveMealSlots } from "@/lib/judge/resolveMealSlots.ts";
 import { addDays, kstDate, kstDateTime } from "@/lib/judge/time.ts";
-import type { Absence, MealWindow } from "@/lib/judge/types.ts";
+import type { Absence, MealScheduleChange, MealWindow } from "@/lib/judge/types.ts";
 
 export const db = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, {
   auth: { persistSession: false },
@@ -40,7 +40,7 @@ export async function getAbsences(householdId: string): Promise<Absence[]> {
 export async function recomputeDay(householdId: string, date: string, now: Date) {
   const { from, to } = dayRange(date);
   const [profile, events, actions, absences, meter] = await Promise.all([
-    db.from("meal_profiles").select("meal_windows").eq("household_id", householdId).single().then(must),
+    db.from("meal_profiles").select("*").eq("household_id", householdId).single().then(must),
     db.from("cooker_events").select("type, started_at, ended_at, source_device").eq("household_id", householdId).gte("started_at", from).lt("started_at", to).then(must),
     db.from("senior_actions").select("at").eq("household_id", householdId).eq("type", "eat_out").gte("at", from).lt("at", to).then(must),
     getAbsences(householdId),
@@ -52,7 +52,8 @@ export async function recomputeDay(householdId: string, date: string, now: Date)
   const meterRow = meter as { observing_since: string | null; last_reading_at: string | null; meter_kind: MeterKind | null } | null;
   const since = meterRow?.meter_kind === "recognized" && meterRow.observing_since ? Date.parse(meterRow.observing_since) : Infinity;
   const last = meterRow?.meter_kind === "recognized" && meterRow.last_reading_at ? Date.parse(meterRow.last_reading_at) : -Infinity;
-  const windows = (profile as { meal_windows: MealWindow[] }).meal_windows;
+  const schedule = profile as { meal_windows: MealWindow[]; window_history?: MealScheduleChange[] };
+  const windows = mealWindowsOn(date, schedule.meal_windows, schedule.window_history);
   const slots = resolveMealSlots({
     date,
     windows,

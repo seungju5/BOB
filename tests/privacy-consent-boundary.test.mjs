@@ -23,6 +23,10 @@ function loadEdge(relative,dependencies){
   return {exports,request:request=>handler(request)};
 }
 
+const seniorTime=loadEdge('../../lib/judge/time.ts',{}).exports;
+const mealTypes=loadEdge('../../lib/judge/types.ts',{}).exports;
+const mealJudge=loadEdge('../../lib/judge/resolveMealSlots.ts',{'./time.ts':seniorTime,'./types.ts':mealTypes}).exports;
+
 const meterSample = { watts: 45, measuredAt: "2026-11-13T00:00:00.000Z" };
 function registrationFixture({consents=[consentAt],signedIn=true,linked=true,onReadPower=null}={}){
   const calls={power:[],rpc:[],writes:[],consent:0};
@@ -159,6 +163,7 @@ function jobFixture({consents=[consentAt],onPower=null,activeConsent=consentAt}=
     recordObservation:async(h,device,kind,reading)=>{calls.writes.push({table:'record_plug_observation',kind:'rpc',reading});return true;},
     recomputeDay:async(h)=>{calls.recompute.push(h);},refreshActivity:async()=>{}};
   const edge=loadEdge('jobs/index.ts',{
+    '@/lib/judge/resolveMealSlots.ts':mealJudge, '@/lib/judge/types.ts':mealTypes,
     '@/_shared/core.ts':shared,
     '@/_shared/push.ts':{pushAlerts:async()=>{calls.push++;}},
     '@/config/detection.ts':{ALERT_DEFAULTS:{DEVICE_OFFLINE_HOURS:2},DETECTION:{READING_INTERVAL_MIN:1,COOK_MERGE_GAP_MIN:10,LID_OPEN_DEBOUNCE_MIN:10},RAW_RETENTION_HOURS:24},
@@ -276,7 +281,7 @@ test('revoked subscriptions, removed guardians and arbitrary URLs are skipped',a
   }
 });
 
-const seniorTime=loadEdge('../../lib/judge/time.ts',{}).exports;
+
 const seniorSchedule=loadEdge('../../lib/data/senior-schedule.ts',{'../judge/time.ts':seniorTime}).exports;
 function seniorFixture(options={}){
   let consent=Object.hasOwn(options,'consent')?options.consent:consentAt;
@@ -304,12 +309,13 @@ function seniorFixture(options={}){
       calls.absence++;if(options.onAbsence)return options.onAbsence();
       return {data:[],error:null};
     }
-    if(operation.table==='meal_profiles')return {data:{meal_windows:[{slot:'lunch',start:'11:00',end:'14:00'}]},error:null};
+    if(operation.table==='meal_profiles')return {data:options.profile??{meal_windows:[{slot:'lunch',start:'11:00',end:'14:00'}]},error:null};
     if(operation.table==='smart_plugs')return {data:null,error:null};
     throw Error(`Unexpected senior query: ${operation.table}`);
   });
   db.rpc=async(name,args)=>{calls.rpc.push({name,args:structuredClone(args)});return {data:options.duplicate?null:'synthetic-notice',error:null};};
   const edge=loadEdge('senior/index.ts',{
+    '@/lib/judge/resolveMealSlots.ts':mealJudge,
     '@/lib/data/senior-schedule.ts':seniorSchedule,
     '@/lib/judge/time.ts':options.realCalendar?seniorTime:{kstDate:()=> '2026-11-13',addDays:(date,days)=>new Date(Date.parse(`${date}T00:00:00Z`)+days*86400000).toISOString().slice(0,10)},
     '@/_shared/core.ts':{db,must,json,cors:{},
@@ -418,6 +424,23 @@ test('a selected prior food report changes only the named slot and preserves pre
     h:'synthetic-house',selected_date:date,selected_slot:'lunch',selected_label:'첫 끼',
     recorded_at:seniorTime.kstDateTime(date,'12:30').toISOString(),
   }}]);assert.equal(f.calls.recompute,0);assert.equal(f.calls.push,1);
+});
+
+test('a paired senior can select yesterday’s fifth meal after today changes to two',async()=>{
+  const yesterday = seniorTime.addDays(seniorTime.kstDate(new Date()), -1);
+  const windows = mealTypes.MEAL_SLOT_NAMES.map((slot, index) => ({slot, start:(10+index)+':00', end:(11+index)+':00'}));
+  const profile = {meal_windows:[windows[0], windows[2]], window_history:[{through:yesterday, windows}]};
+  const f = seniorFixture({realCalendar:true,profile});
+  const status = await (await f.request('status',{includeSchedule:true})).json();
+  assert.equal(status.mealWindows.length,2);
+  assert.equal(status.yesterdayMealWindows.length,5);
+  const meal = {date:yesterday,slot:'fifth'};
+  const response = await f.request('selected_meal',{meal});
+  assert.equal(response.status,200);
+  assert.deepEqual((await response.json()).applied,{meal});
+  assert.equal(f.calls.rpc[0].args.selected_label,'다섯 끼');
+  assert.equal(f.calls.push,1);
+  assert.equal((await f.request('selected_meal',{meal:{...meal,date:seniorTime.kstDate(new Date())}})).status,400);
 });
 
 test('duplicate selected family meal acknowledgements do not send a second push',async()=>{

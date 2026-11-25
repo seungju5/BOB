@@ -3,9 +3,11 @@ export type PowerReading = { measuredAt: Date; watts: number };
 export type CookerEventType = "cook" | "lid_open";
 export type CookerEvent = { type: CookerEventType; startedAt: Date; endedAt: Date };
 
-// 기존 세 슬롯 ID는 저장된 기록과 호환을 유지한다. 네 번째 끼니만 추가한다.
-export type MealSlotName = "breakfast" | "lunch" | "dinner" | "fourth";
+// 저장된 슬롯 ID는 끼니 수가 바뀌어도 유지한다.
+export const MEAL_SLOT_NAMES = ["breakfast", "lunch", "dinner", "fourth", "fifth"] as const;
+export type MealSlotName = (typeof MEAL_SLOT_NAMES)[number];
 export type MealWindow = { slot: MealSlotName; start: string; end: string }; // 'HH:MM' KST
+export type MealScheduleChange = { through: string; windows: MealWindow[] };
 
 export type MealStatus = "confirmed" | "unconfirmed" | "eat_out" | "away" | "pending";
 export type MealSource = "cooker" | "senior_check" | "absence" | null;

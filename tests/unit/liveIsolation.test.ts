@@ -1,6 +1,7 @@
 import { beforeEach, expect, it, vi } from "vitest";
 const { rpc, from } = vi.hoisted(() => ({ rpc: vi.fn(), from: vi.fn() }));
 vi.mock("@/lib/supabase", () => ({ supabase: () => ({ rpc, from }) }));
+import { mealWindowsForCount } from "@/lib/data/view";
 import { clearLive, liveActions, readLiveForUser, refreshLive, setLiveUser } from "@/lib/data/live";
 
 beforeEach(() => {
@@ -91,6 +92,14 @@ it("re-reads the saved household and lifestyle settings after discarding the bro
   const fresh = readLiveForUser("user-a").view;
   expect(fresh).toMatchObject({mode: "live", dataSource: "supabase", senior: {name: "테스트"}, household: {residentCount: 2}, onboardingStep: 8, mealProfile: {eatOutPerWeek: 4}, seniorConsent: true, careAvailable: false});
   expect(fresh?.slots).toEqual([]);
+});
+
+it("leaves an older database untouched when five stored meal slots are unavailable", async () => {
+  setLiveUser("user-a");
+  await refreshLive();
+  const mealProfile = {windows:mealWindowsForCount(5), eatOutPerWeek:1, usesKeepWarm:true, cooksPerWeek:7};
+  await expect(liveActions.saveOnboarding(8,{seniorConsent:true,mealProfile})).rejects.toThrow("서버 업데이트");
+  expect(rpc.mock.calls.every(([name]) => name === "ensure_household")).toBe(true);
 });
 
 it("does not fall back to direct table writes when the provider denied the transaction", async () => {

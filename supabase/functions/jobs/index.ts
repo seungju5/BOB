@@ -7,9 +7,10 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { ALERT_DEFAULTS, DETECTION, RAW_RETENTION_HOURS } from "@/config/detection.ts";
 import { detectEvents } from "@/lib/judge/detectEvents.ts";
+import { mealWindowsOn, recordedMealWindows } from "@/lib/judge/resolveMealSlots.ts";
 import { evaluateAlerts } from "@/lib/judge/evaluateAlerts.ts";
 import { addDays, HOUR_MS, kstDate, kstDateTime, MINUTE_MS } from "@/lib/judge/time.ts";
-import type { AlertType, MealSlot, MealWindow } from "@/lib/judge/types.ts";
+import { MEAL_SLOT_NAMES, type AlertType, type MealScheduleChange, type MealSlot, type MealWindow } from "@/lib/judge/types.ts";
 import type { MeterKind } from "@/lib/smartthings/meter.ts";
 import { dayRange, db, getAbsences, json, must, readMeterKind, readPower, recordObservation, recomputeDay, refreshActivity } from "@/_shared/core.ts";
 import { pushAlerts, type SentAlert } from "@/_shared/push.ts";
@@ -113,7 +114,7 @@ async function alerts() {
     const [house, settings, profile, plug, slots, open, absences] = await Promise.all([
       db.from("households").select("last_activity_at").eq("id", h).single().then(must),
       db.from("alert_settings").select("missed_meals_threshold, fasting_hours, emergency_hours").eq("household_id", h).single().then(must),
-      db.from("meal_profiles").select("meal_windows").eq("household_id", h).single().then(must),
+      db.from("meal_profiles").select("*").eq("household_id", h).single().then(must),
       db.from("smart_plugs").select("last_reading_at, meter_kind, observing_since, status").eq("household_id", h).maybeSingle().then(must),
       db.from("meal_slots").select("date, slot, status, source, meter_observed").eq("household_id", h).gte("date", addDays(today, -2)).lte("date", today).then(must),
       // 판단 대상만 (도움 요청·외식·자리 비움·주간 리포트 같은 '소식' 알림은 빼고)
@@ -121,8 +122,7 @@ async function alerts() {
       getAbsences(h),
     ]);
     if (!await hasSeniorConsent(h)) continue;
-    const order = { breakfast: 0, lunch: 1, dinner: 2, fourth: 3 } as const;
-    const sorted = ((slots ?? []) as (MealSlot & { meter_observed?: boolean })[]).filter(slot => slot.meter_observed || slot.source === "senior_check" || slot.source === "absence").sort((a, b) => a.date.localeCompare(b.date) || order[a.slot] - order[b.slot]);
+    const sorted = ((slots ?? []) as (MealSlot & { meter_observed?: boolean })[]).filter(slot => slot.meter_observed || slot.source === "senior_check" || slot.source === "absence").sort((a, b) => a.date.localeCompare(b.date) || MEAL_SLOT_NAMES.indexOf(a.slot) - MEAL_SLOT_NAMES.indexOf(b.slot));
     const s = settings as { missed_meals_threshold: number; fasting_hours: number; emergency_hours: number };
     const last = (house as { last_activity_at: string | null }).last_activity_at;
     const meter = plug as { last_reading_at: string | null; meter_kind: MeterKind | null; observing_since: string | null; status: string } | null;
@@ -131,9 +131,9 @@ async function alerts() {
     const reading = meter.last_reading_at;
     if (meter.status === "offline" && now.getTime() - Date.parse(reading) < ALERT_DEFAULTS.DEVICE_OFFLINE_HOURS * HOUR_MS) continue;
     const observedSince = new Date(meter.observing_since);
-    const windows = (profile as { meal_windows: MealWindow[] }).meal_windows;
+    const schedule = profile as { meal_windows: MealWindow[]; window_history?: MealScheduleChange[] };
     const usable = sorted.filter(slot => {
-      const window = windows.find(w => w.slot === slot.slot);
+      const window = mealWindowsOn(slot.date, schedule.meal_windows, schedule.window_history).find(w => w.slot === slot.slot);
       return window && kstDateTime(slot.date, window.start).getTime() >= observedSince.getTime();
     });
     const result = evaluateAlerts({
@@ -187,11 +187,18 @@ async function weekly() {
   const households = await activeHouseholds();
   let sent = 0;
   for (const h of households) {
-    const slots = must(
-      await db.from("meal_slots").select("status, source, meter_observed").eq("household_id", h).gte("date", addDays(today, -7)).lte("date", addDays(today, -1)),
-    ) as (Pick<MealSlot,"status" | "source"> & { meter_observed: boolean })[];
+    const [slots, profile] = await Promise.all([
+      db.from("meal_slots").select("date, slot, status, source, meter_observed").eq("household_id", h)
+        .gte("date", addDays(today, -7)).lte("date", addDays(today, -1)).then(must),
+      db.from("meal_profiles").select("*").eq("household_id", h).single().then(must),
+    ]);
+    const schedule = profile as { meal_windows: MealWindow[]; window_history?: MealScheduleChange[] };
     if (!await hasSeniorConsent(h)) continue;
-    const counted = slots.filter((s) => (s.meter_observed || s.source === "senior_check") && s.status !== "away" && s.status !== "pending");
+    const counted = ((slots ?? []) as (MealSlot & { meter_observed: boolean })[]).filter(row => {
+      const windows = recordedMealWindows(row.date, today, schedule.meal_windows, schedule.window_history);
+      return (!windows || windows.some(w => w.slot === row.slot)) && (row.meter_observed || row.source === "senior_check")
+        && row.status !== "away" && row.status !== "pending";
+    });
     if (!counted.length) continue; // 기록이 없는 주는 보내지 않는다
     const rate = Math.round((counted.filter((s) => s.status === "confirmed" || s.status === "eat_out").length / counted.length) * 100);
     const rows = must(await db.from("alerts").insert({ household_id: h, type: "weekly_report", payload: { rate, meterObserved: counted.some(s => s.meter_observed), seniorReported: counted.some(s => s.source === "senior_check") } }).select("id, type, payload, triggered_at")) as SentAlert[];

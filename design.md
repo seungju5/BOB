@@ -100,7 +100,7 @@ smart_plugs (
 -- 식사 패턴·밥솥 습관 (온보딩)
 meal_profiles (
   household_id uuid pk fk,
-  meals_per_day int,             -- 하루 평균 끼니 수
+  meals_per_day int,             -- 설정한 하루 식사 시간대 수 (1~5, 신규 기본값 3)
   meal_windows jsonb,            -- [{"slot":"breakfast","start":"06:00","end":"10:00"}, ...]
   eat_out_per_week int,
   uses_keep_warm boolean,        -- 보온 사용 여부 (false면 뚜껑 열림 감지 불가)
@@ -131,7 +131,7 @@ cooker_events (
 
 -- 끼니별 상태 (가족 화면에 노출하는 유일한 식사 데이터)
 meal_slots (
-  household_id uuid fk, date date, slot text,   -- breakfast | lunch | dinner
+  household_id uuid fk, date date, slot text,   -- breakfast | lunch | dinner | fourth | fifth
   status text,                   -- confirmed | unconfirmed | eat_out | away | pending
   source text,                   -- cooker | senior_check | absence | null
   primary key (household_id, date, slot)
@@ -214,7 +214,7 @@ daily_cooker_stats (
 |---|---|---|
 | 로그인 | `/login` | 이메일 링크·Google·Kakao 로그인. 공급자 콘솔 설정과 실계정 검증 필요 |
 | 온보딩 | `/onboarding/[step]` | 상단 진행도 바와 "거의 다 왔어요!" 안내. ① 스마트플러그 연결(SmartThings 토큰) ② 와이파이·수신 확인 ③ 가구 정보 ④ 식사 패턴 ⑤ 밥솥 습관 ⑥ 알림 기준 ⑦ 시니어 기기 페어링 코드 발급 |
-| 홈 | `/` | 오늘 끼니 상태 카드(아침·점심·저녁: 확인됨/미확인/외식/부재), 마지막 활동 시각, 기기 상태, 진행 중인 알림 |
+| 홈 | `/` | 오늘 끼니 상태 카드(가구가 설정한 1~5개 시간대와 수신한 소식, 미수신 칸은 기록 대기), 마지막 활동 시각, 기기 상태, 진행 중인 알림 |
 | 식사 기록 | `/records?range=day\|week\|month` | 취사·열림 횟수 차트, 끼니 상태 캘린더 |
 | 리포트 | `/report` | **종합**(가전 무관): 최근 7일 vs 이전 28일 끼니 확인율, 끼니별 확인율, 하루별 끼니 상태. **가전별 탭**: `components/report/devices.tsx` 등록부(DeviceReport)를 돌며 그린다. 지금은 밥솥(사용 횟수 vs 평소·알려 준 횟수, 전기 사용량·요금)만 있고 전자레인지·냉장고는 '준비 중'. 전기요금은 `daily_cooker_stats`에 하루 전력량 합계(energyWh)가 생기면 표시된다 (스키마·jobs 변경 필요, 미적용). 계산은 `lib/report/metrics.ts` |
 | 알림 이력 | `/alerts` | 알림 목록, 확인 처리 |

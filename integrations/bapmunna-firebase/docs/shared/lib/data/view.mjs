@@ -1,7 +1,8 @@
 // GENERATED from lib/data/view.ts. Run npm run sync:firebase at repository root.
 // 화면이 읽는 공통 모양. 데모(localStorage)와 실서비스(Supabase) 모두 이 모양으로 바꿔서 넘긴다.
 // 가족 화면에 필요한 요약만 담는다: 끼니 상태, 날짜별 횟수, 마지막 시각. (취사 시각 목록은 없음)
-import { resolveMealSlots } from "../judge/resolveMealSlots.mjs";
+import { MEAL_SLOT_NAMES } from "../judge/types.mjs";
+import { recordedMealWindows, resolveMealSlots } from "../judge/resolveMealSlots.mjs";
 import { addDays, kstDate } from "../judge/time.mjs";
 /** 기존 저장 번호를 유지한다. 1·2번 기기 단계는 이제 홈 이후의 선택 기능이다. */
 export const ONBOARDING_COMPLETE = 8;
@@ -27,6 +28,14 @@ export const FOUR_MEAL_WINDOWS = [
     ...DEFAULT_WINDOWS,
     { slot: "fourth", start: "21:00", end: "23:00" },
 ];
+export const MAX_MEALS = MEAL_SLOT_NAMES.length;
+export const FIVE_MEAL_WINDOWS = [
+    { slot: "breakfast", start: "06:00", end: "09:00" },
+    { slot: "lunch", start: "10:00", end: "12:00" },
+    { slot: "dinner", start: "12:30", end: "14:30" },
+    { slot: "fourth", start: "15:00", end: "17:00" },
+    { slot: "fifth", start: "18:00", end: "21:00" },
+];
 export { SLOT_LABEL, mealSlotLabel } from "./senior-schedule.mjs";
 /** 1·2끼 기존 저장 ID를 유지한다. 표시 순서는 mealSlotLabel로 정한다. */
 export function mealSlotsForCount(count) {
@@ -34,9 +43,31 @@ export function mealSlotsForCount(count) {
         return ["lunch"];
     if (count === 2)
         return ["breakfast", "dinner"];
-    if (count === 4)
-        return ["breakfast", "lunch", "dinner", "fourth"];
-    return ["breakfast", "lunch", "dinner"];
+    return MEAL_SLOT_NAMES.slice(0, count === 4 || count === 5 ? count : 3);
+}
+export function mealWindowsForCount(count, overrides = {}) {
+    const preset = count === 5 ? FIVE_MEAL_WINDOWS : FOUR_MEAL_WINDOWS;
+    const slots = overrides.slotOrderByCount?.[count] ?? mealSlotsForCount(count);
+    return slots.map(slot => {
+        const standard = preset.find(window => window.slot === slot) ?? FIVE_MEAL_WINDOWS.find(window => window.slot === slot);
+        return { ...(overrides[slot] ?? standard) };
+    });
+}
+/** Keep only edited times. Switching counts can safely choose different defaults for untouched windows. */
+export function initialMealWindowOverrides(windows, previous = {}) {
+    const edited = { ...previous };
+    const preset = mealWindowsForCount(windows.length);
+    if (windows.some((window, i) => preset[i]?.slot !== window.slot)) {
+        edited.slotOrderByCount = { ...previous.slotOrderByCount, [windows.length]: windows.map(window => window.slot) };
+    }
+    for (const window of windows) {
+        const standard = preset.find(row => row.slot === window.slot);
+        if (standard?.start === window.start && standard.end === window.end)
+            delete edited[window.slot];
+        else
+            edited[window.slot] = { ...window };
+    }
+    return edited;
 }
 /** A paired phone can report an outing before the cooker is connected. */
 export function familyPairingAvailable(view) {
@@ -53,15 +84,16 @@ export function recentPowerNotice(view, now) {
 }
 /** 실제 가족 데이터가 아직 연결되지 않았다면 미확인을 새로 판정하지 않는다. */
 export function careDataAvailable(v) {
-    return v.careAvailable ?? (v.dataSource !== "firebase");
+    return v.careAvailable ?? (v.mode === "demo" && v.dataSource !== "firebase" && v.dataSource !== "supabase");
 }
-const ORDER = { breakfast: 0, lunch: 1, dinner: 2, fourth: 3 };
-/** 하루치 끼니. 아직 서버 판정이 없는 오늘은 시간대 기준으로 채운다. */
+/** 실계정은 실제 판정만, 데모는 오늘의 시간대를 시뮬레이션한다. */
 export function slotsForDate(v, date, now) {
-    const found = v.slots.filter((s) => s.date === date).sort((a, b) => ORDER[a.slot] - ORDER[b.slot]);
+    const configured = recordedMealWindows(date, kstDate(now), v.mealProfile.windows, v.mealScheduleHistory)?.map(window => window.slot);
+    const found = v.slots.filter(s => s.date === date && (!configured || configured.includes(s.slot)))
+        .sort((a, b) => (configured ?? MEAL_SLOT_NAMES).indexOf(a.slot) - (configured ?? MEAL_SLOT_NAMES).indexOf(b.slot));
     if (found.length || date !== kstDate(now))
         return found;
-    if (!careDataAvailable(v) || v.dataSource === "supabase")
+    if (v.mode !== "demo" || v.dataSource === "firebase" || v.dataSource === "supabase" || !careDataAvailable(v))
         return [];
     return resolveMealSlots({ date, windows: v.mealProfile.windows, events: [], eatOutChecks: [], absences: v.absences, now });
 }

@@ -8,6 +8,8 @@
 
 ### DB와 서버 함수 반영
 
+하루 다섯 끼와 날짜별 끼니 설정에는 `0009_five_meal_windows.sql`과 `senior`·`jobs` 함수가 필요하다. 이 변경은 기존 가구의 저장된 끼니와 기록을 유지한다.
+
 아래 명령은 팀 저장소 루트와 Supabase CLI 3.3 기준이다. CLI에 BOB를 관리할 수 있는 계정으로 로그인한 뒤 운영 DB의 적용 이력을 비교한다. 대시보드에서 BOB가 보이지 않으면 BOB 조직의 팀 설정에서 초대를 받고 수락한다. [Supabase 팀 권한 안내](https://supabase.com/docs/guides/platform/access-control)
 
 ```sh

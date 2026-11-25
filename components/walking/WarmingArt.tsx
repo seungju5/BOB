@@ -6,6 +6,7 @@ import { IconHeart, IconPlay } from '@/components/icons';
 import { appPath } from '@/lib/app-path';
 import { CATEGORIES, lookName, type Look, type LookId } from '@/lib/walking/wardrobe';
 import type { HeartCategory } from '@/packages/walking-hearts/core.mjs';
+import { DressedRabbit } from './DressedRabbit';
 
 const asset = (name: string) => appPath('/walking/wardrobe/' + name + '.webp');
 export const trailArt = (background: LookId | null) => asset('trail-' + (background ?? 'park'));
@@ -33,20 +34,8 @@ export function ItemArt({ category, id }: { category: HeartCategory; id: LookId 
 }
 
 export function WarmingRabbit({ look }: { look: Look }) {
-  const body = asset('body-' + (look.outfit ?? 'base'));
-  return <div className="warming-rabbit" role="img"
-    aria-label={'워밍이 · ' + CATEGORIES.map(({ id }) => lookName(id, look[id])).join(' · ')}>
-    <i className="warming-rabbit-shadow" aria-hidden="true"/>
-    <div className="warming-rabbit-pose" aria-hidden="true">
-      <Image src={body} width={310} height={500} unoptimized loading="eager" alt="" draggable={false} className="warming-body"/>
-      <div className="warming-feet" aria-hidden="true">
-        <Image src={body} width={310} height={500} unoptimized alt="" draggable={false} className="warming-foot-left"/>
-        <Image src={body} width={310} height={500} unoptimized alt="" draggable={false} className="warming-foot-right"/>
-      </div>
-      {[look.accessory, look.hat].map(id => id && <Image key={id} src={asset('item-' + id)} width={180} height={150}
-        unoptimized alt="" draggable={false} className={'warming-layer wear-' + id}/>)}
-    </div>
-  </div>;
+  return <DressedRabbit body={look.outfit ?? 'base'} hat={look.hat} accessory={look.accessory} asset={asset}
+    label={'워밍이 · ' + CATEGORIES.map(({id}) => lookName(id, look[id])).join(' · ')}/>;
 }
 
 export function WarmingStage({ look, walking, toggleWalk }: { look: Look; walking: boolean; toggleWalk: () => void }) {

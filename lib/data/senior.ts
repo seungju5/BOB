@@ -3,6 +3,7 @@
 // 어르신의 예시 체험은 이 브라우저에만 저장한다.
 
 import { useSyncExternalStore } from "react";
+import { mealWindowsOn } from "@/lib/judge/resolveMealSlots";
 import { addDays, kstDate, kstDateTime } from "@/lib/judge/time";
 import type { Absence, MealSlotName, MealWindow } from "@/lib/judge/types";
 import type { DemoState } from "@/lib/demo/state";
@@ -14,7 +15,7 @@ const KEY = "bapmutna.senior.token";
 const EVENT = "bapmutna:senior";
 const DEMO = "demo";
 
-export type SeniorStatus = { seniorName: string; hasCookSignalToday: boolean; absence: Absence | null; mealWindows: MealWindow[] };
+export type SeniorStatus = { seniorName: string; hasCookSignalToday: boolean; absence: Absence | null; mealWindows: MealWindow[]; yesterdayMealWindows?: MealWindow[] };
 /** 기본은 지금·오늘부터. 어르신이 따로 고르면 그 끼니나 시작일로 남긴다. */
 export type SeniorWhen = { meal?: { date: string; slot: MealSlotName }; startDate?: string };
 export type SeniorOp = "eat_out" | "help" | "away" | "back";
@@ -79,11 +80,12 @@ export async function performSeniorAction(token: string | null | undefined, op: 
     let meal;
     if (op === "eat_out" && when.meal) {
       const {date, slot} = when.meal;
-      const window = s.mealProfile.windows.find(w => w.slot === slot);
+      const windows = mealWindowsOn(date, s.mealProfile.windows, s.mealScheduleHistory);
+      const window = windows.find(w => w.slot === slot);
       const time = window && (date === today || date === addDays(today, -1)) && mealRecordTime(date, window, now);
       if (!time) throw new Error("선택한 날짜와 끼니를 다시 확인해 주세요.");
       at = time.toISOString();
-      meal = { date, label: mealSlotLabel(slot, s.mealProfile.windows) };
+      meal = { date, label: mealSlotLabel(slot, windows) };
     }
     const actions = [...s.seniorActions, { type: op === "back" ? ("away" as const) : op, at }];
     if (op === "help")
@@ -124,6 +126,7 @@ export function seniorDemoStatus(demo: DemoState, now: Date): SeniorStatus {
     hasCookSignalToday,
     absence: demo.absences.find(a => a.startDate <= today && today <= a.endDate) ?? null,
     mealWindows: demo.mealProfile.windows,
+    yesterdayMealWindows: mealWindowsOn(addDays(today, -1), demo.mealProfile.windows, demo.mealScheduleHistory),
   };
 }
 

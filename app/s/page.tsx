@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRef, useState, type ReactNode } from "react";
 import { IconArrowRight, IconCheck, IconHeart, IconHome, IconSuitcase, IconUtensils } from "@/components/icons";
-import { Logo, Mascot } from "@/components/Mascot";
+import { Logo } from "@/components/Mascot";
 import { Button, Skeleton } from "@/components/ui";
 import { SeniorSheet as Sheet } from "@/components/senior/SeniorSheet";
 import { PhoneStepsCard } from "@/components/senior/PhoneStepsCard";
@@ -18,14 +18,6 @@ import { mealRecordTime, useSenior, type SeniorOp, type SeniorStatus, type Senio
 import { mealSlotLabel } from "@/lib/data/view";
 import type { MealWindow } from "@/lib/judge/types";
 import { useNow } from "@/lib/demo/store";
-
-const CHEERS = [
-  "천천히 꼭꼭\n씹어 드세요",
-  "오늘 하루도\n든든하게!",
-  "따뜻한 밥 한 술,\n그거면 됐어요",
-  "웃는 얼굴이\n제일 보기 좋아요",
-  "물도 한 잔\n챙겨 드세요",
-];
 
 export default function SeniorPage() {
   const senior = useSenior();
@@ -116,7 +108,6 @@ function SeniorHome({ status, now, act, isDemo, endDemo }: { status: SeniorStatu
   const [busy, setBusy] = useState(false);
   const request = useRef(0);
   const today = kstDate(now);
-  const cheer = CHEERS[Number(today.slice(-2)) % CHEERS.length];
   const away = status.absence;
   const close = () => {
     request.current += 1;
@@ -149,11 +140,8 @@ function SeniorHome({ status, now, act, isDemo, endDemo }: { status: SeniorStatu
         </Link>
       </header>
       <div className="bapmunna-senior-greeting">
-        <div>
-          <h1>{status.seniorName ? `${status.seniorName}님, 반가워요` : "오늘도 반가워요"}</h1>
-          <p>{cheer.replace("\n", " ")}</p>
-        </div>
-        <Mascot className="bapmunna-senior-mascot" />
+        <h1>{status.seniorName ? `${status.seniorName}님, 반가워요` : "오늘도 반가워요"}</h1>
+        <p>오늘 하루는 어떠셨을까요?</p>
       </div>
 
       <section className="mt-6" aria-labelledby="senior-actions-title">
@@ -185,7 +173,7 @@ function SeniorHome({ status, now, act, isDemo, endDemo }: { status: SeniorStatu
             <h2 className="text-[28px] font-extrabold text-cocoa">밖에서 드셨나요?</h2>
             <p className="mt-2 text-2xl text-muted">{isDemo ? "외식 소식을 남기는 방법을 체험해요." : "밥솥을 쓰지 않은 식사 소식을 남겨요."}</p>
             <ErrorLine text={error} />
-            <EatOutChoices now={now} windows={status.mealWindows} busy={busy} isDemo={isDemo} onClose={close} run={run} />
+            <EatOutChoices now={now} windows={status.mealWindows} yesterdayWindows={status.yesterdayMealWindows} busy={busy} isDemo={isDemo} onClose={close} run={run} />
           </>
         )}
       </Sheet>
@@ -349,9 +337,10 @@ function AwaySheet({
  * 외식 소식. 기본은 지금 바로 "네, 먹었어요". 다른 때 드셨으면 오늘·어제 끼니 중에서 고른다.
  * 아직 시작하지 않은 끼니는 고를 수 없다.
  */
-function EatOutChoices({ now, windows, busy, isDemo, onClose, run }: {
+function EatOutChoices({ now, windows, yesterdayWindows = windows, busy, isDemo, onClose, run }: {
   now: Date;
   windows: MealWindow[];
+  yesterdayWindows?: MealWindow[];
   busy: boolean;
   isDemo: boolean;
   onClose: () => void;
@@ -359,14 +348,14 @@ function EatOutChoices({ now, windows, busy, isDemo, onClose, run }: {
 }) {
   const [picking, setPicking] = useState(false);
   const today = kstDate(now);
-  const days = [{ date: today, label: "오늘" }, { date: addDays(today, -1), label: "어제" }];
+  const days = [{ date: today, label: "오늘", schedule: windows }, { date: addDays(today, -1), label: "어제", schedule: yesterdayWindows }];
   if (!picking) {
     return (
       <div className="mt-7 flex flex-col gap-3">
         <Button className="min-h-16 text-2xl" disabled={busy} onClick={() => run("eat_out")}>
           {isDemo ? "외식 소식 체험하기" : "네, 먹었어요"}
         </Button>
-        {windows.length ? (
+        {windows.length || yesterdayWindows.length ? (
           <Button variant="outline" className="min-h-16 text-2xl" disabled={busy} onClick={() => setPicking(true)}>
             다른 때 먹었어요
           </Button>
@@ -380,8 +369,8 @@ function EatOutChoices({ now, windows, busy, isDemo, onClose, run }: {
   return (
     <div className="mt-6 flex flex-col gap-4">
       <p className="text-2xl font-bold text-cocoa">언제 드셨어요?</p>
-      {days.map(({ date, label }) => {
-        const choices = windows.filter(w => mealRecordTime(date, w, now) !== null);
+      {days.map(({ date, label, schedule }) => {
+        const choices = schedule.filter(w => mealRecordTime(date, w, now) !== null);
         if (!choices.length) return null;
         return (
           <div key={date}>
@@ -395,7 +384,7 @@ function EatOutChoices({ now, windows, busy, isDemo, onClose, run }: {
                   onClick={() => run("eat_out", undefined, { meal: { date, slot: w.slot } })}
                   className="min-h-16 rounded-2xl bg-butter-soft text-2xl font-bold text-cocoa disabled:opacity-50"
                 >
-                  {label} {mealSlotLabel(w.slot, windows)}
+                  {label} {mealSlotLabel(w.slot, schedule)}
                 </button>
               ))}
             </div>

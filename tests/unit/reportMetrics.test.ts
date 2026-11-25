@@ -42,15 +42,15 @@ describe("report metrics", () => {
     ];
     const rows = slotRates(view({ slots }), NOW);
     expect(rows).toEqual([
-      { slot: "breakfast", ok: 1, total: 2, rate: 0.5 },
-      { slot: "lunch", ok: 1, total: 1, rate: 1 },
-      { slot: "dinner", ok: 0, total: 0, rate: null },
+      { position: 1, label: "첫 끼", ok: 1, total: 2, rate: 0.5 },
+      { position: 2, label: "두 끼", ok: 1, total: 1, rate: 1 },
+      { position: 3, label: "세 끼", ok: 0, total: 0, rate: null },
     ]);
   });
 
   it("slotRates: 저장된 시간대만 (2끼면 두 줄)", () => {
     const rows = slotRates(view({ mealProfile: { windows: [DEFAULT_WINDOWS[0], DEFAULT_WINDOWS[2]], eatOutPerWeek: 1, usesKeepWarm: true, cooksPerWeek: 7 } }), NOW);
-    expect(rows.map((r) => r.slot)).toEqual(["breakfast", "dinner"]);
+    expect(rows.map((r) => r.label)).toEqual(["첫 끼", "두 끼"]);
   });
 
   it("keeps missing records distinct from observed zero and does not infer an incomplete baseline", () => {

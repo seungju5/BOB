@@ -2,20 +2,19 @@
 
 import Link from "next/link";
 import { ImpactConnectionLinks } from "@/components/ImpactConnectionLinks";
-import { ALERT_PRIORITY, ALERT_TONE, alertCopy, AlertShortcut, fmtDateLong, hasAlertCall, STATUS_META, StatusIcon, withWa } from "@/components/guardian";
+import { ALERT_PRIORITY, ALERT_TONE, alertCopy, AlertShortcut, fmtDateLong, hasAlertCall, withWa } from "@/components/guardian";
 import { IconArrowRight, IconBell, IconChart, IconClock, IconPhone, IconSuitcase } from "@/components/icons";
 import { Logo } from "@/components/Mascot";
 import { HomeLoadingCompanion, HomeMealCompanion } from "@/components/companions/CookerCompanion";
+import { TodayMealList } from "@/components/TodayMeals";
 import { buttonClass, Skeleton } from "@/components/ui";
 import { countMissedMeals } from "@/lib/judge/evaluateAlerts";
 import { kstDate } from "@/lib/judge/time";
-import { mealStatusClass, useMealPalette } from "@/lib/data/appearance";
 import { useApp } from "@/lib/data/useApp";
-import { recentSlots, reportSummary, mealSlotLabel, slotsForDate, unackedAlerts } from "@/lib/data/view";
+import { recentSlots, reportSummary, slotsForDate, unackedAlerts } from "@/lib/data/view";
 
 export default function HomePage() {
   const { view, now, actions } = useApp();
-  const palette = useMealPalette();
   if (!view || !now) {
     return (
       <main className="flex flex-col gap-4 p-6">
@@ -73,17 +72,9 @@ export default function HomePage() {
       ) : null}
 
       <section aria-label="오늘의 끼니" className="mt-4 rounded-[1.5rem] border border-line bg-paper px-4 pt-2 pb-4">
-        <HomeMealCompanion />
-        {slots.length ? (
-          <ul className={`mt-2 grid gap-1.5 ${slots.length === 4 ? "grid-cols-2" : "grid-cols-[repeat(auto-fit,minmax(min(100%,5rem),1fr))]"}`}>
-            {slots.map((s) => (
-              <li key={s.slot} className={`flex flex-col items-center justify-center gap-1 rounded-xl px-1 py-2.5 text-center ${mealStatusClass(s.status, palette)}`}>
-                <span className="text-[16px]">{mealSlotLabel(s.slot, view.mealProfile.windows)}</span>
-                <strong className="flex flex-wrap items-center justify-center gap-1 text-[16px]"><StatusIcon status={s.status} />{STATUS_META[s.status].label}</strong>
-              </li>
-            ))}
-          </ul>
-        ) : <p className="mt-2 text-[17px] font-semibold text-cocoa">아직 연결된 식사 기록이 없어요.</p>}
+        <HomeMealCompanion mealCount={view.mealProfile.windows.length} />
+        <TodayMealList windows={view.mealProfile.windows} slots={slots} />
+        {!slots.length && <p className="mt-2 text-[17px] font-semibold text-cocoa">아직 연결된 식사 기록이 없어요.</p>}
         <p className="mt-2 text-[16px] leading-relaxed text-muted">{slots.length ? "밥솥 사용 소식이에요. 드신 양은 알 수 없어요." : "기기를 연결하면 이곳에서 밥솥 소식을 볼 수 있어요."}</p>
         {!callInAlert && (
           <div className="mt-3">

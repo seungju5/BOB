@@ -1,7 +1,7 @@
 // 데모 상태 → 화면용 AppView. 판단은 lib/judge의 순수 함수를 그대로 쓴다.
 
 import { evaluateAlerts } from "@/lib/judge/evaluateAlerts";
-import { resolveMealSlots } from "@/lib/judge/resolveMealSlots";
+import { mealWindowsOn, resolveMealSlots } from "@/lib/judge/resolveMealSlots";
 import { addDays, kstDate } from "@/lib/judge/time";
 import type { CookerEvent, MealSlot } from "@/lib/judge/types";
 import { reportSummary, type AppView } from "@/lib/data/view";
@@ -13,7 +13,7 @@ const toEvents = (s: DemoState): CookerEvent[] =>
 function demoSlots(s: DemoState, date: string, now: Date, events = toEvents(s)): MealSlot[] {
   return resolveMealSlots({
     date,
-    windows: s.mealProfile.windows,
+    windows: mealWindowsOn(date, s.mealProfile.windows, s.mealScheduleHistory),
     events,
     eatOutChecks: s.seniorActions.filter((a) => a.type === "eat_out").map((a) => new Date(a.at)),
     absences: s.absences,
@@ -57,6 +57,7 @@ export function toView(s: DemoState, now: Date): AppView {
     senior: s.senior,
     household: s.household,
     mealProfile: s.mealProfile,
+    mealScheduleHistory: s.mealScheduleHistory,
     alertSettings: s.alertSettings,
     seniorConsent: s.seniorConsent,
     pairingCode: s.pairingCode,

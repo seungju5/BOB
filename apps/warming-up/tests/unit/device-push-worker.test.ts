@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { createContext, runInContext } from "node:vm";
 import { expect, it, vi } from "vitest";
-import { noticeDay, scopedNotice } from "@/public/notification-content";
+import { noticeDay, noticeText, scopedNotice } from "@/public/notification-content";
 
 type WorkerEvent = {data?: {json(): unknown}; notification?: object; waitUntil(task: Promise<unknown>): void};
 const source = readFileSync("public/sw.js", "utf8");
@@ -13,11 +13,13 @@ function worker(previews = false, withWindow = true, delivery?:object) {
   const show = vi.fn(), focus = vi.fn(), openWindow = vi.fn();
   const navigate = vi.fn(async () => ({focus}));
   const scope = "https://example.invalid/app/";
-  const context = createContext({URL, crypto, TextEncoder, self: {
+  const postMessage = vi.fn(), put = vi.fn();
+  const cacheMatch=async (path:string) => path.endsWith("/.notice-delivery")
+    ? delivery && Response.json(delivery) : previews ? new Response("this-device-owner") : undefined;
+  const context = createContext({URL, crypto, TextEncoder, Response, self: {
     registration:{scope, showNotification:show},
-    caches: {match:async (path:string) => path.endsWith("/.notice-delivery")
-      ? delivery && Response.json(delivery) : previews ? new Response("this-device-owner") : undefined},
-    clients:{openWindow, matchAll:async () => withWindow ? [{url:scope, navigate}] : []},
+    caches: {match:cacheMatch, open:async()=>({match:cacheMatch,put})},
+    clients:{openWindow, matchAll:async () => withWindow ? [{url:scope, navigate, postMessage}] : []},
     addEventListener:(key:string, fn:(event: WorkerEvent) => void) => { events[key]=fn; },
   }});
   context.importScripts = (url: string) => { expect(url).toBe("./notification-content.js"); runInContext(content, context); };
@@ -27,8 +29,27 @@ function worker(previews = false, withWindow = true, delivery?:object) {
     events[type]({...event, waitUntil:task=>{done = task;}});
     await done;
   }
-  return {show, scope, focus, navigate, openWindow, fire};
+  return {show, scope, focus, navigate, openWindow, fire, put, postMessage};
 }
+
+it("records remote test receipt only after a system notification is accepted for the current owner",async()=>{
+  const owner="this-device-owner", scope=await scopedNotice(owner,"r".repeat(32));
+  const packet={data:{json:()=>({kind:"delivery_test",tag:"bapmunna-delivery-test",scope})}};
+  const w=worker(false,true,{enabled:true,owner});
+  w.show.mockRejectedValueOnce(Error("notification rejected"));
+  await expect(w.fire("push",packet)).rejects.toThrow();
+  expect(w.put).not.toHaveBeenCalled();
+  await w.fire("push",packet);
+  expect(w.put.mock.calls[0][0]).toBe(w.scope+".notice-test-receipt");
+  expect(await (w.put.mock.calls[0][1] as Response).json()).toEqual({scope,receivedAt:expect.any(Number)});
+  expect(w.postMessage).toHaveBeenCalledWith({type:"bapmunna:server-test-received"});
+  expect(noticeText("device_preview",false).title).not.toBe(w.show.mock.calls[1][0]);
+  for(const policy of [{enabled:false},{enabled:true,owner:"other"}]){
+    const stale=worker(false,true,policy); await stale.fire("push",packet);
+    expect(stale.show).not.toHaveBeenCalled();
+    expect(stale.put).not.toHaveBeenCalled();
+  }
+});
 
 it("keeps family details private unless this device opts in and handles prior notification versions", async () => {
   const w = worker();

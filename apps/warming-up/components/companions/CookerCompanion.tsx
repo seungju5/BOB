@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from 'react';
 import { appPath } from '@/lib/app-path';
+import { MealScheduleLink } from '@/components/TodayMeals';
 import './companions.css';
 
 type Gesture = 'settle' | 'hello' | 'happy' | 'bow' | 'rest';
@@ -32,7 +33,7 @@ export function CookerArt({ gesture = 'settle' }: { gesture?: Gesture }) {
 }
 
 /** Fits inside the meal card instead of adding a floating character or another home section. */
-export function HomeMealCompanion() {
+export function HomeMealCompanion({ mealCount }: { mealCount: number }) {
   const [greeting, setGreeting] = useState<{gesture: Gesture; text: string; key: number}>({gesture:'settle',text:'',key:0});
   const next = useRef(0);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -46,7 +47,8 @@ export function HomeMealCompanion() {
   return <div className="meal-companion-heading">
     <div className="meal-companion-copy">
       <h2>오늘의 끼니</h2>
-      <p className="meal-companion-caption" aria-hidden={Boolean(greeting.text)}>{greeting.text || '작은 소식도 다정하게'}</p>
+      <MealScheduleLink count={mealCount} />
+      {greeting.text && <p className="meal-companion-caption" aria-hidden="true">{greeting.text}</p>}
       <span className="sr-only" role="status">{greeting.text}</span>
     </div>
     <button type="button" className="meal-companion-button" onClick={greet} aria-label="밥솥이에게 인사하기">

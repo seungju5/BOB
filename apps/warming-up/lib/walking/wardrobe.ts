@@ -4,6 +4,12 @@ import {
 } from '@/packages/walking-hearts/core.mjs';
 
 export const LOCAL_LOOK_KEY = 'bapmunna.warming.walk-look.v1';
+export const TRAIL_STAMP_KEY = 'bapmunna.warming.trail-stamp.v1.';
+export const TRAIL_STAMPS = [
+  {id:'park', name:'햇살 공원', background:null},
+  {id:'blossom', name:'벚꽃 소풍길', background:'blossom'},
+  {id:'moon', name:'달빛 언덕', background:'moon'},
+] as const;
 
 export async function saveWithWardrobeLock<T>(scope: 'local' | 'demo', save: () => T): Promise<T> {
   if (typeof navigator !== 'undefined' && navigator.locks) {
@@ -39,13 +45,17 @@ export type WardrobeItem = { id: LookId; name: string; category: HeartCategory; 
 
 export const STARTER_LOOK: Look = { hat: 'berry-beret', outfit: 'dungarees', accessory: null, background: 'blossom' };
 const allItems: readonly WardrobeItem[] = [...STARTER_ITEMS, ...HEART_ITEMS];
+export const LOCAL_WARDROBE_ITEMS: readonly WardrobeItem[] = [
+  ...STARTER_ITEMS,
+  ...HEART_ITEMS.filter(item => item.id === 'star-cape'),
+];
 
 export function lookName(category: HeartCategory, id: LookId | null) {
   return allItems.find(item => item.id === id && item.category === category)?.name
     ?? CATEGORIES.find(part => part.id === category)!.basic;
 }
 
-export function readLocalLook(stored: string | null): Look {
+export function readLocalLook(stored: string | null, canWearCape = false): Look {
   const look = { ...STARTER_LOOK };
   if (!stored) return look;
   try {
@@ -53,6 +63,10 @@ export function readLocalLook(stored: string | null): Look {
     if (!data || typeof data !== 'object') return look;
     for (const { id } of CATEGORIES) {
       const item = (data as Record<string, unknown>)[id];
+      if (id === 'outfit' && item === 'star-cape' && canWearCape) {
+        look.outfit = 'star-cape';
+        continue;
+      }
       if (item === null || STARTER_ITEMS.some(entry => entry.id === item && entry.category === id)) {
         look[id] = item as StarterId | null;
       }

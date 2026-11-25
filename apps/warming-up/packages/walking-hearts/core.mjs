@@ -27,6 +27,7 @@ export const HEART_ITEMS = Object.freeze([
   {id: 'hiking-cap', name: '가벼운 산책모자', category: 'hat', price: 6, icon: '🧢', unlockDays: null},
   {id: 'vest', name: '따뜻한 털조끼', category: 'outfit', price: 9, icon: '🧶', unlockDays: null},
   {id: 'hanbok', name: '고운 한복', category: 'outfit', price: 15, icon: '🌸', unlockDays: 7},
+  {id: 'star-cape', name: '별자수 망토', category: 'outfit', price: 12, icon: '🌙', unlockDays: null},
   {id: 'crown', name: '반짝 왕관', category: 'hat', price: 15, icon: '👑', unlockDays: 30},
   {id: 'autumn', name: '가을 산책길', category: 'background', price: 3, icon: '🍂', unlockDays: null},
 ].map(Object.freeze));

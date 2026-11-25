@@ -8,8 +8,9 @@ import { PageHeader, Skeleton } from "@/components/ui";
 import { monthLeadingDays, navigateRecords, recordPeriod } from "@/components/records/period";
 import { MEAL_DAY_LABEL, MEAL_STATUS_LABEL, mealDayClass, mealStatusClass, useMealPalette } from "@/lib/data/appearance";
 import { kstDate } from "@/lib/judge/time";
+import { datedMealSlots, mealPositionRows } from "@/lib/report/metrics";
 import { useApp } from "@/lib/data/useApp";
-import { careDataAvailable, mealDaySummary, mealSlotLabel, slotsForDate, type AppView } from "@/lib/data/view";
+import { careDataAvailable, mealDaySummary, type AppView } from "@/lib/data/view";
 import { demoPowerTranscript } from "@/lib/power/power-transcription-model";
 import { PowerTranscriptionSection } from "@/components/power/PowerTranscriptionSection";
 import { PowerNotice } from "@/components/SmartThingsAccountCard";
@@ -129,11 +130,11 @@ export default function RecordsPage() {
 }
 
 function DayMeals({ view, date, now }: { view: AppView; date: string; now: Date }) {
-  const slots = slotsForDate(view, date, now);
+  const slots = datedMealSlots(view, date, now);
   if (!slots.length) return <p className="py-5 text-[15px] text-muted">이날의 끼니 기록이 없어요.</p>;
   return <ul className="mt-3 flex flex-col gap-2">{slots.map((slot) => (
     <li key={slot.slot} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-line px-4 py-4">
-      <span className="text-[16px] font-bold text-cocoa">{mealSlotLabel(slot.slot, slots)}</span>
+      <span className="text-[16px] font-bold text-cocoa">{slot.label}</span>
       <MealStatusChip status={slot.status} />
     </li>
   ))}</ul>;
@@ -142,20 +143,23 @@ function DayMeals({ view, date, now }: { view: AppView; date: string; now: Date 
 function WeekMeals({ view, dates, now, onOpenDay }: { view: AppView; dates: string[]; now: Date; onOpenDay: (date: string) => void }) {
   const palette = useMealPalette();
   const today = kstDate(now);
+  const days = dates.map(date => ({ date, slots: date <= today ? datedMealSlots(view, date, now) : [] }));
+  const rows = mealPositionRows(days, dates.includes(today) ? view.mealProfile.windows.length : 0);
   return <div className="mt-3 overflow-x-auto pb-2">
     <table className="w-full min-w-[360px] border-separate border-spacing-1 text-center text-[12px]">
       <caption className="sr-only">날짜별 끼니 상태. 날짜를 누르면 하루 기록을 확인할 수 있어요.</caption>
       <thead><tr><th scope="col" className="w-12"><span className="sr-only">끼니</span></th>{dates.map((date) => <th key={date} scope="col" className="font-medium text-muted"><button type="button" data-record-date={date} disabled={date > today} onClick={() => onOpenDay(date)} aria-current={date === today ? "date" : undefined} className="min-h-11 min-w-10 rounded-lg disabled:opacity-40" aria-label={`${fmtDateLong(date)} 하루 기록 보기`}>{fmtMonthDay(date)}</button></th>)}</tr></thead>
-      <tbody>{view.mealProfile.windows.map(({ slot }) => (
-        <tr key={slot}>
-          <th scope="row" className="text-left font-semibold text-cocoa">{mealSlotLabel(slot, view.mealProfile.windows)}</th>
-          {dates.map((date) => {
-            const found = date <= today ? slotsForDate(view, date, now).find((item) => item.slot === slot) : null;
-            return <td key={date}>{found ? <span role="img" className={`mx-auto grid h-9 w-9 place-items-center rounded-xl ${mealStatusClass(found.status, palette)}`} aria-label={`${fmtMonthDay(date)} ${mealSlotLabel(slot, view.mealProfile.windows)} ${MEAL_STATUS_LABEL[found.status]}`}><StatusIcon status={found.status} className="h-4 w-4" /></span> : <span className="text-muted" aria-label={date > today ? "아직 오지 않은 날" : "기록 없음"}>–</span>}</td>;
+      <tbody>{rows.map(({ position, label }) => (
+        <tr key={position}>
+          <th scope="row" className="text-left font-semibold text-cocoa">{label}</th>
+          {days.map(({ date, slots }) => {
+            const found = slots.find(item => item.position === position);
+            return <td key={date}>{found ? <span role="img" className={`mx-auto grid h-9 w-9 place-items-center rounded-xl ${mealStatusClass(found.status, palette)}`} aria-label={`${fmtMonthDay(date)} ${label} ${MEAL_STATUS_LABEL[found.status]}`}><StatusIcon status={found.status} className="h-4 w-4" /></span> : <span className="text-muted" aria-label={date > today ? "아직 오지 않은 날" : "기록 없음"}>–</span>}</td>;
           })}
         </tr>
       ))}</tbody>
     </table>
+    {!rows.length && <p className="py-4 text-center text-sm text-muted">이 주에는 끼니 기록이 없어요.</p>}
   </div>;
 }
 

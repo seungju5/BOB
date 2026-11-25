@@ -8,10 +8,10 @@ import { DEVICE_REPORTS, PLANNED_DEVICES, type DeviceKind } from "@/components/r
 import { Bar, ReportCard } from "@/components/report/parts";
 import { PageHeader, Skeleton } from "@/components/ui";
 import { useApp } from "@/lib/data/useApp";
-import { careDataAvailable, mealSlotLabel, reportSummary, type AppView } from "@/lib/data/view";
+import { careDataAvailable, reportSummary, type AppView } from "@/lib/data/view";
 import { MEAL_STATUS_LABEL, mealStatusClass, useMealPalette } from "@/lib/data/appearance";
 import { MealStatusLegend } from "@/components/MealStatus";
-import { dailyMeals, slotRates } from "@/lib/report/metrics";
+import { dailyMeals, mealPositionRows, slotRates } from "@/lib/report/metrics";
 
 /**
  * 패턴 리포트. 위는 가전과 무관한 종합(끼니 확인율), 아래는 가전별 탭(components/report/devices.tsx 등록부).
@@ -115,13 +115,13 @@ function Overview({ view, now }: { view: AppView; now: Date }) {
   );
 }
 
-/** 설정한 1~4끼의 확인율 */
+/** 해당 주 각 날짜의 끼니 순서별 확인율 */
 function SlotRates({ view, now }: { view: AppView; now: Date }) {
   const rows = slotRates(view, now);
   return (
     <ReportCard title="끼니별 확인율" aside="최근 7일">
       {rows.map((s) => (
-        <Bar key={s.slot} label={mealSlotLabel(s.slot, view.mealProfile.windows)} pct={s.rate === null ? 0 : Math.round(s.rate * 100)} value={s.rate === null ? "기록 없음" : `${s.ok}/${s.total}일`} />
+        <Bar key={s.position} label={s.label} pct={s.rate === null ? 0 : Math.round(s.rate * 100)} value={s.rate === null ? "기록 없음" : `${s.ok}/${s.total}일`} />
       ))}
     </ReportCard>
   );
@@ -131,19 +131,19 @@ function SlotRates({ view, now }: { view: AppView; now: Date }) {
 function WeekStrip({ view, now }: { view: AppView; now: Date }) {
   const palette = useMealPalette();
   const days = dailyMeals(view, now);
-  const slots = view.mealProfile.windows.map((w) => w.slot);
+  const rows = mealPositionRows(days);
   return (
     <ReportCard title="하루별 끼니" aside="최근 7일">
       <div className="mt-3 grid grid-cols-7 gap-1.5">
         {days.map((d) => (
           <div key={d.date} className="flex flex-col items-center gap-1">
-            {slots.map((slot) => {
-              const s = d.slots.find((x) => x.slot === slot);
+            {rows.map(({ position, label }) => {
+              const s = d.slots.find(x => x.position === position);
               return (
                 <span
-                  key={slot}
+                  key={position}
                   role="img"
-                  aria-label={`${fmtMonthDay(d.date)} ${mealSlotLabel(slot, view.mealProfile.windows)}: ${s ? MEAL_STATUS_LABEL[s.status] : "기록 없음"}`}
+                  aria-label={`${fmtMonthDay(d.date)} ${label} ${s ? MEAL_STATUS_LABEL[s.status] : "기록 없음"}`}
                   className={`grid h-6 w-full place-items-center rounded-md ${s ? mealStatusClass(s.status, palette) : "bg-neutral-100 text-muted"}`}
                 >{s ? <StatusIcon status={s.status} className="h-3.5 w-3.5" /> : <span aria-hidden="true">–</span>}</span>
               );
@@ -153,7 +153,7 @@ function WeekStrip({ view, now }: { view: AppView; now: Date }) {
         ))}
       </div>
       <MealStatusLegend />
-      <p className="mt-2 text-[12px] text-muted">칸은 위에서부터 {slots.map((slot) => mealSlotLabel(slot, view.mealProfile.windows)).join("·")}이에요.</p>
+      <p className="mt-2 text-[12px] text-muted">{rows.length ? `위에서부터 ${rows.map(row => row.label).join(" · ")} 순서예요.` : "이 주에는 끼니 기록이 없어요."}</p>
     </ReportCard>
   );
 }

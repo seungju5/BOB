@@ -1,5 +1,5 @@
 export type HeartCategory = 'hat' | 'outfit' | 'accessory' | 'background';
-export type HeartItemId = 'scarf' | 'basket' | 'straw-hat' | 'hiking-cap' | 'vest' | 'hanbok' | 'crown' | 'autumn';
+export type HeartItemId = 'scarf' | 'basket' | 'straw-hat' | 'hiking-cap' | 'vest' | 'hanbok' | 'star-cape' | 'crown' | 'autumn';
 export type HeartDefaultId = 'default' | `default-${HeartCategory}`;
 export type HeartTimestamp = Date | string | number;
 export type HeartItem = Readonly<{id: HeartItemId; name: string; category: HeartCategory; price: number; icon: string; unlockDays: number | null}>;

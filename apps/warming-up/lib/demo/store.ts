@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { syncAlerts } from "./derive";
-import { createDemoState, type DemoState } from "./state";
+import { createDemoState, preserveDemoSchedule, type DemoState } from "./state";
 
 const KEY = "bapmutna.demo.v1";
 const EVENT = "bapmutna:update";
@@ -46,8 +46,9 @@ function subscribe(cb: () => void) {
 }
 
 export function updateDemo(fn: (s: DemoState) => DemoState) {
-  const cur = read() ?? createDemoState(new Date());
-  write(syncAlerts(fn(cur), new Date()));
+  const now = new Date();
+  const cur = read() ?? createDemoState(now);
+  write(syncAlerts(preserveDemoSchedule(cur, fn(cur), now), now));
 }
 
 export function resetDemo() {

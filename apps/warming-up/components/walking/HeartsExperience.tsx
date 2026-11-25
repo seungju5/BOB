@@ -13,6 +13,7 @@ import {WarmingWardrobe} from './WarmingWardrobe';
 import {HeartIcon,HeartsGarden} from './HeartsScene';
 import {validateHeartsLeague} from '@/lib/hearts/presentation';
 import {unlockDemoMessages} from '@/lib/hearts/demo';
+import {linkedOutfit,setOutfitLink} from './OutfitLookbook';
 import './hearts.css';
 
 type Tab='today'|'family'|'closet'|'league';
@@ -49,13 +50,20 @@ export function HeartsExperience({mode,transport,embedded=false}:Props){
 
   useEffect(()=>{
     const live={active:true,revision:0,busy:false,abort:new AbortController()};life.current=live;
+    function openLinkedFitting() {
+      const style = linkedOutfit(window.location.search, true);
+      if (!style) return;
+      setTab('closet');
+    }
+    window.addEventListener('popstate',openLinkedFitting);
     const initial=setTimeout(()=>{
+      openLinkedFitting();
       setToday(heartDate(new Date()));
       if(demo){const next=readHeartsDemo();current.current=next;setSnapshot(next);setLoaded(true);}else if(transport)void refresh();else setLoaded(true);
     },0);
     const tick=()=>{if(document.visibilityState!=='visible')return;setToday(heartDate(new Date()));if(!demo)void refresh();};
     const timer=setInterval(tick,60000);window.addEventListener('focus',tick);document.addEventListener('visibilitychange',tick);
-    return()=>{live.active=false;live.revision++;live.abort.abort();clearTimeout(initial);clearInterval(timer);window.removeEventListener('focus',tick);document.removeEventListener('visibilitychange',tick);};
+    return()=>{live.active=false;live.revision++;live.abort.abort();clearTimeout(initial);clearInterval(timer);window.removeEventListener('focus',tick);window.removeEventListener('popstate',openLinkedFitting);document.removeEventListener('visibilitychange',tick);};
   },[demo,refresh,transport]);
 
   async function run(action:HeartAction,body:Record<string,unknown>={},success='저장했어요.'){
@@ -107,7 +115,7 @@ export function HeartsExperience({mode,transport,embedded=false}:Props){
     });
     return()=>{active=false;};
   },[tab,snapshot.leagueEnabled,snapshot.region,demo,date,transport]);
-  function switchTab(next:Tab){setTab(next);}
+  function switchTab(next:Tab){if(next!=='closet')setOutfitLink(null);setTab(next);}
   async function saveOutfit(changes: LookChanges) {
     const live = life.current;
     const activeState = current.current.state;

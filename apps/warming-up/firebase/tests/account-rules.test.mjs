@@ -104,11 +104,35 @@ test('the app SDK confirms timestamps, rejects stale names, and isolates househo
     assert.deepEqual(empty.savedAt,{settings:null,household:null});
     await assert.rejects(provider.saveAppPreferences({...prefs,preparationAcknowledged:false,phone:'010-0000-0000'},home,uid,empty.revision), {code:'permission-denied'});
     assert.equal((await provider.getAppPreferences(uid)).household,null);
-    const stored = await provider.saveAppPreferences(prefs,home,uid,empty.revision);
+    let stored = await provider.saveAppPreferences(prefs,home,uid,empty.revision);
     assert.ok(Number.isFinite(Date.parse(stored.savedAt.household))); assert.ok(Number.isFinite(Date.parse(stored.savedAt.settings)));
     const loaded = await provider.getAppPreferences(uid);
     assert.deepEqual(loaded.savedAt,stored.savedAt);
     assert.equal(loaded.household.alias,home.alias); assert.deepEqual(loaded.settings,prefs);
+
+    const ids = ['breakfast','lunch','dinner','fourth','fifth'];
+    const five = ids.map((slot, i) => ({slot, start:(10+i)+':00', end:(11+i)+':00'}));
+    const pathSettings = account(uid) + '/preferences/settings';
+    for (const windows of [[five[0],five[2]],five.slice(0,4),five]) {
+      stored = await provider.saveAppPreferences({...prefs,windows},home,uid,stored.revision);
+      assert.deepEqual((await provider.getAppPreferences(uid)).settings.windows,windows);
+    }
+    const serverRecord = await (await request(store+'/'+pathSettings, undefined, fixture.token)).json();
+    const {updatedAt, ...fields} = serverRecord.fields;
+    assert.ok(updatedAt.timestampValue);
+    const encode = windows => ({arrayValue:{values:windows.map(w => ({mapValue:{fields:{
+      slot:string(w.slot),start:string(w.start),end:string(w.end),
+    }}}))}});
+    for (const windows of [[], [...five,five[4]], [...five.slice(0,4),{...five[4],slot:'lunch'}],
+      [...five.slice(0,4),{...five[4],slot:'sixth'}], [...five.slice(0,4),{...five[4],start:'13:59'}],
+      [...five.slice(0,4),{...five[4],end:'24:00'}]]) {
+      await assert.rejects(provider.saveAppPreferences({...prefs,windows},home,uid,stored.revision),{code:'preferences/invalid-input'});
+      assert.equal(await write(fixture,pathSettings,{...fields,windows:encode(windows)},['updatedAt']),403);
+    }
+    assert.equal(await write(other,pathSettings,fields,['updatedAt']),403);
+    assert.equal((await request(store+'/'+pathSettings,undefined,other.token)).status,403);
+    assert.deepEqual((await provider.getAppPreferences(uid)).settings.windows,five);
+    stored = await provider.saveAppPreferences(prefs,home,uid,stored.revision);
 
     const withdrawn = {...prefs,preparationAcknowledged:false};
     const revoked = await provider.saveAppPreferences(withdrawn,null,uid,stored.revision);

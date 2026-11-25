@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 import { createDemoState } from "@/lib/demo/state";
 import { toView } from "@/lib/demo/derive";
-import { DEFAULT_WINDOWS, FOUR_MEAL_WINDOWS, mealDaySummary, mealSlotLabel, mealSlotsForCount, patternReport, slotsForDate, type AppView } from "@/lib/data/view";
-import { resolveMealSlots } from "@/lib/judge/resolveMealSlots";
+import { DEFAULT_WINDOWS, FIVE_MEAL_WINDOWS, FOUR_MEAL_WINDOWS, initialMealWindowOverrides, mealWindowsForCount, mealDaySummary, mealSlotLabel, mealSlotsForCount, patternReport, slotsForDate, type AppView } from "@/lib/data/view";
+import { resolveMealSlots, validMealWindows } from "@/lib/judge/resolveMealSlots";
 import { kstDateTime } from "@/lib/judge/time";
 import type { MealSlot, MealStatus } from "@/lib/judge/types";
-import { slotRates } from "@/lib/report/metrics";
+import { datedMealSlots, slotRates } from "@/lib/report/metrics";
 import { monthLeadingDays, recordPeriod, shiftRecordPeriod } from "@/components/records/period";
 import { mealStatusClass, validMealPalette } from "@/lib/data/appearance";
 
@@ -19,7 +19,7 @@ const fourView = (statuses: MealStatus[], date = DATE): AppView => {
   return { ...view, mealProfile: { ...view.mealProfile, windows: FOUR_MEAL_WINDOWS }, slots: slots(statuses, date) };
 };
 
-describe("1~4끼 계약", () => {
+describe("1~5끼 계약", () => {
   it("기존 세 끼 기본값과 기존 1·2끼 슬롯 ID를 바꾸지 않는다", () => {
     expect(DEFAULT_WINDOWS).toEqual([
       { slot: "breakfast", start: "06:00", end: "10:00" },
@@ -33,9 +33,9 @@ describe("1~4끼 계약", () => {
   });
 
   it("선택 수에 맞춰 첫 끼부터 라벨을 정한다", () => {
-    for (let count = 1; count <= 4; count++) {
+    for (let count = 1; count <= 5; count++) {
       const windows = mealSlotsForCount(count).map((slot) => ({ slot }));
-      expect(windows.map(({ slot }) => mealSlotLabel(slot, windows))).toEqual(["첫 끼", "두 끼", "세 끼", "네 끼"].slice(0, count));
+      expect(windows.map(({ slot }) => mealSlotLabel(slot, windows))).toEqual(["첫 끼", "두 끼", "세 끼", "네 끼", "다섯 끼"].slice(0, count));
     }
   });
 
@@ -49,23 +49,71 @@ describe("1~4끼 계약", () => {
     expect(resolveMealSlots({ ...input, now: kstDateTime(DATE, "22:59") }).at(-1)).toMatchObject({ slot: "fourth", status: "pending" });
   });
 
-  it("네 번째 슬롯이 저장·재읽기 후에도 네 줄의 기록으로 남는다", async () => {
+  it("두·네·다섯 끼 저장 후 다시 읽어도 오늘 설정과 이전 날짜 기록을 각각 보존한다", async () => {
     const saved = new Map<string, string>();
     vi.stubGlobal("localStorage", { getItem: (key: string) => saved.get(key) ?? null, setItem: (key: string, value: string) => saved.set(key, value) });
     vi.stubGlobal("window", new EventTarget());
+    vi.useFakeTimers();
     try {
+      vi.setSystemTime(NOW);
       const { demoActions } = await import("@/lib/demo/actions");
-      await demoActions.saveWindows(FOUR_MEAL_WINDOWS);
-      const restored = JSON.parse(saved.get("bapmutna.demo.v1")!);
-      expect(restored.mealProfile.windows).toHaveLength(4);
-      expect(toView(restored, NOW).slots.filter((slot) => slot.date === DATE).map((slot) => slot.slot)).toEqual(mealSlotsForCount(4));
-    } finally { vi.unstubAllGlobals(); }
+      for (const count of [2, 4, 5]) {
+        await demoActions.saveWindows(mealWindowsForCount(count));
+        const restored = JSON.parse(saved.get("bapmutna.demo.v1")!);
+        const view = toView(restored, NOW);
+        expect(view.mealProfile.windows).toEqual(mealWindowsForCount(count));
+        expect(slotsForDate(view, "2026-11-14", NOW).map(row => row.slot)).toEqual(mealSlotsForCount(count));
+        expect(slotsForDate(view, DATE, NOW).map(row => row.slot)).toEqual(mealSlotsForCount(3));
+      }
+      const tomorrow = kstDateTime("2026-11-15", "10:00");
+      vi.setSystemTime(tomorrow);
+      await demoActions.saveWindows(mealWindowsForCount(2));
+      const view = toView(JSON.parse(saved.get("bapmutna.demo.v1")!), tomorrow);
+      expect(datedMealSlots(view, "2026-11-14", tomorrow).at(-1)).toMatchObject({position:5,label:"다섯 끼"});
+      expect(datedMealSlots(view, "2026-11-15", tomorrow).at(-1)).toMatchObject({position:2,label:"두 끼",slot:"dinner"});
+      expect(slotRates(view, tomorrow).at(-1)?.total).toBe(1);
+    } finally { vi.useRealTimers(); vi.unstubAllGlobals(); }
+  });
+
+  it("다섯 끼 기본값과 편집한 시간대를 구분하고 잘못된 조합을 거부한다", () => {
+    expect(validMealWindows(FIVE_MEAL_WINDOWS)).toBe(true);
+    const custom = mealWindowsForCount(2);
+    custom[0].start = "05:00";
+    const overrides = initialMealWindowOverrides(custom);
+    const expanded = mealWindowsForCount(5, overrides);
+    expect(expanded[0].start).toBe("05:00");
+    expect(expanded.slice(1)).toEqual(FIVE_MEAL_WINDOWS.slice(1));
+    expect(initialMealWindowOverrides(mealWindowsForCount(2), overrides)).toEqual({});
+    const legacy = [FIVE_MEAL_WINDOWS[1], FIVE_MEAL_WINDOWS[3]];
+    expect(mealWindowsForCount(2, initialMealWindowOverrides(legacy))).toEqual(legacy);
+    for (const invalid of [[], [...expanded, expanded[0]], [...expanded.slice(0,4), {...expanded[4], slot:"lunch"}],
+      [...expanded.slice(0,4), {...expanded[4], slot:"sixth"}], [...expanded.slice(0,4), {...expanded[4], start:"16:59"}],
+      [...expanded.slice(0,4), {...expanded[4], end:"24:00"}]]) expect(validMealWindows(invalid)).toBe(false);
+  });
+
+  it("맞닿은 다섯째 시작 시각 외식은 그 끼니에만 붙이고 전력 신호 우선순위를 지킨다", () => {
+    const windows = mealWindowsForCount(5);
+    windows[4].start = windows[3].end;
+    const time = kstDateTime(DATE, windows[4].start);
+    const input = {date:DATE,windows,events:[],eatOutChecks:[time],absences:[],now:kstDateTime(DATE,"23:00")};
+    expect(resolveMealSlots(input).filter(row => row.status === "eat_out").map(row => row.slot)).toEqual(["fifth"]);
+    expect(resolveMealSlots({...input,events:[{type:"cook",startedAt:time,endedAt:time}]}).at(-1)?.status).toBe("confirmed");
+  });
+
+  it("이전 저장본에서 두 끼와 다섯 끼가 섞인 주라도 그날 순서와 분모를 유지한다", () => {
+    const view = base();
+    view.mealProfile.windows = mealWindowsForCount(2);
+    for (const [date, count] of [["2026-11-12",2],[DATE,5]] as const) {
+      view.slots.push(...mealSlotsForCount(count).map(slot => ({date, slot, status:"confirmed" as const, source:"cooker" as const})));
+    }
+    expect(datedMealSlots(view,"2026-11-12",NOW).at(-1)).toMatchObject({position:2,label:"두 끼",slot:"dinner"});
+    expect(slotRates(view,NOW).map(row => row.total)).toEqual([2,2,1,1,1]);
   });
 
   it("네 끼는 비율 분모에 포함되고 외식은 확인, 부재·대기는 제외된다", () => {
     const view = fourView(["confirmed", "unconfirmed", "unconfirmed", "eat_out"]);
     expect(patternReport(view, NOW).recent).toEqual({ ok: 2, total: 4, rate: 0.5 });
-    expect(slotRates(view, NOW).at(-1)).toEqual({ slot: "fourth", ok: 1, total: 1, rate: 1 });
+    expect(slotRates(view, NOW).at(-1)).toEqual({ position: 4, label: "네 끼", ok: 1, total: 1, rate: 1 });
     expect(patternReport(fourView(["confirmed", "away", "pending", "eat_out"]), NOW).recent).toEqual({ ok: 2, total: 2, rate: 1 });
   });
 });
@@ -77,6 +125,22 @@ describe("실제 계정 미연결과 하루 상태", () => {
     expect(mealDaySummary(view, "2026-11-14", NOW)).toEqual({ tone: "empty", ok: 0, total: 0 });
     expect(patternReport(view, NOW).recent.rate).toBeNull();
     expect(slotsForDate({ ...view, careAvailable: undefined }, "2026-11-14", NOW)).toEqual([]);
+    expect(slotsForDate({ ...view, dataSource: undefined, careAvailable: true }, "2026-11-14", NOW)).toEqual([]);
+  });
+
+  it("가장 이른 설정 이력 이전의 다섯째 실측 기록이 월·일 화면에도 남는다", () => {
+    const view = base();
+    view.mode = "live";
+    view.mealProfile.windows = mealWindowsForCount(2);
+    view.mealScheduleHistory = [{through:"2026-11-12",windows:mealWindowsForCount(3)}];
+    const date = "2026-10-18";
+    view.slots = [{date,slot:"fifth",source:"cooker",status:"confirmed"}];
+    expect(slotsForDate(view,date,NOW)).toEqual(view.slots);
+    expect(datedMealSlots(view,date,NOW)[0]).toMatchObject({slot:"fifth",position:5,label:"다섯 끼"});
+    expect(mealDaySummary(view,date,NOW)).toEqual({tone:"all",ok:1,total:1});
+    view.mealScheduleHistory = [{through:"2026-11-12",windows:mealWindowsForCount(2)}];
+    view.slots = [{date:"2026-11-12",slot:"dinner",source:"cooker",status:"confirmed"}];
+    expect(datedMealSlots(view,"2026-11-12",NOW)[0]).toMatchObject({slot:"dinner",position:2,label:"두 끼"});
   });
 
   it("연결이 끊겨도 이전에 저장된 실제 기록은 숨기거나 다시 판정하지 않는다", () => {

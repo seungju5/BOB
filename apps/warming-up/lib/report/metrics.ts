@@ -1,9 +1,10 @@
 // 리포트 계산 (순수 함수). 화면은 결과만 그린다.
 // 가족 화면 원칙: 끼니 상태와 날짜별 횟수 요약만 쓴다. 취사 시각 목록·원시 전력값은 쓰지 않는다.
 
+import { recordedMealWindows } from "@/lib/judge/resolveMealSlots";
 import { addDays, kstDate } from "@/lib/judge/time";
-import type { MealSlotName, MealStatus } from "@/lib/judge/types";
-import { slotsForDate, type AppView } from "@/lib/data/view";
+import { MEAL_SLOT_NAMES, type MealStatus } from "@/lib/judge/types";
+import { mealSlotsForCount, SLOT_LABEL, slotsForDate, type AppView } from "@/lib/data/view";
 
 /** 리포트 기간: 어제까지 최근 7일, 그 전 28일을 '평소'로 본다 (patternReport와 같다) */
 export const RECENT_DAYS = 7;
@@ -20,25 +21,43 @@ export function daysAgo(now: Date, fromDay: number, toDay: number): string[] {
 const counts = (s: MealStatus) => s !== "away" && s !== "pending";
 const ok = (s: MealStatus) => s === "confirmed" || s === "eat_out";
 
-/** 끼니별(아침·점심·저녁) 최근 7일 확인율. 저장된 시간대만 */
-export function slotRates(v: AppView, now: Date) {
-  const days = daysAgo(now, 1, RECENT_DAYS);
-  return v.mealProfile.windows.map(({ slot }) => {
-    let hit = 0;
-    let total = 0;
-    for (const d of days) {
-      const s = slotsForDate(v, d, now).find((x) => x.slot === slot);
-      if (!s || !counts(s.status)) continue;
-      total++;
-      if (ok(s.status)) hit++;
-    }
-    return { slot, ok: hit, total, rate: total ? hit / total : null };
+/** Retain each recorded day's meal order when a household later changes its routine. */
+export function datedMealSlots(view: AppView, date: string, now: Date) {
+  const slots = slotsForDate(view, date, now);
+  const ids = slots.map(row => row.slot);
+  const preset = mealSlotsForCount(ids.length);
+  // Older summaries may have only some observed slots. Keep their IDs unless the
+  // saved combination identifies a complete historical one- or two-meal profile.
+  const firstChange = view.mealScheduleHistory?.[0];
+  const lastKnown = date === firstChange?.through && ids.every(id => firstChange.windows.some(window => window.slot === id))
+    ? firstChange.windows : null;
+  const configured = recordedMealWindows(date, kstDate(now), view.mealProfile.windows, view.mealScheduleHistory) ?? lastKnown;
+  const legacyOrder = preset.length === ids.length && preset.every((id, i) => ids[i] === id) ? preset : MEAL_SLOT_NAMES;
+  const order = configured?.map(window => window.slot) ?? legacyOrder;
+  return slots.map(row => {
+    const index = order.indexOf(row.slot);
+    const position = (index < 0 ? MEAL_SLOT_NAMES.indexOf(row.slot) : index) + 1;
+    return { ...row, position, label: SLOT_LABEL[MEAL_SLOT_NAMES[position - 1]] };
   });
 }
 
-/** 최근 7일 하루별 끼니 상태 (달력 줄) */
-export function dailyMeals(v: AppView, now: Date): { date: string; slots: { slot: MealSlotName; status: MealStatus }[] }[] {
-  return daysAgo(now, 1, RECENT_DAYS).map((date) => ({ date, slots: slotsForDate(v, date, now).map(({ slot, status }) => ({ slot, status })) }));
+export function dailyMeals(view: AppView, now: Date) {
+  return daysAgo(now, 1, RECENT_DAYS).map(date => ({ date, slots: datedMealSlots(view, date, now) }));
+}
+
+export function mealPositionRows(days: { slots: { position: number }[] }[], minCount = 0) {
+  const count = Math.max(0, minCount, ...days.flatMap(day => day.slots.map(row => row.position)));
+  return MEAL_SLOT_NAMES.slice(0, count).map((id, index) => ({ position: index + 1, label: SLOT_LABEL[id] }));
+}
+
+/** Slot numbers follow each day's schedule, independently of today's selected count. */
+export function slotRates(view: AppView, now: Date) {
+  const week = dailyMeals(view, now);
+  return mealPositionRows(week, view.mealProfile.windows.length).map(({ position, label }) => {
+    const statuses = week.flatMap(day => day.slots.filter(row => row.position === position && counts(row.status)));
+    const hit = statuses.filter(row => ok(row.status)).length;
+    return { position, label, ok: hit, total: statuses.length, rate: statuses.length ? hit / statuses.length : null };
+  });
 }
 
 /** 밥솥 사용 횟수: 최근 7일 vs 이전 4주의 주 평균, 그리고 온보딩에서 알려 준 평소 횟수 */

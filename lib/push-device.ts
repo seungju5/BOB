@@ -2,7 +2,7 @@
 
 import { useSyncExternalStore } from "react";
 import { appPath } from "@/lib/app-path";
-import {matchesNoticeOwner, noticeDeliveryKey, noticeText, noticePath, noticePreferenceKey, noticePreferenceCache, scopedNotice} from "@/public/notification-content";
+import {matchesNoticeOwner, noticeDeliveryKey, noticeText, noticePath, noticePreferenceKey, noticePreferenceCache, noticeTestReceiptKey, scopedNotice} from "@/public/notification-content";
 
 import {isQuietHours, untilQuiet} from "@/server/smartthings/notification-policy.mjs";
 
@@ -121,7 +121,8 @@ export async function clearFeaturePreview(owner: string) {
 
 export async function syncWorkerDelivery(owner: string, action: "enable" | "disable" | "quiet", quiet = localQuietHours(owner)) {
   if (typeof caches === "undefined") return;
-  const key = noticeDeliveryKey(new URL(appPath("/"), window.location.origin));
+  const base = new URL(appPath("/"), window.location.origin);
+  const key = noticeDeliveryKey(base);
   const write = async () => {
     const cache = await caches.open(noticePreferenceCache);
     const saved = await (await cache.match(key))?.json();
@@ -131,9 +132,24 @@ export async function syncWorkerDelivery(owner: string, action: "enable" | "disa
     if (action === "quiet" && saved?.enabled === false) return;
     const next = action === "disable" ? {enabled:false} : {enabled:true, owner, quiet};
     await cache.put(key, new Response(JSON.stringify(next), {headers:{"Content-Type":"application/json"}}));
+    if (action === "disable" || saved?.owner !== owner) await cache.delete(noticeTestReceiptKey(base));
   };
   if (navigator.locks) await navigator.locks.request(key, write);
   else await write();
+}
+
+export async function lastServerTest(owner: string): Promise<Date | null> {
+  try {
+    const base = new URL(appPath("/"), window.location.origin);
+    const cache = await caches.open(noticePreferenceCache);
+    const [policy, receipt] = await Promise.all([cache.match(noticeDeliveryKey(base)), cache.match(noticeTestReceiptKey(base))]);
+    const delivery = await policy?.json();
+    if (!delivery?.enabled || delivery.owner !== owner) return null;
+    const recent = await receipt?.json();
+    const at = recent?.receivedAt;
+    if (!Number.isSafeInteger(at) || at <= 0 || at > Date.now() || !await matchesNoticeOwner(owner, recent.scope)) return null;
+    return new Date(at);
+  } catch { return null; }
 }
 
 export async function closeOwnerNotices(owner: string) {
@@ -155,7 +171,7 @@ function display(worker: ServiceWorkerRegistration, kind: string, feature: boole
 export async function testDeviceNotice() {
   const worker = await requestNotificationWorker();
   if (!worker) return false;
-  await display(worker, "delivery_test", false, "bapmunna-device-test", "/alerts/");
+  await display(worker, "device_preview", false, "bapmunna-device-test", "/alerts/");
   return true;
 }
 

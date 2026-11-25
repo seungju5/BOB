@@ -1,5 +1,5 @@
 import {afterEach, expect, it, vi} from "vitest";
-import {syncWorkerDelivery} from "@/lib/push-device";
+import {lastServerTest, syncWorkerDelivery} from "@/lib/push-device";
 import {acceptsCookerDelivery, scopedNotice} from "@/public/notification-content";
 
 afterEach(()=>vi.unstubAllGlobals());
@@ -9,7 +9,7 @@ it("keeps the latest account's arrival policy when a previous account finishes s
   vi.stubGlobal("window",{location:{origin:"https://example.invalid"}});
   vi.stubGlobal("navigator",{});
   vi.stubGlobal("caches",{open:async()=>({
-    match:async(k:string)=>rows.get(k)?.clone(),put:async(k:string,r:Response)=>rows.set(k,r)
+    match:async(k:string)=>rows.get(k)?.clone(),put:async(k:string,r:Response)=>rows.set(k,r),delete:async(k:string)=>rows.delete(k)
   })});
   const policy=()=>rows.get("https://example.invalid/.notice-delivery")!.clone().json();
   const at="2026-11-26T16:03:00Z", now=Date.parse(at);
@@ -19,9 +19,15 @@ it("keeps the latest account's arrival policy when a previous account finishes s
   await syncWorkerDelivery("owner-a","quiet",{start:"00:00",end:"05:00"});
   await syncWorkerDelivery("owner-a","disable",null);
   expect(await acceptsCookerDelivery(await policy(),scope,at,now)).toBe(true);
+  const receiptKey="https://example.invalid/.notice-test-receipt", receivedAt=Date.now();
+  rows.set(receiptKey,Response.json({scope,receivedAt}));
+  expect(await lastServerTest("owner-b")).toEqual(new Date(receivedAt));
+  expect(await lastServerTest("owner-a")).toBeNull();
   await syncWorkerDelivery("owner-b","quiet",{start:"23:30",end:"06:30"});
   expect(await acceptsCookerDelivery(await policy(),scope,at,now)).toBe(false);
   await syncWorkerDelivery("owner-b","disable",null);
+  expect(await lastServerTest("owner-b")).toBeNull();
+  expect(rows.has(receiptKey)).toBe(false);
   await syncWorkerDelivery("owner-b","quiet",null);
   expect(await policy()).toEqual({enabled:false});
 });

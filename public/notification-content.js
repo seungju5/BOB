@@ -45,6 +45,7 @@ async function matchesNoticeOwner(owner, scope) {
 }
 /** @param {unknown} kind @param {boolean} showFeature @param {boolean} [hasRecord] */
 function noticeText(kind, showFeature, hasRecord = true) {
+  if (kind === "device_preview") return {title: "밥뭇나 · 알림 미리보기", body: "이 기기에서는 알림이 이렇게 보여요. 누르면 알림함이 열려요."};
   if (kind === "delivery_test") return {title: "밥뭇나 · 시험 알림", body: "이 기기에 알림이 도착했어요. 누르면 밥뭇나 알림함이 열려요."};
   if (showFeature && kind === "cooker_signal" && !hasRecord) return {title:featureNotices.cooker_signal.title,body:"밥뭇나 알림함에서 밥솥 소식을 확인해 보세요."};
   return showFeature && typeof kind === "string" && Object.hasOwn(featureNotices, kind)
@@ -78,6 +79,7 @@ function noticePath(data) {
 const noticePreferenceCache = "bapmunna-notice-previews-v1";
 function noticePreferenceKey(scope) { return new URL(".notice-preview", scope).href; }
 function noticeDeliveryKey(scope) { return new URL(".notice-delivery", scope).href; }
+function noticeTestReceiptKey(scope) { return new URL(".notice-test-receipt", scope).href; }
 
 // Apply the most recent device choice even if an encrypted packet was already
 // waiting at the push provider when the user signed out or changed their hours.
@@ -93,4 +95,4 @@ async function acceptsCookerDelivery(policy, scope, at, now) {
   return !inside(Date.parse(at)) && !inside(now);
 }
 
-if (typeof module !== "undefined") module.exports = {noticeText, noticePath, noticeDay, noticeSlot, recordNoticePath, validCookerTicket, validNoticeScope, scopedNotice, matchesNoticeOwner, noticePreferenceCache, noticePreferenceKey, noticeDeliveryKey, acceptsCookerDelivery};
+if (typeof module !== "undefined") module.exports = {noticeText, noticePath, noticeDay, noticeSlot, recordNoticePath, validCookerTicket, validNoticeScope, scopedNotice, matchesNoticeOwner, noticePreferenceCache, noticePreferenceKey, noticeDeliveryKey, noticeTestReceiptKey, acceptsCookerDelivery};

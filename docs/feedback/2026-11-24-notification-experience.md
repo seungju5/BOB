@@ -14,7 +14,7 @@
 
 ## 휴대폰에서 확인하기
 
-1. 아이폰(iOS 16.4 이상)은 Safari에서 공유 → 홈 화면에 추가 후 밥뭇나 아이콘으로 연다. 보호자로 로그인하고 하단 **더보기 → 받은 알림**에서 **이 기기에 시험 알림**을 누른 다음 기기 권한을 허용한다. [WebKit의 iOS 홈 화면 푸시 안내](https://webkit.org/blog/13878/web-push-for-web-apps-on-ios-and-ipados/)
-2. 이 기기로 받은 시험 알림을 눌러 알림함으로 돌아오는지 확인한다. 팀 발송 서버가 준비되기 전에는 이 버튼으로 기기의 표시·탭을 점검할 수 있다. 서버 구독까지 등록된 경우 Firebase판은 같은 버튼으로 자신의 기기에 원격 시험 발송을 요청한다.
+1. 아이폰(iOS 16.4 이상)은 Safari에서 공유 → 홈 화면에 추가 후 밥뭇나 아이콘으로 연다. 보호자로 로그인하고 **더보기 → 받은 알림**에서 기기 권한을 허용한다. **이 기기에서 알림 미리보기**를 누르면 기기에서 표시 모양과 누른 뒤의 이동을 점검할 수 있다. [WebKit의 iOS 홈 화면 푸시 안내](https://webkit.org/blog/13878/web-push-for-web-apps-on-ios-and-ipados/)
+2. 팀 서버에 이 기기를 연결하면 **서버에서 시험 알림 받기**가 보인다. 이를 누르면 먼저 발송 서비스의 접수 여부가 나온다. 기기가 원격 알림을 받아 시스템에 표시를 요청하고 시스템이 수락하면, 앱 알림함에 기기의 마지막 수신 시각이 남는다. 잠금화면 배너는 휴대폰에서 직접 확인한다.
 3. Firebase판은 서버가 가구 동의와 계정, 실물 플러그를 확인한 취사 신호만 원격 발송한다. 팀 Hosting의 현재 준비 상태는 공개 설정에서 확인한다. BOB의 Supabase판은 저장된 가구 알림 행과 그 가구에 속하는 보호자 구독을 사용한다. [팀 Firebase 연결 상태](https://warming-up-bapmunna.web.app/api/smartthings/config)
 4. 성경 앱 캡처처럼 초 단위로 갱신되는 잠금화면 카드는 별도의 iOS 설치 앱 기능이다. 웹앱의 푸시는 새 소식이 생겼을 때 도착하며 누르면 그 화면으로 이동한다. [Apple Live Activities 안내](https://developer.apple.com/documentation/activitykit/displaying-live-data-with-live-activities)

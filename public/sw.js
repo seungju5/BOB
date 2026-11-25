@@ -25,10 +25,16 @@ function safeClickURL(value) {
 
 async function showIncoming(data) {
   if (data.kind === "cooker_signal" && Number.isFinite(data.expiresAt) && Date.now() >= data.expiresAt) return;
-  if (data.kind === "cooker_signal") {
+  const serverTest = data.kind === "delivery_test" && data.tag === "bapmunna-delivery-test" && validNoticeScope(data.scope);
+  if (data.kind === "cooker_signal" || serverTest) {
     try {
       const saved = await self.caches.match(noticeDeliveryKey(appScope), {cacheName:noticePreferenceCache});
-      if (saved && !await acceptsCookerDelivery(await saved.json(), data.scope, data.at, Date.now())) return;
+      if (saved) {
+        const policy = await saved.json();
+        if (serverTest) {
+          if (!policy.enabled || !await matchesNoticeOwner(policy.owner, data.scope)) return;
+        } else if (!await acceptsCookerDelivery(policy, data.scope, data.at, Date.now())) return;
+      }
     } catch { return; }
   }
   let showFeature = false;
@@ -42,12 +48,31 @@ async function showIncoming(data) {
   const ticket = data.kind === "cooker_signal" && validCookerTicket(data.ticket) ? data.ticket : null;
   const text = noticeText(data.kind, showFeature, Boolean(ticket));
   const relative = ((!scope || data.kind === "cooker_signal" && !ticket) && path.startsWith("/records/") ? "/alerts/" : path).slice(1);
-  return self.registration.showNotification(text.title, {
+  await self.registration.showNotification(text.title, {
     body: text.body, ...(typeof data.tag === "string" && data.tag.length <= 160 && {tag: data.tag}),
     icon: new URL("brand/rice-logo.png", appScope).href,
     badge: new URL("brand/notification-badge.png", appScope).href,
     lang: "ko", data: {url: new URL(relative, appScope).href, ...(scope && {scope}), ...(ticket && {ticket})},
   });
+  if (serverTest) await rememberServerTest(data.scope);
+}
+
+// Keep one local receipt for a real push after the device accepts its notification.
+// Reading it in the app still requires the matching account and an active subscription.
+async function rememberServerTest(scope) {
+  const key = noticeDeliveryKey(appScope);
+  const save = async () => {
+    const cache = await self.caches.open(noticePreferenceCache);
+    const policy = await (await cache.match(key))?.json();
+    if (!policy?.enabled || !await matchesNoticeOwner(policy.owner, scope)) return;
+    await cache.put(noticeTestReceiptKey(appScope), Response.json({scope, receivedAt:Date.now()}));
+    const windows = await self.clients.matchAll({type:"window"});
+    for (const client of windows) client.postMessage({type:"bapmunna:server-test-received"});
+  };
+  try {
+    if (self.navigator?.locks) await self.navigator.locks.request(key, save);
+    else await save();
+  } catch { /* The system notification remains usable if device storage is unavailable. */ }
 }
 
 self.addEventListener("push", event => {

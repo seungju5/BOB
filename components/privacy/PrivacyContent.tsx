@@ -1,5 +1,5 @@
 import { PRIVACY_NOTICE_DATE, PRIVACY_SUPPORT_EMAIL } from "@/lib/privacy/notice";
-import { DETECTION } from "@/config/detection";
+import { COOKER_RECORD_DAYS, DETECTION } from "@/config/detection";
 
 /** The public page and the in-form reader deliberately share the same copy. */
 export function PrivacyContent() {
@@ -25,7 +25,8 @@ export function PrivacyContent() {
       <p className="mt-3">팀 서버는 삼성의 접근·갱신 토큰을 암호화해 해당 밥뭇나 계정과 연결해 보관해요. 선택한 기기의 식별값·이름, 연결 동의와 상태, 최근 조회·신호 시각도 보관해요. 가상 기기의 값은 테스트용이에요.</p>
       <p className="mt-3">기기를 직접 조회하면 실물 플러그의 측정이 취사 기준에 해당하는지와 측정 시각을 보여줘요. 원래 전력값은 판정 뒤 버려요. 삼성의 측정 시각, 밥뭇나가 자동 신호를 받은 시각, 직접 조회한 시각은 따로 표시해요.</p>
       <p className="mt-3">‘밥솥 취사 신호 알림’을 켜면 지정한 밥솥 전용 플러그에서 취사 기준에 도달한 첫 신호를 알려줘요. 계정에는 중복을 구분하는 데 필요한 시각과 최근 알림 시각을 보관해요. 홈과 알림에는 최근 24시간의 마지막 소식 한 건을 표시해요. 알림을 끄거나 연결을 지우면 해당 설정과 신호 시각도 지워요.</p>
-      <p className="mt-3">정기 조회를 켜면 지정한 실물 플러그를 {DETECTION.POWER_CHECK_INTERVAL_MIN}분마다 확인해요. 서버에 남는 것은 조회와 측정 시각이에요. 전력 원값은 판정 뒤 버려요. 기존 알림을 쓰시는 분은 기기 설정에서 정기 조회를 따로 켤 수 있어요.</p>
+      <p className="mt-3">정기 조회를 켜면 지정한 실물 플러그를 {DETECTION.POWER_CHECK_INTERVAL_MIN}분마다 확인해요. 전력 원값은 판정 뒤 버려요. 기존 알림을 쓰시는 분은 기기 설정에서 정기 조회를 따로 켤 수 있어요.</p>
+      <p className="mt-3">‘날짜별 끼니 기록’을 따로 켜면 그때부터 받은 취사 신호를 한국 날짜와 우리 집 끼니 시간대에 맞춰요. 날짜별 취사 횟수, 그날 기준 시간대와 신호가 있었던 끼니를 최근 {COOKER_RECORD_DAYS}일 동안 내 계정에서 볼 수 있어요. 보관 기간이 지난 요약은 정리 작업에서 삭제해요. 기록을 끄거나 기기 연결을 지우면 저장한 요약도 지워요.</p>
       <p className="mt-3">개인 점검 파일을 열면 브라우저에서 기기 종류, 신호 해석과 측정·조회 시각을 볼 수 있어요. 파일은 서버에 전송하지 않으며, 창을 닫으면 화면의 기록을 지워요.</p>
     </section>
     <section>
@@ -51,6 +52,7 @@ export function PrivacyContent() {
     <section>
       <h2 className="text-[21px] font-bold">이 기기의 안부 알림</h2>
       <p className="mt-3">보호자가 알림을 켠 기기에서만 소식을 받아요. 잠금화면에는 기본으로 새 소식이 있다는 문구가 보여요. 알림함에서 소식 종류 표시를 켜거나 끌 수 있어요.</p>
+      <p className="mt-3">밥솥 알림을 쉬고 싶은 시간을 한국 시간으로 정할 수 있어요. 날짜별 기록을 켜 둔 경우 그 시간에도 취사 소식은 기록해요. 알림을 누르면 최대 24시간 동안 같은 계정의 해당 기록을 열 수 있어요. 기록을 지우거나 볼 수 있는 시간이 지나면 내 알림함이 열려요.</p>
       <p className="mt-3">홈 화면 알림을 연결하면 팀 발송 서버는 이 계정의 기기 구독 주소와 발송에 필요한 열쇠를 암호화해 보관해요. 알림함에서 ‘이 기기 알림 끄기’를 누르면 수신을 해제해요. 시험 알림은 직접 누른 기기로만 보내요.</p>
     </section>
     <section className="rounded-2xl border border-line p-5">

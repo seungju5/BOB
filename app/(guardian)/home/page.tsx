@@ -30,6 +30,8 @@ export default function HomePage() {
   const today = kstDate(now);
   const relation = view.senior.relation;
   const slots = slotsForDate(view, today, now);
+  const observedWindows = view.cookerMealDays?.[today];
+  const todayWindows = observedWindows?.length ? observedWindows : view.mealProfile.windows;
   const report = reportSummary(view, now);
   const away = view.absences.find((a) => a.startDate <= today && today <= a.endDate);
   const alerts = unackedAlerts(view).sort((a, b) => ALERT_PRIORITY.indexOf(a.type) - ALERT_PRIORITY.indexOf(b.type));
@@ -72,10 +74,12 @@ export default function HomePage() {
       ) : null}
 
       <section aria-label="오늘의 끼니" className="mt-4 rounded-[1.5rem] border border-line bg-paper px-4 pt-2 pb-4">
-        <HomeMealCompanion mealCount={view.mealProfile.windows.length} />
-        <TodayMealList windows={view.mealProfile.windows} slots={slots} />
-        {!slots.length && <p className="mt-2 text-[17px] font-semibold text-cocoa">아직 연결된 식사 기록이 없어요.</p>}
-        <p className="mt-2 text-[16px] leading-relaxed text-muted">{slots.length ? "밥솥 사용 소식이에요. 드신 양은 알 수 없어요." : "기기를 연결하면 이곳에서 밥솥 소식을 볼 수 있어요."}</p>
+        <HomeMealCompanion mealCount={todayWindows.length} />
+        <TodayMealList windows={todayWindows} slots={slots} />
+        {!slots.length && <p className="mt-2 text-[17px] font-semibold text-cocoa">{view.cookerMealDays
+          ? (view.stats[today]?.cook ? "오늘 취사 소식이 있어요. 어느 끼니인지는 확인되지 않았어요." : "오늘은 아직 밥솥 소식이 없어요.")
+          : "아직 연결된 식사 기록이 없어요."}</p>}
+        <p className="mt-2 text-[16px] leading-relaxed text-muted">{slots.length || view.cookerMealDays ? "밥솥 사용 소식이에요. 드신 양은 알 수 없어요." : "기기를 연결하면 이곳에서 밥솥 소식을 볼 수 있어요."}</p>
         {!callInAlert && (
           <div className="mt-3">
             {view.senior.phone ? (

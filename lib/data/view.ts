@@ -41,6 +41,8 @@ export type AppView = {
   senior: { name: string; relation: string; phone: string };
   household: { residentCount: number; hasPet: boolean };
   mealScheduleHistory?: MealScheduleChange[];
+  /** The schedules observed with each device summary. An empty map is an active, unused grant. */
+  cookerMealDays?: Record<string, MealWindow[]>;
   mealProfile: { windows: MealWindow[]; eatOutPerWeek: number; usesKeepWarm: boolean; cooksPerWeek: number };
   alertSettings: { missedMealsThreshold: number; fastingHours: number; emergencyHours: number };
   seniorConsent: boolean;
@@ -52,7 +54,7 @@ export type AppView = {
    * 날짜별 취사·열림 횟수.
    * energyWh: 하루 전력량 합계(Wh). 아직 서버가 저장하지 않아 비어 있다 (리포트 전기요금용, 원시값 아님).
    */
-  stats: Record<string, { cook: number; lid: number; energyWh?: number }>;
+  stats: Record<string, { cook: number; lid: number | null; energyWh?: number }>;
   lastCookerAt: string | null;
   lastActivityAt: string | null;
   absences: Absence[];
@@ -175,7 +177,8 @@ export function careDataAvailable(v: AppView): boolean {
 
 /** 실계정은 저장된 끼니 판정만 표시한다. 데모는 오늘의 시간대를 시뮬레이션한다. */
 export function slotsForDate(v: AppView, date: string, now: Date): MealSlot[] {
-  const configured = recordedMealWindows(date, kstDate(now), v.mealProfile.windows, v.mealScheduleHistory)?.map(window => window.slot);
+  const configured = (v.cookerMealDays?.[date] ?? recordedMealWindows(date, kstDate(now),
+    v.mealProfile.windows, v.mealScheduleHistory))?.map(window => window.slot);
   const found = v.slots.filter(s => s.date === date && (!configured || configured.includes(s.slot)))
     .sort((a, b) => (configured ?? MEAL_SLOT_NAMES).indexOf(a.slot) - (configured ?? MEAL_SLOT_NAMES).indexOf(b.slot));
   if (!isDemoView(v) || found.length || date !== kstDate(now)) return found;
@@ -189,6 +192,11 @@ export function mealDaySummary(v: AppView, date: string, now: Date): { tone: Mea
   const slots = slotsForDate(v, date, now);
   const counted = slots.filter((slot) => slot.status !== "away");
   const ok = counted.filter((slot) => slot.status === "confirmed" || slot.status === "eat_out").length;
+  const observedWindows = v.cookerMealDays?.[date];
+  if (observedWindows) {
+    const total = observedWindows.length;
+    return {tone: !ok ? "empty" : ok === total ? "all" : "pending", ok, total};
+  }
   const total = slots.length && date === kstDate(now) ? Math.max(counted.length, v.mealProfile.windows.length - (slots.length - counted.length)) : counted.length;
   if (!slots.length) return { tone: "empty", ok, total };
   if (slots.every((slot) => slot.status === "away")) return { tone: "away", ok: 0, total: 0 };
@@ -207,7 +215,7 @@ export function recentSlots(v: AppView, now: Date, days: number): MealSlot[] {
 }
 
 export function statsRange(v: AppView, from: string, to: string) {
-  const out: Record<string, { cook: number; lid: number }> = {};
+  const out: AppView["stats"] = {};
   for (let d = from; d <= to; d = addDays(d, 1)) {
     if (v.stats[d]) out[d] = v.stats[d];
   }
@@ -236,6 +244,8 @@ export function patternReport(v: AppView, now: Date) {
 
 /** 리포트 요약: 홈 카드와 리포트 화면이 같은 문구를 쓰도록. 데이터가 모자라면 null. */
 export function reportSummary(v: AppView, now: Date) {
+  // A power-only grant can confirm a slot but cannot establish missing meals.
+  if (v.cookerMealDays) return null;
   const { recent, before } = patternReport(v, now);
   if (recent.rate === null || before.total < 14) return null;
   const r = Math.round(recent.rate * 100);

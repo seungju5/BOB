@@ -20,9 +20,33 @@ function noticeDay(value) {
   return Number.isFinite(ms) && new Date(ms).toISOString().slice(0, 10) === value ? value : null;
 }
 
-/** @param {unknown} kind @param {boolean} showFeature */
-function noticeText(kind, showFeature) {
+const mealIds = new Set(["breakfast", "lunch", "dinner", "fourth", "fifth"]);
+/** @param {unknown} value */
+function noticeSlot(value) { return typeof value === "string" && mealIds.has(value) ? value : null; }
+/** @param {unknown} date @param {unknown} slot */
+function recordNoticePath(date, slot) {
+  const day = noticeDay(date), meal = noticeSlot(slot);
+  return day ? "/records/?day=" + day + (meal ? "&slot=" + meal : "") : "/records/";
+}
+/** @param {unknown} scope */
+function validNoticeScope(scope) { return typeof scope === "string" && /^[A-Za-z0-9_-]{32,43}\.[a-f0-9]{64}$/.test(scope); }
+/** @param {unknown} ticket */
+function validCookerTicket(ticket) { return typeof ticket === "string" && /^n1\.[\w-]{70,120}$/.test(ticket); }
+/** @param {string} owner @param {string} nonce */
+async function scopedNotice(owner, nonce) {
+  const bytes = new TextEncoder().encode("bapmunna-notice-v1/" + nonce + "/" + owner);
+  const hash = await crypto.subtle.digest("SHA-256", bytes);
+  return nonce + "." + Array.from(new Uint8Array(hash), n => n.toString(16).padStart(2, "0")).join("");
+}
+/** @param {unknown} owner @param {unknown} scope */
+async function matchesNoticeOwner(owner, scope) {
+  if (typeof owner !== "string" || !owner || typeof scope !== "string" || !validNoticeScope(scope)) return false;
+  try { return await scopedNotice(owner, scope.split(".")[0]) === scope; } catch { return false; }
+}
+/** @param {unknown} kind @param {boolean} showFeature @param {boolean} [hasRecord] */
+function noticeText(kind, showFeature, hasRecord = true) {
   if (kind === "delivery_test") return {title: "밥뭇나 · 시험 알림", body: "이 기기에 알림이 도착했어요. 누르면 밥뭇나 알림함이 열려요."};
+  if (showFeature && kind === "cooker_signal" && !hasRecord) return {title:featureNotices.cooker_signal.title,body:"밥뭇나 알림함에서 밥솥 소식을 확인해 보세요."};
   return showFeature && typeof kind === "string" && Object.hasOwn(featureNotices, kind)
     ? featureNotices[/** @type {keyof typeof featureNotices} */ (kind)] : privateNotice;
 }
@@ -32,12 +56,14 @@ function noticePath(data) {
   if (data.kind === "weekly_report") return "/report/";
   if (data.kind === "device_offline") return "/settings/#device";
   if (data.kind === "cooker_signal" || data.kind === "eat_out") {
-    let day = noticeDay(data.date);
-    if (!day && typeof data.at === "string" && /^\d{4}-\d{2}-\d{2}T/.test(data.at)) {
+    const declared = noticeDay(data.date);
+    let observed = null;
+    if (typeof data.at === "string" && /^\d{4}-\d{2}-\d{2}T.*(?:Z|[+-]\d\d:\d\d)$/.test(data.at)) {
       const event = Date.parse(data.at);
-      if (Number.isFinite(event)) day = new Date(event + 9 * 3600000).toISOString().slice(0, 10);
+      if (Number.isFinite(event)) observed = new Date(event + 9 * 3600000).toISOString().slice(0, 10);
     }
-    if (day) return "/records/?day=" + day;
+    const day = data.kind === "cooker_signal" ? observed ?? declared : declared ?? observed;
+    if (day) return recordNoticePath(day, declared === day ? data.slot : null);
   }
   if (typeof data.kind === "string" && Object.hasOwn(featureNotices, data.kind) &&
       typeof data.tag === "string" && /^[a-zA-Z0-9_-]{1,100}$/.test(data.tag)) {
@@ -51,5 +77,20 @@ function noticePath(data) {
 // Only the account that set it can see it as enabled in the app.
 const noticePreferenceCache = "bapmunna-notice-previews-v1";
 function noticePreferenceKey(scope) { return new URL(".notice-preview", scope).href; }
+function noticeDeliveryKey(scope) { return new URL(".notice-delivery", scope).href; }
 
-if (typeof module !== "undefined") module.exports = {noticeText, noticePath, noticeDay, noticePreferenceCache, noticePreferenceKey};
+// Apply the most recent device choice even if an encrypted packet was already
+// waiting at the push provider when the user signed out or changed their hours.
+async function acceptsCookerDelivery(policy, scope, at, now) {
+  if (policy?.enabled !== true || !await matchesNoticeOwner(policy.owner, scope)) return false;
+  const hours = policy.quiet;
+  if (!hours) return true;
+  const inside = ms => {
+    if (!Number.isFinite(ms)) return false;
+    const time = new Date(ms + 9 * 3600_000).toISOString().slice(11,16);
+    return hours.start < hours.end ? time >= hours.start && time < hours.end : time >= hours.start || time < hours.end;
+  };
+  return !inside(Date.parse(at)) && !inside(now);
+}
+
+if (typeof module !== "undefined") module.exports = {noticeText, noticePath, noticeDay, noticeSlot, recordNoticePath, validCookerTicket, validNoticeScope, scopedNotice, matchesNoticeOwner, noticePreferenceCache, noticePreferenceKey, noticeDeliveryKey, acceptsCookerDelivery};

@@ -4,6 +4,10 @@ import { TEAM_NOTIFICATION_ORIGIN, TEAM_PROJECT_ID } from "@/config/team";
 import { appPath } from "@/lib/app-path";
 import { connectFirebase } from "@/lib/firebase/bridge";
 
+import {isQuietHours} from "@/server/smartthings/notification-policy.mjs";
+import {localQuietHours, saveQuietHours, syncWorkerDelivery, type QuietHours} from "./push-device";
+import {noticeDay, recordNoticePath, validCookerTicket} from "@/public/notification-content";
+
 const prefix = "/api/smartthings/";
 type PushState = "background" | "off" | "unavailable";
 
@@ -45,7 +49,8 @@ async function call(owner: string, body: Record<string, unknown>, confirmedKey?:
     if (response.status === 409) throw Error("이 기기의 알림 연결을 다시 확인해 주세요.");
     throw Error("알림 서버에 연결하지 못했어요. 잠시 후 다시 시도해 주세요.");
   }
-  return response.json() as Promise<{registered?: boolean; accepted?: boolean}>;
+  return response.json() as Promise<{registered?: boolean; accepted?: boolean; quietHours?: QuietHours | null;
+    ticket?: string | null; target?: {date:string; slot?:string} | null}>;
 }
 
 function keyBytes(key: string) {
@@ -87,6 +92,8 @@ export async function enableBackgroundPush(owner: string, worker: ServiceWorkerR
   try {
     const result = await call(owner, {op: "register", subscription: sub.toJSON()}, key);
     if (!result.registered) throw Error("알림 연결을 확인하지 못했어요.");
+    const hours = localQuietHours(owner);
+    if (hours) await call(owner, {op: "quiet", endpoint: sub.endpoint, quietHours: hours}, key);
     return true;
   } catch (error) {
     await sub.unsubscribe().catch(() => false);
@@ -113,4 +120,38 @@ export async function testBackgroundPush(owner: string) {
   const sub = await currentSubscription();
   if (!sub || !(await call(owner, {op: "test", endpoint: sub.endpoint})).accepted)
     throw Error("이 기기의 알림을 먼저 켜 주세요.");
+}
+
+export async function currentCookerTicket(owner: string, at: string) {
+  const result = await call(owner, {op:"ticket", at:Date.parse(at)});
+  return validCookerTicket(result.ticket) ? result.ticket : null;
+}
+
+export async function resolveCookerTicket(owner: string, ticket: string) {
+  const result = await call(owner, {op:"resolve", ticket});
+  if (result.target === null) return "/alerts/";
+  if (!result.target || !noticeDay(result.target.date)) throw Error("밥솥 소식을 확인하지 못했어요.");
+  return recordNoticePath(result.target.date, result.target.slot);
+}
+
+export async function readBackgroundQuiet(owner: string): Promise<QuietHours | null> {
+  const sub = await currentSubscription();
+  if (!sub) throw Error("이 기기의 알림을 먼저 켜 주세요.");
+  const result = await call(owner, {op: "check", endpoint: sub.endpoint});
+  if (!result.registered) throw Error("이 기기의 알림 연결을 확인해 주세요.");
+  const hours = isQuietHours(result.quietHours) ? result.quietHours : null;
+  saveQuietHours(owner, hours);
+  await syncWorkerDelivery(owner, "quiet", hours);
+  return hours;
+}
+
+export async function setBackgroundQuiet(owner: string, hours: QuietHours | null) {
+  if (hours !== null && !isQuietHours(hours)) throw Error("시작과 끝에 서로 다른 시각을 골라 주세요.");
+  const sub = await currentSubscription();
+  if (!sub) throw Error("이 기기의 알림을 먼저 켜 주세요.");
+  const result = await call(owner, {op: "quiet", endpoint: sub.endpoint, quietHours: hours});
+  if (!result.registered || result.quietHours?.start !== hours?.start || result.quietHours?.end !== hours?.end)
+    throw Error("알림 시간을 저장하지 못했어요.");
+  saveQuietHours(owner, hours);
+  await syncWorkerDelivery(owner, "quiet", hours);
 }

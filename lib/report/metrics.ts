@@ -31,7 +31,8 @@ export function datedMealSlots(view: AppView, date: string, now: Date) {
   const firstChange = view.mealScheduleHistory?.[0];
   const lastKnown = date === firstChange?.through && ids.every(id => firstChange.windows.some(window => window.slot === id))
     ? firstChange.windows : null;
-  const configured = recordedMealWindows(date, kstDate(now), view.mealProfile.windows, view.mealScheduleHistory) ?? lastKnown;
+  const configured = view.cookerMealDays?.[date] ??
+    recordedMealWindows(date, kstDate(now), view.mealProfile.windows, view.mealScheduleHistory) ?? lastKnown;
   const legacyOrder = preset.length === ids.length && preset.every((id, i) => ids[i] === id) ? preset : MEAL_SLOT_NAMES;
   const order = configured?.map(window => window.slot) ?? legacyOrder;
   return slots.map(row => {
@@ -56,22 +57,27 @@ export function slotRates(view: AppView, now: Date) {
   return mealPositionRows(week, view.mealProfile.windows.length).map(({ position, label }) => {
     const statuses = week.flatMap(day => day.slots.filter(row => row.position === position && counts(row.status)));
     const hit = statuses.filter(row => ok(row.status)).length;
-    return { position, label, ok: hit, total: statuses.length, rate: statuses.length ? hit / statuses.length : null };
+    return { position, label, ok: hit, total: statuses.length, rate: statuses.length && !view.cookerMealDays ? hit / statuses.length : null };
   });
 }
 
 /** 밥솥 사용 횟수: 최근 7일 vs 이전 4주의 주 평균, 그리고 온보딩에서 알려 준 평소 횟수 */
 export function cookerUsage(v: AppView, now: Date) {
-  const sum = (dates: string[], key: "cook" | "lid") => dates.reduce((n, d) => n + v.stats[d][key], 0);
+  const sum = (dates: string[], key: "cook" | "lid") => {
+    if (!dates.length || dates.some(date => v.stats[date]?.[key] == null)) return null;
+    return dates.reduce((n, d) => n + (v.stats[d][key] ?? 0), 0);
+  };
   const recent = daysAgo(now, 1, RECENT_DAYS);
   const before = daysAgo(now, RECENT_DAYS + 1, RECENT_DAYS + BEFORE_DAYS);
   const recorded = recent.filter((date) => v.stats[date]);
-  const fullBaseline = before.every((date) => v.stats[date]);
-  const weeklyBefore = (key: "cook" | "lid") => fullBaseline ? Math.round(sum(before, key) / (BEFORE_DAYS / 7) * 10) / 10 : null;
+  const weeklyBefore = (key: "cook" | "lid") => {
+    const total = sum(before, key);
+    return total === null ? null : Math.round(total / (BEFORE_DAYS / 7) * 10) / 10;
+  };
   return {
     recordedDays: recorded.length,
-    cook: recorded.length ? sum(recorded, "cook") : null,
-    lid: recorded.length ? sum(recorded, "lid") : null,
+    cook: sum(recorded, "cook"),
+    lid: sum(recorded, "lid"),
     cookWeeklyBefore: weeklyBefore("cook"),
     lidWeeklyBefore: weeklyBefore("lid"),
     cooksPerWeekTold: v.mealProfile.cooksPerWeek,

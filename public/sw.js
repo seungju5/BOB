@@ -14,7 +14,7 @@ function safeClickURL(value) {
   switch (path.replace(/\/$/, "")) {
     case "records": {
       const day = noticeDay(url.searchParams.get("day"));
-      return new URL(day ? "records/?day=" + day : "records/", appScope).href;
+      return new URL(recordNoticePath(day, url.searchParams.get("slot")).slice(1), appScope).href;
     }
     case "settings": return new URL("settings/#device", appScope).href;
     case "report": return new URL("report/", appScope).href;
@@ -24,18 +24,29 @@ function safeClickURL(value) {
 }
 
 async function showIncoming(data) {
+  if (data.kind === "cooker_signal" && Number.isFinite(data.expiresAt) && Date.now() >= data.expiresAt) return;
+  if (data.kind === "cooker_signal") {
+    try {
+      const saved = await self.caches.match(noticeDeliveryKey(appScope), {cacheName:noticePreferenceCache});
+      if (saved && !await acceptsCookerDelivery(await saved.json(), data.scope, data.at, Date.now())) return;
+    } catch { return; }
+  }
   let showFeature = false;
   try {
     const preference = await self.caches.match(noticePreferenceKey(appScope), {cacheName: noticePreferenceCache});
-    showFeature = Boolean(preference && await preference.text());
+    showFeature = Boolean(preference && await matchesNoticeOwner(await preference.text(), data.scope));
   } catch { /* Private copy is the default, including during a storage failure. */ }
-  const text = noticeText(data.kind, showFeature);
-  const relative = noticePath(data).slice(1);
+  const scope = validNoticeScope(data.scope) ? data.scope : null;
+  // An older sender cannot bind a record to the account on this phone.
+  const path = noticePath(data);
+  const ticket = data.kind === "cooker_signal" && validCookerTicket(data.ticket) ? data.ticket : null;
+  const text = noticeText(data.kind, showFeature, Boolean(ticket));
+  const relative = ((!scope || data.kind === "cooker_signal" && !ticket) && path.startsWith("/records/") ? "/alerts/" : path).slice(1);
   return self.registration.showNotification(text.title, {
     body: text.body, ...(typeof data.tag === "string" && data.tag.length <= 160 && {tag: data.tag}),
     icon: new URL("brand/rice-logo.png", appScope).href,
     badge: new URL("brand/notification-badge.png", appScope).href,
-    lang: "ko", data: {url: new URL(relative, appScope).href},
+    lang: "ko", data: {url: new URL(relative, appScope).href, ...(scope && {scope}), ...(ticket && {ticket})},
   });
 }
 
@@ -47,7 +58,15 @@ self.addEventListener("push", event => {
 
 self.addEventListener("notificationclick", event => {
   event.notification.close();
-  const clicked = new URL(safeClickURL(event.notification.data?.url));
+  let clicked = new URL(safeClickURL(event.notification.data?.url));
+  const scope = event.notification.data?.scope;
+  const ticket = event.notification.data?.ticket;
+  if (validCookerTicket(ticket)) {
+    clicked = new URL("alerts/", appScope);
+    clicked.searchParams.set("cookTicket", ticket);
+  }
+  if (validNoticeScope(scope)) clicked.searchParams.set("noticeFor", scope);
+  else if (clicked.pathname.endsWith("/records/")) clicked = new URL("alerts/", appScope);
   clicked.searchParams.set("from", "notice");
   const url = clicked.href;
   event.waitUntil((async () => {

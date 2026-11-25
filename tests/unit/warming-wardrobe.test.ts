@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { existsSync } from 'node:fs';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { DressedRabbit } from '@/components/walking/DressedRabbit';
 import { resolve } from 'node:path';
 import { createHeartsDemo } from '@/lib/hearts/demo';
 import { HEART_ITEMS } from '@/packages/walking-hearts/core.mjs';
@@ -17,12 +20,53 @@ describe('워밍이 산책 옷장', () => {
     }
     for (const name of names) expect(existsSync(resolve('public/walking/wardrobe', name + '.webp')), name).toBe(true);
   });
+  it('wears each catalog item on one body with the chin or paw in front of the matching accessory', () => {
+    const render = (body: string, hat: string | null, accessory: string | null) =>
+      renderToStaticMarkup(createElement(DressedRabbit, { body, hat, accessory, asset: name => '/' + name + '.webp', label: '워밍이' }));
+    for (const item of [...STARTER_ITEMS, ...HEART_ITEMS]) {
+      if (item.category === 'background') continue;
+      const html = render(item.category === 'outfit' ? item.id : 'base',
+        item.category === 'hat' ? item.id : null, item.category === 'accessory' ? item.id : null);
+      expect(html, item.id).toContain('/' + (item.category === 'outfit' ? 'body-' : 'item-') + item.id + '.webp');
+      expect(html.match(/href="\/body-[^"]+\.webp"/g), item.id).toHaveLength(1);
+    }
+    for (const [accessory, foreground] of [['scarf', 'chin'], ['basket', 'grip'], ['rice-pouch', 'grip']]) {
+      const html = render('vest', 'straw-hat', accessory);
+      const sprite = html.indexOf('/item-' + accessory);
+      const cover = html.search(new RegExp('<use[^>]+clip-path="url\\(#[^"]+-' + foreground));
+      expect(cover, accessory).toBeGreaterThan(sprite);
+      expect(html.indexOf('/item-straw-hat')).toBeGreaterThan(cover);
+    }
+  });
+
+  it('tucks both ears on every body only when a closed hat is worn', () => {
+    const bodies = ['base', ...[...STARTER_ITEMS, ...HEART_ITEMS].filter(item => item.category === 'outfit').map(item => item.id)];
+    for (const body of bodies) {
+      for (const hat of ['berry-beret', 'straw-hat', 'hiking-cap', 'rose-bow', 'crown', null]) {
+        const html = renderToStaticMarkup(createElement(DressedRabbit, {
+          body, hat, accessory: 'scarf', asset: name => '/' + name + '.webp', label: '워밍이',
+        }));
+        const bodyImage = html.match(/<image[^>]+id="[^"]+-body"[^>]*>/)?.[0];
+        expect(bodyImage, body).toContain('/body-' + body);
+        const closed = hat === 'berry-beret' || hat === 'straw-hat' || hat === 'hiking-cap';
+        expect(bodyImage?.includes('-tucked)'), body + '/' + hat).toBe(closed);
+        if (closed) expect(html).not.toMatch(/<use[^>]*-ears\)/);
+      }
+    }
+  });
+
   it('restores only free cosmetics from the matching categories and preserves explicit removals', () => {
     const result = readLocalLook(JSON.stringify({
       hat: 'rice-pouch', outfit: null, accessory: 'rice-pouch', background: 'autumn', count: 3000, balance: 20,
     }));
     expect(result).toEqual({ ...STARTER_LOOK, outfit: null, accessory: 'rice-pouch' });
     for (const unusable of [null, 'null', 'not json', '12']) expect(readLocalLook(unusable)).toEqual(STARTER_LOOK);
+  });
+
+  it('restores the trail reward after collecting all stamps, independent of the heart wallet', () => {
+    const stored = JSON.stringify({outfit: 'star-cape', hat: 'straw-hat', background: 'moon'});
+    expect(readLocalLook(stored)).toEqual({...STARTER_LOOK, background: 'moon'});
+    expect(readLocalLook(stored, true)).toEqual({...STARTER_LOOK, outfit: 'star-cape', background: 'moon'});
   });
 
   it('selects several parts without persisting a stale change over another tab', () => {

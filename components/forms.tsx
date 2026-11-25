@@ -1,8 +1,9 @@
 "use client";
 
 import { useId, useState, type ComponentProps, type ReactNode } from "react";
-import { mealSlotLabel } from "@/lib/data/view";
+import { DEFAULT_WINDOWS, MAX_MEALS, initialMealWindowOverrides, mealSlotLabel, mealWindowsForCount } from "@/lib/data/view";
 import type { MealWindow } from "@/lib/judge/types";
+import { validMealWindows } from "@/lib/judge/resolveMealSlots";
 
 export function Field({ label, hint, children, htmlFor }: { label: string; hint?: ReactNode; children: ReactNode; htmlFor?: string }) {
   return (
@@ -58,6 +59,7 @@ export function Choice<T extends string | number | boolean>({
  * marks로 라벨을 붙일 눈금만 고를 수 있고(기본: 전부), format으로 값 표시를 바꿀 수 있다 (예: 0 → "거의 안 함").
  */
 export function Slider({
+  id,
   value,
   min,
   max,
@@ -69,6 +71,7 @@ export function Slider({
   step = 1,
   onCommit,
 }: {
+  id?: string;
   value: number;
   min: number;
   max: number;
@@ -95,6 +98,7 @@ export function Slider({
         )}
       </p>
       <input
+        id={id}
         type="range"
         min={min}
         max={max}
@@ -260,6 +264,24 @@ export function Stepper({ value, min, max, step = 1, unit, onChange }: { value: 
 
 const validTime = (value: string) => /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
 
+export function useMealWindowDraft(savedWindows: MealWindow[]) {
+  const [meals, setMeals] = useState(Math.min(MAX_MEALS, savedWindows.length || DEFAULT_WINDOWS.length));
+  const [overrides, setOverrides] = useState(() => initialMealWindowOverrides(savedWindows));
+  const windows = mealWindowsForCount(meals, overrides);
+  function setWindows(next: MealWindow[]) {
+    setOverrides(previous => initialMealWindowOverrides(next, previous));
+  }
+  function resetWindows() {
+    setOverrides(previous => {
+      const next = initialMealWindowOverrides(mealWindowsForCount(meals), previous);
+      next.slotOrderByCount = { ...previous.slotOrderByCount };
+      delete next.slotOrderByCount[meals];
+      return next;
+    });
+  }
+  return { meals, setMeals, windows, setWindows, resetWindows };
+}
+
 /** 고른 시간만 바꾼다. 다른 끼니를 자동으로 옮기거나 입력 중인 초안을 버리지 않는다. */
 export function changeMealWindow(windows: MealWindow[], index: number, key: "start" | "end", value: string): MealWindow[] {
   return windows.map((window, i) => i === index ? { ...window, [key]: value } : { ...window });
@@ -278,7 +300,7 @@ export function mealWindowProblems(windows: MealWindow[]): Array<string | null> 
   });
 }
 
-export function MealWindowsEditor({ windows, onChange }: { windows: MealWindow[]; onChange: (w: MealWindow[]) => void }) {
+export function MealWindowsEditor({ windows, onChange, onReset }: { windows: MealWindow[]; onChange: (w: MealWindow[]) => void; onReset?: () => void }) {
   const id = useId();
   const problems = mealWindowProblems(windows);
   return (
@@ -310,6 +332,10 @@ export function MealWindowsEditor({ windows, onChange }: { windows: MealWindow[]
           {problems[i] ? <p id={`${id}-${w.slot}-error`} role="status" className="mt-3 text-[16px] leading-relaxed font-semibold text-blush-deep">{problems[i]}</p> : null}
         </fieldset>
       ))}
+      {onReset && problems.some(Boolean) && <button type="button" onClick={onReset}
+        className="min-h-11 self-start rounded-lg px-2 font-bold text-cocoa underline underline-offset-4">
+        {windows.length}끼 기본 시간으로 맞추기
+      </button>}
     </div>
   );
 }
@@ -331,5 +357,5 @@ export function Toggle({ checked, onChange, label }: { checked: boolean; onChang
 
 /** 시간대가 올바른지: 시작 < 끝, 겹치지 않음 */
 export function windowsValid(windows: MealWindow[]) {
-  return windows.length > 0 && mealWindowProblems(windows).every((problem) => problem === null);
+  return validMealWindows(windows);
 }

@@ -18,7 +18,7 @@
 
 .hearts-walker{position:absolute;left:50%;top:40%;height:46%;aspect-ratio:310/500;transform:translateX(-50%);pointer-events:none}
 .hearts-bunny-hello{position:absolute;bottom:13%;left:30%;width:40%;height:48%;border:0;border-radius:40%;background:transparent}
-.is-hopping .warming-rabbit{animation:hearts-joy-hop .68s cubic-bezier(.28,.84,.42,1)}
+.hearts-scene.is-hopping .warming-dressed-pose{animation:hearts-joy-hop .68s cubic-bezier(.28,.84,.42,1);transform-origin:50% 98%;transform-box:view-box}
 .hearts-foot-puff{position:absolute;bottom:1%;left:14%;width:.95rem;height:.95rem;border-radius:50%;background:radial-gradient(circle,#fffdf6 20%,rgba(246,232,205,.75) 65%,transparent 100%);opacity:0}
 .hearts-foot-puff-a{animation:hearts-puff-rise 1.04s ease-out infinite}
 .hearts-foot-puff-b{left:22%;width:.7rem;height:.7rem;animation:hearts-puff-rise 1.04s ease-out infinite .52s}

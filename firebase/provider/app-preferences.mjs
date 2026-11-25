@@ -9,11 +9,11 @@ export function preferenceFields(input){
     ||!integer(input.eatOutPerWeek,0,20)||!integer(input.cooksPerWeek,1,21)||typeof input.usesKeepWarm!=='boolean'
     ||!integer(input.missedMealsThreshold,1,6)||!integer(input.fastingHours,12,108)||input.fastingHours%6!==0
     ||!integer(input.emergencyHours,24,120)||input.emergencyHours%6!==0||input.emergencyHours-input.fastingHours<12
-    ||typeof input.preparationAcknowledged!=='boolean'||!Array.isArray(input.windows)||!integer(input.windows.length,1,4))invalid();
+    ||typeof input.preparationAcknowledged!=='boolean'||!Array.isArray(input.windows)||!integer(input.windows.length,1,5))invalid();
   const slots=new Set();let lastEnd='';
   for(const window of input.windows){
     if(!window||Object.keys(window).length!==3||!['slot','start','end'].every(key=>Object.hasOwn(window,key))
-      ||!['breakfast','lunch','dinner','fourth'].includes(window.slot)||slots.has(window.slot)
+      ||!['breakfast','lunch','dinner','fourth','fifth'].includes(window.slot)||slots.has(window.slot)
       ||!/^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(window.start)||!/^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(window.end)
       ||window.start>=window.end||window.start<lastEnd)invalid();
     slots.add(window.slot);lastEnd=window.end;

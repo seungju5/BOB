@@ -252,6 +252,17 @@ test('purchase is atomic, does not automatically equip, and is idempotent', () =
   assert.throws(() => buyHeartItem(original, 'fake-item'), error('unknown_heart_item'));
 });
 
+test('the constellation cape costs twelve hearts once and remains wearable after reloading', () => {
+  let state = fresh();
+  assert.throws(() => buyHeartItem(state, 'star-cape'), error('insufficient_hearts'));
+  for (let i = 0; i < 4; i++) state = advanceHearts(state, {date: offset(day, i), count: 5000});
+  assert.equal(state.balance, 12);
+  const worn = equipHeartItem(buyHeartItem(state, 'star-cape'), 'star-cape');
+  assert.equal(worn.balance, 0);
+  const restored = equipHeartItem(clone(worn), 'default-outfit');
+  assert.deepEqual(equipHeartItem(buyHeartItem(restored, 'star-cape'), 'star-cape'), worn);
+});
+
 test('equipment requires ownership, swaps within a category and supports defaults', () => {
   const start = fresh();
   assert.throws(() => equipHeartItem(start, 'scarf'), error('heart_item_not_owned'));
@@ -368,9 +379,9 @@ test('league accepts no participants and never manufactures entries or an arbitr
   assert.throws(() => heartLeague([{...row, nickname: 'bad\nname'}], day), error('invalid_heart_league'));
 });
 
-test('catalog and policy are immutable and all eight items have known categories', () => {
-  assert.equal(HEART_ITEMS.length, 8);
-  assert.equal(new Set(HEART_ITEMS.map(item => item.id)).size, 8);
+test('catalog and policy are immutable and every collectible has its own identifier', () => {
+  assert.deepEqual(HEART_ITEMS.map(item => item.id).sort(), ['autumn','basket','crown','hanbok','hiking-cap','scarf','star-cape','straw-hat','vest']);
+  assert.equal(new Set(HEART_ITEMS.map(item => item.id)).size, HEART_ITEMS.length);
   assert.equal(HEART_LEAGUE_TIERS.length, 5);
   assert.throws(() => { HEART_ITEMS[0].price = 0; }, TypeError);
   assert.throws(() => { HEART_POLICY.rewardThresholds[0].total = 99; }, TypeError);

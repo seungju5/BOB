@@ -1,0 +1,34 @@
+.outfit-lookbook { margin-block: 16px 20px; color: #40352e; }
+.outfit-lookbook h3 { margin: 0; color: #40352e; font-size: 1.13rem; font-weight: 780; line-height: 1.4; }
+.outfit-lookbook > p { margin: 3px 0 10px; color: #655a52; font-size: .9rem; line-height: 1.45; }
+.outfit-lookbook-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 9px; }
+.outfit-lookbook .lookbook-card {
+  display: flex; flex-direction: column; min-width: 0; overflow: hidden; padding: 0; gap: 0;
+  border: 1px solid #dfd3c6; border-radius: 15px; background: #fffdf8; color: inherit;
+  text-align: start; font: inherit; touch-action: manipulation; cursor: pointer;
+}
+.outfit-lookbook .lookbook-card[aria-pressed=true] { border-color: #854252; box-shadow: 0 0 0 1px #854252; }
+.outfit-lookbook .lookbook-card:focus-visible { outline: 3px solid #346654; outline-offset: 3px; }
+.outfit-lookbook .lookbook-card:disabled { opacity: .62; cursor: default; }
+.lookbook-portrait { position: relative; display: block; flex: none; overflow: hidden; width: 100%; height: clamp(88px,23vw,120px); background: #efe3da; }
+.lookbook-card[data-style=berry-picnic] .lookbook-portrait { background: radial-gradient(ellipse at 45% 34%,#fff8eb,#f2dccb); }
+.lookbook-card[data-style=rainy-walk] .lookbook-portrait { background: radial-gradient(ellipse at 48% 32%,#ebf5f0,#c5dedf); }
+.lookbook-card[data-style=hanbok] .lookbook-portrait { background: radial-gradient(ellipse at 48% 32%,#fff5dd,#efd8cf); }
+.lookbook-card[data-style=star-cape] .lookbook-portrait { background: radial-gradient(ellipse at 49% 50%,#ecdfef,#c8c7de); }
+.lookbook-portrait > .warming-rabbit { position: absolute; left: 8%; top: 5%; width: 84%; height: 90%; }
+.lookbook-mark { position: absolute; top: 6px; right: 6px; display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: #773747; color: white; font-size: .82rem; font-weight: 800; }
+.lookbook-copy { display: grid; align-content: start; gap: 2px; padding: 9px 10px 10px; min-width: 0; }
+.lookbook-copy strong { font-size: 1rem; font-weight: 800; line-height: 1.35; }
+.lookbook-detail, .lookbook-availability { color: #66574e; font-size: .81rem; line-height: 1.4; overflow-wrap: anywhere; }
+.lookbook-availability { margin-top: 3px; color: #783d4c; font-weight: 740; }
+.outfit-lookbook .lookbook-wide { grid-column: 1 / -1; flex-direction: row; align-items: center; }
+.lookbook-wide .lookbook-portrait { flex: 0 0 35%; height: 82px; }
+.ward-picker .lookbook-demo-link { display: inline-flex; align-items: center; gap: 4px; min-height: 44px; color: #70404c; font-weight: 670; font-size: .89rem; text-decoration: underline; text-underline-offset: 3px; }
+.lookbook-demo-link svg { width: 16px; height: 16px; }
+.ward-picker .outfit-lookbook:has(+ .lookbook-demo-link) { margin-bottom: 0; }
+.hearts-items .lookbook-worn-item { height: 40px; width: 46px; object-fit: contain; }
+@media (max-width: 360px) {
+  .outfit-lookbook-grid { gap: 7px; }
+  .lookbook-copy { padding: 7px 7px 9px; }
+  .lookbook-detail, .lookbook-availability { font-size: .79rem; }
+}

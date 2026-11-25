@@ -11,7 +11,8 @@ import { useApp } from "@/lib/data/useApp";
 import { careDataAvailable, mealSlotLabel, reportSummary, type AppView } from "@/lib/data/view";
 import { MEAL_STATUS_LABEL, mealStatusClass, useMealPalette } from "@/lib/data/appearance";
 import { MealStatusLegend } from "@/components/MealStatus";
-import { dailyMeals, slotRates } from "@/lib/report/metrics";
+import { BEFORE_DAYS, RECENT_DAYS, dailyMeals, slotRates } from "@/lib/report/metrics";
+import { addDays, kstDate } from "@/lib/judge/time";
 
 /**
  * 패턴 리포트. 위는 가전과 무관한 종합(끼니 확인율), 아래는 가전별 탭(components/report/devices.tsx 등록부).
@@ -96,6 +97,8 @@ function Overview({ view, now }: { view: AppView; now: Date }) {
     );
   }
   const { recent, before, r, b, trend, message } = summary;
+  const today = kstDate(now);
+  const daysBeforeToday = (days: number) => fmtMonthDay(addDays(today, -days));
   return (
     <>
       <section className={`rounded-[1.75rem] p-6 ${trend === "down" ? "bg-blush" : "bg-butter-soft"}`}>
@@ -105,8 +108,9 @@ function Overview({ view, now }: { view: AppView; now: Date }) {
         {trend === "down" ? <p className="mt-1 text-[15px] text-cocoa/75">{view.senior.relation}께 요즘 입맛은 어떠신지 여쭤보면 어떨까요?</p> : null}
       </section>
       <ReportCard title="평소와 비교">
-        <Bar label="최근 7일" pct={r} strong />
-        <Bar label="이전 4주" pct={b} />
+        <p className="mt-2 text-[16px] leading-relaxed text-muted">어제까지 7일 동안의 끼니 확인율을 그 전 4주의 확인율과 비교해요.</p>
+        <Bar label={`최근 7일 · ${daysBeforeToday(RECENT_DAYS)}~${daysBeforeToday(1)}`} pct={r} strong />
+        <Bar label={`이전 4주 · ${daysBeforeToday(RECENT_DAYS + BEFORE_DAYS)}~${daysBeforeToday(RECENT_DAYS + 1)}`} pct={b} />
         <p className="mt-3 text-[12px] text-muted">
           확인된 끼니 {recent.ok}/{recent.total} · 이전 {before.ok}/{before.total} (외식 포함, 부재·대기 제외)
         </p>

@@ -2,13 +2,13 @@
 
 import Link from "next/link";
 import { ImpactConnectionLinks } from "@/components/ImpactConnectionLinks";
-import { ALERT_PRIORITY, ALERT_TONE, alertCopy, AlertShortcut, fmtDateLong, STATUS_META, StatusIcon, withWa } from "@/components/guardian";
+import { ALERT_PRIORITY, ALERT_TONE, alertCopy, AlertShortcut, fmtDateLong, StatusIcon, withWa } from "@/components/guardian";
 import { IconArrowRight, IconChart, IconClock, IconPhone, IconSuitcase } from "@/components/icons";
 import { Logo, Mascot } from "@/components/Mascot";
 import { buttonClass, Skeleton } from "@/components/ui";
 import { countMissedMeals } from "@/lib/judge/evaluateAlerts";
 import { kstDate } from "@/lib/judge/time";
-import { mealStatusClass, useMealPalette } from "@/lib/data/appearance";
+import { MEAL_STATUS_LABEL, mealStatusClass, useMealPalette } from "@/lib/data/appearance";
 import { useApp } from "@/lib/data/useApp";
 import { recentSlots, reportSummary, mealSlotLabel, slotsForDate, unackedAlerts } from "@/lib/data/view";
 
@@ -76,8 +76,6 @@ export default function HomePage() {
         </section>
       ) : null}
 
-      <ImpactConnectionLinks compact />
-
       <Link
         href="/report"
         className={`mt-5 block rounded-[1.75rem] p-6 transition-colors ${report?.trend === "down" ? "bg-blush hover:bg-blush/70" : "bg-butter-soft hover:bg-butter/60"}`}
@@ -101,7 +99,7 @@ export default function HomePage() {
               <span className="text-[16px] text-cocoa/70">최근 7일 끼니 확인율</span>
             </p>
             <p className="mt-2 text-[18px] leading-snug font-extrabold text-cocoa">{report.message}</p>
-            <p className="mt-1 text-[16px] text-cocoa/70">어제까지 7일 기준 · 평소는 그 전 4주 평균이에요.</p>
+            <p className="mt-1 text-[16px] text-cocoa/70">어제까지 7일 동안의 끼니 확인율을 그 전 4주의 확인율과 비교해요.</p>
             <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-paper/80" aria-hidden>
               <div className="h-full rounded-full bg-butter-deep" style={{ width: `${report.r}%` }} />
             </div>
@@ -123,13 +121,15 @@ export default function HomePage() {
               <span className="text-[16px] font-semibold opacity-80">{mealSlotLabel(s.slot, view.mealProfile.windows)}</span>
               <span className="flex items-center gap-1 text-[16px] font-bold">
                 <StatusIcon status={s.status} />
-                {STATUS_META[s.status].label}
+                {MEAL_STATUS_LABEL[s.status]}
               </span>
             </li>
           ))}
         </ul>
         <p className="mt-3 text-[16px] leading-relaxed text-muted">밥솥 사용 여부만 전해요. 무엇을 얼마나 드셨는지는 알 수 없어요.</p>
       </section>
+
+      <ImpactConnectionLinks compact />
 
       <div className="mt-6 flex items-end gap-3">
         <Mascot className="h-16 w-16 shrink-0" mood={top ? "worried" : "happy"} />

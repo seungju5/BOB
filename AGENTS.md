@@ -23,3 +23,5 @@ If this client does not expose custom-agent names, read the relevant TOML and in
 - Record skipped/blocked checks and outstanding manual evidence. Do not promote historical registration results into current integration success.
 - Keep the user's free/Spark decision until they change it. These commands never activate billing or deploy; source snapshots and logs stay local and ignored by Git.
 - Update `todo.md` and `log.md` for completed work. Preserve both app editions, their separate accounts/databases, and the approved original bunny.
+
+Team members commit with their own GitHub accounts. Keep personal email addresses, phone numbers, local paths, private deployment addresses and secrets out of tracked files. Run `npm run check:personal-info` before pushing. The team Firebase app in `apps/warming-up/` also has its own [working rules](apps/warming-up/AGENTS.md).

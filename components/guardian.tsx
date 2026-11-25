@@ -4,18 +4,11 @@ import Link from "next/link";
 import type { AlertType, MealStatus } from "@/lib/judge/types";
 import { IconChart, IconCheck, IconClock, IconPhone, IconSuitcase, IconUtensils } from "./icons";
 
-export const STATUS_META: Record<MealStatus, { label: string; className: string }> = {
-  confirmed: { label: "확인됨", className: "bg-sage text-sage-deep" },
-  eat_out: { label: "외식", className: "bg-butter-soft text-cocoa" },
-  away: { label: "부재", className: "bg-sky text-sky-deep" },
-  unconfirmed: { label: "미확인", className: "bg-blush text-blush-deep" },
-  pending: { label: "대기 중", className: "bg-line/60 text-muted" },
-};
-
 export function StatusIcon({ status, className = "h-4 w-4" }: { status: MealStatus; className?: string }) {
   if (status === "confirmed") return <IconCheck className={className} />;
   if (status === "eat_out") return <IconUtensils className={className} />;
   if (status === "away") return <IconSuitcase className={className} />;
+  if (status === "unconfirmed") return <span aria-hidden className={`inline-grid shrink-0 place-items-center ${className}`}><span className="w-2/3 border-t-2 border-current" /></span>;
   return <IconClock className={className} />;
 }
 

@@ -10,6 +10,9 @@ vi.mock("@/lib/demo/store", () => ({ resetDemo: vi.fn(), updateDemo: vi.fn() }))
 vi.mock("@/lib/data/live", () => ({ refreshLive: vi.fn() }));
 
 import SettingsPage from "@/app/(guardian)/settings/page";
+import AlertsPage from "@/app/(guardian)/alerts/page";
+import HomePage from "@/app/(guardian)/home/page";
+import ReportPage from "@/app/(guardian)/report/page";
 import OnboardingPage from "@/app/onboarding/page";
 import TutorialPage from "@/app/tutorial/page";
 import { ConnectionGuide } from "@/components/onboarding/ConnectionGuide";
@@ -25,6 +28,41 @@ beforeEach(() => {
 });
 
 describe("settings and onboarding presentation contracts", () => {
+  it.each([
+    [2, 2, "하루 동안"],
+    [3, 2, "하루가 채 안 되는 동안"],
+    [2, 5, "이틀 하고 1끼 동안"],
+  ] as const)("하루 %i끼, 연속 %i끼의 기간을 온보딩과 설정에서 같은 말로 설명한다", (meals, threshold, duration) => {
+    view.onboardingStep = 6;
+    view.mealProfile.windows = view.mealProfile.windows.slice(0, meals);
+    view.alertSettings.missedMealsThreshold = threshold;
+    for (const page of [OnboardingPage, SettingsPage]) {
+      const html = renderToStaticMarkup(createElement(page));
+      expect(html).toContain('aria-label="결식 알림 기준"');
+      expect(html).toContain(`하루 ${meals}끼로 설정했으니 ${threshold}끼면 ${duration}`);
+    }
+  });
+
+  it("오늘의 끼니 다음에 실제 계정의 기기 확인 링크를 표시하고 리포트 알림에는 발행 주차를 쓴다", () => {
+    view.dataSource = "supabase";
+    view.plug.deviceId = "fixture-plug";
+    view.alerts = [{ id: "week", type: "weekly_report", triggeredAt: "2026-11-02T00:00:00Z", acknowledgedAt: null, resolvedAt: null }];
+    const home = renderToStaticMarkup(createElement(HomePage));
+    expect(home).toContain("오늘의 끼니");
+    expect(home).toContain("우리 집 기기 신호 확인");
+    expect(home.indexOf("오늘의 끼니")).toBeLessThan(home.indexOf("우리 집 기기 신호 확인"));
+    for (const html of [home, renderToStaticMarkup(createElement(AlertsPage))]) {
+      expect(html).toContain("10월 5주차 리포트가 발행되었어요");
+    }
+  });
+
+  it("최근 7일과 비교하는 이전 4주의 날짜가 겹치지 않고 한국 시간 어제에서 끝난다", () => {
+    view.mode = "demo";
+    const html = renderToStaticMarkup(createElement(ReportPage));
+    expect(html).toContain("최근 7일 · 11/7~11/13");
+    expect(html).toContain("이전 4주 · 10/10~11/6");
+  });
+
   it("starts with three collapsed categories while retaining the editable form contents", () => {
     const html = renderToStaticMarkup(createElement(SettingsPage));
     const groups = html.match(/<details[^>]*id="(?:alerts|life|device)"[^>]*>/g) ?? [];

@@ -8,6 +8,7 @@ import type { MealSlot, MealStatus } from "@/lib/judge/types";
 import { slotRates } from "@/lib/report/metrics";
 import { monthLeadingDays, recordPeriod, shiftRecordPeriod } from "@/components/records/period";
 import { mealStatusClass, validMealPalette } from "@/lib/data/appearance";
+import { weeklyReportLabel } from "@/lib/alerts/copy";
 
 // 아래 데이터·이벤트는 단위 검사용 가상 기록이다. 실제 기기 수신 증거가 아니다.
 const NOW = new Date("2026-11-14T03:00:00Z");
@@ -102,13 +103,29 @@ describe("실제 계정 미연결과 하루 상태", () => {
     expect(mealDaySummary(fourView(["away"], "2026-11-14"), "2026-11-14", NOW)).toEqual({ tone: "away", ok: 0, total: 0 });
   });
 
-  it("팔레트를 바꿔도 외식과 확인의 의미는 같은 색으로 유지한다", () => {
+  it("두 팔레트 모두 외식은 노랑, 미확인은 회색으로 구분하고 대기 상태는 옅게 표시한다", () => {
     expect(validMealPalette("unknown")).toBe("soft");
-    for (const palette of ["soft", "clear"] as const) expect(mealStatusClass("eat_out", palette)).toBe(mealStatusClass("confirmed", palette));
+    for (const palette of ["soft", "clear"] as const) {
+      const styles = (["confirmed", "eat_out", "unconfirmed", "pending", "away"] as const).map(status => mealStatusClass(status, palette));
+      expect(new Set(styles).size).toBe(styles.length);
+      expect(mealStatusClass("eat_out", palette)).toContain("bg-butter");
+      expect(mealStatusClass("unconfirmed", palette)).toContain("bg-neutral");
+      expect(mealStatusClass("pending", palette)).toContain("text-muted");
+    }
   });
 });
 
 describe("일·주·월 달력 탐색", () => {
+  it.each([
+    ["2026-11-23T00:00:00Z", "11월 3주차"],
+    ["2026-11-02T00:00:00Z", "10월 5주차"],
+    ["2027-01-04T00:00:00Z", "12월 5주차"],
+    ["2026-11-23T14:59:59Z", "11월 3주차"],
+    ["2026-11-23T15:00:00Z", "11월 4주차"],
+  ])("주간 리포트는 한국 발행일 전날이 속한 주의 목요일을 기준으로 표시한다 (%s → %s)", (issuedAt, week) => {
+    expect(weeklyReportLabel(new Date(issuedAt))).toBe(week);
+  });
+
   it("주간은 월요일~일요일이고 월간은 실제 달력 일수다", () => {
     expect(recordPeriod("2026-11-14", "week")).toMatchObject({ from: "2026-11-09", to: "2026-11-15" });
     expect(recordPeriod("2028-02-14", "month").dates).toHaveLength(29);

@@ -23,10 +23,11 @@ import { Button, Skeleton } from "@/components/ui";
 import { useApp } from "@/lib/data/useApp";
 import { tutorialExitPath } from "@/lib/data/view";
 import { PrivacyNotice } from "@/components/privacy/PrivacyNotice";
+import { weeklyReportLabel } from "@/lib/alerts/copy";
 
 /** 가입 후의 소개. 명시적으로 선택한 데모도 같은 소개를 별도로 체험한다. */
 
-type Slide = { title: string; body: string; content: ReactNode };
+type Slide = { title: string; body: string; content: ReactNode | ((issuedAt: Date) => ReactNode) };
 
 const SLIDES: Slide[] = [
   {
@@ -37,10 +38,11 @@ const SLIDES: Slide[] = [
   {
     title: "소식이 뜸하면\n안부를 물어봐요",
     body: "설정한 시간에 소식이 없으면\n안부를 물을 계기가 돼요.\n실제 식사 여부를 단정하지 않아요.",
-    content: (
+    content: (issuedAt) => (
       <div className="flex w-full flex-col gap-3">
+        <p className="text-[16px] font-semibold text-muted">알림 예시</p>
         <InfoCard icon={IconBell} text={"점심시간이 지났는데\n아직 식사 소식이 없어요"} />
-        <InfoCard icon={IconFile} text={"주간 리포트가\n발행되었어요"} />
+        <InfoCard icon={IconFile} text={`${weeklyReportLabel(issuedAt)} 리포트가\n발행되었어요`} />
       </div>
     ),
   },
@@ -51,7 +53,7 @@ const SLIDES: Slide[] = [
   },
   {
     title: "어르신도\n버튼 하나로\n소식을 보내요",
-    body: "가족 연결을 마친 뒤\n필요할 때 소식을 남겨요.\n매일 누르지 않아도 괜찮아요.",
+    body: "필요할 때만 소식을 남겨요.\n매일 누르지 않아도 괜찮아요.\n걸음 수는 지원되는 휴대폰에서\n건강 앱을 연결하면 따로 입력하지 않아요.",
     content: <SeniorButtons />,
   },
   {
@@ -96,16 +98,16 @@ function ReadyChecklist() {
 
 export default function TutorialPage() {
   const router = useRouter();
-  const { view, actions, needsLogin, error } = useApp();
+  const { view, now, actions, needsLogin, error } = useApp();
   const [index, setIndex] = useState(0);
   const [busy, setBusy] = useState(false);
   const [saveError, setSaveError] = useState("");
   const saving = useRef(false);
   const heading = useRef<HTMLHeadingElement>(null);
-  const hasView = Boolean(view);
+  const hasView = Boolean(view && now);
   useEffect(() => { if (needsLogin) router.replace("/login"); }, [needsLogin, router]);
   useEffect(() => { heading.current?.focus(); }, [index, hasView]);
-  if (needsLogin || !view) return <main className="flex flex-1 flex-col gap-4 p-6">{error ? <><p role="alert" className="text-[18px] text-blush-deep">로그인 정보를 확인하지 못했어요.</p><Button onClick={() => location.reload()}>다시 시도</Button></> : <><Skeleton className="h-12" /><Skeleton className="h-48" /></>}</main>;
+  if (needsLogin || !view || !now) return <main className="flex flex-1 flex-col gap-4 p-6">{error ? <><p role="alert" className="text-[18px] text-blush-deep">로그인 정보를 확인하지 못했어요.</p><Button onClick={() => location.reload()}>다시 시도</Button></> : <><Skeleton className="h-12" /><Skeleton className="h-48" /></>}</main>;
   const destination = tutorialExitPath(view.onboardingStep);
   const returning = destination === "/home";
   const slide = SLIDES[index];
@@ -145,7 +147,7 @@ export default function TutorialPage() {
       {/* 시작 화면처럼 아래쪽은 흰 시트 */}
       <div className={`flex flex-1 flex-col rounded-t-[2.25rem] bg-paper pt-5 pb-6 ${index === 2 ? "px-4" : "px-6"}`}>
         <div key={index} className="animate-rise motion-reduce:animate-none flex flex-1 items-center justify-center pb-5">
-          {slide.content}
+          {typeof slide.content === "function" ? slide.content(now) : slide.content}
         </div>
         {saveError ? <p role="alert" className="mb-4 text-[16px] leading-relaxed text-blush-deep">{saveError}</p> : null}
         <Button variant="dark" disabled={busy} className="min-h-14 text-[19px]" onClick={() => (last ? void finishIntro() : setIndex(index + 1))}>

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile, readdir } from 'node:fs/promises';
 import { extname, join, posix, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { inflateSync } from 'node:zlib';
 import { TEAM_PROJECT_ID, TEAM_SITE_URL, TEAM_SUPPORT_EMAIL } from '../config/team.ts';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
@@ -70,7 +71,7 @@ for (const name of ['app', 'components', 'config', 'firebase', 'lib', 'packages'
   for await (const file of files(join(root, name))) {
     if (name === 'public') {
       const asset = routeName(join(root, name), file);
-      assert(/^(?:brand\/[^/]+\.(?:png|webp|woff2|ttf|txt)|walking\/[^/]+\.(?:jpg|png)|walking\/wardrobe\/(?:body|item|trail)-[a-z]+(?:-[a-z]+)*\.webp|bapmunna-app-qr\.(?:png|svg)|icon\.svg|sw\.js|notification-content\.js|service-status\/smartthings\.json)$/.test(asset), 'Unexpected public asset: ' + asset);
+      assert(/^(?:brand\/[^/]+\.(?:png|webp|woff2|ttf|txt)|walking\/[^/]+\.(?:jpg|png)|walking\/wardrobe\/(?:body|item|trail)-[a-z]+(?:-[a-z]+)*\.webp|bapmunna-app-qr\.(?:png|svg)|apple-touch-icon\.png|icon\.svg|sw\.js|notification-content\.js|service-status\/smartthings\.json)$/.test(asset), 'Unexpected public asset: ' + asset);
       publicAssets.add(asset);
     }
     await inspectFile(file, root, name === 'public');
@@ -96,6 +97,8 @@ if (!sourceOnly) {
     expectedPages.add(name);
     const contents = await readFile(join(output, name), 'utf8');
     assert(contents.includes('name="viewport"') && contents.includes('Warming Up</title>'), 'Incorrect mobile page or title: ' + name);
+    assert.match(contents, /<link\b(?=[^>]*rel="apple-touch-icon")(?=[^>]*href="\/apple-touch-icon\.png")(?=[^>]*sizes="180x180")[^>]*>/,
+      'Missing iOS Home Screen icon: ' + name);
   }
   for await (const file of files(output)) {
     const name = routeName(output, file);
@@ -113,6 +116,33 @@ if (!sourceOnly) {
   const manifest = JSON.parse(await readFile(join(output, 'manifest.webmanifest'), 'utf8'));
   assert.equal(manifest.name, 'Warming Up');
   for (const key of ['start_url', 'scope', 'id']) assert.equal(new URL(manifest[key], TEAM_SITE_URL).href, TEAM_SITE_URL + '/');
+  const homeIcons = [
+    {src:'/brand/home-icon-white-192.png', size:192, purpose:'any'},
+    {src:'/brand/home-icon-white-512.png', size:512, purpose:'any'},
+    {src:'/brand/home-icon-white-maskable-512.png', size:512, purpose:'maskable'},
+  ];
+  for (const {src, size, purpose} of homeIcons) {
+    assert(manifest.icons.some(icon => icon.src === src && icon.sizes === size + 'x' + size && icon.type === 'image/png' && icon.purpose === purpose),
+      'Missing install icon in manifest: ' + src);
+  }
+  for (const {src, size} of [...homeIcons, {src:'/apple-touch-icon.png', size:180}]) {
+    const png = await readFile(join(output, src.slice(1)));
+    assert.equal(png.readUInt32BE(16), size, 'Icon width: ' + src);
+    assert.equal(png.readUInt32BE(20), size, 'Icon height: ' + src);
+    assert.equal(png[24], 8, 'Expected 8-bit color: ' + src);
+    assert.equal(png[25], 2, 'Home Screen icon must use opaque RGB: ' + src);
+    const imageData = [];
+    for (let offset = 8; offset < png.length;) {
+      const length = png.readUInt32BE(offset);
+      const chunk = png.toString('ascii', offset + 4, offset + 8);
+      assert.notEqual(chunk, 'tRNS', 'The icon has a transparent color: ' + src);
+      if (chunk === 'IDAT') imageData.push(png.subarray(offset + 8, offset + 8 + length));
+      offset += 12 + length;
+    }
+    // At the top-left pixel all PNG filter predictors are zero; byte 0 selects the filter.
+    const pixels = inflateSync(Buffer.concat(imageData));
+    assert.equal(pixels.readUIntBE(1, 3), 0xffffff, 'Home Screen background must be pure white: ' + src);
+  }
   for (const page of ['privacy/index.html', 'health/privacy/index.html']) {
     assert((await readFile(join(output, page), 'utf8')).includes('mailto:' + TEAM_SUPPORT_EMAIL), 'Missing team contact in ' + page);
   }

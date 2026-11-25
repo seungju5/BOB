@@ -9,7 +9,7 @@ import {
   CONSENT,
 } from './security.mjs';
 import { safeDevice, meterObservation, measuredTime } from './smartthings.mjs';
-import { hasPowerChecks, matchesPowerCheck, POWER_CHECK_MINUTES, POWER_CHECK_MS, POWER_NOTICE_CONSENT } from './power-notice.mjs';
+import { hasPowerChecks, matchesPowerCheck, MEAL_RECORD_CONSENT, publicMealRecords, POWER_CHECK_MINUTES, POWER_CHECK_MS, POWER_NOTICE_CONSENT } from './power-notice.mjs';
 import { isCookingPower, meterSignal } from './cooking-signal.mjs';
 
 const PREFIX = '/api/smartthings';
@@ -32,7 +32,7 @@ const response = (data, status = 200, headers = {}) =>
       ...headers,
     },
   });
-function publicConnection(current) {
+function publicConnection(current, nowMs) {
   if (!current) return { stage: 'disconnected' };
   const device = current.deviceId
     ? {
@@ -41,9 +41,12 @@ function publicConnection(current) {
         ...(typeof current.deviceIsVirtual === 'boolean' ? { isVirtual: current.deviceIsVirtual } : {}),
       }
     : null;
+  const mealRecords = publicMealRecords(current, nowMs);
+  const lastCook = current.powerNotice?.lastObservedAt;
   return {
     stage: current.stage,
     device,
+    ...(mealRecords && { mealRecords }),
     connectedAt: current.connectedAt,
     lastSignalAt: current.lastSignalAt ?? null,
     lastEventAt: current.lastEventAt ?? null,
@@ -54,7 +57,7 @@ function publicConnection(current) {
       checkedAt: current.powerChecks.checkedAt ?? null, measuredAt: current.powerChecks.measuredAt ?? null}}),
     ...(current.stage === 'connected' && current.deviceIsVirtual === false &&
       current.powerNotice?.version === POWER_NOTICE_CONSENT && {
-        powerNotice: { enabled: true, lastObservedAt: current.powerNotice.lastObservedAt ?? null },
+        powerNotice: { enabled: true, lastObservedAt: lastCook >= (current.powerNotice.resumedAt ?? 0) ? lastCook ?? null : null },
       }),
   };
 }
@@ -300,6 +303,13 @@ export function createService({
     secrets = ready ? vault(config.key) : null;
   const tokens = createTokenManager({ store, secrets, smartthings, verifyAccount, verifyConsent, now });
   const authorized = tokens.authorized;
+  function requireEnrollment(uid, previous) {
+    // A completed grant may reconnect to its original installation. A pending
+    // OAuth state or a connection that has been removed is a new enrollment.
+    if (config.acceptsPilotUid && !config.acceptsPilotUid(uid) &&
+        !(previous?.uid === uid && identifier(previous.installId)))
+      throw new ApiError(403, 'pilot_invite_required');
+  }
   async function notifyCooker(uid) {
     // Notification delivery is optional and must not roll back a power reading,
     // or cause Samsung to retransmit a successful mixed-lifecycle webhook.
@@ -455,7 +465,7 @@ export function createService({
       }
       // Rejected data must not skip a later DELETE lifecycle event in this batch.
       if (selectedDevice !== device.deviceId) continue;
-      // Only signal arrival metadata is retained; never a raw power time series.
+      // The store receives the threshold result and the original measurement time.
       await store.receive(owner.uid, installId, {
         id: device.eventId,
         deviceId: device.deviceId,
@@ -521,6 +531,8 @@ export function createService({
             await store.withLease(pending.uid, async () => {
               await verifyAccount(pending.uid, pending.authTime);
               await verifyConsent(pending.uid);
+              const old = await store.get(pending.uid);
+              requireEnrollment(pending.uid, old);
               const data = await smartthings.exchange(code),
                 installId = data.installed_app_id;
               if (!identifier(installId)) throw new ApiError(502, 'reconnect_required');
@@ -528,7 +540,6 @@ export function createService({
               const installation = await smartthings.installation(bundle.access, installId);
               if (installation?.installedAppId !== installId || installation.appId !== config.appId)
                 throw new ApiError(502, 'oauth_configuration_required');
-              const old = await store.get(pending.uid);
               // Reauthorization may replace an expired grant, but must not silently
               // orphan an active subscription from a different installation.
               if (old && old.installId !== installId) throw new ApiError(409, 'disconnect_first');
@@ -560,7 +571,7 @@ export function createService({
               );
             });
           } catch (error) {
-            outcome = error.code === 'disconnect_first' ? 'disconnect_first' : 'failed';
+            outcome = ['disconnect_first', 'pilot_invite_required'].includes(error.code) ? error.code : 'failed';
           }
         if (outcome !== 'connected') await store.cancelState(state, pending.uid);
         return new Response(null, {
@@ -610,7 +621,7 @@ export function createService({
           );
           return response({ stage: marked.stage, device: null });
         }
-        return response(publicConnection(current));
+        return response(publicConnection(current, now()));
       }
       if (path === '/cancel-start' && request.method === 'POST') {
         const body = await json(request);
@@ -629,6 +640,7 @@ export function createService({
           throw new ApiError(400, 'invalid_request');
         await verifyConsent(uid);
         const current = await store.get(uid);
+        requireEnrollment(uid, current);
         if (current && current.consentVersion === CONSENT && current.stage !== 'reconnect_required')
           throw new ApiError(409, 'already_connected');
         const state = body.attemptId || random(),
@@ -682,9 +694,17 @@ export function createService({
             )
               throw new ApiError(429, 'check_later');
             // Never trust the client-supplied device label/capability or a cached list.
-            const device = safeDevice(await smartthings.device(token, body.deviceId));
+            const details = await smartthings.device(token, body.deviceId);
+            const device = safeDevice(details);
             if (device.id !== body.deviceId || !device.power)
               throw new ApiError(422, 'power_not_supported');
+            const meters = (details.components ?? []).filter(c => c.capabilities?.some(k => k.id === 'powerMeter'));
+            const component = meters.length === 1 && identifier(meters[0].id) ? meters[0].id : null;
+            if (current.pendingDeviceRecheck && current.deviceIsVirtual === false) {
+              if (device.isVirtual === true) throw new ApiError(422, 'test_device');
+              if (device.isVirtual !== false) throw new ApiError(422, 'unclassified_device');
+              if (current.powerNotice && current.powerNotice.component !== component) throw new ApiError(422, 'ambiguous_meter');
+            }
             await verifyConsent(uid);
             const meter = meterObservation(await smartthings.status(token, device.id), now());
             await store.patch(
@@ -708,9 +728,9 @@ export function createService({
                 lastCheckedAt: now(),
                 lastSignalAt: meter.reading?.measuredAt ?? null,
               },
-              { installId: current.installId, requireConsent: true },
+              { installId: current.installId, requireConsent: true, recheckedDevice: {id:device.id,component} },
             );
-            return { ...publicConnection(updated), ...meterSignal(meter) };
+            return { ...publicConnection(updated, now()), ...meterSignal(meter) };
           }),
         );
       }
@@ -751,6 +771,21 @@ export function createService({
           return {enabled: true};
         }));
       }
+      if (path === '/meal-records' && request.method === 'POST') {
+        const body = await json(request);
+        if (!identifier(body?.deviceId) || typeof body.enabled !== 'boolean' ||
+            (body.enabled && body.consentVersion !== MEAL_RECORD_CONSENT)) throw new ApiError(400, 'invalid_request');
+        const current = await store.get(uid);
+        if (!current || current.deviceId !== body.deviceId) throw new ApiError(409, 'choose_device');
+        if (body.enabled) {
+          await verifyAccount(uid, current.authTime);
+          await verifyConsent(uid);
+        }
+        await store.setMealRecordConsent(uid, {
+          deviceId: body.deviceId, installId: current.installId, enabled: body.enabled,
+        }, now());
+        return response({enabled: body.enabled});
+      }
       if (path === '/poll' && request.method === 'POST') {
         const body = await json(request);
         if (!identifier(body?.deviceId)) throw new ApiError(400, 'invalid_device');
@@ -784,7 +819,7 @@ export function createService({
               },
               { installId: current.installId, requireConsent: true },
             );
-            return { ...publicConnection(updated), ...meterSignal(meter) };
+            return { ...publicConnection(updated, now()), ...meterSignal(meter) };
           }),
         );
       }

@@ -10,6 +10,7 @@ import { Mascot } from "@/components/Mascot";
 import type { AppView } from "@/lib/data/view";
 import { disablePush, enablePush, useDelivery } from "@/lib/push";
 import { pushOwner, testDeviceNotice, useEnabledSince, usePushState } from "@/lib/push-device";
+import { NoticeQuietHours } from "@/components/NoticeQuietHours";
 import { NoticePreview } from "@/components/NoticePreview";
 import { testBackgroundPush } from "@/lib/notification-transport";
 import { PowerNotice } from "@/components/SmartThingsAccountCard";
@@ -136,7 +137,7 @@ function PushCard({ view, accountKey }: { view: AppView; accountKey?: string }) 
     try {
       if (delivery === "background") {
         await testBackgroundPush(owner);
-        setTested("이 기기로 시험 발송을 요청했어요. 알림 센터에서 도착을 확인해 주세요.");
+        setTested("발송 서비스가 시험 알림을 접수했어요. 이 휴대폰의 알림 센터에서 도착을 확인해 주세요.");
       } else if (await testDeviceNotice()) {
         setTested("이 기기에 시험 알림을 표시했어요. 알림 센터에서 눌러 보세요.");
       } else setError("기기 알림을 허용한 뒤 다시 눌러 주세요.");
@@ -160,6 +161,8 @@ function PushCard({ view, accountKey }: { view: AppView; accountKey?: string }) 
     </div>}
     {error && <p role="alert" className="mt-2 text-sm font-semibold">{error}</p>}
     {tested && <p role="status" className="mt-2 text-sm">{tested}</p>}
+    {eligible && owner && (delivery === "background" || enabled && (delivery === "off" || delivery === "unavailable")) &&
+      <NoticeQuietHours key={owner + delivery} owner={owner} background={delivery === "background"}/>}
     <NoticePreview key={owner ?? "demo"} owner={owner} enabled={enabled || delivery === "background"} demo={view.mode === "demo"}/>
   </section>;
 }

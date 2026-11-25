@@ -3,17 +3,33 @@ import { link, open, unlink } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { dirname, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { setTimeout as delay } from 'node:timers/promises';
 import { parseArgs, promisify } from 'node:util';
 import { PERSONAL_METER_FORMAT, parsePersonalMeter } from '../lib/smartthings/personal-meter.ts';
 import { hasMeteredPlugCategory, meterObservation, safeDevice } from '../server/smartthings/smartthings.mjs';
 import { meterSignal } from '../server/smartthings/cooking-signal.mjs';
+import criteria from '../server/smartthings/power-criteria.json' with { type: 'json' };
 
 const execute = promisify(execFile);
-const usage = 'node scripts/export-personal-meter.mjs (--only-smart-plug | --device "내 플러그 이름 또는 ID") --out "개인점검.json" [--profile 내프로필]';
+const usage = 'node scripts/export-personal-meter.mjs (--only-smart-plug | --device "내 플러그 이름 또는 ID") --out "개인점검.json" [--fresh] [--profile 내프로필]';
+const interval = criteria.checkIntervalMinutes * 60_000;
+
+async function nextPhysicalReading(read, first, startedAt, now, wait) {
+  const baseline = first?.reading?.measuredAt ?? 0;
+  const deadline = startedAt + 3 * interval;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    await wait(interval);
+    if (now() > deadline + 30_000) break;
+    const sample = await read();
+    const time = sample?.reading?.measuredAt;
+    if (time > baseline && time >= startedAt && time <= deadline && sample.checkedAt - time <= interval) return sample;
+  }
+  throw new Error('새 전력 측정이 확인되지 않아 파일을 만들지 않았어요. SmartThings에서 실물 플러그의 연결과 마지막 측정 시각을 확인해 주세요.');
+}
 
 // The official CLI owns its credentials. The exported file includes only the
 // chosen outlet's threshold result, dates and broad device classification.
-export async function exportPersonalMeter({ device, onlySmartPlug = false, target, list, status, now = Date.now }) {
+export async function exportPersonalMeter({ device, onlySmartPlug = false, fresh = false, target, list, status, now = Date.now, wait = milliseconds => delay(milliseconds) }) {
   const selector = device?.trim().normalize('NFC');
   if (Boolean(selector) === onlySmartPlug || !target?.trim()) throw new Error(usage);
   const devices = await list();
@@ -31,13 +47,19 @@ export async function exportPersonalMeter({ device, onlySmartPlug = false, targe
       typeof selected.deviceId !== 'string' || !/^[a-z0-9][a-z0-9-]{0,127}$/i.test(selected.deviceId)) {
     throw new Error('전력계 한 개를 구분할 수 있는 플러그를 선택해 주세요.');
   }
-  const response = await status(selected.deviceId);
-  const checkedAt = now();
-  const component = response?.components?.[meters[0].id];
-  const observation = meterObservation({ components: { meter: component } }, checkedAt);
   const { isVirtual } = safeDevice(selected);
   const deviceKind = isVirtual === true ? 'virtual' : isVirtual === false ? 'recognized' : 'unknown';
-  const result = parsePersonalMeter({ format: PERSONAL_METER_FORMAT, deviceKind, checkedAt, ...meterSignal(observation) }, checkedAt);
+  if (fresh && deviceKind !== 'recognized') throw new Error('새 측정 점검에는 실물 기기로 분류된 플러그가 필요해요. SmartThings에 밥솥에 꽂힌 플러그를 등록해 주세요.');
+  async function read() {
+    const response = await status(selected.deviceId);
+    const checkedAt = now();
+    const component = response?.components?.[meters[0].id];
+    const observation = meterObservation({ components: { meter: component } }, checkedAt);
+    return parsePersonalMeter({ format: PERSONAL_METER_FORMAT, deviceKind, checkedAt, ...meterSignal(observation) }, checkedAt);
+  }
+  const startedAt = now();
+  const first = await read();
+  const result = fresh ? await nextPhysicalReading(read, first, startedAt, now, wait) : first;
   if (!result) throw new Error('이 플러그에 측정 시각이 있는 전력 또는 누적 전력량 기록이 아직 없어요.');
   const staging = join(dirname(target), '.bapmunna-meter-' + randomUUID() + '.tmp');
   const file = await open(staging, 'wx', 0o600);
@@ -53,7 +75,7 @@ export async function exportPersonalMeter({ device, onlySmartPlug = false, targe
 
 async function main() {
   const { values } = parseArgs({ options: {
-    device: {type:'string'}, 'only-smart-plug': {type:'boolean'}, out: {type:'string'}, profile: {type:'string'}, help: {type:'boolean'},
+    device: {type:'string'}, 'only-smart-plug': {type:'boolean'}, fresh: {type:'boolean'}, out: {type:'string'}, profile: {type:'string'}, help: {type:'boolean'},
   } });
   if (values.help) { console.log(usage); return; }
   async function cli(args) {
@@ -67,7 +89,7 @@ async function main() {
     }
   }
   await exportPersonalMeter({
-    device: values.device, onlySmartPlug: values['only-smart-plug'], target: values.out,
+    device: values.device, onlySmartPlug: values['only-smart-plug'], fresh: values.fresh, target: values.out,
     list: () => cli(['devices', '--capability', 'powerMeter']),
     status: id => cli(['devices:status', id]),
   });

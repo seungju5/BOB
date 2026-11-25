@@ -28,7 +28,7 @@ export type DeviceReport = {
 
 function CookerUsageSection({ view, now }: ReportProps) {
   const u = cookerUsage(view, now);
-  if (u.cook === null || u.lid === null) return <ReportCard title="밥솥 사용" aside="최근 7일">
+  if (u.cook === null) return <ReportCard title="밥솥 사용" aside="최근 7일">
     <p className="mt-3 text-sm text-muted">이 기간에 기록된 밥솥 사용 횟수가 없어요.</p>
   </ReportCard>;
   const max = Math.max(1, ...u.perDay.map((d) => d.cook ?? 0));
@@ -37,8 +37,8 @@ function CookerUsageSection({ view, now }: ReportProps) {
   return (
     <ReportCard title="밥솥 사용" aside="최근 7일">
       <div className="mt-3 grid grid-cols-2 gap-2">
-        <Stat label="밥 지은 횟수" value={`${u.cook}번`} />
-        <Stat label="뚜껑 연 횟수" value={view.mealProfile.usesKeepWarm ? `${u.lid}번` : "—"} hint={view.mealProfile.usesKeepWarm ? undefined : "보온을 안 쓰셔서 알 수 없어요"} />
+        <Stat label="취사 신호" value={`${u.cook}번`} />
+        <Stat label="뚜껑 연 횟수" value={view.mealProfile.usesKeepWarm && u.lid !== null ? `${u.lid}번` : "미측정"} hint={view.mealProfile.usesKeepWarm ? undefined : "보온을 안 쓰셔서 알 수 없어요"} />
       </div>
       <p className="mt-2 text-xs text-muted">최근 7일 중 기록이 있는 {u.recordedDays}일의 합계예요.</p>
       <div className="mt-4 flex h-20 items-end gap-1.5" aria-label="하루별 밥 지은 횟수">

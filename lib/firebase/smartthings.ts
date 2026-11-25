@@ -1,5 +1,8 @@
 import { TEAM_PROJECT_ID, TEAM_SITE_URL, TEAM_SMARTTHINGS_APP_ID } from "@/config/team";
 import cookerCriteria from "@/server/smartthings/power-criteria.json";
+import { validMealWindows } from "@/lib/judge/resolveMealSlots";
+import { addDays, kstDate } from "@/lib/judge/time";
+import type { MealSlotName, MealWindow } from "@/lib/judge/types";
 import { isCookingPower } from "@/server/smartthings/cooking-signal.mjs";
 import { connectFirebase } from "./bridge";
 import { attemptIsPending, forgetAttempt, pendingForAccount, rememberAttempt } from "@/lib/smartthings/pending";
@@ -11,6 +14,8 @@ const POWER_NOTICE_CONSENT = cookerCriteria.noticeConsentVersion;
 const stages = ["disconnected", "choose_device", "subscribing", "connected", "reconnect_required"] as const;
 type ServerStage = (typeof stages)[number];
 export type SmartThingsDevice = { id: string; label: string; isVirtual?: boolean };
+export type CookerMealDay = { date: string; windows: MealWindow[]; confirmed: MealSlotName[]; cook: number };
+export type CookerMealRecords = { days: CookerMealDay[] };
 export type SmartThingsConnection = {
   stage: ServerStage | "setup_required" | "read_error";
   device?: SmartThingsDevice | null;
@@ -19,6 +24,7 @@ export type SmartThingsConnection = {
   lastReceivedAt?: number | null;
   lastCheckedAt?: number | null;
   powerNotice?: { enabled: true; lastObservedAt: number | null };
+  mealRecords?: CookerMealRecords;
   powerChecks?: {nextAt: number; checkedAt: number | null; measuredAt: number | null};
 };
 export type SmartThingsReading = { cooking: boolean; measuredAt: number };
@@ -57,6 +63,31 @@ function observedTime(value: unknown): number | null {
   return typeof value === "number" && Number.isSafeInteger(value) && value > 0 && value <= Date.now() ? value : null;
 }
 
+/** Accept only bounded, genuine daily aggregates; never synthesize a missing day or slot. */
+export function readCookerMealRecords(value: unknown, at = Date.now()): CookerMealRecords | null {
+  if (!value || typeof value !== "object" || !("days" in value) || !Array.isArray(value.days) ||
+      value.days.length > cookerCriteria.mealRecordDays) return null;
+  const today = kstDate(new Date(at)), earliest = addDays(today, 1 - cookerCriteria.mealRecordDays);
+  const days: CookerMealDay[] = [];
+  const seen = new Set<string>();
+  for (const item of value.days) {
+    if (!item || typeof item !== "object" || typeof item.date !== "string" ||
+        !/^\d{4}-\d{2}-\d{2}$/.test(item.date) || !Number.isFinite(Date.parse(item.date)) ||
+        new Date(item.date).toISOString().slice(0,10) !== item.date || seen.has(item.date) ||
+        item.date > today || !Number.isSafeInteger(item.cook) || item.cook < 1 ||
+        !Array.isArray(item.windows) || (item.windows.length > 0 && !validMealWindows(item.windows)) ||
+        !Array.isArray(item.confirmed) || item.confirmed.length > item.cook ||
+        new Set(item.confirmed).size !== item.confirmed.length) return null;
+    const windows: MealWindow[] = item.windows;
+    const ids = windows.map(w => w.slot);
+    if (!item.confirmed.every((slot: MealSlotName) => ids.includes(slot))) return null;
+    seen.add(item.date);
+    if (item.date >= earliest) days.push({date:item.date,windows:windows.map(w => ({...w})),
+      confirmed:ids.filter(slot => item.confirmed.includes(slot)),cook:item.cook});
+  }
+  return {days:days.sort((a,b) => a.date.localeCompare(b.date))};
+}
+
 function connection(body: Record<string, unknown>): SmartThingsConnection {
   if (!stages.includes(body.stage as ServerStage)) throw new SmartThingsError("invalid_response");
   const stage = body.stage as ServerStage;
@@ -65,11 +96,13 @@ function connection(body: Record<string, unknown>): SmartThingsConnection {
   if ((stage === "connected" || stage === "subscribing") && !selected) throw new SmartThingsError("invalid_response");
   const notice = stage === "connected" && selected?.isVirtual === false && body.powerNotice != null ? object(body.powerNotice) : null;
   const checks = notice?.enabled === true && body.powerChecks != null ? object(body.powerChecks) : null;
+  const mealRecords = notice?.enabled === true ? readCookerMealRecords(body.mealRecords) : null;
   return {
     stage, device: selected, lastSignalAt: observedTime(body.lastSignalAt),
     lastEventAt: observedTime(body.lastEventAt), lastReceivedAt: observedTime(body.lastReceivedAt),
     lastCheckedAt: observedTime(body.lastCheckedAt),
     ...(notice?.enabled === true && {powerNotice: {enabled: true as const, lastObservedAt: observedTime(notice.lastObservedAt)}}),
+    ...(mealRecords && {mealRecords}),
     ...(typeof checks?.nextAt === "number" && Number.isSafeInteger(checks.nextAt) && checks.nextAt > 0 &&
       {powerChecks: {nextAt: checks.nextAt, checkedAt: observedTime(checks.checkedAt), measuredAt: observedTime(checks.measuredAt)}}),
   };
@@ -185,7 +218,7 @@ export async function openSmartThings(uid: string, signal?: AbortSignal) {
       try { result = await authenticated("start", "POST", signal, { consentVersion: SMARTTHINGS_CONSENT_VERSION, attemptId: attempt.id }); }
       catch (cause) {
         // These responses precede creation of an OAuth attempt on the team server.
-        if (cause instanceof SmartThingsError && ["already_connected", "login_required", "consent_required", "setup_required", "verified_email_required", "invalid_origin"].includes(cause.code)) forgetAttempt(attempt);
+        if (cause instanceof SmartThingsError && ["already_connected", "login_required", "consent_required", "setup_required", "pilot_invite_required", "verified_email_required", "invalid_origin"].includes(cause.code)) forgetAttempt(attempt);
         throw cause;
       }
       const url = samsungAuthorization(result.url, attempt.id);
@@ -209,6 +242,11 @@ export async function openSmartThings(uid: string, signal?: AbortSignal) {
     async setPowerNotice(deviceId: string, enabled: boolean, signal?: AbortSignal) {
       const result = await authenticated("power-notice", "POST", signal, {deviceId, enabled,
         ...(enabled && {consentVersion: POWER_NOTICE_CONSENT, checkIntervalMinutes: cookerCriteria.checkIntervalMinutes})});
+      if (result.enabled !== enabled) throw new SmartThingsError("invalid_response");
+    },
+    async setMealRecords(deviceId: string, enabled: boolean, signal?: AbortSignal) {
+      const result = await authenticated("meal-records", "POST", signal, {deviceId,enabled,
+        ...(enabled && {consentVersion:cookerCriteria.mealRecordConsentVersion})});
       if (result.enabled !== enabled) throw new SmartThingsError("invalid_response");
     },
     async pollIfDue(deviceId: string, signal?: AbortSignal) {

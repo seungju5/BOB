@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from "react";
 import type { AppView } from "@/lib/data/view";
-import { checkBackgroundPush, disableBackgroundPush, enableBackgroundPush } from "./notification-transport";
+import {kstDate, kstTime} from "@/lib/judge/time";
+import {checkBackgroundPush, currentCookerTicket, disableBackgroundPush, enableBackgroundPush} from "./notification-transport";
 import {
-  clearFeaturePreview, listenForPushChanges, notifyPushChange, permissionState, pushOwner, requestNotificationWorker,
-  saveDevicePreference, showNewNotices, useEnabledSince, usePushState, type DeviceNotice,
+  clearFeaturePreview, closeOwnerNotices, listenForPushChanges, notifyPushChange, permissionState, pushOwner, requestNotificationWorker,
+  saveDevicePreference, showNewNotices, syncWorkerDelivery, useEnabledSince, usePushState, type DeviceNotice,
 } from "./push-device";
 
 export function useDelivery(owner: string | null, consent: boolean) {
@@ -25,8 +26,9 @@ export function useDelivery(owner: string | null, consent: boolean) {
     const stop = listenForPushChanges(refresh);
     return () => { active = false; stop(); };
   }, [owner, consent, permission, since]);
+  if (typeof window !== "undefined" && !("PushManager" in window)) return "unavailable";
   if (owner && consent && saved?.owner === owner) return saved.status;
-  return "unavailable";
+  return owner && consent && permission === "granted" ? "unknown" : "unavailable";
 }
 
 export async function enablePush(mode: "live" | "demo" | null, owner: string | null) {
@@ -34,7 +36,8 @@ export async function enablePush(mode: "live" | "demo" | null, owner: string | n
   const worker = await requestNotificationWorker();
   if (worker) {
     const registered = worker.pushManager && await enableBackgroundPush(owner, worker);
-    try { saveDevicePreference(owner, true); } catch (e) {
+    try { saveDevicePreference(owner, true); await syncWorkerDelivery(owner, "enable"); } catch (e) {
+      try { saveDevicePreference(owner,false); } catch { /* Local storage may be unavailable. */ }
       if (registered) await disableBackgroundPush(owner);
       throw e;
     }
@@ -45,7 +48,7 @@ export async function enablePush(mode: "live" | "demo" | null, owner: string | n
 export async function disablePush(owner: string) {
   try { saveDevicePreference(owner, false); }
   finally {
-    try { await Promise.all([clearFeaturePreview(owner), disableBackgroundPush(owner)]); }
+    try { await Promise.all([syncWorkerDelivery(owner, "disable"), clearFeaturePreview(owner), closeOwnerNotices(owner).catch(() => {}), disableBackgroundPush(owner)]); }
     finally { notifyPushChange(); }
   }
 }
@@ -61,11 +64,15 @@ export function useAlertNotifications(view: AppView | null, accountKey?: string)
     const notices: DeviceNotice[] = view.alerts.filter(a => !a.acknowledgedAt && !a.resolvedAt)
       .map(a => ({id: a.id, at: a.triggeredAt, kind: a.type, date: a.payload?.meal?.date}));
     const signal = view.plug.powerNoticeAt;
-    if (delivery !== "background" && view.plug.status === "connected" && view.plug.isVirtual === false && signal) {
-      notices.push({id: "cooker-" + signal, at: signal, kind: "cooker_signal"});
+    if ((delivery === "off" || delivery === "unavailable") && view.plug.status === "connected" && view.plug.isVirtual === false && signal) {
+      const at = new Date(signal), date = kstDate(at), time = kstTime(at);
+      const window = view.cookerMealDays?.[date]?.find(w => w.start <= time && time < w.end);
+      const slot = window && view.slots.some(s => s.date === date && s.slot === window.slot && s.status === "confirmed" && s.source === "cooker")
+        ? window.slot : undefined;
+      notices.push({id: "cooker-" + signal, at: signal, kind: "cooker_signal", date, slot});
     }
     let active = true;
-    void showNewNotices(owner, notices, () => active).catch(() => {});
+    void showNewNotices(owner, notices, () => active, at => currentCookerTicket(owner,at)).catch(() => {});
     return () => { active = false; };
   }, [view, owner, since, permission, delivery]);
 }

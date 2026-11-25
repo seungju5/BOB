@@ -37,7 +37,7 @@ function Report({ view, now }: { view: AppView; now: Date }) {
       <section className="mt-2 rounded-[1.75rem] border border-line bg-paper p-6">
         <Mascot className="h-24 w-24" mood="sleepy" />
         <h2 className="mt-3 text-[18px] font-bold text-cocoa">연결된 소식이 쌓이면 비교해 드릴게요</h2>
-        <p className="mt-2 text-[15px] leading-relaxed text-muted">현재 계정에는 가족·기기의 식사 기록이 아직 연결되지 않았어요. 기록이 없다는 이유로 식사 여부를 판단하지 않아요.</p>
+        <p className="mt-2 text-[15px] leading-relaxed text-muted">{view.cookerMealDays ? "날짜별 기록이 켜져 있어요. 첫 취사 신호가 들어오면 이곳에 표시해요." : "현재 계정에는 가족·기기의 식사 기록이 아직 연결되지 않았어요. 기록이 없다는 이유로 식사 여부를 판단하지 않아요."}</p>
         <Link href="/settings" className="mt-4 inline-flex min-h-11 items-center font-bold text-cocoa underline underline-offset-4">연결 설정 보기</Link>
       </section>
     );
@@ -46,8 +46,10 @@ function Report({ view, now }: { view: AppView; now: Date }) {
   return (
     <div className="mt-2 flex flex-col gap-4">
       {view.mode === "demo" ? <p className="text-[12px] text-muted">체험용 가상 기록을 비교한 리포트예요.</p> : null}
-      <Overview view={view} now={now} />
-      <SlotRates view={view} now={now} />
+      {view.cookerMealDays ? <p className="text-[16px] text-muted">밥솥에서 취사 신호를 받은 날과 시간대를 모았어요.</p> : <>
+        <Overview view={view} now={now} />
+        <SlotRates view={view} now={now} />
+      </>}
       <WeekStrip view={view} now={now} />
 
       <div className="mt-4">

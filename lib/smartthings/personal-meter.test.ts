@@ -32,6 +32,39 @@ describe("personal meter file", () => {
     { ...example, energy: { ...example.energy, kwh: Infinity } },
   ])("rejects unknown or inconsistent file content", input => expect(parsePersonalMeter(input, now)).toBeNull());
 
+  it("waits for a new reading on the selected partner outlet and never substitutes a device check or energy timestamp", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "bapmunna-fresh-meter-"));
+    const target = join(dir, "fresh.json");
+    let clock = now;
+    const interval = 10 * 60_000;
+    const plug = { deviceId: "test-partner-plug", type: "VIPER", label: "밥솥", components: [{
+      id: "main", capabilities: [{ id: "powerMeter" }], categories: [{ name: "SmartPlug", categoryType: "manufacturer" }],
+    }] };
+    const wait = vi.fn(async (ms: number) => {clock += ms;});
+    let advancePower = false;
+    const status = vi.fn(async () => ({ components: { main: {
+      powerMeter: { power: { unit: "W", value: 700, timestamp: new Date(advancePower && clock >= now + 2 * interval ? clock - 1000 : now - interval).toISOString() } },
+      energyMeter: { energy: { unit: "kWh", value: 1.3, timestamp: new Date(clock).toISOString() } },
+    } } }));
+    const options = { device: plug.label, fresh: true, list: async () => [plug], target, status, now: () => clock, wait };
+    try {
+      await expect(exportPersonalMeter({ ...options, list: async () => [{ ...plug, type: "VIRTUAL" }] })).rejects.toThrow("실물 기기");
+      expect(status).not.toHaveBeenCalled();
+      await expect(exportPersonalMeter(options)).rejects.toThrow("새 전력 측정");
+      expect(status).toHaveBeenCalledTimes(4);
+      expect(wait.mock.calls).toEqual([[interval], [interval], [interval]]);
+      await expect(stat(target)).rejects.toMatchObject({code:"ENOENT"});
+      advancePower = true;
+      clock = now;
+      const saved = await exportPersonalMeter(options);
+      expect(saved?.reading).toEqual({ cooking: true, measuredAt: now + 2 * interval - 1000 });
+      expect(saved?.deviceKind).toBe("recognized");
+      expect(await readFile(target, "utf8")).not.toMatch(/밥솥|700|test-partner-plug/);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
   it("exports only the selected outlet in an exclusive private file", async () => {
     const dir = await mkdtemp(join(tmpdir(), "bapmunna-meter-test-"));
     const target = join(dir, "record.json");

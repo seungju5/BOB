@@ -13,5 +13,7 @@
 !store.mjs
 !cooking-signal.mjs
 !power-notice.mjs
+!meal-records.mjs
 !notifications.mjs
+!notification-policy.mjs
 !power-criteria.json

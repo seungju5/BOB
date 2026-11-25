@@ -37,7 +37,13 @@ describe("Firebase 하위 경로", () => {
       const url="https://impact-series.web.app"+prefix+"manifest.webmanifest";
       expect(new URL(manifest.scope,url).pathname).toBe(prefix);
       expect(new URL(manifest.start_url,url).pathname).toBe(prefix);
-      expect(new URL(manifest.icons[0].src,url).pathname).toBe(prefix+"brand/rice-logo.png");
+      const icons = manifest.icons.map((icon: {src: string; purpose: string}) =>
+        [new URL(icon.src,url).pathname, icon.purpose]);
+      expect(icons).toEqual([
+        [prefix+"brand/home-icon-white-192.png","any"],
+        [prefix+"brand/home-icon-white-512.png","any"],
+        [prefix+"brand/home-icon-white-maskable-512.png","maskable"],
+      ]);
     }
   });
 });

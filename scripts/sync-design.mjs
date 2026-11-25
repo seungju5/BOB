@@ -18,6 +18,11 @@ async function output(name,data){
   else {await mkdir(path.dirname(target),{recursive:true});await writeFile(target,data);}
 }
 const assets={};
+// Home Screen artwork is shared with the Firebase edition and includes its white background.
+for (const name of ['apple-touch-icon.png', 'icon.svg', 'brand/home-icon-white-192.png', 'brand/home-icon-white-512.png', 'brand/home-icon-white-maskable-512.png']) {
+  const input = path.join(root, 'apps/warming-up/public', name);
+  await output('public/' + name, name.endsWith('.svg') ? await readFile(input, 'utf8') : await readFile(input));
+}
 for(const name of ['bunny.png','bunny-underlay.webp','bunny-greeting.webp','rice-logo.png','rice-cooker-companion.png','bapmunna-share-v2.png','PretendardVariable.woff2','NanumPenScript-Regular.ttf','OFL-Pretendard.txt','OFL-NanumPenScript.txt']){
   const raw=await readFile(path.join(source,'assets',name));
   // License .txt files are text: hash and compare them with LF endings on every OS.

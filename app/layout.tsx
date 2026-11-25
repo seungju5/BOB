@@ -13,7 +13,10 @@ export const metadata: Metadata = {
   title: "밥뭇나",
   description: "밥 한 끼로 전하는 안부. 밥솥 사용 패턴으로 부모님의 식사 공백을 알려드려요.",
   appleWebApp: { capable: true, title: "밥뭇나", statusBarStyle: "default" },
-  icons: { icon: appPath("/brand/rice-logo.png"), apple: appPath("/brand/rice-logo.png") },
+  icons: {
+    icon: appPath("/brand/rice-logo.png"),
+    apple: { url: appPath("/apple-touch-icon.png"), sizes: "180x180", type: "image/png" },
+  },
   openGraph: {
     type: "website",
     url: publicUrl("/"),

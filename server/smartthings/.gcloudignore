@@ -16,3 +16,7 @@
 !notification-policy.mjs
 !power-criteria.json
 !maintenance.mjs
+!pilot/
+pilot/**
+!pilot/retention.mjs
+!pilot/peak-history.mjs

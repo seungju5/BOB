@@ -1,4 +1,25 @@
 {
   "indexes": [],
-  "fieldOverrides": []
+  "fieldOverrides": [
+    { "collectionGroup": "meterCaptureEvidence", "fieldPath": "samples", "indexes": [] },
+    { "collectionGroup": "meterCaptureEvidence", "fieldPath": "coverage", "indexes": [] },
+    { "collectionGroup": "meterCaptureEvidence", "fieldPath": "peaks", "indexes": [] },
+    { "collectionGroup": "meterCaptures", "fieldPath": "samples", "indexes": [] },
+    {
+      "collectionGroup": "meterCaptureEvidence", "fieldPath": "day",
+      "indexes": [
+        { "queryScope": "COLLECTION", "order": "ASCENDING" },
+        { "queryScope": "COLLECTION", "order": "DESCENDING" },
+        { "queryScope": "COLLECTION_GROUP", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "meterCaptures", "fieldPath": "day",
+      "indexes": [
+        { "queryScope": "COLLECTION", "order": "ASCENDING" },
+        { "queryScope": "COLLECTION", "order": "DESCENDING" },
+        { "queryScope": "COLLECTION_GROUP", "order": "ASCENDING" }
+      ]
+    }
+  ]
 }

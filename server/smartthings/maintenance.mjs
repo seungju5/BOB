@@ -13,8 +13,9 @@ try {
     const refresh = await runtime.handle.maintain({ limit: 20, budgetMs: 120000 });
     const cleanup = await runtime.store.cleanupExpired({ limit: 500 });
     const mealRecords = await runtime.store.pruneExpiredMealRecords({ limit: 20 });
-    console.log(JSON.stringify({ refresh, cleanup, mealRecords }));
-    if (refresh.deferred > 0) process.exitCode = 1;
+    const pilotRecords = await runtime.store.pruneExpiredPilotRecords();
+    console.log(JSON.stringify({ refresh, cleanup, mealRecords, pilotRecords }));
+    if (refresh.deferred > 0 || pilotRecords.more || pilotRecords.skipped) process.exitCode = 1;
   } else throw new Error('Unknown maintenance command.');
 } catch {
   console.error('SmartThings maintenance did not complete.');

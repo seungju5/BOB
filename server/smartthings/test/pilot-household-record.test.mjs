@@ -33,7 +33,18 @@ test('private import is idempotent and reassigns a late cross-midnight cooking s
     const updated=(await settings.get()).get('updatedAt');grant.settingsRevision=updated.seconds+':'+updated.nanoseconds;
     const save=(at,cooking=true)=>saveHouseholdReading(db,user,grant,{measuredAt:Date.parse(at+'+09:00'),cooking},now);
     const first='2026-06-08T00:05:00';
+    const expired = day-36, orphanDay = day-37;
+    const evidence = d=>owner.collection('meterCaptureEvidence').doc(String(d%35));
+    const setup = db.batch();
+    for (const d of [expired,day-35]) {
+      setup.set(summary(d), {day:d,windows,count:1,cook:0,confirmed:[]});
+      setup.set(evidence(d), {day:d,windows,samples:{0:false},peaks:{}});
+    }
+    setup.set(evidence(orphanDay), {day:orphanDay,windows,samples:{0:false},peaks:{}});
+    await setup.commit();
     assert.deepEqual((await Promise.all([save(first),save(first)])).map(x=>x.status).sort(),['duplicate','saved']);
+    assert.deepEqual((await db.getAll(summary(expired),evidence(expired),evidence(orphanDay))).map(s=>s.exists),[false,false,false]);
+    assert.equal((await evidence(day).get()).get('day'),day);
     assert.equal((await summary(day).get()).get('cook'),1);
     await save('2026-06-07T23:55:00');
     assert.equal((await summary(day).get()).get('cook'),0);

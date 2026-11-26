@@ -17,3 +17,7 @@
 !notifications.mjs
 !notification-policy.mjs
 !power-criteria.json
+!pilot/
+pilot/**
+!pilot/retention.mjs
+!pilot/peak-history.mjs

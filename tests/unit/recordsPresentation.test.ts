@@ -41,7 +41,7 @@ describe("보호자 홈의 다음 행동", () => {
     view.alerts = [{ id: "example-help", type: "help_request", triggeredAt: context.now.toISOString(), acknowledgedAt: null, resolvedAt: null }];
     const alert = renderToStaticMarkup(createElement(HomePage));
     expect(alert.match(/href="tel:\+123"/g)).toHaveLength(1);
-    expect(alert.indexOf('href="tel:+123"')).toBeLessThan(alert.indexOf("오늘의 끼니"));
+    expect(alert.indexOf('href="tel:+123"')).toBeLessThan(alert.indexOf("한 주의 밥상"));
     expect(alert).toContain("확인했어요");
     for (const path of ["records", "report", "alerts", "connect"]) {
       expect(alert).toMatch(new RegExp(`href="/${path}/?"`));
@@ -143,6 +143,13 @@ describe("오늘의 끼니 시간표", () => {
     expect(html.match(/<dd data-state="no_record"/g)).toHaveLength(4);
     expect(html).toContain("다섯 끼");
     expect(html).toContain("외식");
+  });
+
+  it("운영 홈에서 오늘의 실제 날짜를 상세 기록으로 연결하고 예시 자료를 섞지 않는다", () => {
+    context.view = disconnected();
+    const html = renderToStaticMarkup(createElement(HomePage));
+    expect(html).toMatch(/href="\/records\/?[?]day=2026-11-14"/);
+    expect(html).not.toContain("예시 기록");
   });
 
   it("오늘 두 끼로 바꿔도 지난 날짜 다섯째 끼가 주간 기록과 리포트에 남는다", () => {

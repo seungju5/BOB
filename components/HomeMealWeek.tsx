@@ -1,7 +1,9 @@
 "use client";
 
 import Image from "next/image";
-import { useId, useRef, useState, type KeyboardEvent } from "react";
+import Link from "next/link";
+import { MealGreeting } from "@/components/companions/CookerCompanion";
+import { useId, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { IconCheck, IconClock, IconLock, IconSuitcase } from "@/components/icons";
 import { MealScheduleLink } from "@/components/TodayMeals";
 import { appPath } from "@/lib/app-path";
@@ -37,23 +39,34 @@ function StatusMark({ state }: Pick<HomeMealPeriod, "state">) {
 function dayDescription(day: HomeMealDay) {
   if (day.isFuture) return "예정된 시간대";
   if (day.tone === "away") return "외출 중";
-  if (day.confirmed + day.eatOut > 0) return `${day.periods.length}개 시간대 중 ${day.confirmed + day.eatOut}개 확인`;
+  if (day.confirmed + day.eatOut > 0) return (day.total ? day.total + "개 시간대 중 " : "") + (day.confirmed + day.eatOut) + "개 확인";
+  if (day.periods.some(period => period.state === "estimated")) return "취사 추정";
   return day.tone === "unknown" ? "미확인 시간대 있음" : day.tone === "pending" ? "소식 대기 중" : "기록 없음";
 }
 
 export function HomeMealWeek({ view, now }: { view: AppView; now: Date }) {
   const days = homeMealWeek(view, now);
+  const first = days[0].date, last = days[days.length - 1].date;
+  const short = (date: string) => Number(date.slice(5, 7)) + "." + Number(date.slice(8));
+  const range = short(first) + " – " + short(last) + (isDemoView(view) ? " · 예시 기록" : "");
+  return <MealWeek days={days} initialIndex={days.findIndex(day => day.isToday)} caption={range}
+    household={view} settings={<MealScheduleLink count={view.mealProfile.windows.length} />} />;
+}
+
+export function MealWeek({days, initialIndex, caption, household, settings}: {
+  days: HomeMealDay[]; initialIndex: number; caption: string; household?: AppView; settings?: ReactNode;
+}) {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const selected = days.findIndex(day => day.date === selectedDate);
-  const activeIndex = selected < 0 ? days.findIndex(day => day.isToday) : selected;
+  const activeIndex = selected < 0 ? initialIndex : selected;
   const day = days[activeIndex];
   const tabs = useRef<Array<HTMLButtonElement | null>>([]);
   const id = useId();
   const palette = useMealPalette();
   const known = day.confirmed + day.eatOut;
-  const selectedStats = view.stats[day.date];
+  const selectedStats = household?.stats[day.date];
   const dateLabel = `${Number(day.date.slice(5, 7))}월 ${Number(day.date.slice(8))}일`;
-  const range = `${Number(days[0].date.slice(5, 7))}.${Number(days[0].date.slice(8))} - ${Number(days[6].date.slice(5, 7))}.${Number(days[6].date.slice(8))}`;
+
 
   function changeByKey(event: KeyboardEvent<HTMLButtonElement>, index: number) {
     let next: number;
@@ -71,13 +84,13 @@ export function HomeMealWeek({ view, now }: { view: AppView; now: Date }) {
 
   return <section className={styles.weekCard} data-palette={palette} aria-labelledby={`${id}-heading`}>
     <header className={styles.header}>
-      <div><h2 id={`${id}-heading`}>한 주의 밥상</h2><p>{range}{isDemoView(view) ? " · 예시 기록" : ""}</p></div>
-      <button type="button" className={styles.today} onClick={() => setSelectedDate(null)} aria-label="오늘의 끼니 소식 보기">오늘</button>
+      <div><h2 id={`${id}-heading`}>한 주의 밥상</h2><p>{caption}</p></div>
+      {household && <button type="button" className={styles.today} onClick={() => setSelectedDate(null)} aria-label="오늘의 끼니 소식 보기">오늘</button>}
     </header>
-    <div className={styles.week} role="tablist" aria-label="한 주의 끼니 소식">
+    <div className={styles.week} role="tablist" aria-label={household ? "한 주의 끼니 소식" : "요일별 예시 기록"}>
       {days.map((item, index) => <button key={item.date} type="button" role="tab" className={styles.day} data-tone={item.tone}
         id={`${id}-tab-${index}`} aria-controls={`${id}-panel-${index}`} aria-selected={index === activeIndex}
-        aria-label={`${Number(item.date.slice(5, 7))}월 ${Number(item.date.slice(8))}일 ${item.weekday}요일${item.isToday ? ", 오늘" : ""}, ${dayDescription(item)}`}
+        aria-label={`${household ? Number(item.date.slice(5, 7)) + "월 " + Number(item.date.slice(8)) + "일 " : ""}${item.weekday}요일${item.isToday ? ", 오늘" : ""}, ${dayDescription(item)}`}
         tabIndex={index === activeIndex ? 0 : -1} ref={element => { tabs.current[index] = element; }}
         onClick={() => setSelectedDate(item.date)} onKeyDown={event => changeByKey(event, index)}>
         <span>{item.weekday}</span><DayMark day={item} />
@@ -88,12 +101,12 @@ export function HomeMealWeek({ view, now }: { view: AppView; now: Date }) {
       {index === activeIndex && <>
         <div className={styles.summary}>
           <div className={styles.words}>
-            <h3>{day.isToday ? "오늘" : `${day.weekday}요일`}의 끼니 소식 <span>· {dateLabel}</span></h3>
-            {known > 0 || day.tone === "unknown" ? <p className={styles.metric}><strong>{known}</strong><span className={styles.denominator}>/ {day.periods.length}</span><span>시간대 확인</span></p>
-              : <p className={styles.emptyMetric}>{day.isFuture ? "소식을 기다려요" : day.tone === "away" ? "외출 중이에요" : day.tone === "pending" ? "소식을 기다려요" : "아직 기록이 없어요"}</p>}
+            <h3>{household ? <>{day.isToday ? "오늘" : day.weekday + "요일"}의 끼니 소식 <span>· {dateLabel}</span></> : day.weekday + "요일 밥솥 소식"}</h3>
+            {known > 0 || day.tone === "unknown" ? <p className={styles.metric}><strong>{known}</strong>{!!day.total && <span className={styles.denominator}>/ {day.total}</span>}<span>시간대 확인</span></p>
+              : <p className={styles.emptyMetric}>{day.periods.some(period => period.state === "estimated") ? "취사 추정" : day.isFuture ? "소식을 기다려요" : day.tone === "away" ? "외출 중이에요" : day.tone === "pending" ? "소식을 기다려요" : "아직 기록이 없어요"}</p>}
             {day.eatOut > 0 && <p className={styles.summaryNote}>외식으로 남긴 {day.eatOut}개 시간대 포함</p>}
           </div>
-          <span className={styles.cooker} aria-hidden><Image src={appPath("/brand/rice-mark.png")} alt="" width={160} height={160} unoptimized /></span>
+          {household ? <MealGreeting /> : <span className={styles.cooker} aria-hidden><Image src={appPath("/brand/rice-mark.png")} alt="" width={160} height={160} unoptimized /></span>}
         </div>
         {day.periods.length > 0 && <dl className={styles.periods} data-count={day.periods.length}>
           {day.periods.map(period => <div key={period.slot} className={styles.period} data-meal-slot={period.slot}>
@@ -103,12 +116,15 @@ export function HomeMealWeek({ view, now }: { view: AppView; now: Date }) {
           </div>)}
         </dl>}
         {!day.periods.length && <p className={styles.emptyHint}>이날 저장된 시간대별 기록이 없어요.</p>}
+        {household && !day.isFuture && <Link className={styles.recordLink} href={"/records/?day=" + day.date}>
+          {dateLabel} 기록 보기 <span aria-hidden>→</span>
+        </Link>}
       </>}
     </div>)}
-    {view.captureReadError && <p role="status" className={styles.message}>저장한 밥솥 기록을 불러오지 못했어요. 잠시 후 다시 확인해 주세요.</p>}
+    {household?.captureReadError && <p role="status" className={styles.message}>저장한 밥솥 기록을 불러오지 못했어요. 잠시 후 다시 확인해 주세요.</p>}
     {!day.isFuture && !!selectedStats?.estimated && <p className={styles.message}>이날 취사로 추정한 소식이 있어요. 확인된 시간대와는 따로 표시해요.</p>}
     {!day.isFuture && !known && !!selectedStats?.cook && <p className={styles.message}>취사 소식은 있지만 어느 시간대인지는 확인되지 않았어요.</p>}
     <p className={styles.privacy}><IconLock aria-hidden /><span>밥솥 사용과 직접 남긴 소식이에요.<br />실제 식사 여부나 드신 양은 알 수 없어요.</span></p>
-    <div className={styles.settings}><MealScheduleLink count={view.mealProfile.windows.length} /></div>
+    {settings && <div className={styles.settings}>{settings}</div>}
   </section>;
 }

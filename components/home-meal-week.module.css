@@ -74,3 +74,6 @@
 }
 @media (prefers-reduced-motion: reduce) { .day { transition: none; } }
 @media (forced-colors: active) { .day[aria-selected="true"] { outline: 3px solid Highlight; outline-offset: -3px; } .dots i[data-state="confirmed"] { background: ButtonText; forced-color-adjust: none; } }
+
+.recordLink { display: flex; justify-content: space-between; align-items: center; gap: .5rem; min-height: 2.85rem; padding: .45rem 1rem; border-top: 1px solid var(--color-line); font-weight: 650; }
+.recordLink:focus-visible { outline: 3px solid var(--color-cocoa); outline-offset: -3px; border-radius: .8rem; }

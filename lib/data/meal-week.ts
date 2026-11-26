@@ -1,7 +1,7 @@
 import { recordedMealWindows } from "@/lib/judge/resolveMealSlots";
 import { addDays, kstDate } from "@/lib/judge/time";
 import { MEAL_SLOT_NAMES, type MealStatus, type MealSlotName } from "@/lib/judge/types";
-import { mealSlotLabel, slotsForDate, type AppView } from "./view";
+import { isDemoView, mealSlotLabel, slotsForDate, type AppView } from "./view";
 
 export type HomeMealState = MealStatus | "no_record" | "estimated";
 export type HomeMealPeriod = {
@@ -17,6 +17,7 @@ export type HomeMealDay = {
   isToday: boolean;
   isFuture: boolean;
   periods: HomeMealPeriod[];
+  total?: number;
   confirmed: number;
   eatOut: number;
   tone: "all" | "some" | "unknown" | "pending" | "away" | "empty";
@@ -52,7 +53,8 @@ export function homeMealDay(view: AppView, date: string, now: Date): HomeMealDay
     : known > 0 ? (known === periods.length ? "all" : "some")
     : periods.some(period => period.state === "unconfirmed") ? "unknown"
     : periods.some(period => period.state === "pending") ? "pending" : "empty";
-  return { date, weekday: weekdays[new Date(`${date}T12:00:00Z`).getUTCDay()],
+  const total = windows?.length ?? (isDemoView(view) ? periods.length : undefined);
+  return { date, total, weekday: weekdays[new Date(`${date}T12:00:00Z`).getUTCDay()],
     isToday: date === today, isFuture, periods, confirmed, eatOut, tone };
 }
 

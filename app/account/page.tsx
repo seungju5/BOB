@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { TEAM_SAMSUNG_SIGN_IN_ENABLED } from "@/config/team";
 import { useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Button, PageHeader, buttonClass } from "@/components/ui";
 import { useMode } from "@/lib/data/mode";
 import { refreshFirebaseAccount, renameFirebaseProfile, useFirebaseAccount } from "@/lib/data/firebase";
-import { ACCOUNT_CONSENT_VERSION, accountError, type AccountProfile, type FirebaseUser, type SavedPreferences } from "@/lib/firebase/bridge";
+import { ACCOUNT_CONSENT_VERSION, accountError, connectFirebase, type AccountProfile, type FirebaseUser, type SavedPreferences } from "@/lib/firebase/bridge";
 
 const dateFormat = new Intl.DateTimeFormat("ko-KR", {timeZone:"Asia/Seoul", dateStyle:"long", timeStyle:"short"});
 function SavedTime({value}: {value?:string|null}) {
@@ -16,6 +17,29 @@ function Card({title, children}: {title:string; children:ReactNode}) {
   return <section className="rounded-3xl border border-line bg-paper p-5">
     <h2 className="mb-3 text-lg font-bold text-cocoa">{title}</h2>{children}
   </section>;
+}
+
+function SamsungLoginMethod({user}: {user:FirebaseUser}) {
+  const [busy,setBusy] = useState(false);
+  const [error,setError] = useState("");
+  const locked = useRef(false);
+  async function link() {
+    if (locked.current) return;
+    locked.current = true; setBusy(true); setError("");
+    try {
+      const provider = await connectFirebase();
+      await provider.linkSamsung(user.uid);
+      await refreshFirebaseAccount();
+    } catch (cause) { setError(accountError(cause)); }
+    finally { locked.current = false; setBusy(false); }
+  }
+  return <Card title="로그인 방법">
+    {user.samsungLinked ? <p role="status">삼성 계정이 연결됐어요.</p> : <>
+      <p>삼성 계정을 연결하면 다음부터 같은 가구 기록을 삼성 계정으로도 열 수 있어요.</p>
+      <Button disabled={busy} variant="outline" className="mt-3" onClick={link}>{busy ? "인증 확인 중…" : "삼성 계정 연결하기"}</Button>
+    </>}
+    {error && <p role="alert" className="mt-2 text-blush-deep">{error}</p>}
+  </Card>;
 }
 
 function ProfileCard({user,profile,revision}: {user:FirebaseUser;profile:AccountProfile;revision:number}) {
@@ -108,6 +132,7 @@ export default function AccountPage() {
       : ready ? <>
         <p className="text-base text-muted">내 계정으로 서버에 저장한 정보예요. 다른 기기에서도 같은 계정으로 확인할 수 있어요.</p>
         <ProfileCard key={user.uid + ":" + account.revision} user={user} profile={profile} revision={account.revision}/>
+        {TEAM_SAMSUNG_SIGN_IN_ENABLED && <SamsungLoginMethod key={user.uid} user={user}/>}
         <StoredPreferences saved={saved}/>
         {retry}
         <Link href="/login/?next=account" className="mx-auto inline-flex min-h-11 items-center font-bold text-cocoa underline underline-offset-4">계정 전환</Link>

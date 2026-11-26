@@ -1,8 +1,8 @@
-import { TEAM_PROJECT_ID, TEAM_GOOGLE_SIGN_IN_ENABLED, TEAM_KAKAO_SIGN_IN_ENABLED } from '@/config/team';
+import { TEAM_PROJECT_ID, TEAM_GOOGLE_SIGN_IN_ENABLED, TEAM_KAKAO_SIGN_IN_ENABLED, TEAM_SAMSUNG_SIGN_IN_ENABLED } from '@/config/team';
 import { teamFirebaseConfig } from '@/firebase/provider/team-config.mjs';
 import type { MealWindow } from '@/lib/judge/types';
 export const ACCOUNT_CONSENT_VERSION = '2026-10-16';
-export type FirebaseUser = { uid: string; email: string; displayName: string; verified: boolean };
+export type FirebaseUser = { uid: string; email: string; displayName: string; verified: boolean; samsungLinked?: boolean };
 export type AccountProfile = { ownerUid: string; displayName: string; consentVersion: string; savedAt?: string | null; revision?: string | null };
 export type Household = { relation: 'mother'|'father'|'parents'|'other'; alias: string; residentCount: number; hasPet: boolean };
 export type Preferences = {
@@ -18,6 +18,7 @@ export type FirebaseProvider = {
   studio: import('./studio').Studio;
   signIn(email:string,password:string,remember:boolean):Promise<FirebaseUser>;
   signUp(email:string,password:string,name:string,remember:boolean):Promise<FirebaseUser>;
+  samsung(remember:boolean):Promise<FirebaseUser>; linkSamsung(expectedUid:string):Promise<FirebaseUser>;
   google(remember:boolean):Promise<FirebaseUser>; signOut():Promise<void>;
   kakaoStatus?():Promise<boolean>; kakao?(remember:boolean):Promise<void>;
   completeKakaoLogin?(fragment?:string,signal?:AbortSignal):Promise<FirebaseUser>; requestEmail?(email:string,expectedUid:string):Promise<void>;
@@ -45,6 +46,7 @@ async function createTeamProvider(): Promise<FirebaseProvider> {
   const config = teamFirebaseConfig(await response.json(), TEAM_PROJECT_ID);
   const { createProvider } = await import('@/firebase/provider/firebase-provider.src.mjs');
   const provider = createProvider(config, {
+    samsungEnabled: TEAM_SAMSUNG_SIGN_IN_ENABLED,
     googleEnabled: TEAM_GOOGLE_SIGN_IN_ENABLED,
     kakaoEnabled: TEAM_KAKAO_SIGN_IN_ENABLED,
   });
@@ -74,7 +76,9 @@ export function accountError(error:unknown):string {
   if (/kakao-expired|kakao-failed/.test(code)) return '로그인 확인 시간이 지났어요. 카카오로 시작하기를 다시 눌러 주세요.';
   if (/kakao-storage/.test(code)) return '이 브라우저에서 로그인 정보를 잠시 보관하지 못했어요. Safari나 Chrome에서 다시 열어 주세요.';
   if (/kakao-rate-limited|quota-exceeded/.test(code)) return '로그인 요청이 잠시 많아요. 잠시 후 다시 시도하거나 다른 로그인 방법을 이용해 주세요.';
-  if (/account-exists-with-different-credential|email-already-in-use/.test(code)) return '이미 가입한 이메일이에요. 기존 Google 또는 이메일 계정으로 로그인해 주세요. 기록은 자동으로 합치지 않아요.';
+  if (code === 'auth/credential-already-in-use') return '다른 밥뭇나 계정에 연결된 로그인 방법이에요. 처음 가입한 계정으로 들어가 주세요.';
+  if (code === 'auth/provider-already-linked') return '이미 이 계정에 연결한 로그인 방법이에요.';
+  if (code === 'auth/account-exists-with-different-credential') return '처음 가입한 방법으로 로그인해 주세요. 내 계정에서 로그인 방법을 추가할 수 있어요.';
   if (/requires-recent-login/.test(code)) return '확인 시간이 지났어요. 다시 로그인한 뒤 이메일 확인을 진행해 주세요.';
   if (/operation-not-allowed|unauthorized-domain/.test(code)) return '이 로그인 방법을 준비하고 있어요. 다른 로그인 방법을 이용해 주세요.';
   if (/invalid-email/.test(code)) return '받을 수 있는 이메일 주소를 확인해 주세요.';

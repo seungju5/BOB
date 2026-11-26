@@ -50,7 +50,7 @@ async function showIncoming(data) {
   const relative = ((!scope || data.kind === "cooker_signal" && !ticket) && path.startsWith("/records/") ? "/alerts/" : path).slice(1);
   await self.registration.showNotification(text.title, {
     body: text.body, ...(typeof data.tag === "string" && data.tag.length <= 160 && {tag: data.tag}),
-    icon: new URL("brand/rice-logo.png", appScope).href,
+    icon: new URL("brand/rice-mark.png", appScope).href,
     badge: new URL("brand/notification-badge.png", appScope).href,
     lang: "ko", data: {url: new URL(relative, appScope).href, ...(scope && {scope}), ...(ticket && {ticket})},
   });

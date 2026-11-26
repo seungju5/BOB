@@ -177,7 +177,7 @@ export async function closeOwnerNotices(owner: string) {
 function display(worker: ServiceWorkerRegistration, kind: string, feature: boolean, tag: string, path: string, scope?: string, ticket?: string | null) {
   const text = noticeText(kind, feature, Boolean(ticket));
   return worker.showNotification(text.title, {body: text.body, tag, lang: "ko",
-    icon: appPath("/brand/rice-logo.png"), badge: appPath("/brand/notification-badge.png"), data: {url: appPath(path), ...(scope && {scope}), ...(ticket && {ticket})}});
+    icon: appPath("/brand/rice-mark.png"), badge: appPath("/brand/notification-badge.png"), data: {url: appPath(path), ...(scope && {scope}), ...(ticket && {ticket})}});
 }
 
 /** Delivers only to the device whose user pressed the button. It never registers a subscription. */

@@ -5,7 +5,7 @@ import {Suspense, useEffect, useState, type ReactNode} from "react";
 import { guardianStartPath, isDemoView } from "@/lib/data/view";
 import { useApp } from "@/lib/data/useApp";
 import { useAlertNotifications } from "@/lib/push";
-import { noticeDay } from "@/public/notification-content";
+import { noticeDay, noticeSlot } from "@/public/notification-content";
 import { pushOwner } from "@/lib/push-device";
 import { clearNoticeReturn, readNoticeReturn, rememberNoticeReturn, resolveNoticeReturn } from "@/lib/alerts/notification-return";
 
@@ -25,6 +25,8 @@ function GuardianSession({children}: {children: ReactNode}) {
   const [attempt, retry] = useState(0);
   const [failed, setFailed] = useState<{owner:string; query:string | null; attempt:number} | null>(null);
   const recordDay = !fromNotice && path.replace(/\/$/, "") === "/records" ? noticeDay(query.get("day")) : null;
+  const recordSlot = recordDay && noticeSlot(query.get("slot"));
+  const recordLogin = recordDay ? "/login/?next=record&day=" + recordDay + (recordSlot ? "&slot=" + recordSlot : "") : null;
   const needsRealAccount = (fromNotice || (recordDay && query.get("account") === "mine")) && view?.mode === "demo";
   const owner = pushOwner(accountKey);
   // A verified household can open its own dated record without filling in optional family details.
@@ -34,12 +36,12 @@ function GuardianSession({children}: {children: ReactNode}) {
   useEffect(() => {
     if (needsLogin || needsRealAccount) {
       rememberNoticeReturn();
-      router.replace(fromNotice ? "/login/?next=household-notice" : recordDay ? "/login/?next=record&day=" + recordDay : "/login");
+      router.replace(fromNotice ? "/login/?next=household-notice" : recordLogin ?? "/login");
     } else if (view && view.onboardingStep <= 7 && !householdPage) {
       rememberNoticeReturn();
       router.replace(guardianStartPath(view.onboardingStep));
     }
-  }, [view, needsLogin, needsRealAccount, householdPage, fromNotice, recordDay, router]);
+  }, [view, needsLogin, needsRealAccount, householdPage, fromNotice, recordLogin, router]);
 
   const ready = !needsLogin && view?.mode === "live" && (view.onboardingStep > 7 || householdPage);
   useEffect(() => {

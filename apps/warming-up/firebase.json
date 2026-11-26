@@ -41,6 +41,10 @@
         "headers": [{ "key": "Cache-Control", "value": "no-store" }]
       },
       {
+        "source": "/{manifest.webmanifest,apple-touch-icon.png,apple-touch-icon-precomposed.png,favicon.ico,brand/rice-logo.png}",
+        "headers": [{ "key": "Cache-Control", "value": "public, no-cache" }]
+      },
+      {
         "source": "/_next/static/**",
         "headers": [
           {

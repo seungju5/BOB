@@ -32,7 +32,8 @@ export default function HomePage() {
   const report = reportSummary(view, now);
   const away = view.absences.find((a) => a.startDate <= today && today <= a.endDate);
   const alerts = unackedAlerts(view).sort((a, b) => ALERT_PRIORITY.indexOf(a.type) - ALERT_PRIORITY.indexOf(b.type));
-  const top = alerts[0];
+  // Weekly reports stay in the notification inbox; keep urgent notices on home.
+  const top = alerts.find((alert) => alert.type !== "weekly_report");
   const callInAlert = hasAlertCall(top?.type, view.senior.phone);
   const copy = top
     ? alertCopy(top.type, relation, {
@@ -49,8 +50,16 @@ export default function HomePage() {
     <main className="flex flex-col px-5 pt-4 pb-8">
       <header className="flex flex-wrap items-center justify-between gap-2">
         <Logo />
-        <Link href="/alerts" className="flex min-h-12 items-center gap-1.5 rounded-full border border-line px-3 text-[16px] font-bold text-cocoa">
-          <IconBell aria-hidden className="h-5 w-5" />알림{alerts.length > 0 ? ` ${alerts.length}개` : ""}
+        <Link href="/alerts" aria-label={alerts.length > 0 ? `미확인 알림 ${alerts.length}개 확인하기` : "알림 확인하기"} className="relative flex min-h-12 items-center gap-1.5 rounded-full border border-line px-3 text-[16px] font-bold text-cocoa">
+          <span aria-hidden="true" className="relative mr-1 inline-flex h-7 w-7 shrink-0 items-center justify-center">
+            <IconBell className="h-6 w-6" />
+            {alerts.length > 0 && (
+              <span data-notification-badge className="absolute -top-1.5 -right-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[12px] leading-none font-bold text-white ring-2 ring-paper">
+                {alerts.length > 99 ? "99+" : alerts.length}
+              </span>
+            )}
+          </span>
+          <span aria-hidden="true">알림{alerts.length > 0 ? ` ${alerts.length}개` : ""}</span>
         </Link>
       </header>
       <p className="mt-5 text-[16px] text-muted">{fmtDateLong(today)}</p>

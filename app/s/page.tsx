@@ -213,7 +213,7 @@ function SeniorHome({ status, now, act, isDemo, endDemo }: { status: SeniorStatu
 function CookerNote({ received }: { received: boolean }) {
   return (
     <div className="bapmunna-cooker-note" data-received={received} role="status" aria-atomic="true">
-      <Image src={appPath("/brand/rice-logo.png")} width={160} height={160} unoptimized alt="" />
+      <Image src={appPath("/brand/rice-mark.png")} width={160} height={160} unoptimized alt="" />
       <div>
         <h2>{received ? "오늘 취사 소식이 왔어요" : "취사 소식을 기다려요"}</h2>
         <p>

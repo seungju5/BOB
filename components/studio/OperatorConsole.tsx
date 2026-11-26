@@ -27,7 +27,7 @@ function Brand() {
   return (
     <span className="studio-brand">
       <span className="studio-mark">
-        <Image src="/brand/rice-logo.png" alt="" width={36} height={36} />
+        <Image src="/brand/rice-mark.png" alt="" width={36} height={36} />
       </span>
       <b>밥뭇나</b>
       <span>Studio</span>
@@ -262,7 +262,7 @@ export function StudioWorkspace({ api, uid, email }: { api: Studio; uid: string;
         </aside>
         <div className="studio-canvas" id="studio-content" tabIndex={-1}>
           <div className="studio-breadcrumb">
-            <IconHome /> Warming Up <span>/</span>
+            <Link href="/start/" className="studio-textLink"><IconHome /> 보호자 화면으로</Link><span>/</span>
             {section.label}
           </div>
           <div className="studio-heading">

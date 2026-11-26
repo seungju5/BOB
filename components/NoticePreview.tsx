@@ -49,7 +49,7 @@ export function NoticePreview({owner, enabled, demo}: {owner: string | null; ena
       </div>
       <div aria-live="polite" aria-atomic="true" className="mt-3">
         <div className="flex items-center gap-3 rounded-2xl border border-line bg-paper p-3.5 shadow-sm">
-          <span aria-hidden="true" className="grid h-12 w-12 shrink-0 place-items-center rounded-[14px] bg-butter"><Image src={appPath("/brand/rice-logo.png")} alt="" width={38} height={38}/></span>
+          <span aria-hidden="true" className="grid h-12 w-12 shrink-0 place-items-center rounded-[14px] bg-butter"><Image src={appPath("/brand/rice-mark.png")} alt="" width={38} height={38}/></span>
           <div className="min-w-0"><p className="text-[16px] font-bold leading-snug">{message.title}</p>
           <p className="mt-1 text-[14px] leading-snug">{message.body}</p></div>
         </div>

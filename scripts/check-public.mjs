@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile, readdir } from 'node:fs/promises';
 import { extname, join, posix, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { inflateSync } from 'node:zlib';
+import sharp from 'sharp';
 import { TEAM_PROJECT_ID, TEAM_SITE_URL, TEAM_SUPPORT_EMAIL } from '../config/team.ts';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
@@ -66,12 +66,24 @@ async function inspectFile(path, directory, publicFile) {
   checked++;
 }
 
+async function checkWhiteIcon(png, size, name) {
+  assert.equal(png[24], 8, 'Expected 8-bit color: ' + name);
+  assert.equal(png[25], 2, 'Expected an opaque RGB PNG: ' + name);
+  const {data, info} = await sharp(png).raw().toBuffer({resolveWithObject:true});
+  assert.deepEqual([info.width, info.height, info.channels], [size, size, 3], 'Icon dimensions or transparency: ' + name);
+  for (let i = 0; i < size; i++) {
+    const edges = [i, (size - 1) * size + i, i * size, i * size + size - 1];
+    assert(edges.every(pixel => data.readUIntBE(3 * pixel, 3) === 0xffffff), 'Home Screen background must be white: ' + name);
+  }
+  assert(data.some(channel => channel < 100), 'Missing logo on white canvas: ' + name);
+}
+
 const publicAssets = new Set();
 for (const name of ['app', 'components', 'config', 'firebase', 'lib', 'packages', 'public']) {
   for await (const file of files(join(root, name))) {
     if (name === 'public') {
       const asset = routeName(join(root, name), file);
-      assert(/^(?:brand\/[^/]+\.(?:png|webp|woff2|ttf|txt)|walking\/[^/]+\.(?:jpg|png)|walking\/wardrobe\/(?:body|item|trail)-[a-z]+(?:-[a-z]+)*\.webp|bapmunna-app-qr\.(?:png|svg)|apple-touch-icon\.png|icon\.svg|sw\.js|notification-content\.js|service-status\/smartthings\.json)$/.test(asset), 'Unexpected public asset: ' + asset);
+      assert(/^(?:brand\/[^/]+\.(?:png|webp|woff2|ttf|txt)|walking\/[^/]+\.(?:jpg|png)|walking\/wardrobe\/(?:body|item|trail)-[a-z]+(?:-[a-z]+)*\.webp|bapmunna-app-qr\.(?:png|svg)|apple-touch-icon(?:-precomposed)?\.png|favicon\.ico|icon\.svg|sw\.js|notification-content\.js|service-status\/smartthings\.json)$/.test(asset), 'Unexpected public asset: ' + asset);
       publicAssets.add(asset);
     }
     await inspectFile(file, root, name === 'public');
@@ -97,8 +109,10 @@ if (!sourceOnly) {
     expectedPages.add(name);
     const contents = await readFile(join(output, name), 'utf8');
     assert(contents.includes('name="viewport"') && contents.includes('Warming Up</title>'), 'Incorrect mobile page or title: ' + name);
-    assert.match(contents, /<link\b(?=[^>]*rel="apple-touch-icon")(?=[^>]*href="\/apple-touch-icon\.png")(?=[^>]*sizes="180x180")[^>]*>/,
-      'Missing iOS Home Screen icon: ' + name);
+    const iconTags = (contents.match(/<link\b[^>]*>/g) ?? []).filter(tag => /\brel="(?:apple-touch-icon|(?:shortcut )?icon)"/.test(tag));
+    assert.equal(iconTags.length, 2, 'Unexpected mobile icon choice: ' + name);
+    assert(iconTags.some(tag => tag.includes('rel="apple-touch-icon"') && tag.includes('href="/brand/home-icon-white-180.png"') && tag.includes('sizes="180x180"')), 'Missing white Apple icon: ' + name);
+    assert(iconTags.some(tag => tag.includes('rel="icon"') && tag.includes('href="/brand/home-icon-white-192.png?v=2"') && tag.includes('sizes="192x192"')), 'Missing white browser icon: ' + name);
   }
   for await (const file of files(output)) {
     const name = routeName(output, file);
@@ -121,27 +135,30 @@ if (!sourceOnly) {
     {src:'/brand/home-icon-white-512.png', size:512, purpose:'any'},
     {src:'/brand/home-icon-white-maskable-512.png', size:512, purpose:'maskable'},
   ];
+  assert.equal(manifest.icons.length, homeIcons.length, 'Unexpected install icon');
   for (const {src, size, purpose} of homeIcons) {
-    assert(manifest.icons.some(icon => icon.src === src && icon.sizes === size + 'x' + size && icon.type === 'image/png' && icon.purpose === purpose),
+    assert(manifest.icons.some(icon => icon.src === src + '?v=2' && icon.sizes === size + 'x' + size && icon.type === 'image/png' && icon.purpose === purpose),
       'Missing install icon in manifest: ' + src);
   }
-  for (const {src, size} of [...homeIcons, {src:'/apple-touch-icon.png', size:180}]) {
-    const png = await readFile(join(output, src.slice(1)));
-    assert.equal(png.readUInt32BE(16), size, 'Icon width: ' + src);
-    assert.equal(png.readUInt32BE(20), size, 'Icon height: ' + src);
-    assert.equal(png[24], 8, 'Expected 8-bit color: ' + src);
-    assert.equal(png[25], 2, 'Home Screen icon must use opaque RGB: ' + src);
-    const imageData = [];
-    for (let offset = 8; offset < png.length;) {
-      const length = png.readUInt32BE(offset);
-      const chunk = png.toString('ascii', offset + 4, offset + 8);
-      assert.notEqual(chunk, 'tRNS', 'The icon has a transparent color: ' + src);
-      if (chunk === 'IDAT') imageData.push(png.subarray(offset + 8, offset + 8 + length));
-      offset += 12 + length;
-    }
-    // At the top-left pixel all PNG filter predictors are zero; byte 0 selects the filter.
-    const pixels = inflateSync(Buffer.concat(imageData));
-    assert.equal(pixels.readUIntBE(1, 3), 0xffffff, 'Home Screen background must be pure white: ' + src);
+  const legacyAndAppleIcons = [
+    {src:'/brand/home-icon-white-180.png', size:180},
+    {src:'/apple-touch-icon.png', size:180},
+    {src:'/apple-touch-icon-precomposed.png', size:180},
+    {src:'/brand/rice-logo.png', size:160},
+  ];
+  for (const {src, size} of [...homeIcons, ...legacyAndAppleIcons]) {
+    await checkWhiteIcon(await readFile(join(output, src.slice(1))), size, src);
+  }
+  const favicon = await readFile(join(output, 'favicon.ico'));
+  const sizes = [16, 32, 48];
+  assert.equal(favicon.readUInt16LE(2), 1, 'Expected an ICO file');
+  assert.equal(favicon.readUInt16LE(4), sizes.length, 'Missing favicon sizes');
+  for (const [index, size] of sizes.entries()) {
+    const entry = 6 + 16 * index;
+    assert.equal(favicon[entry], size);
+    assert.equal(favicon[entry + 1], size);
+    const offset = favicon.readUInt32LE(entry + 12);
+    await checkWhiteIcon(favicon.subarray(offset, offset + favicon.readUInt32LE(entry + 8)), size, 'favicon.ico');
   }
   for (const page of ['privacy/index.html', 'health/privacy/index.html']) {
     assert((await readFile(join(output, page), 'utf8')).includes('mailto:' + TEAM_SUPPORT_EMAIL), 'Missing team contact in ' + page);

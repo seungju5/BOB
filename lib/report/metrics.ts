@@ -4,7 +4,7 @@
 import { recordedMealWindows } from "@/lib/judge/resolveMealSlots";
 import { addDays, kstDate } from "@/lib/judge/time";
 import { MEAL_SLOT_NAMES, type MealStatus } from "@/lib/judge/types";
-import { mealSlotsForCount, SLOT_LABEL, slotsForDate, type AppView } from "@/lib/data/view";
+import { mealSlotLabel, mealSlotsForCount, SLOT_LABEL, slotsForDate, type AppView } from "@/lib/data/view";
 
 /** 리포트 기간: 어제까지 최근 7일, 그 전 28일을 '평소'로 본다 (patternReport와 같다) */
 export const RECENT_DAYS = 7;
@@ -44,6 +44,25 @@ export function datedMealSlots(view: AppView, date: string, now: Date) {
 
 export function dailyMeals(view: AppView, now: Date) {
   return daysAgo(now, 1, RECENT_DAYS).map(date => ({ date, slots: datedMealSlots(view, date, now) }));
+}
+
+/** Presentation rows only. Estimated heating never becomes a confirmed meal or drives care alerts. */
+export function mealSignalRows(view: AppView, date: string, now: Date) {
+  const observed = datedMealSlots(view, date, now);
+  const stats = view.stats[date];
+  const windows = view.cookerMealDays?.[date] ?? [];
+  const estimates = new Set(stats?.estimatedSlots);
+  type Row = {slot:(typeof observed)[number]["slot"]; position:number; label:string; observation:(typeof observed)[number] | null;
+    estimated:boolean; estimateCount:number | undefined};
+  const rows:Row[] = observed.map(s => ({slot:s.slot, position:s.position, label:s.label, observation:s,
+    estimated:estimates.has(s.slot), estimateCount:stats?.estimatedBySlot?.[s.slot]}));
+  for (const [index, window] of windows.entries()) {
+    if (estimates.has(window.slot) && !observed.some(s => s.slot === window.slot)) rows.push({
+      slot:window.slot, position:index+1, label:mealSlotLabel(window.slot, windows), observation:null,
+      estimated:true, estimateCount:stats?.estimatedBySlot?.[window.slot],
+    });
+  }
+  return rows.sort((a,b) => a.position-b.position);
 }
 
 export function mealPositionRows(days: { slots: { position: number }[] }[], minCount = 0) {

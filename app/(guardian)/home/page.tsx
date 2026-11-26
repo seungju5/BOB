@@ -75,10 +75,11 @@ export default function HomePage() {
 
       <section aria-label="오늘의 끼니" className="mt-4 rounded-[1.5rem] border border-line bg-paper px-4 pt-2 pb-4">
         <HomeMealCompanion mealCount={todayWindows.length} />
-        <TodayMealList windows={todayWindows} slots={slots} />
+        <TodayMealList windows={todayWindows} slots={slots} estimatedSlots={view.stats[today]?.estimatedSlots} />
+        {view.stats[today]?.estimated && <p className="mt-2 text-[16px] font-semibold text-cocoa">오늘 전력 변화로 추정한 취사가 {view.stats[today].estimated}회 있어요.</p>}
         {view.captureReadError && <p role="status" className="mt-2 text-muted">저장한 밥솥 기록을 불러오지 못했어요.</p>}
-        {!slots.length && !view.captureReadError && <p className="mt-2 text-[17px] font-semibold text-cocoa">{view.cookerMealDays
-          ? (view.stats[today]?.cook ? "오늘 취사 소식이 있어요. 어느 끼니인지는 확인되지 않았어요." : view.stats[today] ? "오늘 측정에서 확인된 취사 신호는 0회예요." : "오늘은 아직 밥솥 소식이 없어요.")
+        {!slots.length && !view.stats[today]?.estimated && !view.captureReadError && <p className="mt-2 text-[17px] font-semibold text-cocoa">{view.cookerMealDays
+          ? (view.stats[today]?.cook ? "오늘 취사 소식이 있어요. 어느 끼니인지는 확인되지 않았어요." : view.stats[today] ? "오늘 지금까지 측정한 구간에서 취사 신호를 찾지 못했어요." : "오늘은 아직 밥솥 소식이 없어요.")
           : "아직 연결된 식사 기록이 없어요."}</p>}
         <p className="mt-2 text-[16px] leading-relaxed text-muted">{slots.length || view.cookerMealDays ? "밥솥 사용 소식이에요. 드신 양은 알 수 없어요." : "기기를 연결하면 이곳에서 밥솥 소식을 볼 수 있어요."}</p>
         {!callInAlert && (

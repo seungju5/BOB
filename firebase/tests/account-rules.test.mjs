@@ -144,6 +144,10 @@ test('the app SDK confirms timestamps, rejects stale names, and isolates househo
     assert.equal(await write({token:'owner'},capturePath,summaryFields,[]),200);
     assert.equal(await write({token:'owner'},evidencePath,{day:{integerValue:String(day)}},[]),200);
     assert.deepEqual(await provider.getCaptureDays(uid),[{day,windows:prefs.windows,cook:0,confirmed:[],count:1}]);
+    const peaks = {estimated:{integerValue:'1'}, estimatedSlots:{arrayValue:{values:[string('lunch')]}},
+      estimatedBySlot:{mapValue:{fields:{lunch:{integerValue:'1'}}}}};
+    assert.equal(await write({token:'owner'},capturePath,{...summaryFields,...peaks},[]),200);
+    assert.deepEqual(await provider.getCaptureDays(uid),[{day,windows:prefs.windows,cook:0,confirmed:[],count:1,estimated:1,estimatedSlots:['lunch'],estimatedBySlot:{lunch:1}}]);
     assert.equal((await request(store+'/'+capturePath,undefined,other.token)).status,403);
     assert.equal((await request(store+'/'+evidencePath,undefined,fixture.token)).status,403);
     assert.equal(await write(fixture,evidencePath,summaryFields,[]),403);

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { StatusIcon } from "@/components/guardian";
 import { MEAL_STATUS_LABEL, mealStatusClass, useMealPalette } from "@/lib/data/appearance";
 import { mealSlotLabel } from "@/lib/data/view";
-import type { MealSlot, MealWindow } from "@/lib/judge/types";
+import type { MealSlot, MealSlotName, MealWindow } from "@/lib/judge/types";
 
 export function MealScheduleLink({ count }: { count: number }) {
   return <Link href="/settings/#settings-meal-count" aria-label={`하루 ${count}끼, 끼니 수와 시간 변경`}
@@ -13,7 +13,7 @@ export function MealScheduleLink({ count }: { count: number }) {
   </Link>;
 }
 
-export function TodayMealList({ windows, slots }: { windows: MealWindow[]; slots: MealSlot[] }) {
+export function TodayMealList({ windows, slots, estimatedSlots }: { windows: MealWindow[]; slots: MealSlot[]; estimatedSlots?: MealSlotName[] }) {
   const palette = useMealPalette();
   if (!windows.length) return null;
   // At narrow widths or larger text sizes, cards wrap without squeezing a fifth column in.
@@ -26,7 +26,7 @@ export function TodayMealList({ windows, slots }: { windows: MealWindow[]; slots
       return <li key={window.slot} data-meal-slot={window.slot}
         className={`flex min-w-0 flex-col items-center justify-center gap-1 rounded-xl px-1 py-3 text-center ${mealStatusClass(status, palette)}`}>
         <span className="text-[16px]">{mealSlotLabel(window.slot, windows)}</span>
-        <strong className="flex flex-wrap items-center justify-center gap-1 text-[16px]"><StatusIcon status={status} />{observation ? MEAL_STATUS_LABEL[status] : "기록 대기"}</strong>
+        <strong className="flex flex-wrap items-center justify-center gap-1 text-[16px]">{!observation && estimatedSlots?.includes(window.slot) ? "취사 추정" : <><StatusIcon status={status} />{observation ? MEAL_STATUS_LABEL[status] : "기록 대기"}</>}</strong>
         <span className="text-sm tabular-nums">{window.start}–<wbr />{window.end}</span>
       </li>;
     })}

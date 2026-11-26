@@ -38,11 +38,14 @@ function LoginForm({account,busy,setBusy,continueUid,setContinueUid}:{account:Re
   const [kakaoReady,setKakaoReady]=useState(false),[verificationEmail,setVerificationEmail]=useState('');
   const locked=useRef(false);
   const studioLogin=useSyncExternalStore(onLocationChange,()=>new URLSearchParams(window.location.search).get('next')==='studio',()=>false);
-  const recordDay=useSyncExternalStore(onLocationChange,()=>{
-    const query = new URLSearchParams(window.location.search);
-    return query.get('next') === 'record' ? noticeDay(query.get('day')) : null;
-  },()=>null);
-  const recordTarget=account.user?.verified && account.view?.seniorConsent && recordDay ? recordNoticePath(recordDay,null) : null;
+  const query = new URLSearchParams(useSyncExternalStore(onLocationChange,()=>window.location.search,()=>''));
+  const recordDay = query.get('next') === 'record' ? noticeDay(query.get('day')) : null;
+  let recordTarget:string|null = null;
+  if (account.user?.verified && account.view?.seniorConsent) {
+    if (recordDay) recordTarget = recordNoticePath(recordDay,null);
+    if (query.get('next') === 'household-notice') recordTarget = '/alerts/';
+    if (query.get('next') === 'connect') recordTarget = '/connect/';
+  }
   useEffect(()=>{
     if (!TEAM_KAKAO_SIGN_IN_ENABLED) return;
     let active=true;
@@ -118,7 +121,7 @@ function LoginForm({account,busy,setBusy,continueUid,setContinueUid}:{account:Re
         {account.error?<Button variant="outline" type="button" onClick={()=>run(refreshFirebaseAccount)}>다시 확인</Button>:null}
         <Button type="button" variant="ghost" disabled={busy} onClick={()=>run(signOutFirebase)}>다른 계정으로 로그인</Button>
       </form>
-      : user && account.view ? <section className="mt-6 flex flex-col gap-3"><p className="break-all text-center text-[16px]">{user.email}</p><Button onClick={()=>{setMode('live');router.push(recordTarget ?? afterLogin(account.view!.onboardingStep));}}>{recordTarget ? "내 날짜별 기록 열기" : "내 계정으로 계속하기"}</Button><Button variant="ghost" disabled={busy} onClick={()=>run(signOutFirebase)}>다른 계정으로 로그인</Button></section>
+      : user && account.view ? <section className="mt-6 flex flex-col gap-3"><p className="break-all text-center text-[16px]">{user.email}</p><Button onClick={()=>{setMode('live');router.push(recordTarget ?? afterLogin(account.view!.onboardingStep));}}>{recordTarget && recordDay ? "내 날짜별 기록 열기" : "내 계정으로 계속하기"}</Button><Button variant="ghost" disabled={busy} onClick={()=>run(signOutFirebase)}>다른 계정으로 로그인</Button></section>
       : <form className="mt-7 flex flex-col gap-3" onSubmit={submit}>
         {tab==='login' && (TEAM_GOOGLE_SIGN_IN_ENABLED || kakaoReady) ? <>
           {kakaoReady ? <button type="button" disabled={busy} onClick={()=>run(async()=>{const p=await connectFirebase();if(!p.kakao)throw Error('카카오 로그인 연결을 준비하고 있어요.');await p.kakao(keep);})} className="relative flex min-h-14 items-center justify-center rounded-full bg-kakao px-6 text-[17px] font-bold text-kakao-label disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-cocoa">

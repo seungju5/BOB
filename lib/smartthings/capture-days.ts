@@ -7,8 +7,8 @@ import type { MealWindow, MealSlotName } from "../judge/types.ts";
 
 export type CaptureBucket = { day: number; windows: MealWindow[]; samples: Record<string, boolean> };
 type PeakSummary = {estimated?:number; estimatedSlots?:CookerMealDay["confirmed"]; estimatedBySlot?:Partial<Record<MealSlotName,number>>};
-export type PublishedBucket = PeakSummary & {day:number; windows:MealWindow[]; cook:number; confirmed:CookerMealDay["confirmed"]; count:number};
-export type CapturedMealDay = CookerMealDay & PeakSummary & { samples: number };
+export type PublishedBucket = PeakSummary & {day:number; windows:MealWindow[]; cook:number; confirmed:CookerMealDay["confirmed"]; count:number; lastMeasuredMinute?: number};
+export type CapturedMealDay = CookerMealDay & PeakSummary & { samples: number; lastMeasuredAt?: number };
 
 /** Deduplicate before assigning a cook to the Seoul day and slot of its first high sample. */
 export function summarizeCaptureDays(buckets: (CaptureBucket | PublishedBucket)[], now = Date.now()): CapturedMealDay[] {
@@ -27,7 +27,13 @@ export function summarizeCaptureDays(buckets: (CaptureBucket | PublishedBucket)[
           new Set(confirmed).size !== confirmed.length || !confirmed.every(slot => windows.some(w => w.slot === slot)))
         throw Error("저장한 밥솥 기록을 확인하지 못했어요.");
       const {estimated, estimatedSlots, estimatedBySlot} = bucket;
-      if (estimated === undefined && estimatedSlots === undefined && estimatedBySlot === undefined) return [{date, windows, cook, confirmed, samples:count}];
+      const minute = bucket.lastMeasuredMinute;
+      if (minute !== undefined && (!Number.isInteger(minute) || minute < 0 || minute >= 1440))
+        throw Error("저장한 측정 시각을 확인하지 못했어요.");
+      const time = minute === undefined ? null : day * DAY_MS - offset + minute * 60000;
+      if (time !== null && time > now) throw Error("미래의 측정 시각을 확인해 주세요.");
+      const summary = {date, windows, cook, confirmed, samples:count, ...(time !== null && {lastMeasuredAt:time})};
+      if (estimated === undefined && estimatedSlots === undefined && estimatedBySlot === undefined) return [summary];
       if (typeof estimated !== "number" || !Number.isSafeInteger(estimated) || estimated < 1 || estimated + cook > count ||
           !Array.isArray(estimatedSlots) || estimatedSlots.length > estimated || new Set(estimatedSlots).size !== estimatedSlots.length ||
           !estimatedSlots.every(slot => windows.some(w => w.slot === slot))) throw Error("저장한 추정 신호를 확인하지 못했어요.");
@@ -37,7 +43,7 @@ export function summarizeCaptureDays(buckets: (CaptureBucket | PublishedBucket)[
         if (entries.length !== estimatedSlots.length || entries.some(([slot,n]) => !estimatedSlots.includes(slot as MealSlotName) || !Number.isSafeInteger(n) || n < 1) ||
             entries.reduce((sum,[,n]) => sum + n, 0) > estimated) throw Error("추정 시간대의 횟수를 확인하지 못했어요.");
       }
-      return [{date, windows, cook, confirmed, samples:count, estimated, estimatedSlots, ...(estimatedBySlot && {estimatedBySlot})}];
+      return [{...summary, estimated, estimatedSlots, ...(estimatedBySlot && {estimatedBySlot})}];
     }
     const {samples} = bucket;
     if (!samples || typeof samples !== "object") throw Error("저장한 밥솥 기록을 확인하지 못했어요.");

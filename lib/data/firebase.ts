@@ -74,6 +74,7 @@ export function firebaseView(saved:SavedPreferences,connection:SmartThingsConnec
   const imported = p.preparationAcknowledged ? captures?.filter(d => d.date >= oldest && d.date <= today) ?? [] : [];
   const days = new Map<string,CookerMealDay>(imported.map(day => [day.date,day]));
   const automatic = new Set(records?.days.map(d => d.date));
+  const lastImport = imported.reduce<CapturedMealDay | undefined>((latest, day) => !latest || latest.date < day.date ? day : latest, undefined);
   // Samsung provides aggregates, so adding two sources for a day would count overlapping cooks twice.
   for (const day of records?.days ?? []) days.set(day.date, day);
   const available = [...days.values()];
@@ -94,6 +95,8 @@ export function firebaseView(saved:SavedPreferences,connection:SmartThingsConnec
     }))),
     stats,
     ...((records || imported.length) && {cookerMealDays:Object.fromEntries(available.map(day => [day.date,day.windows]))}),
+    ...(available.length > 0 && {cookerDaySource:Object.fromEntries(available.map(day => [day.date, automatic.has(day.date) ? 'automatic' : 'imported']))}),
+    ...(lastImport && {lastMeterImport:{date:lastImport.date, measuredAt:lastImport.lastMeasuredAt}}),
     ...(imported.some(day => !automatic.has(day.date)) && {partialCookerHistory:true}),
     ...(p.preparationAcknowledged && captureError && {captureReadError:true}),
     lastCookerAt:observedDate && records?.days.some(day => day.date === observedDate) ? plug.powerNoticeAt! : null,
@@ -241,6 +244,11 @@ export async function refreshFirebaseAccount() {
   const p=await within(connectFirebase());
   const at=epoch,user=await within(p.refreshUser());
   if(epoch===at)await observeUser(user);
+}
+export async function refreshHouseholdSignals() {
+  const uid = state.user?.uid, revision = state.revision;
+  if (uid && canReadConnection(uid, revision))
+    await Promise.all([refreshFirebaseConnection(uid, revision), refreshCapturedMeals(uid, revision)]);
 }
 function readVisibleSignal() {
   const uid = state.user?.uid;

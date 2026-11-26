@@ -54,25 +54,59 @@ async function showIncoming(data) {
     badge: new URL("brand/notification-badge.png", appScope).href,
     lang: "ko", data: {url: new URL(relative, appScope).href, ...(scope && {scope}), ...(ticket && {ticket})},
   });
-  if (serverTest) await rememberServerTest(data.scope);
+  if (serverTest) await rememberRemoteDelivery(data.scope);
+  else if (ticket && scope && data.tag === "cooker-" + data.at) {
+    const observedAt = Date.parse(data.at), receivedAt = Date.now();
+    if (Number.isSafeInteger(observedAt) && observedAt <= receivedAt && receivedAt - observedAt < 3600000 &&
+        Number.isSafeInteger(data.expiresAt) && receivedAt < data.expiresAt)
+      await rememberRemoteDelivery(scope, observedAt);
+  }
 }
 
 // Keep one local receipt for a real push after the device accepts its notification.
 // Reading it in the app still requires the matching account and an active subscription.
-async function rememberServerTest(scope) {
+async function rememberRemoteDelivery(scope, observedAt) {
   const key = noticeDeliveryKey(appScope);
   const save = async () => {
     const cache = await self.caches.open(noticePreferenceCache);
     const policy = await (await cache.match(key))?.json();
     if (!policy?.enabled || !await matchesNoticeOwner(policy.owner, scope)) return;
-    await cache.put(noticeTestReceiptKey(appScope), Response.json({scope, receivedAt:Date.now()}));
+    const cooker = observedAt !== undefined;
+    const target = cooker ? noticeCookerReceiptKey(appScope) : noticeTestReceiptKey(appScope);
+    if (cooker) {
+      const previous = await (await cache.match(target))?.json();
+      if (previous?.observedAt >= observedAt && await matchesNoticeOwner(policy.owner, previous.scope)) {
+        if (previous.observedAt === observedAt && previous.scope !== scope)
+          await cache.put(target, Response.json({...previous, scope}));
+        return;
+      }
+    }
+    await cache.put(target, Response.json({scope, receivedAt:Date.now(), ...(cooker && {observedAt})}));
     const windows = await self.clients.matchAll({type:"window"});
-    for (const client of windows) client.postMessage({type:"bapmunna:server-test-received"});
+    for (const client of windows) client.postMessage({type:cooker ? "bapmunna:cooker-received" : "bapmunna:server-test-received"});
   };
   try {
     if (self.navigator?.locks) await self.navigator.locks.request(key, save);
     else await save();
   } catch { /* The system notification remains usable if device storage is unavailable. */ }
+}
+
+async function rememberCookerOpen(scope) {
+  const key = noticeDeliveryKey(appScope);
+  const save = async () => {
+    const cache = await self.caches.open(noticePreferenceCache);
+    const policy = await (await cache.match(key))?.json();
+    const target = noticeCookerReceiptKey(appScope);
+    const receipt = await (await cache.match(target))?.json();
+    if (!policy?.enabled || receipt?.scope !== scope || receipt.openedAt || !await matchesNoticeOwner(policy.owner, scope)) return;
+    const openedAt = Date.now();
+    if (openedAt >= receipt.receivedAt && openedAt - receipt.receivedAt < 86400000)
+      await cache.put(target, Response.json({...receipt, openedAt}));
+  };
+  try {
+    if (self.navigator?.locks) await self.navigator.locks.request(key, save);
+    else await save();
+  } catch { /* Opening the record is also possible without a local receipt. */ }
 }
 
 self.addEventListener("push", event => {
@@ -94,7 +128,8 @@ self.addEventListener("notificationclick", event => {
   else if (clicked.pathname.endsWith("/records/")) clicked = new URL("alerts/", appScope);
   clicked.searchParams.set("from", "notice");
   const url = clicked.href;
-  event.waitUntil((async () => {
+  const receipt = validCookerTicket(ticket) && validNoticeScope(scope) ? rememberCookerOpen(scope) : Promise.resolve();
+  event.waitUntil(Promise.all([receipt, (async () => {
     const list = await self.clients.matchAll({type: "window", includeUncontrolled: true});
     for (const client of list) {
       if (!client.url.startsWith(appScope.href) || typeof client.navigate !== "function") continue;
@@ -102,5 +137,5 @@ self.addEventListener("notificationclick", event => {
       if (target) { await target.focus(); return; }
     }
     await self.clients.openWindow(url);
-  })());
+  })()]));
 });

@@ -40,7 +40,7 @@ test('private import is idempotent and reassigns a late cross-midnight cooking s
     assert.deepEqual((await summary(day-1).get()).get('confirmed'),['dinner']);
     await save('2026-06-08T00:18:00');
     await save('2026-06-08T00:35:00',false);
-    assert.deepEqual((await summary(day).get()).data(),{day,count:3,cook:1,confirmed:['breakfast'],windows});
+    assert.deepEqual((await summary(day).get()).data(),{day,count:3,cook:1,confirmed:['breakfast'],lastMeasuredMinute:35,windows});
     await assert.rejects(save(first,false),/Conflicting/);
     // Earlier-day context must survive a limited re-import, including the previous midnight grouping.
     const bounded = ['2026-06-08T06:00:00','2026-06-08T06:10:00','2026-06-08T06:20:00'];

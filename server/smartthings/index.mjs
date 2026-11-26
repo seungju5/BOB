@@ -10,20 +10,27 @@ import { smartThingsClient } from './smartthings.mjs';
 import { firestoreStore } from './store.mjs';
 import { createNotifier, vapidKeys } from './notifications.mjs';
 
-export function createRuntime(env = process.env) {
+export function createRuntime(env = process.env, { auth, db } = {}) {
   const config = readConfig(env);
   const ready = configured(config);
   const keys = vapidKeys(env);
   const protectionKey = env.WEB_PUSH_ENCRYPTION_KEY || config.key;
   const pushReady = Boolean(keys && Buffer.from(protectionKey || '', 'base64').length === 32);
-  const app = ready || pushReady
-    ? initializeApp({ projectId: config.projectId, credential: applicationDefault() })
-    : null;
-  const store = app ? firestoreStore(getFirestore(app)) : null;
+  if (Boolean(auth) !== Boolean(db)) throw Error('Both Firebase services are required.');
+  if (ready || pushReady) {
+    if (!auth) {
+      const app = initializeApp({ projectId: config.projectId, credential: applicationDefault() });
+      auth = getAuth(app);
+      db = getFirestore(app);
+    }
+    if (auth.app?.options?.projectId !== config.projectId || db.projectId !== config.projectId)
+      throw Error('Unexpected Firebase service project.');
+  }
+  const store = (ready || pushReady) ? firestoreStore(db) : null;
   async function verifyAccount(uid, authTime) {
     let user;
     try {
-      user = await getAuth(app).getUser(uid);
+      user = await auth.getUser(uid);
     } catch (error) {
       if (error.code === 'auth/user-not-found') throw new ApiError(401, 'login_required');
       throw error;
@@ -43,10 +50,10 @@ export function createRuntime(env = process.env) {
     store,
     verifyAccount,
     verifyConsent: (uid) => store.verifyConsent(uid),
-    verifyUser: (token) => getAuth(app).verifyIdToken(token, true),
+    verifyUser: (token) => auth.verifyIdToken(token, true),
     smartthings: smartThingsClient(config),
     verifyWebhook: webhookVerifier(),
-    notifier: pushReady ? createNotifier({ db: getFirestore(app), store, verifyAccount,
+    notifier: pushReady ? createNotifier({ db, store, verifyAccount,
       config: { origin: config.origin, key: protectionKey }, keys }) : null,
   });
   return { config, ready, store, handle };

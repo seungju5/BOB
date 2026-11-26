@@ -31,6 +31,7 @@ export async function getCaptureDays(db, uid, current) {
     } else {
       days.push(Object.hasOwn(data, "count")
         ? {day, windows, count:data.count, cook:data.cook, confirmed:data.confirmed,
+          ...(Object.hasOwn(data, 'lastMeasuredMinute') && {lastMeasuredMinute:data.lastMeasuredMinute}),
           ...(Object.hasOwn(data, 'estimated') && {estimated:data.estimated}),
           ...(Object.hasOwn(data, 'estimatedSlots') && {estimatedSlots:data.estimatedSlots}),
           ...(Object.hasOwn(data, 'estimatedBySlot') && {estimatedBySlot:data.estimatedBySlot})}

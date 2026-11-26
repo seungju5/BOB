@@ -57,7 +57,7 @@ export type AppView = {
    * 날짜별 취사·열림 횟수.
    * energyWh: 하루 전력량 합계(Wh). 아직 서버가 저장하지 않아 비어 있다 (리포트 전기요금용, 원시값 아님).
    */
-  stats: Record<string, { cook: number; lid: number | null; energyWh?: number }>;
+  stats: Record<string, { cook: number; lid: number | null; energyWh?: number; estimated?: number; estimatedSlots?: MealSlotName[]; estimatedBySlot?: Partial<Record<MealSlotName,number>> }>;
   lastCookerAt: string | null;
   lastActivityAt: string | null;
   absences: Absence[];

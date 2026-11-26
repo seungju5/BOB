@@ -8,7 +8,7 @@ import { PageHeader, Skeleton } from "@/components/ui";
 import { monthLeadingDays, navigateRecords, recordPeriod } from "@/components/records/period";
 import { MEAL_DAY_LABEL, MEAL_STATUS_LABEL, mealDayClass, mealStatusClass, useMealPalette } from "@/lib/data/appearance";
 import { kstDate } from "@/lib/judge/time";
-import { datedMealSlots, mealPositionRows } from "@/lib/report/metrics";
+import { mealSignalRows, mealPositionRows } from "@/lib/report/metrics";
 import { useApp } from "@/lib/data/useApp";
 import { careDataAvailable, mealDaySummary, type AppView } from "@/lib/data/view";
 import { demoPowerTranscript } from "@/lib/power/power-transcription-model";
@@ -145,13 +145,15 @@ export default function RecordsPage() {
 }
 
 function DayMeals({ view, date, now, highlight }: { view: AppView; date: string; now: Date; highlight: string | null }) {
-  const slots = datedMealSlots(view, date, now);
-  if (!slots.length) return <p className="py-5 text-[15px] text-muted">{view.stats[date] ? "이날 측정에서 취사 신호가 확인된 끼니 시간대는 없어요." : "이날의 끼니 기록이 없어요."}</p>;
+  const slots = mealSignalRows(view, date, now);
+  const stats = view.stats[date];
+  if (!slots.length) return <p className="py-5 text-[15px] text-muted">{stats?.estimated ? "설정한 끼니 시간 밖에서 취사로 추정되는 신호가 있었어요." : stats ? "측정된 시간 중에는 끼니 시간대와 겹치는 취사 신호가 없어요." : "이날의 끼니 기록이 없어요."}</p>;
   return <ul className="mt-3 flex flex-col gap-2">{slots.map((slot) => {
-    const match = slot.slot === highlight && slot.status === "confirmed" && slot.source === "cooker";
+    const match = slot.slot === highlight && slot.observation?.status === "confirmed" && slot.observation.source === "cooker";
     return <li key={slot.slot} tabIndex={-1} data-notice-meal={match || undefined} className={'flex flex-wrap items-center justify-between gap-2 rounded-2xl border px-4 py-4 ' + (match ? "border-cocoa bg-butter-soft" : "border-line")}>
       <span className="text-[16px] font-bold text-cocoa">{slot.label}</span>
-      <MealStatusChip status={slot.status} />
+      <span className="flex flex-wrap items-center gap-2">{slot.observation && <MealStatusChip status={slot.observation.status} />}
+        {slot.estimated && <span className="rounded-full border border-dashed border-cocoa/50 px-3 py-1 text-sm font-bold text-cocoa">취사 추정{slot.estimateCount ? ` ${slot.estimateCount}회` : ""}</span>}</span>
     </li>;
   })}</ul>;
 }
@@ -159,7 +161,7 @@ function DayMeals({ view, date, now, highlight }: { view: AppView; date: string;
 function WeekMeals({ view, dates, now, onOpenDay }: { view: AppView; dates: string[]; now: Date; onOpenDay: (date: string) => void }) {
   const palette = useMealPalette();
   const today = kstDate(now);
-  const days = dates.map(date => ({ date, slots: date <= today ? datedMealSlots(view, date, now) : [] }));
+  const days = dates.map(date => ({ date, slots: date <= today ? mealSignalRows(view, date, now) : [] }));
   const rows = mealPositionRows(days, dates.includes(today) ? view.mealProfile.windows.length : 0);
   return <div className="mt-3 overflow-x-auto pb-2">
     <table className="w-full min-w-[360px] border-separate border-spacing-1 text-center text-[12px]">
@@ -170,7 +172,8 @@ function WeekMeals({ view, dates, now, onOpenDay }: { view: AppView; dates: stri
           <th scope="row" className="text-left font-semibold text-cocoa">{label}</th>
           {days.map(({ date, slots }) => {
             const found = slots.find(item => item.position === position);
-            return <td key={date}>{found ? <span role="img" className={`mx-auto grid h-9 w-9 place-items-center rounded-xl ${mealStatusClass(found.status, palette)}`} aria-label={`${fmtMonthDay(date)} ${label} ${MEAL_STATUS_LABEL[found.status]}`}><StatusIcon status={found.status} className="h-4 w-4" /></span> : <span className="text-muted" aria-label={date > today ? "아직 오지 않은 날" : "기록 없음"}>–</span>}</td>;
+            const observation = found?.observation;
+            return <td key={date}>{observation ? <span role="img" className={`mx-auto grid h-9 w-9 place-items-center rounded-xl ${mealStatusClass(observation.status, palette)}`} aria-label={`${fmtMonthDay(date)} ${label} ${MEAL_STATUS_LABEL[observation.status]}`}><StatusIcon status={observation.status} className="h-4 w-4" /></span> : found?.estimated ? <span className="rounded-lg border border-dashed border-cocoa/50 px-1 py-1 text-cocoa" aria-label={`${fmtMonthDay(date)} ${label} 취사 추정`}>추정</span> : <span className="text-muted" aria-label={date > today ? "아직 오지 않은 날" : "기록 없음"}>–</span>}</td>;
           })}
         </tr>
       ))}</tbody>
@@ -190,10 +193,12 @@ function MonthGrid({ view, dates, now, onOpenDay }: { view: AppView; dates: stri
       {dates.map((date) => {
         const { tone, ok, total } = mealDaySummary(view, date, now);
         const future = date > today;
-        const description = future ? "아직 오지 않은 날" : `${MEAL_DAY_LABEL[tone]}${total ? `, ${ok}/${total}끼 소식 확인` : ""}`;
+        const estimated = view.stats[date]?.estimated;
+        const description = future ? "아직 오지 않은 날" : `${MEAL_DAY_LABEL[tone]}${total ? `, ${ok}/${total}끼 소식 확인` : ""}${estimated ? `, 취사 추정 ${estimated}회` : ""}`;
         return <button key={date} type="button" data-record-date={date} disabled={future} onClick={() => onOpenDay(date)} aria-current={date === today ? "date" : undefined} aria-label={`${fmtDateLong(date)}, ${description}${future ? "" : ". 하루 기록 보기"}`} className={`flex min-h-12 flex-col items-center justify-center rounded-xl px-0.5 py-2 text-[12px] disabled:opacity-35 ${mealDayClass(tone, palette)} ${date === today ? "ring-2 ring-inset ring-cocoa" : ""}`}>
           <span className="font-bold">{Number(date.slice(8))}</span>
           {date === today && <span className="text-[10px] font-bold">오늘</span>}
+          {estimated && <span className="text-[10px] text-cocoa">추정 {estimated}</span>}
           {total ? <span className="text-[10px]">{ok}/{total}</span> : <span aria-hidden="true" className="text-[10px]">{tone === "away" ? "부재" : tone === "pending" ? "대기" : "–"}</span>}
         </button>;
       })}
@@ -206,21 +211,29 @@ function MonthLegend() {
   return <div aria-label="하루 확인 비율 범례" className="mt-4 flex flex-wrap gap-2">{(["all", "half", "low", "pending", "away", "empty"] as const).map((tone) => <span key={tone} className={`rounded-full px-3 py-1.5 text-[12px] font-semibold ${mealDayClass(tone, palette)}`}>{MEAL_DAY_LABEL[tone]}</span>)}</div>;
 }
 
-function usageText(stats: {cook:number; lid:number | null}) {
-  return `취사 ${stats.cook}회 · 뚜껑 열림 ${stats.lid === null ? "미측정" : stats.lid + "회"}`;
+function usageText(stats: AppView["stats"][string]) {
+  return `취사 신호 ${stats.cook}회${stats.estimated ? " · 취사 추정 " + stats.estimated + "회" : ""} · 뚜껑 열림 ${stats.lid === null ? "미측정" : stats.lid + "회"}`;
 }
 
 function CookerUsage({ view, dates, now, day, onOpenDay }: { view: AppView; dates: string[]; now: Date; day: boolean; onOpenDay: (date: string) => void }) {
   const [selected, setSelected] = useState<string | null>(null);
   const today = kstDate(now);
   const knownDates = dates.filter((date) => date <= today && view.stats[date]);
-  const max = Math.max(3, ...knownDates.map((date) => view.stats[date].cook + (view.stats[date].lid ?? 0)));
+  const max = Math.max(3, ...knownDates.map((date) => view.stats[date].cook + (view.stats[date].estimated ?? 0) + (view.stats[date].lid ?? 0)));
+  const estimated = knownDates.reduce((sum,date) => sum + (view.stats[date].estimated ?? 0), 0);
+  const todaysStats = day ? view.stats[dates[0]] : null;
+  const outside = todaysStats?.estimatedBySlot ? (todaysStats.estimated ?? 0) - Object.values(todaysStats.estimatedBySlot).reduce((sum,n) => sum + n, 0) : 0;
   const totals = knownDates.reduce((sum, date) => ({ cook: sum.cook + view.stats[date].cook, lid: sum.lid + (view.stats[date].lid ?? 0) }), { cook: 0, lid: 0 });
   const lidUnmeasured = knownDates.some(date => view.stats[date].lid === null);
   const selectedStats = selected ? view.stats[selected] : null;
   return <section aria-labelledby="cooker-use-heading" className="mt-6 rounded-[1.75rem] border border-line p-4">
     <h2 id="cooker-use-heading" className="text-[17px] font-bold text-cocoa">밥솥 사용</h2>
-    <div className="mt-3 grid grid-cols-2 gap-3"><Stat label="취사" value={knownDates.length ? totals.cook : null} /><Stat label="뚜껑 열림" value={knownDates.length && !lidUnmeasured ? totals.lid : null} missing={lidUnmeasured ? "미측정" : "기록 없음"} /></div>
+    <div className="mt-3 grid grid-cols-2 gap-3"><Stat label={view.cookerMealDays ? "기준 이상 취사 신호" : "취사"} value={knownDates.length ? totals.cook : null} /><Stat label="뚜껑 열림" value={knownDates.length && !lidUnmeasured ? totals.lid : null} missing={lidUnmeasured ? "미측정" : "기록 없음"} /></div>
+    {estimated > 0 && <div className="mt-3 rounded-2xl border border-dashed border-cocoa/40 px-4 py-3">
+      <p className="font-bold text-cocoa">전력 변화로 추정한 취사 {estimated}회</p>
+      <p className="mt-1 text-sm leading-relaxed text-muted">평소보다 전력이 뚜렷하게 올랐다가 내려왔어요.{outside > 0 && ` 이 중 ${outside}회는 설정한 끼니 시간 밖이었어요.`}</p>
+    </div>}
+    {day && knownDates.length > 0 && view.partialCookerHistory && <p className="mt-3 text-sm text-muted">이 기록은 밥솥을 쓴 흔적이에요. 식사를 하셨는지는 전력만으로 알 수 없어요.</p>}
     {!day ? <>
       <p className="mt-4 text-sm text-muted">막대를 누르면 그날의 기록이 열려요.</p>
       <div className="mt-2 overflow-x-auto pb-2">
@@ -231,7 +244,7 @@ function CookerUsage({ view, dates, now, day, onOpenDay }: { view: AppView; date
             const label = `${fmtDateLong(date)} ${stats ? usageText(stats) : future ? "아직 오지 않은 날" : "기록 없음"}`;
             return <button key={date} type="button" disabled={future} onClick={() => onOpenDay(date)} onFocus={() => setSelected(date)} onPointerEnter={() => { if (!future) setSelected(date); }} aria-label={future ? label : `${label}. 하루 기록 보기`} className={`flex min-w-10 flex-1 flex-col rounded-lg px-1 pt-1 disabled:opacity-30 ${selected === date ? "ring-2 ring-cocoa" : "hover:bg-butter-soft"}`}>
               <span className="flex w-full flex-1 flex-col justify-end gap-0.5" aria-hidden="true">
-                {stats && stats.cook + (stats.lid ?? 0) > 0 ? <>{stats.lid !== null && <span className="min-h-0 rounded-t-md bg-butter-deep/45" style={{ height: `${stats.lid / max * 100}%` }} />}<span className={`bg-butter-deep ${stats.lid ? "" : "rounded-t-md"}`} style={{ height: `${stats.cook / max * 100}%` }} /></> : <span className="mb-1 text-[12px] text-muted">{stats ? "0" : "–"}</span>}
+                {stats && stats.cook + (stats.estimated ?? 0) + (stats.lid ?? 0) > 0 ? <>{!!stats.estimated && <span className="rounded-t-md border border-dashed border-cocoa/60 bg-butter-soft" style={{ height: `${stats.estimated / max * 100}%` }} />}{stats.lid !== null && <span className="min-h-0 rounded-t-md bg-butter-deep/45" style={{ height: `${stats.lid / max * 100}%` }} />}<span className={`bg-butter-deep ${stats.lid ? "" : "rounded-t-md"}`} style={{ height: `${stats.cook / max * 100}%` }} /></> : <span className="mb-1 text-[12px] text-muted">{stats ? "0" : "–"}</span>}
               </span>
               <span className="py-2 text-[11px] text-muted">{fmtMonthDay(date)}</span>
             </button>;
@@ -239,7 +252,7 @@ function CookerUsage({ view, dates, now, day, onOpenDay }: { view: AppView; date
         </div>
       </div>
       <p role="status" className="mt-3 min-h-11 rounded-xl bg-butter-soft px-3 py-3 text-[13px] text-cocoa">{selected ? `${fmtDateLong(selected)} · ${selectedStats ? usageText(selectedStats) : "기록 없음"}` : "막대에 마우스를 올리거나 키보드로 선택하면 횟수를 볼 수 있어요."}</p>
-      <div className="mt-3 flex flex-wrap gap-4 text-[12px] text-muted"><span className="flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-sm bg-butter-deep" />취사</span><span className="flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-sm bg-butter-deep/45" />뚜껑 열림</span></div>
+      <div className="mt-3 flex flex-wrap gap-4 text-[12px] text-muted"><span className="flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-sm bg-butter-deep" />취사 신호</span>{estimated > 0 && <span className="flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-sm border border-dashed border-cocoa/60" />취사 추정</span>}<span className="flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-sm bg-butter-deep/45" />뚜껑 열림</span></div>
     </> : null}
     {!knownDates.length ? <p className="mt-3 text-[13px] text-muted">이 기간에는 수신된 밥솥 사용 기록이 없어요.</p> : knownDates.length < dates.filter((date) => date <= today).length ? <p className="mt-3 text-[12px] text-muted">수신된 {knownDates.length}일의 사용 횟수만 합산했어요. 기록 없는 날은 0회로 판단하지 않아요.</p> : null}
   </section>;

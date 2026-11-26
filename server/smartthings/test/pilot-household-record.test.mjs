@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
 import {getFirestore} from 'firebase-admin/firestore';
 import {initializeApp,deleteApp} from 'firebase-admin/app';
-import {saveHouseholdReading,verifyRecipient} from '../pilot/household-record.mjs';
+import {saveHouseholdObservations,saveHouseholdReading,verifyRecipient} from '../pilot/household-record.mjs';
 import {ACCOUNT_CONSENT} from '../security.mjs';
 
 const profile = {uid:'synthetic',email:'owner@example.test',emailVerified:true};
@@ -42,6 +42,25 @@ test('private import is idempotent and reassigns a late cross-midnight cooking s
     await save('2026-06-08T00:35:00',false);
     assert.deepEqual((await summary(day).get()).data(),{day,count:3,cook:1,confirmed:['breakfast'],windows});
     await assert.rejects(save(first,false),/Conflicting/);
+    // Earlier-day context must survive a limited re-import, including the previous midnight grouping.
+    const bounded = ['2026-06-08T06:00:00','2026-06-08T06:10:00','2026-06-08T06:20:00'];
+    const measurements = [first,'2026-06-08T00:18:00','2026-06-08T00:35:00',...bounded].map((at,i) => ({
+      measuredAt:Date.parse(at+'+09:00'),cooking:i<2,
+    }));
+    const peak = measurements[4].measuredAt;
+    const batch = (items,peaks) => saveHouseholdObservations(db,user,grant,items,peaks,now);
+    const intervals = [{start:peak,end:peak}];
+    assert.equal((await batch(measurements,intervals)).status,'saved');
+    assert.equal((await batch(measurements,intervals)).status,'duplicate');
+    assert.deepEqual((await summary(day).get()).get('estimatedSlots'),['breakfast']);
+    assert.equal((await summary(day).get()).get('cook'),1);
+    await batch(measurements.slice(-3),[]);
+    assert.equal((await summary(day).get()).get('estimated'),1);
+    await batch(measurements,[]);
+    assert.equal((await summary(day).get()).get('estimated'),undefined);
+    await batch(measurements,intervals);
+    await save('2026-06-08T06:18:00');
+    assert.equal((await summary(day).get()).get('estimated'),undefined);
     await settings.update({preparationAcknowledged:false});
     await assert.rejects(save(first),/consent/);
     await settings.update({preparationAcknowledged:true,updatedAt:new Date(now)});

@@ -14,7 +14,8 @@
     "test:domain": "node --test packages/power-pattern/*.test.mjs packages/power-pattern/research/*.test.mjs packages/walking-hearts/test/*.test.mjs && npm run test:smartthings",
     "test:smartthings": "npm ci --prefix server/smartthings --no-audit --no-fund && npm --prefix server/smartthings test",
     "lint": "eslint",
-    "pilot:import": "node server/smartthings/pilot/import.mjs"
+    "pilot:import": "node server/smartthings/pilot/import.mjs",
+    "pilot:cleanup": "node server/smartthings/pilot/cleanup.mjs"
   },
   "dependencies": {
     "@bapmunna/phone-steps": "file:packages/phone-steps",

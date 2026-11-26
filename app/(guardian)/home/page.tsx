@@ -105,10 +105,9 @@ export default function HomePage() {
           <h2 className="inline-flex items-center gap-2 text-[18px] font-bold"><IconChart aria-hidden className="h-5 w-5" />최근 7일 리포트</h2>
           <IconArrowRight aria-hidden className="h-5 w-5 shrink-0" />
         </div>
-        {report ? <>
+        {report ? (
           <p className="mt-2 text-[17px] text-cocoa">끼니 확인율 <strong>{report.r}%</strong> · {report.message}</p>
-          <p className="mt-1 text-[16px] leading-relaxed text-muted">어제까지 7일을 그 전 4주 평균과 비교해요.</p>
-        </> : <p className="mt-1 text-[16px] leading-relaxed text-muted">일주일 넘게 기록이 쌓이면 평소와 비교해 드려요.</p>}
+        ) : <p className="mt-1 text-[16px] leading-relaxed text-muted">일주일 넘게 기록이 쌓이면 평소와 비교해 드려요.</p>}
       </Link>
       <ImpactConnectionLinks compact />
     </main>

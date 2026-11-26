@@ -17,6 +17,17 @@ import HomePage from "@/app/(guardian)/home/page";
 const disconnected = (): AppView => firebaseView({settings: null, household: null});
 
 describe("보호자 홈의 다음 행동", () => {
+  it("shows the weekly result on home and the comparison windows in the detailed report", () => {
+    context.view = toView(createDemoState(context.now), context.now);
+    const home = renderToStaticMarkup(createElement(HomePage));
+    expect(home).toContain("끼니 확인율");
+    expect(home).toContain("식사 기록 보기");
+    expect(home).not.toMatch(/드신 양은 알 수 없어요|그 전 4주 평균과 비교해요/);
+    const report = renderToStaticMarkup(createElement(ReportPage));
+    expect(report).toContain("어제까지 7일");
+    expect(report).toContain("이전 4주");
+  });
+
   it("keeps device setup and contact registration available on an empty account", () => {
     const view = disconnected();
     context.view = view;
@@ -101,7 +112,7 @@ describe("기록·리포트 표시 계약 (서버 렌더, 실제 브라우저 �
     expect(html.indexOf("끼니 상태 범례")).toBeLessThan(html.indexOf("cooker-use-heading"));
     expect(html).toContain("이전 주 보기");
     expect(html).toContain("다음 주 보기");
-    expect(html).toContain("키보드로 선택하면 횟수를 볼 수 있어요");
+    expect(html).toMatch(/<button[^>]+aria-label="[^"]+하루 기록 보기"/);
     expect(html).toContain('role="status"');
     expect(html).toContain("체험용 가상 기록");
     expect(html).toContain("고정 샘플");

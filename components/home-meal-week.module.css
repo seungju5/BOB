@@ -45,8 +45,6 @@
 .period dd[data-state="away"], .period dd[data-state="pending"] { color: var(--color-sky-deep); }
 .period dd svg { width: .95em; height: .95em; flex-shrink: 0; }
 .period dd.time { font-size: .875rem; font-weight: 400; gap: 0; font-variant-numeric: tabular-nums; }
-.privacy { display: flex; align-items: flex-start; gap: .45rem; margin-top: 1rem; font-size: .9375rem; line-height: 1.55; color: var(--color-muted); }
-.privacy svg { width: 1rem; height: 1rem; margin-top: .2rem; flex-shrink: 0; }
 .message, .emptyHint { font-size: 1rem; line-height: 1.5; color: var(--color-muted); margin-top: .65rem; }
 .emptyHint { padding: .4rem 1rem 1rem; }
 .settings { display: flex; justify-content: flex-end; margin-top: .15rem; }

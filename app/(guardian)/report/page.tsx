@@ -96,7 +96,6 @@ function Overview({ view, now }: { view: AppView; now: Date }) {
       <div className="flex flex-col items-center rounded-[1.75rem] bg-butter-soft px-6 py-8 text-center">
         <Mascot className="h-24 w-24" mood="sleepy" />
         <p className="mt-3 text-[18px] font-bold text-cocoa">평소와 비교할 기록을 모으는 중이에요</p>
-        <p className="mt-1 text-[14px] text-muted">최근 기록과 비교할 이전 기록이 더 쌓이면 알려 드릴게요.</p>
       </div>
     );
   }
@@ -107,10 +106,9 @@ function Overview({ view, now }: { view: AppView; now: Date }) {
         <p className="text-[15px] text-cocoa/70">최근 7일 끼니 확인율</p>
         <p className="mt-1 text-[44px] leading-none font-extrabold text-cocoa">{r}%</p>
         <p className="mt-3 text-[17px] font-bold text-cocoa">{message}</p>
-        {trend === "down" ? <p className="mt-1 text-[15px] text-cocoa/75">{view.senior.relation}께 요즘 입맛은 어떠신지 여쭤보면 어떨까요?</p> : null}
       </section>
       <ReportCard title="평소와 비교">
-        <Bar label="최근 7일" pct={r} strong />
+        <Bar label="어제까지 7일" pct={r} strong />
         <Bar label="이전 4주" pct={b} />
         <p className="mt-3 text-[12px] text-muted">
           확인된 끼니 {recent.ok}/{recent.total} · 이전 {before.ok}/{before.total} (외식 포함, 부재·대기 제외)

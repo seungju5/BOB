@@ -126,7 +126,6 @@ export default function RecordsPage() {
             {noCareData && daySignal ? <p className="py-4 text-[15px] text-muted">이날의 끼니별 기록은 아직 없어요.</p> : noCareData ? (
               <section className="mt-3 rounded-[1.75rem] border border-line bg-paper p-6">
                 <h2 className="text-[18px] font-bold text-cocoa">아직 연결된 식사 기록이 없어요</h2>
-                <p className="mt-2 text-[15px] leading-relaxed text-muted">가족과 기기의 실제 소식이 연결되면 이곳에 기록을 보여 드려요. 연결 전에는 식사 여부를 판단하지 않아요.</p>
                 <Link href="/settings" className="mt-4 inline-flex min-h-11 items-center font-bold text-cocoa underline underline-offset-4">연결 설정 보기</Link>
               </section>
             ) : (
@@ -136,7 +135,6 @@ export default function RecordsPage() {
                   {range === "day" ? <DayMeals view={view} date={anchor} now={now} highlight={linkedDate === anchor && view.mode === "live" && view.seniorConsent && view.cookerMealDays?.[anchor]?.some(w => w.slot === linkedSlot) ? linkedSlot : null} /> : range === "week" ? <WeekMeals view={view} dates={period.dates} now={now} onOpenDay={openDay} /> : <MonthGrid view={view} dates={period.dates} now={now} onOpenDay={openDay} />}
                 </section>
                 {range === "month" ? <MonthLegend /> : <MealStatusLegend />}
-                <p className="mt-2 text-[12px] leading-relaxed text-muted">소식 확인은 밥솥 사용이나 어르신의 외식 알림을 뜻해요. 실제 식사·건강 상태의 판단은 아니에요.</p>
                 <CookerUsage view={view} dates={period.dates} now={now} day={range === "day"} onOpenDay={openDay} />
                 {demoTranscript && <PowerTranscriptionSection transcript={demoTranscript} />}
               </div>
@@ -237,7 +235,6 @@ function CookerUsage({ view, dates, now, day, onOpenDay }: { view: AppView; date
       <p className="font-bold text-cocoa">전력 변화로 추정한 취사 {estimated}회</p>
       <p className="mt-1 text-sm leading-relaxed text-muted">평소보다 전력이 뚜렷하게 올랐다가 내려왔어요.{outside > 0 && ` 이 중 ${outside}회는 설정한 끼니 시간 밖이었어요.`}</p>
     </div>}
-    {day && knownDates.length > 0 && view.partialCookerHistory && <p className="mt-3 text-sm text-muted">이 기록은 밥솥을 쓴 흔적이에요. 식사를 하셨는지는 전력만으로 알 수 없어요.</p>}
     {!day ? <>
       <p className="mt-4 text-sm text-muted">막대를 누르면 그날의 기록이 열려요.</p>
       <div className="mt-2 overflow-x-auto pb-2">
@@ -255,7 +252,7 @@ function CookerUsage({ view, dates, now, day, onOpenDay }: { view: AppView; date
           })}
         </div>
       </div>
-      <p role="status" className="mt-3 min-h-11 rounded-xl bg-butter-soft px-3 py-3 text-[13px] text-cocoa">{selected ? `${fmtDateLong(selected)} · ${selectedStats ? usageText(selectedStats) : "기록 없음"}` : "막대에 마우스를 올리거나 키보드로 선택하면 횟수를 볼 수 있어요."}</p>
+      <p role="status" className={selected ? "mt-3 min-h-11 rounded-xl bg-butter-soft px-3 py-3 text-[13px] text-cocoa" : "sr-only"}>{selected ? `${fmtDateLong(selected)} · ${selectedStats ? usageText(selectedStats) : "기록 없음"}` : ""}</p>
       <div className="mt-3 flex flex-wrap gap-4 text-[12px] text-muted"><span className="flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-sm bg-butter-deep" />취사 신호</span>{estimated > 0 && <span className="flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-sm border border-dashed border-cocoa/60" />취사 추정</span>}<span className="flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-sm bg-butter-deep/45" />뚜껑 열림</span></div>
     </> : null}
     {!knownDates.length ? <p className="mt-3 text-[13px] text-muted">이 기간에는 수신된 밥솥 사용 기록이 없어요.</p> : knownDates.length < dates.filter((date) => date <= today).length ? <p className="mt-3 text-[12px] text-muted">수신된 {knownDates.length}일의 사용 횟수만 합산했어요. 기록 없는 날은 0회로 판단하지 않아요.</p> : null}

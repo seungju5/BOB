@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { MealGreeting } from "@/components/companions/CookerCompanion";
 import { useId, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
-import { IconCheck, IconClock, IconLock, IconSuitcase } from "@/components/icons";
+import { IconCheck, IconClock, IconSuitcase } from "@/components/icons";
 import { MealScheduleLink } from "@/components/TodayMeals";
 import { appPath } from "@/lib/app-path";
 import { useMealPalette } from "@/lib/data/appearance";
@@ -124,7 +124,6 @@ export function MealWeek({days, initialIndex, caption, household, settings}: {
     {household?.captureReadError && <p role="status" className={styles.message}>저장한 밥솥 기록을 불러오지 못했어요. 잠시 후 다시 확인해 주세요.</p>}
     {!day.isFuture && !!selectedStats?.estimated && <p className={styles.message}>이날 취사로 추정한 소식이 있어요. 확인된 시간대와는 따로 표시해요.</p>}
     {!day.isFuture && !known && !!selectedStats?.cook && <p className={styles.message}>취사 소식은 있지만 어느 시간대인지는 확인되지 않았어요.</p>}
-    <p className={styles.privacy}><IconLock aria-hidden /><span>밥솥 사용과 직접 남긴 소식이에요.<br />실제 식사 여부나 드신 양은 알 수 없어요.</span></p>
     {settings && <div className={styles.settings}>{settings}</div>}
   </section>;
 }

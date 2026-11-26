@@ -6,7 +6,7 @@ import { ALERT_PRIORITY, ALERT_TONE, alertCopy, AlertShortcut, fmtDateLong, hasA
 import { IconArrowRight, IconBell, IconChart, IconClock, IconPhone, IconSuitcase } from "@/components/icons";
 import { Logo } from "@/components/Mascot";
 import { HomeLoadingCompanion, HomeMealCompanion } from "@/components/companions/CookerCompanion";
-import { TodayMealList } from "@/components/TodayMeals";
+import { CaptureDayNote, TodayMealList } from "@/components/TodayMeals";
 import { buttonClass, Skeleton } from "@/components/ui";
 import { countMissedMeals } from "@/lib/judge/evaluateAlerts";
 import { kstDate } from "@/lib/judge/time";
@@ -76,7 +76,9 @@ export default function HomePage() {
       <section aria-label="오늘의 끼니" className="mt-4 rounded-[1.5rem] border border-line bg-paper px-4 pt-2 pb-4">
         <HomeMealCompanion mealCount={todayWindows.length} />
         <TodayMealList windows={todayWindows} slots={slots} />
-        {!slots.length && <p className="mt-2 text-[17px] font-semibold text-cocoa">{view.cookerMealDays
+        <CaptureDayNote view={view} date={today}/>
+        {view.captureReadError && <Link href="/connect/#meter-screenshot" className="block py-2 text-muted underline">캡처 기록을 다시 불러와 주세요</Link>}
+        {!slots.length && !view.captureSources?.[today] && !view.captureReadError && <p className="mt-2 text-[17px] font-semibold text-cocoa">{view.cookerMealDays
           ? (view.stats[today]?.cook ? "오늘 취사 소식이 있어요. 어느 끼니인지는 확인되지 않았어요." : "오늘은 아직 밥솥 소식이 없어요.")
           : "아직 연결된 식사 기록이 없어요."}</p>}
         <p className="mt-2 text-[16px] leading-relaxed text-muted">{slots.length || view.cookerMealDays ? "밥솥 사용 소식이에요. 드신 양은 알 수 없어요." : "기기를 연결하면 이곳에서 밥솥 소식을 볼 수 있어요."}</p>

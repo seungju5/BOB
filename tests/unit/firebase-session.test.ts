@@ -50,6 +50,9 @@ async function fixture() {
     onUser:vi.fn((callback:(user:FirebaseUser|null)=>void)=>{callbacks.add(callback);return()=>{callbacks.delete(callback);};}),
     getAppProfile:vi.fn(async(uid:string)=>profile(uid)),
     getAppPreferences:vi.fn(async(uid:string)=>server.get(uid)??saved(uid)),
+    getCaptureDays:vi.fn<FirebaseProvider['getCaptureDays']>(async()=>[]),
+    saveCapture:vi.fn<FirebaseProvider['saveCapture']>(async()=>'saved'),
+    clearCaptureDays:vi.fn(async()=>{}),
     saveAppPreferences:vi.fn<FirebaseProvider['saveAppPreferences']>(async(input,household,uid)=>persist(input,household,uid)),
     refreshUser:vi.fn(async()=>sdkUser),
     getIdToken:vi.fn(async(uid:string)=>{if(sdkUser?.uid!==uid)throw new Error('계정이 변경됐어요.');return 'synthetic-test-token';}),
@@ -237,6 +240,19 @@ describe('Firebase account store asynchronous session isolation',()=>{
     expect(f.snapshot().view?.plug.deviceId).toBe('');
     expect(f.store.isFirebaseSessionCurrent('A',revision)).toBe(false);
     expect(bridgeMock.cancelPending.mock.calls).toEqual([['A'],['B']]);
+  });
+  it('discards pending screenshot history after changing households',async()=>{
+    const f=await fixture();await f.mount();
+    const pending=deferred<Awaited<ReturnType<FirebaseProvider['getCaptureDays']>>>();
+    f.provider.getCaptureDays.mockReturnValueOnce(pending.promise);
+    await f.emit(f.user('A'));
+    await f.emit(f.user('B'));
+    const day=Math.floor((Date.now()+32400000)/86400000)-1;
+    pending.resolve([{day,windows:f.saved('A').settings!.windows,samples:{'100':true}}]);
+    await flush();
+    expect(f.snapshot().user?.uid).toBe('B');
+    expect(f.snapshot().view?.stats).toEqual({});
+    expect(f.snapshot().captures).toEqual([]);
   });
   it('withdrawal in another tab clears a selected device before reading the saved consent again',async()=>{
     const browser=new EventTarget(),doc=Object.assign(new EventTarget(),{visibilityState:'visible'});

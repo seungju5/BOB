@@ -1,6 +1,7 @@
 import { random, hash, ApiError, ACCOUNT_CONSENT, CONSENT } from './security.mjs';
 import { advancePowerNotice, hasPowerChecks, matchesPowerCheck, MEAL_RECORD_CONSENT, POWER_CHECK_MS, POWER_NOTICE_CONSENT } from './power-notice.mjs';
 import { activeMealRecordGrant, NOTICE_TARGET_LIFETIME, pruneMealRecords, recentCookDate, rememberMealTarget } from './meal-records.mjs';
+import { sweepPilotBuckets } from './pilot/retention.mjs';
 
 function suspendedPowerChecks(checks) {
   return Number.isSafeInteger(checks?.enabledAt) ? {enabledAt:checks.enabledAt} : null;
@@ -96,6 +97,9 @@ export function firestoreStore(db, now = () => Date.now()) {
         if (!target) return null;
         return target.slot ? {date:target.date,slot:target.slot} : {date:target.date};
       });
+    },
+    pruneExpiredPilotRecords() {
+      return sweepPilotBuckets(db, {apply:true, now:now()});
     },
     async pruneExpiredMealRecords({limit = 20} = {}) {
       if (!Number.isInteger(limit) || limit < 1 || limit > 500) throw new RangeError('Invalid meal cleanup limit.');

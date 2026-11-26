@@ -4,6 +4,7 @@ import {ACCOUNT_CONSENT} from '../security.mjs';
 import {validMealWindows} from '../../../lib/judge/resolveMealSlots.ts';
 import {summarizeCaptureDays} from '../../../lib/smartthings/capture-days.ts';
 import {dayOf} from './peak-history.mjs';
+import {expiredHouseholdBuckets} from './retention.mjs';
 
 const dayMs = 86_400_000;
 const offset = 9 * 3_600_000;
@@ -118,6 +119,7 @@ export async function saveHouseholdObservations(db, user, grant, observations, p
         settings.get('ownerUid') !== user.uid || settings.get('preparationAcknowledged') !== true || !validMealWindows(settings.get('windows'))) {
       throw Error('Account profile and active household consent are required');
     }
+    const expired = new Map((await expiredHouseholdBuckets(tx, owner, now)).map(ref => [ref.path, ref]));
     const buckets = new Map(), oldSummaries = new Map(), oldEvidence = new Map();
     refs.forEach(({day}, i) => {
       const raw = snaps[2 * i].data(), published = snaps[2 * i + 1].data();
@@ -150,10 +152,11 @@ export async function saveHouseholdObservations(db, user, grant, observations, p
       // Report the meter's last minute, not the time of an operator import or retry.
       const lastMeasuredMinute = Object.keys(bucket.samples).reduce((last, sec) => Math.max(last, Math.floor(Number(sec) / 60)), -1);
       const data = {day: r.day, windows: summary.windows, cook: summary.cook, confirmed: summary.confirmed, count: summary.samples, lastMeasuredMinute, ...estimates.get(r.day)};
-      if (!isDeepStrictEqual(oldEvidence.get(r.day), bucket)) { tx.set(r.ledger, bucket); changed = true; }
-      if (!isDeepStrictEqual(oldSummaries.get(r.day), data)) { tx.set(r.summary, data); changed = true; }
+      if (!isDeepStrictEqual(oldEvidence.get(r.day), bucket)) { tx.set(r.ledger, bucket); expired.delete(r.ledger.path); changed = true; }
+      if (!isDeepStrictEqual(oldSummaries.get(r.day), data)) { tx.set(r.summary, data); expired.delete(r.summary.path); changed = true; }
       if (measured.has(r.day)) days.push(data);
     }
+    for (const ref of expired.values()) tx.delete(ref);
     return {status: changed ? 'saved' : 'duplicate', days};
   });
 }

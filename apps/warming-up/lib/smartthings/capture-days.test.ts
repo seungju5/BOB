@@ -29,7 +29,7 @@ describe("confirmed meter captures",()=>{
     const live:SmartThingsConnection={stage:"connected",device:{id:"selected",label:"밥솥",isVirtual:false},powerNotice:{enabled:true,lastObservedAt:now},mealRecords:{days:[{date:"2026-11-26",cook:2,windows,confirmed:["lunch"]}]}};
     const view=firebaseView(prefs,live,now,captures);
     expect(view.stats["2026-11-26"].cook).toBe(2);expect(view.slots.filter(s=>s.date==="2026-11-26").map(s=>s.slot)).toEqual(["lunch"]);
-    expect(view.captureSources?.["2026-11-26"].automatic).toBe(true);
+    expect(view.partialCookerHistory).toBe(true);
     expect(view.stats["2026-11-25"].cook).toBe(1);
     expect(firebaseView({...prefs,settings:{...prefs.settings,preparationAcknowledged:false}},live,now,captures).stats).toEqual({});
   });

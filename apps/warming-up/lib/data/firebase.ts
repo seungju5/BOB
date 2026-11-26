@@ -9,7 +9,6 @@ import { DEFAULT_WINDOWS, type AppActions, type AppView, type OnboardingPatch } 
 import { assertOnboardingConsent } from './consent';
 import { cancelPendingSmartThings, readCookerMealRecords, readSmartThingsConnection, type CookerMealDay, type SmartThingsConnection } from '@/lib/firebase/smartthings';
 import { summarizeCaptureDays, type CapturedMealDay } from '@/lib/smartthings/capture-days';
-import type { MealWindow } from '@/lib/judge/types';
 
 type State = { user: FirebaseUser|null|undefined; profile: AccountProfile|null; saved: SavedPreferences|null; connection:SmartThingsConnection|null; captures:CapturedMealDay[]|null; captureError:boolean; view: AppView|null; error:string|null; loading:boolean; operator:boolean; revision:number };
 const EMPTY: State = {user:undefined,profile:null,saved:null,connection:null,captures:null,captureError:false,view:null,error:null,loading:true,operator:false,revision:0};
@@ -87,7 +86,7 @@ export function firebaseView(saved:SavedPreferences,connection:SmartThingsConnec
     }))),
     stats:Object.fromEntries(available.map(day => [day.date,{cook:day.cook,lid:null}])),
     ...((records || imported.length) && {cookerMealDays:Object.fromEntries(available.map(day => [day.date,day.windows]))}),
-    ...(imported.length > 0 && {captureSources:Object.fromEntries(imported.map(day => [day.date,{samples:day.samples,automatic:automatic.has(day.date)}]))}),
+    ...(imported.some(day => !automatic.has(day.date)) && {partialCookerHistory:true}),
     ...(p.preparationAcknowledged && captureError && {captureReadError:true}),
     lastCookerAt:observedDate && records?.days.some(day => day.date === observedDate) ? plug.powerNoticeAt! : null,
     lastActivityAt:null,absences:[],alerts:[]};
@@ -120,18 +119,6 @@ export async function refreshCapturedMeals(uid:string, revision:number) {
   } catch {
     if (current() && state.saved) emit({captures:null,captureError:true,view:privateView(state.saved,state.connection,null,true)});
   }
-}
-export async function changeCapturedMeals(uid:string, revision:number, input:{at:number; cooking:boolean; windows:MealWindow[]}|null) {
-  const check = () => { if (!canReadConnection(uid,revision)) throw Error('로그인과 우리 집 동의를 다시 확인해 주세요.'); };
-  check();
-  const provider = await within(connectFirebase());
-  check();
-  const result = input ? await within(provider.saveCapture(uid,input.at,input.cooking,input.windows))
-    : await within(provider.clearCaptureDays(uid));
-  check();
-  await refreshCapturedMeals(uid,revision);
-  check();
-  return result;
 }
 // A status result can also arrive from the connection panel. Keep just summary
 // fields here; a manual wattage reading stays in the panel that requested it.

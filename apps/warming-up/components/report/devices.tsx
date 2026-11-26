@@ -50,7 +50,7 @@ function CookerUsageSection({ view, now }: ReportProps) {
         ))}
       </div>
       <Bar label={`최근 기록 ${u.recordedDays}일 합계`} pct={(u.cook / scale) * 100} value={`${u.cook}번`} strong />
-      {view.captureSources ? <p className="mt-2 text-xs text-muted">캡처는 일부 시점만 담고 있어 평소보다 얼마나 자주 취사했는지는 비교하기 어려워요.</p> : u.cookWeeklyBefore === null ? <p className="mt-2 text-xs text-muted">이전 4주 기록이 부족해 주 평균을 계산할 수 없어요.</p> : <Bar label="평소 (이전 4주 주 평균)" pct={u.cookWeeklyBefore / scale * 100} value={`${u.cookWeeklyBefore}번`} />}
+      {view.partialCookerHistory ? <p className="mt-2 text-xs text-muted">일부 시점만 측정한 날이 있어 평소 취사 횟수와 비교하기 어려워요.</p> : u.cookWeeklyBefore === null ? <p className="mt-2 text-xs text-muted">이전 4주 기록이 부족해 주 평균을 계산할 수 없어요.</p> : <Bar label="평소 (이전 4주 주 평균)" pct={u.cookWeeklyBefore / scale * 100} value={`${u.cookWeeklyBefore}번`} />}
       <Bar label="알려 주신 평소 횟수" pct={(u.cooksPerWeekTold / scale) * 100} value={`주 ${u.cooksPerWeekTold}번`} />
       {vsBefore !== null && Math.abs(vsBefore) >= 2 ? (
         <p className="mt-3 text-[14px] text-cocoa/80">

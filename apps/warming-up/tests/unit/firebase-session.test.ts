@@ -51,8 +51,6 @@ async function fixture() {
     getAppProfile:vi.fn(async(uid:string)=>profile(uid)),
     getAppPreferences:vi.fn(async(uid:string)=>server.get(uid)??saved(uid)),
     getCaptureDays:vi.fn<FirebaseProvider['getCaptureDays']>(async()=>[]),
-    saveCapture:vi.fn<FirebaseProvider['saveCapture']>(async()=>'saved'),
-    clearCaptureDays:vi.fn(async()=>{}),
     saveAppPreferences:vi.fn<FirebaseProvider['saveAppPreferences']>(async(input,household,uid)=>persist(input,household,uid)),
     refreshUser:vi.fn(async()=>sdkUser),
     getIdToken:vi.fn(async(uid:string)=>{if(sdkUser?.uid!==uid)throw new Error('계정이 변경됐어요.');return 'synthetic-test-token';}),

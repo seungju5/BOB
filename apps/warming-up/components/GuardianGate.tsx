@@ -1,10 +1,11 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {Suspense, useEffect, useState, type ReactNode} from "react";
 import { guardianStartPath, isDemoView } from "@/lib/data/view";
 import { useApp } from "@/lib/data/useApp";
 import { useAlertNotifications } from "@/lib/push";
+import { noticeDay } from "@/public/notification-content";
 import { pushOwner } from "@/lib/push-device";
 import { clearNoticeReturn, readNoticeReturn, rememberNoticeReturn, resolveNoticeReturn } from "@/lib/alerts/notification-return";
 
@@ -18,24 +19,28 @@ function GuardianSession({children}: {children: ReactNode}) {
   const {view, needsLogin, accountKey, error} = useApp();
   const router = useRouter();
   const query = useSearchParams();
+  const path = usePathname();
   const fromNotice = query.get("from") === "notice";
   const noticeQuery = fromNotice ? query.toString() : null;
   const [attempt, retry] = useState(0);
   const [failed, setFailed] = useState<{owner:string; query:string | null; attempt:number} | null>(null);
   const needsRealAccount = fromNotice && view?.mode === "demo";
   const owner = pushOwner(accountKey);
+  // A verified household can open its own dated record without filling in optional family details.
+  const datedRecord = !fromNotice && path.replace(/\/$/, "") === "/records" && !!noticeDay(query.get("day")) &&
+    view?.mode === "live" && view.dataSource === "firebase" && view.seniorConsent;
   useAlertNotifications(view, accountKey);
   useEffect(() => {
     if (needsLogin || needsRealAccount) {
       rememberNoticeReturn();
       router.replace("/login");
-    } else if (view && view.onboardingStep <= 7) {
+    } else if (view && view.onboardingStep <= 7 && !datedRecord) {
       rememberNoticeReturn();
       router.replace(guardianStartPath(view.onboardingStep));
     }
-  }, [view, needsLogin, needsRealAccount, router]);
+  }, [view, needsLogin, needsRealAccount, datedRecord, router]);
 
-  const ready = !needsLogin && view?.mode === "live" && view.onboardingStep > 7;
+  const ready = !needsLogin && view?.mode === "live" && (view.onboardingStep > 7 || datedRecord);
   useEffect(() => {
     if (!ready || !owner) return;
     // Preserve the saved intent across Strict Mode replay; consume only after verification.
@@ -58,7 +63,7 @@ function GuardianSession({children}: {children: ReactNode}) {
       <button type="button" className="ml-2 min-h-12 px-3 underline" onClick={()=>{setFailed(null);clearNoticeReturn();router.replace("/alerts/");}}>알림함 열기</button>
     </main>;
   }
-  if (needsLogin || fromNotice || !view || view.onboardingStep <= 7) return waiting;
+  if (needsLogin || fromNotice || !view || (view.onboardingStep <= 7 && !datedRecord)) return waiting;
   return <div key={accountKey} className="flex flex-1 flex-col">
     {isDemoView(view) && <p className="border-b border-line bg-butter-soft px-6 py-2 text-sm text-cocoa"><strong>예시 체험 중</strong> · 화면의 기기와 가족 기록은 가상 데이터예요.</p>}
     {children}

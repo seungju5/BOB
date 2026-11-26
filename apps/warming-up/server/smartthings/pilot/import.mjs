@@ -1,12 +1,14 @@
 // Private operator entry point. This is not an HTTP upload route or a Samsung sign-in client.
 import {open} from 'node:fs/promises';
+import {createHash} from 'node:crypto';
 import {pathToFileURL} from 'node:url';
 import {applicationDefault, initializeApp, deleteApp} from 'firebase-admin/app';
 import {getAuth} from 'firebase-admin/auth';
 import {getFirestore} from 'firebase-admin/firestore';
 import {TEAM_PROJECT_ID} from '../../../config/team.ts';
 import {readCapture} from './read-capture.mjs';
-import {saveHouseholdReading, verifyRecipient} from './household-record.mjs';
+import {saveHouseholdReading, saveHouseholdObservations, verifyRecipient} from './household-record.mjs';
+import {analyzePowerHistory} from './peak-history.mjs';
 
 async function privateFile(path, limit) {
   const file = await open(path,'r');
@@ -19,12 +21,22 @@ async function privateFile(path, limit) {
 
 export async function importFile({auth,db,manifest,image,now=Date.now()}) {
   const grant = JSON.parse((await privateFile(manifest,16384)).toString('utf8'));
+  return importBuffer({auth,db,grant,bytes:await privateFile(image,10*1024*1024),now});
+}
+
+export async function importBuffer({auth,db,grant,bytes,now=Date.now()}) {
   if (grant.projectId !== TEAM_PROJECT_ID || db.projectId !== TEAM_PROJECT_ID || typeof grant.uid !== 'string' ||
       !grant.uid || grant.uid.includes('/') || typeof grant.recipientEmail !== 'string')
     throw Error('Project or recipient binding missing');
   const user = await auth.getUserByEmail(grant.recipientEmail);
   verifyRecipient(user,grant);
-  const reading = await readCapture(await privateFile(image,10*1024*1024),grant,now);
+  if (grant.format === 'power-history') {
+    if (!Buffer.isBuffer(bytes) || !bytes.length || bytes.length > 2*1024*1024 ||
+        createHash('sha256').update(bytes).digest('hex') !== grant.sourceSha256) throw Error('Source does not match the approved history');
+    const {observations,peaks} = analyzePowerHistory(JSON.parse(bytes.toString('utf8')),now);
+    return saveHouseholdObservations(db,await auth.getUser(user.uid),grant,observations,peaks,now);
+  }
+  const reading = await readCapture(bytes,grant,now);
   const active = await auth.getUser(user.uid);
   verifyRecipient(active,grant);
   return saveHouseholdReading(db,active,grant,reading,now);

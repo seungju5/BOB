@@ -24,21 +24,21 @@ function GuardianSession({children}: {children: ReactNode}) {
   const noticeQuery = fromNotice ? query.toString() : null;
   const [attempt, retry] = useState(0);
   const [failed, setFailed] = useState<{owner:string; query:string | null; attempt:number} | null>(null);
-  const needsRealAccount = fromNotice && view?.mode === "demo";
+  const recordDay = !fromNotice && path.replace(/\/$/, "") === "/records" ? noticeDay(query.get("day")) : null;
+  const needsRealAccount = (fromNotice || (recordDay && query.get("account") === "mine")) && view?.mode === "demo";
   const owner = pushOwner(accountKey);
   // A verified household can open its own dated record without filling in optional family details.
-  const datedRecord = !fromNotice && path.replace(/\/$/, "") === "/records" && !!noticeDay(query.get("day")) &&
-    view?.mode === "live" && view.dataSource === "firebase" && view.seniorConsent;
+  const datedRecord = !!recordDay && view?.mode === "live" && view.dataSource === "firebase" && view.seniorConsent;
   useAlertNotifications(view, accountKey);
   useEffect(() => {
     if (needsLogin || needsRealAccount) {
       rememberNoticeReturn();
-      router.replace("/login");
+      router.replace(recordDay ? "/login/?next=record&day=" + recordDay : "/login");
     } else if (view && view.onboardingStep <= 7 && !datedRecord) {
       rememberNoticeReturn();
       router.replace(guardianStartPath(view.onboardingStep));
     }
-  }, [view, needsLogin, needsRealAccount, datedRecord, router]);
+  }, [view, needsLogin, needsRealAccount, datedRecord, recordDay, router]);
 
   const ready = !needsLogin && view?.mode === "live" && (view.onboardingStep > 7 || datedRecord);
   useEffect(() => {
@@ -63,7 +63,7 @@ function GuardianSession({children}: {children: ReactNode}) {
       <button type="button" className="ml-2 min-h-12 px-3 underline" onClick={()=>{setFailed(null);clearNoticeReturn();router.replace("/alerts/");}}>알림함 열기</button>
     </main>;
   }
-  if (needsLogin || fromNotice || !view || (view.onboardingStep <= 7 && !datedRecord)) return waiting;
+  if (needsLogin || needsRealAccount || fromNotice || !view || (view.onboardingStep <= 7 && !datedRecord)) return waiting;
   return <div key={accountKey} className="flex flex-1 flex-col">
     {isDemoView(view) && <p className="border-b border-line bg-butter-soft px-6 py-2 text-sm text-cocoa"><strong>예시 체험 중</strong> · 화면의 기기와 가족 기록은 가상 데이터예요.</p>}
     {children}

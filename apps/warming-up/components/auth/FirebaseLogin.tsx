@@ -14,6 +14,7 @@ import { setMode, useMode } from '@/lib/data/mode';
 import { useFirebaseAccount, refreshFirebaseAccount, signOutFirebase } from '@/lib/data/firebase';
 import { afterGuardianLogin } from '@/lib/data/view';
 import { accountError, connectFirebase, within } from '@/lib/firebase/bridge';
+import { noticeDay, recordNoticePath } from '@/public/notification-content';
 
 function onLocationChange(notify:()=>void) {
   window.addEventListener('popstate',notify);
@@ -37,6 +38,11 @@ function LoginForm({account,busy,setBusy,continueUid,setContinueUid}:{account:Re
   const [kakaoReady,setKakaoReady]=useState(false),[verificationEmail,setVerificationEmail]=useState('');
   const locked=useRef(false);
   const studioLogin=useSyncExternalStore(onLocationChange,()=>new URLSearchParams(window.location.search).get('next')==='studio',()=>false);
+  const recordDay=useSyncExternalStore(onLocationChange,()=>{
+    const query = new URLSearchParams(window.location.search);
+    return query.get('next') === 'record' ? noticeDay(query.get('day')) : null;
+  },()=>null);
+  const recordTarget=account.user?.verified && account.view?.seniorConsent && recordDay ? recordNoticePath(recordDay,null) : null;
   useEffect(()=>{
     if (!TEAM_KAKAO_SIGN_IN_ENABLED) return;
     let active=true;
@@ -47,9 +53,10 @@ function LoginForm({account,busy,setBusy,continueUid,setContinueUid}:{account:Re
     // Restoring a session must leave the account-switch choice reachable.
     // Only a sign-in/profile action started on this screen advances automatically.
     if (busy || account.loading || !continueUid || account.user?.uid !== continueUid || mode !== 'live' || leavingForDemo.current) return;
-    if (account.operator || new URLSearchParams(window.location.search).get('next') === 'studio' && account.user?.verified) router.replace('/admin/');
+    if (recordTarget) router.replace(recordTarget);
+    else if (account.operator || new URLSearchParams(window.location.search).get('next') === 'studio' && account.user?.verified) router.replace('/admin/');
     else if (account.view) router.replace(afterLogin(account.view.onboardingStep));
-  },[account.user?.uid,account.user?.verified,account.loading,account.operator,account.view,busy,continueUid,mode,router]);
+  },[account.user?.uid,account.user?.verified,account.loading,account.operator,account.view,busy,continueUid,mode,recordTarget,router]);
   async function run(action:()=>Promise<void>){
     if(busy||locked.current)return;locked.current=true;setBusy(true);setContinueUid(null);setError('');setNotice('');
     try{await action();}catch(e){setContinueUid(null);setError(accountError(e));}finally{locked.current=false;setBusy(false);}
@@ -79,7 +86,7 @@ function LoginForm({account,busy,setBusy,continueUid,setContinueUid}:{account:Re
       {error||account.error?<p role="alert" className="mt-5 rounded-2xl bg-blush p-4 text-[16px] text-cocoa">{error||account.error}</p>:null}
       {notice?<p role="status" className="mt-5 rounded-2xl bg-sage p-4 text-[16px] text-cocoa">{notice}</p>:null}
       {account.loading ? <p role="status" className="py-8 text-center text-[16px] text-muted">로그인 상태를 확인하고 있어요…</p>
-      : user && account.operator ? <section className="mt-6 grid gap-3"><p className="text-center">{user.email}</p><Button onClick={()=>{setMode('live');router.push('/admin/');}}>팀 운영 스튜디오 열기</Button><Button variant="ghost" disabled={busy} onClick={()=>run(signOutFirebase)}>다른 계정으로 로그인</Button></section>
+      : user && account.operator && !recordTarget ? <section className="mt-6 grid gap-3"><p className="text-center">{user.email}</p><Button onClick={()=>{setMode('live');router.push('/admin/');}}>팀 운영 스튜디오 열기</Button><Button variant="ghost" disabled={busy} onClick={()=>run(signOutFirebase)}>다른 계정으로 로그인</Button></section>
       : user?.verified && studioLogin ? <section className="mt-6 grid gap-3"><p className="text-center">이 계정에 등록된 운영 권한이 없습니다.</p><Button onClick={()=>run(signOutFirebase)}>다른 이메일로 로그인</Button></section>
       : user && !user.verified ? <section className="mt-6 flex flex-col gap-3">
         <h2 className="text-[20px] font-bold text-cocoa">{user.email?'이메일을 확인해 주세요':'처음 한 번, 이메일을 확인해요'}</h2>
@@ -111,7 +118,7 @@ function LoginForm({account,busy,setBusy,continueUid,setContinueUid}:{account:Re
         {account.error?<Button variant="outline" type="button" onClick={()=>run(refreshFirebaseAccount)}>다시 확인</Button>:null}
         <Button type="button" variant="ghost" disabled={busy} onClick={()=>run(signOutFirebase)}>다른 계정으로 로그인</Button>
       </form>
-      : user && account.view ? <section className="mt-6 flex flex-col gap-3"><p className="break-all text-center text-[16px]">{user.email}</p><Button onClick={()=>{setMode('live');router.push(afterLogin(account.view!.onboardingStep));}}>내 계정으로 계속하기</Button><Button variant="ghost" disabled={busy} onClick={()=>run(signOutFirebase)}>다른 계정으로 로그인</Button></section>
+      : user && account.view ? <section className="mt-6 flex flex-col gap-3"><p className="break-all text-center text-[16px]">{user.email}</p><Button onClick={()=>{setMode('live');router.push(recordTarget ?? afterLogin(account.view!.onboardingStep));}}>{recordTarget ? "내 날짜별 기록 열기" : "내 계정으로 계속하기"}</Button><Button variant="ghost" disabled={busy} onClick={()=>run(signOutFirebase)}>다른 계정으로 로그인</Button></section>
       : <form className="mt-7 flex flex-col gap-3" onSubmit={submit}>
         {tab==='login' && (TEAM_GOOGLE_SIGN_IN_ENABLED || kakaoReady) ? <>
           {kakaoReady ? <button type="button" disabled={busy} onClick={()=>run(async()=>{const p=await connectFirebase();if(!p.kakao)throw Error('카카오 로그인 연결을 준비하고 있어요.');await p.kakao(keep);})} className="relative flex min-h-14 items-center justify-center rounded-full bg-kakao px-6 text-[17px] font-bold text-kakao-label disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-cocoa">

@@ -77,6 +77,14 @@ export function firebaseView(saved:SavedPreferences,connection:SmartThingsConnec
   // Samsung provides aggregates, so adding two sources for a day would count overlapping cooks twice.
   for (const day of records?.days ?? []) days.set(day.date, day);
   const available = [...days.values()];
+  const stats: AppView['stats'] = Object.fromEntries(available.map(day => [day.date,{cook:day.cook,lid:null}]));
+  for (const day of imported) {
+    if (day.estimated && !automatic.has(day.date)) {
+      stats[day.date].estimated = day.estimated;
+      stats[day.date].estimatedSlots = day.estimatedSlots;
+      if (day.estimatedBySlot) stats[day.date].estimatedBySlot = day.estimatedBySlot;
+    }
+  }
   return {mode:'live',dataSource:'firebase',careAvailable:false,onboardingStep:h?p.onboardingStep:Math.min(p.onboardingStep,3),
     senior:{name:h?.alias??'',relation:h?.relation==='other'&&p.relationLabel?p.relationLabel:relationLabels[h?.relation??'mother'],phone:p.phone},household:{residentCount:h?.residentCount??1,hasPet:h?.hasPet??false},
     mealProfile:{windows:p.windows,eatOutPerWeek:p.eatOutPerWeek,usesKeepWarm:p.usesKeepWarm,cooksPerWeek:p.cooksPerWeek},
@@ -84,7 +92,7 @@ export function firebaseView(saved:SavedPreferences,connection:SmartThingsConnec
     plug,pairingCode:null,seniorPaired:false,slots:available.flatMap(day => day.confirmed.map(slot => ({
       date:day.date,slot,status:'confirmed' as const,source:'cooker' as const,
     }))),
-    stats:Object.fromEntries(available.map(day => [day.date,{cook:day.cook,lid:null}])),
+    stats,
     ...((records || imported.length) && {cookerMealDays:Object.fromEntries(available.map(day => [day.date,day.windows]))}),
     ...(imported.some(day => !automatic.has(day.date)) && {partialCookerHistory:true}),
     ...(p.preparationAcknowledged && captureError && {captureReadError:true}),

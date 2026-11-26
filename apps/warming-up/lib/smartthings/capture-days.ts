@@ -3,11 +3,12 @@ import { continuesCookRun } from "../../server/smartthings/cooking-signal.mjs";
 import type { CookerMealDay } from "@/lib/firebase/smartthings";
 import { validMealWindows } from "../judge/resolveMealSlots.ts";
 import { DAY_MS, kstTime } from "../judge/time.ts";
-import type { MealWindow } from "../judge/types.ts";
+import type { MealWindow, MealSlotName } from "../judge/types.ts";
 
 export type CaptureBucket = { day: number; windows: MealWindow[]; samples: Record<string, boolean> };
-export type PublishedBucket = {day:number; windows:MealWindow[]; cook:number; confirmed:CookerMealDay["confirmed"]; count:number};
-export type CapturedMealDay = CookerMealDay & { samples: number };
+type PeakSummary = {estimated?:number; estimatedSlots?:CookerMealDay["confirmed"]; estimatedBySlot?:Partial<Record<MealSlotName,number>>};
+export type PublishedBucket = PeakSummary & {day:number; windows:MealWindow[]; cook:number; confirmed:CookerMealDay["confirmed"]; count:number};
+export type CapturedMealDay = CookerMealDay & PeakSummary & { samples: number };
 
 /** Deduplicate before assigning a cook to the Seoul day and slot of its first high sample. */
 export function summarizeCaptureDays(buckets: (CaptureBucket | PublishedBucket)[], now = Date.now()): CapturedMealDay[] {
@@ -25,7 +26,18 @@ export function summarizeCaptureDays(buckets: (CaptureBucket | PublishedBucket)[
           cook < 0 || cook > count || !Array.isArray(confirmed) || confirmed.length > cook ||
           new Set(confirmed).size !== confirmed.length || !confirmed.every(slot => windows.some(w => w.slot === slot)))
         throw Error("저장한 밥솥 기록을 확인하지 못했어요.");
-      return [{date, windows, cook, confirmed, samples:count}];
+      const {estimated, estimatedSlots, estimatedBySlot} = bucket;
+      if (estimated === undefined && estimatedSlots === undefined && estimatedBySlot === undefined) return [{date, windows, cook, confirmed, samples:count}];
+      if (typeof estimated !== "number" || !Number.isSafeInteger(estimated) || estimated < 1 || estimated + cook > count ||
+          !Array.isArray(estimatedSlots) || estimatedSlots.length > estimated || new Set(estimatedSlots).size !== estimatedSlots.length ||
+          !estimatedSlots.every(slot => windows.some(w => w.slot === slot))) throw Error("저장한 추정 신호를 확인하지 못했어요.");
+      if (estimatedBySlot !== undefined) {
+        if (!estimatedBySlot || typeof estimatedBySlot !== "object" || Array.isArray(estimatedBySlot)) throw Error("추정 시간대를 확인하지 못했어요.");
+        const entries = Object.entries(estimatedBySlot);
+        if (entries.length !== estimatedSlots.length || entries.some(([slot,n]) => !estimatedSlots.includes(slot as MealSlotName) || !Number.isSafeInteger(n) || n < 1) ||
+            entries.reduce((sum,[,n]) => sum + n, 0) > estimated) throw Error("추정 시간대의 횟수를 확인하지 못했어요.");
+      }
+      return [{date, windows, cook, confirmed, samples:count, estimated, estimatedSlots, ...(estimatedBySlot && {estimatedBySlot})}];
     }
     const {samples} = bucket;
     if (!samples || typeof samples !== "object") throw Error("저장한 밥솥 기록을 확인하지 못했어요.");

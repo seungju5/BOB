@@ -30,7 +30,10 @@ export async function getCaptureDays(db, uid, current) {
       expired.push(s.ref);
     } else {
       days.push(Object.hasOwn(data, "count")
-        ? {day, windows, count:data.count, cook:data.cook, confirmed:data.confirmed}
+        ? {day, windows, count:data.count, cook:data.cook, confirmed:data.confirmed,
+          ...(Object.hasOwn(data, 'estimated') && {estimated:data.estimated}),
+          ...(Object.hasOwn(data, 'estimatedSlots') && {estimatedSlots:data.estimatedSlots}),
+          ...(Object.hasOwn(data, 'estimatedBySlot') && {estimatedBySlot:data.estimatedBySlot})}
         : {day, windows, samples:data.samples});
     }
   }

@@ -32,6 +32,7 @@ function CookerUsageSection({ view, now }: ReportProps) {
     <p className="mt-3 text-sm text-muted">이 기간에 기록된 밥솥 사용 횟수가 없어요.</p>
   </ReportCard>;
   const max = Math.max(1, ...u.perDay.map((d) => d.cook ?? 0));
+  const estimated = u.perDay.reduce((sum,d) => sum + (view.stats[d.date]?.estimated ?? 0), 0);
   const scale = Math.max(u.cook, u.cookWeeklyBefore ?? 0, u.cooksPerWeekTold, 1);
   const vsBefore = !view.cookerMealDays && u.recordedDays === 7 && u.cookWeeklyBefore !== null ? u.cook - u.cookWeeklyBefore : null;
   return (
@@ -41,6 +42,7 @@ function CookerUsageSection({ view, now }: ReportProps) {
         <Stat label="뚜껑 연 횟수" value={view.mealProfile.usesKeepWarm && u.lid !== null ? `${u.lid}번` : "미측정"} hint={view.mealProfile.usesKeepWarm ? undefined : "보온을 안 쓰셔서 알 수 없어요"} />
       </div>
       <p className="mt-2 text-xs text-muted">어제까지 7일 중 기록이 있는 {u.recordedDays}일의 합계예요.</p>
+      {estimated > 0 && <p className="mt-3 rounded-xl border border-dashed border-cocoa/40 px-3 py-2 text-sm text-cocoa">이 기간 전력 변화로 추정한 취사도 {estimated}회 있었어요. 날짜별 시간대는 식사 기록에서 볼 수 있어요.</p>}
       <div className="mt-4 flex h-20 items-end gap-1.5" aria-label="하루별 밥 지은 횟수">
         {u.perDay.map((d) => (
           <div key={d.date} className="flex flex-1 flex-col items-center gap-1">

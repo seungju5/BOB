@@ -12,6 +12,7 @@ import { careDataAvailable, reportSummary, type AppView } from "@/lib/data/view"
 import { MEAL_STATUS_LABEL, mealStatusClass, useMealPalette } from "@/lib/data/appearance";
 import { MealStatusLegend } from "@/components/MealStatus";
 import { dailyMeals, mealPositionRows, slotRates } from "@/lib/report/metrics";
+import { kstDate } from "@/lib/judge/time";
 
 /**
  * 패턴 리포트. 위는 가전과 무관한 종합(끼니 확인율), 아래는 가전별 탭(components/report/devices.tsx 등록부).
@@ -31,12 +32,14 @@ function Report({ view, now }: { view: AppView; now: Date }) {
   const devices = DEVICE_REPORTS.filter((d) => d.connected(view));
   const [kind, setKind] = useState<DeviceKind>(devices[0]?.kind ?? "rice_cooker");
   const device = devices.find((d) => d.kind === kind) ?? devices[0];
+  const today = kstDate(now);
 
   if (!careDataAvailable(view) && !view.slots.length && !Object.keys(view.stats).length) {
     return (
       <section className="mt-2 rounded-[1.75rem] border border-line bg-paper p-6">
         <Mascot className="h-24 w-24" mood="sleepy" />
-        <h2 className="mt-3 text-[18px] font-bold text-cocoa">연결된 소식이 쌓이면 비교해 드릴게요</h2>
+        <h2 className="mt-3 text-[18px] font-bold text-cocoa">{view.captureReadError ? "저장한 캡처 기록을 불러오지 못했어요" : "연결된 소식이 쌓이면 비교해 드릴게요"}</h2>
+        {view.captureReadError && <Link href="/connect/#meter-screenshot" className="inline-flex min-h-11 items-center font-bold underline">캡처 기록 다시 불러오기</Link>}
         <p className="mt-2 text-[15px] leading-relaxed text-muted">{view.cookerMealDays ? "날짜별 기록이 켜져 있어요. 첫 취사 신호가 들어오면 이곳에 표시해요." : "현재 계정에는 가족·기기의 식사 기록이 아직 연결되지 않았어요. 기록이 없다는 이유로 식사 여부를 판단하지 않아요."}</p>
         <Link href="/settings" className="mt-4 inline-flex min-h-11 items-center font-bold text-cocoa underline underline-offset-4">연결 설정 보기</Link>
       </section>
@@ -46,7 +49,8 @@ function Report({ view, now }: { view: AppView; now: Date }) {
   return (
     <div className="mt-2 flex flex-col gap-4">
       {view.mode === "demo" ? <p className="text-[12px] text-muted">체험용 가상 기록을 비교한 리포트예요.</p> : null}
-      {view.cookerMealDays ? <p className="text-[16px] text-muted">밥솥에서 취사 신호를 받은 날과 시간대를 모았어요.</p> : <>
+      {view.cookerMealDays ? <div className="text-[16px] text-muted"><p>{view.captureSources ? "직접 반영한 캡처는 확인한 신호만 집계해요. 같은 날짜에 삼성 자동 기록이 있으면 자동 집계를 사용해요." : "밥솥에서 취사 신호를 받은 날과 시간대를 모았어요."}</p>
+        {view.captureSources?.[today] && <Link href={"/records/?day="+today} className="inline-flex min-h-11 items-center font-bold text-cocoa underline">오늘의 밥솥 기록 보기</Link>}</div> : <>
         <Overview view={view} now={now} />
         <SlotRates view={view} now={now} />
       </>}

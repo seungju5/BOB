@@ -15,6 +15,7 @@ import { demoPowerTranscript } from "@/lib/power/power-transcription-model";
 import { PowerTranscriptionSection } from "@/components/power/PowerTranscriptionSection";
 import { PowerNotice } from "@/components/SmartThingsAccountCard";
 import { noticeDay, noticeSlot } from "@/public/notification-content";
+import { CaptureDayNote } from "@/components/TodayMeals";
 
 const RANGES = [{ id: "day", label: "일" }, { id: "week", label: "주" }, { id: "month", label: "월" }] as const;
 
@@ -118,6 +119,8 @@ export default function RecordsPage() {
             </div>
             {view.mode === "demo" ? <p className="mb-3 text-[12px] text-muted">체험용 가상 기록이에요.</p> : null}
             {daySignal && <PowerNotice at={daySignal}/>}
+            {view.captureReadError && <Link href="/connect/#meter-screenshot" className="block py-2 text-muted underline">캡처 기록을 불러오지 못했어요 · 다시 확인</Link>}
+            {range === "day" && <CaptureDayNote view={view} date={anchor}/>}
             {noCareData && daySignal ? <p className="py-4 text-[15px] text-muted">이날의 끼니별 기록은 아직 없어요.</p> : noCareData ? (
               <section className="mt-3 rounded-[1.75rem] border border-line bg-paper p-6">
                 <h2 className="text-[18px] font-bold text-cocoa">아직 연결된 식사 기록이 없어요</h2>
@@ -145,7 +148,7 @@ export default function RecordsPage() {
 
 function DayMeals({ view, date, now, highlight }: { view: AppView; date: string; now: Date; highlight: string | null }) {
   const slots = datedMealSlots(view, date, now);
-  if (!slots.length) return <p className="py-5 text-[15px] text-muted">이날의 끼니 기록이 없어요.</p>;
+  if (!slots.length) return <p className="py-5 text-[15px] text-muted">{view.captureSources?.[date] ? "이날 측정에서 취사 신호가 확인된 끼니 시간대는 없어요." : "이날의 끼니 기록이 없어요."}</p>;
   return <ul className="mt-3 flex flex-col gap-2">{slots.map((slot) => {
     const match = slot.slot === highlight && slot.status === "confirmed" && slot.source === "cooker";
     return <li key={slot.slot} tabIndex={-1} data-notice-meal={match || undefined} className={'flex flex-wrap items-center justify-between gap-2 rounded-2xl border px-4 py-4 ' + (match ? "border-cocoa bg-butter-soft" : "border-line")}>

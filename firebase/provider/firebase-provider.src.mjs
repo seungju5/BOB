@@ -1,6 +1,7 @@
 import {initializeApp,getApp,getApps} from 'firebase/app';
 import {getAuth,onAuthStateChanged,beforeAuthStateChanged,signInWithEmailAndPassword,createUserWithEmailAndPassword,sendEmailVerification,sendPasswordResetEmail,updateProfile,signOut,reload,setPersistence,browserLocalPersistence,browserSessionPersistence,GoogleAuthProvider,signInWithPopup,signInWithCustomToken,verifyBeforeUpdateEmail} from 'firebase/auth';
-import {getFirestore,doc,getDocFromServer,runTransaction,serverTimestamp,Timestamp} from 'firebase/firestore';
+import {getFirestore,doc,getDocFromServer,runTransaction,serverTimestamp,Timestamp,writeBatch} from 'firebase/firestore';
+import {getCaptureDays,saveCapture,deleteCaptureBuckets} from './capture-days.mjs';
 import {createStudio} from './studio.mjs';
 import {preferenceFields} from './app-preferences.mjs';
 import {CONSENT_VERSION,checkDisplayName} from './auth-utils.mjs';
@@ -111,6 +112,13 @@ export function createProvider(config, {googleEnabled = false, kakaoEnabled = fa
       if (profile.ownerUid !== user.uid || snapshot.metadata.hasPendingWrites) throw Error('서버에서 내 프로필을 다시 확인해 주세요.');
       return {...profile, savedAt:savedAt(snapshot), revision:revisionOf(snapshot)};
     });},
+    getCaptureDays(uid){return withHouseholdUser(uid,(_user,current)=>getCaptureDays(db,uid,current));},
+    saveCapture(uid,at,cooking,windows){return withHouseholdUser(uid,(_user,current)=>saveCapture(db,uid,at,cooking,windows,current));},
+    clearCaptureDays(uid){return withHouseholdUser(uid,async(_user,current)=>{
+      const batch=writeBatch(db);
+      deleteCaptureBuckets(batch,db,uid);
+      current();await batch.commit();current();
+    });},
     getAppPreferences(expectedUid){return withHouseholdUser(expectedUid,async(user,assertCurrent)=>{
       const [settings,household]=await Promise.all([getDocFromServer(settingsRef(user.uid)),getDocFromServer(householdRef(user.uid))]);assertCurrent();
       return preferencesResult(settings,household,user.uid);
@@ -121,6 +129,8 @@ export function createProvider(config, {googleEnabled = false, kakaoEnabled = fa
         const existingSettings=await transaction.get(settingsRef(user.uid));
         const existingHousehold=household?await transaction.get(householdRef(user.uid)):null;assertCurrent();
         if(expectedRevision&&(revisionOf(existingSettings)!==expectedRevision.settings||(existingHousehold&&revisionOf(existingHousehold)!==expectedRevision.household)))throw Object.assign(Error('다른 화면에서 설정이 바뀌었어요.'),{code:'preferences/conflict'});
+        if (existingSettings.data()?.preparationAcknowledged && !fields.preparationAcknowledged)
+          deleteCaptureBuckets(transaction,db,user.uid);
         transaction.set(settingsRef(user.uid),{ownerUid:user.uid,...fields,onboardingStep:existingSettings.exists()&&existingSettings.data().onboardingStep===8?8:fields.onboardingStep,updatedAt:serverTimestamp()});
         if(household)transaction.set(householdRef(user.uid),{ownerUid:user.uid,...household,updatedAt:serverTimestamp()});
         transaction.set(doc(db,'bapmunnaStorageStatus',user.uid),{settingsAt:serverTimestamp(),...(household && {householdAt:serverTimestamp()})},{merge:true});

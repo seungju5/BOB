@@ -134,6 +134,39 @@ service cloud.firestore {
               && (request.resource.data.onboardingStep == resource.data.onboardingStep || request.resource.data.onboardingStep <= 3)));
         allow delete: if b3Owner(uid);
       }
+      // A verified household confirms each screenshot locally. One immutable
+      // threshold result per second, within 35 Seoul calendar days.
+      match /meterCaptures/{bucket} {
+        function consent() {
+          return b3Owner(uid)
+            && get(/databases/$(database)/documents/bapmunnaAccounts/$(uid)).data.consentVersion == '2026-10-16'
+            && get(/databases/$(database)/documents/bapmunnaAccounts/$(uid)/preferences/settings).data.preparationAcknowledged == true;
+        }
+        function validSample(d) {
+          let today = int((request.time.toMillis() + 32400000) / 86400000);
+          return d.keys().hasOnly(['day','key','samples','windows'])
+            && d.day is int && d.day <= today && d.day > today - 35
+            && bucket.matches('^(0|[1-9][0-9]?)$') && int(bucket) == d.day % 35
+            && d.key is string && d.key.matches('^(0|[1-9][0-9]{0,4})$') && int(d.key) < 86400
+            && (d.day * 86400 + int(d.key) - 32400) * 1000 <= request.time.toMillis()
+            && d.samples is map && d.samples[d.key] is bool;
+        }
+        function first(d) {
+          return d.samples.keys().hasOnly([d.key])
+            && d.windows == get(/databases/$(database)/documents/bapmunnaAccounts/$(uid)/preferences/settings).data.windows;
+        }
+        function staysGranted() {
+          return getAfter(/databases/$(database)/documents/bapmunnaAccounts/$(uid)/preferences/settings).data.preparationAcknowledged == true;
+        }
+        allow read: if consent();
+        allow create: if consent() && staysGranted() && validSample(request.resource.data) && first(request.resource.data);
+        allow update: if consent() && staysGranted() && validSample(request.resource.data)
+          && ((request.resource.data.day > resource.data.day && first(request.resource.data))
+            || (request.resource.data.day == resource.data.day && request.resource.data.windows == resource.data.windows
+              && !(request.resource.data.key in resource.data.samples)
+              && request.resource.data.samples.diff(resource.data.samples).affectedKeys().hasOnly([request.resource.data.key])));
+        allow delete: if b3Owner(uid);
+      }
       match /meals/{mealId} {
         function currentSeoulDay(d) {
           let parts = d.day.split('-');

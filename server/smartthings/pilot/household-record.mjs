@@ -147,7 +147,9 @@ export async function saveHouseholdObservations(db, user, grant, observations, p
     for (const r of refs) {
       if (!publishDays.has(r.day) || !visible.has(dateOf(r.day))) continue;
       const bucket = buckets.get(r.day), summary = visible.get(dateOf(r.day));
-      const data = {day: r.day, windows: summary.windows, cook: summary.cook, confirmed: summary.confirmed, count: summary.samples, ...estimates.get(r.day)};
+      // Report the meter's last minute, not the time of an operator import or retry.
+      const lastMeasuredMinute = Object.keys(bucket.samples).reduce((last, sec) => Math.max(last, Math.floor(Number(sec) / 60)), -1);
+      const data = {day: r.day, windows: summary.windows, cook: summary.cook, confirmed: summary.confirmed, count: summary.samples, lastMeasuredMinute, ...estimates.get(r.day)};
       if (!isDeepStrictEqual(oldEvidence.get(r.day), bucket)) { tx.set(r.ledger, bucket); changed = true; }
       if (!isDeepStrictEqual(oldSummaries.get(r.day), data)) { tx.set(r.summary, data); changed = true; }
       if (measured.has(r.day)) days.push(data);

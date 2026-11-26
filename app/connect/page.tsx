@@ -10,6 +10,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { SmartThingsAccountCard } from '@/components/SmartThingsAccountCard';
 import { SmartThingsPanel } from '@/components/SmartThingsPanel';
+import { HouseholdSignalCheck } from '@/components/HouseholdSignalCheck';
 import { Logo } from '@/components/Mascot';
 import { useApp } from '@/lib/data/useApp';
 import { guardianStartPath } from '@/lib/data/view';
@@ -40,13 +41,17 @@ function BeforeHouseholdConsent() {
 }
 
 export default function ConnectPage() {
-  const { view, needsLogin, provider, error } = useApp();
+  const { view, needsLogin, provider, error, accountKey } = useApp();
   const router = useRouter();
-  useEffect(() => { if (needsLogin) router.replace('/login/?next=connect'); }, [needsLogin, router]);
+  useEffect(() => {
+    if (needsLogin || view?.mode === 'demo' && new URLSearchParams(location.search).get('account') === 'mine')
+      router.replace('/login/?next=connect');
+  }, [needsLogin, view?.mode, router]);
   const returnTo = view ? guardianStartPath(view.onboardingStep) : null;
   return <main className="flex flex-1 flex-col gap-5 px-5 pt-6 pb-8">
     <Logo />
     <div><h1 className="text-[28px] leading-snug font-bold text-cocoa">우리 집 기기 연결</h1><p className="mt-2 text-[16px] leading-relaxed text-muted">밥솥 플러그를 쓰는 가정에서 선택하는 단계예요. 기기 연결은 나중에 해도 괜찮아요.</p></div>
+    {!needsLogin && view?.mode === 'live' && view.seniorConsent && <HouseholdSignalCheck key={accountKey} view={view} accountKey={accountKey}/>}
     {!view || needsLogin
       ? <p role="status" className="text-[16px]">{error || '내 계정을 확인하고 있어요…'}</p>
       : provider === 'firebase' && !view.seniorConsent && returnTo === '/tutorial'

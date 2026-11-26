@@ -2,7 +2,7 @@
 
 import { useSyncExternalStore } from "react";
 import { appPath } from "@/lib/app-path";
-import {matchesNoticeOwner, noticeDeliveryKey, noticeText, noticePath, noticePreferenceKey, noticePreferenceCache, noticeTestReceiptKey, scopedNotice} from "@/public/notification-content";
+import {matchesNoticeOwner, noticeCookerReceiptKey, noticeDeliveryKey, noticeText, noticePath, noticePreferenceKey, noticePreferenceCache, noticeTestReceiptKey, scopedNotice} from "@/public/notification-content";
 
 import {isQuietHours, untilQuiet} from "@/server/smartthings/notification-policy.mjs";
 
@@ -132,25 +132,38 @@ export async function syncWorkerDelivery(owner: string, action: "enable" | "disa
     if (action === "quiet" && saved?.enabled === false) return;
     const next = action === "disable" ? {enabled:false} : {enabled:true, owner, quiet};
     await cache.put(key, new Response(JSON.stringify(next), {headers:{"Content-Type":"application/json"}}));
-    if (action === "disable" || saved?.owner !== owner) await cache.delete(noticeTestReceiptKey(base));
+    if (action === "disable" || saved?.owner !== owner)
+      await Promise.all([cache.delete(noticeTestReceiptKey(base)), cache.delete(noticeCookerReceiptKey(base))]);
   };
   if (navigator.locks) await navigator.locks.request(key, write);
   else await write();
 }
 
-export async function lastServerTest(owner: string): Promise<Date | null> {
+async function deviceReceipt(owner: string, cooker: boolean): Promise<{receivedAt:number; observedAt?:number; openedAt?:number} | null> {
   try {
     const base = new URL(appPath("/"), window.location.origin);
     const cache = await caches.open(noticePreferenceCache);
-    const [policy, receipt] = await Promise.all([cache.match(noticeDeliveryKey(base)), cache.match(noticeTestReceiptKey(base))]);
+    const key = cooker ? noticeCookerReceiptKey(base) : noticeTestReceiptKey(base);
+    const [policy, receipt] = await Promise.all([cache.match(noticeDeliveryKey(base)), cache.match(key)]);
     const delivery = await policy?.json();
     if (!delivery?.enabled || delivery.owner !== owner) return null;
     const recent = await receipt?.json();
     const at = recent?.receivedAt;
     if (!Number.isSafeInteger(at) || at <= 0 || at > Date.now() || !await matchesNoticeOwner(owner, recent.scope)) return null;
-    return new Date(at);
+    if (!cooker) return {receivedAt:at};
+    const observedAt = recent.observedAt;
+    if (!Number.isSafeInteger(observedAt) || observedAt <= 0 || observedAt > at || at - observedAt >= 3600000 || Date.now() - at >= 86400000) return null;
+    const openedAt = recent.openedAt;
+    return {receivedAt:at, observedAt, ...(Number.isSafeInteger(openedAt) && openedAt >= at && openedAt <= Date.now() && {openedAt})};
   } catch { return null; }
 }
+
+export async function lastServerTest(owner: string): Promise<Date | null> {
+  const receipt = await deviceReceipt(owner, false);
+  return receipt ? new Date(receipt.receivedAt) : null;
+}
+
+export function lastCookerPush(owner: string) { return deviceReceipt(owner, true); }
 
 export async function closeOwnerNotices(owner: string) {
   const worker = await navigator.serviceWorker?.getRegistration(appPath("/"));

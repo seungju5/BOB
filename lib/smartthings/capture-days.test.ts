@@ -13,6 +13,19 @@ const day=Math.floor((now+9*3600000)/86400000);
 const bucket=(n:number,samples:Record<string,boolean>):CaptureBucket=>({day:n,windows,samples});
 const hr=3600;
 describe("confirmed meter captures",()=>{
+  it("shows the last imported meter minute without attributing it to automatic delivery",()=>{
+    const saved = {day,windows,count:2,cook:1,confirmed:["breakfast" as const],lastMeasuredMinute:705};
+    const [entry] = summarizeCaptureDays([saved],now);
+    const iso = "2026-11-26T11:45:00+09:00";
+    expect(entry.lastMeasuredAt).toBe(Date.parse(iso));
+    const view = firebaseView(prefs,{stage:"setup_required"},now,[entry]);
+    expect(view.cookerDaySource).toEqual({[entry.date]:"imported"});
+    expect(view.lastMeterImport).toEqual({date:entry.date,measuredAt:Date.parse(iso)});
+    expect(view.plug.powerNoticeAt).toBeUndefined();
+    const closed=firebaseView({settings:{...prefs.settings,preparationAcknowledged:false},household:null},null,now,[entry]);
+    expect(closed.lastMeterImport).toBeUndefined(); expect(closed.cookerDaySource).toBeUndefined();
+    for(const bad of [-1, 1440, 5.5, 1320]) expect(()=>summarizeCaptureDays([{...saved,lastMeasuredMinute:bad}],now)).toThrow();
+  });
   it("keeps inferred lower-power runs distinct from meals, care alerts and same-day automatic records",()=>{
     const item = {day,windows,count:28,cook:0,confirmed:[],estimated:3,estimatedSlots:["lunch" as const],estimatedBySlot:{lunch:2}};
     const history = summarizeCaptureDays([item],now);
@@ -24,7 +37,9 @@ describe("confirmed meter captures",()=>{
     expect(() => summarizeCaptureDays([{...item,estimatedBySlot:{lunch:4}}],now)).toThrow();
     expect(() => summarizeCaptureDays([{...item,estimated:29}],now)).toThrow();
     const live:SmartThingsConnection={stage:"connected",device:{id:"selected",label:"밥솥",isVirtual:false},powerNotice:{enabled:true,lastObservedAt:now},mealRecords:{days:[{date,cook:1,windows,confirmed:["breakfast"]}]}};
-    expect(firebaseView(prefs,live,now,history).stats[date]).toEqual({cook:1,lid:null});
+    const connected = firebaseView(prefs,live,now,history);
+    expect(connected.stats[date]).toEqual({cook:1,lid:null});
+    expect(connected.cookerDaySource).toEqual({[date]:"automatic"});
     expect(firebaseView({...prefs,settings:{...prefs.settings,preparationAcknowledged:false}},null,now,history).stats).toEqual({});
   });
   it("merges 10-minute chains across midnight, even when imported backwards, and counts starts outside configured windows",()=>{

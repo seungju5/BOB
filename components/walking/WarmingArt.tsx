@@ -1,4 +1,6 @@
 'use client';
+import { TrailSymbol } from './TrailSymbol';
+
 
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
@@ -12,16 +14,15 @@ const asset = (name: string) => appPath('/walking/wardrobe/' + name + '.webp');
 export const trailArt = (background: LookId | null) => asset('trail-' + (background ?? 'park'));
 
 export function PartIcon({ part }: { part: HeartCategory | 'hanger' | 'pause' | 'menu' | 'pin' | 'trail' }) {
+  if (part === 'trail' || part === 'hanger') return <TrailSymbol kind={part}/>;
   const paths = {
     hat: <><path d="M5 14.5c.7-6 2.4-9 7-9s6.5 3 7 9M4.6 13.8c2.2 1.8 12.6 1.8 14.8 0"/><path d="M4.8 13.7C2.4 14.7 2 16 3.5 17.1c2.8 2.2 14.2 2.2 17 0 1.5-1.1 1.1-2.4-1.2-3.4"/></>,
     outfit: <path d="m8.3 3.8-5.9 3.5 2.5 4.6 2.2-1v9h10v-9l2.1 1 2.5-4.6-5.9-3.5c-.6 1.5-2 2.4-3.7 2.4s-3.2-.9-3.8-2.4Z"/>,
     accessory: <><path d="M4.2 11h15.6l-1.4 8.2a1.8 1.8 0 0 1-1.8 1.5H7.4a1.8 1.8 0 0 1-1.8-1.5L4.2 11ZM6.5 11 12 3.8l5.5 7.2M9.3 14.5l.6 2.8m4.8-2.8-.6 2.8"/></>,
     background: <><path d="m2.5 18 6-8 4.3 5.4 3-3.7 5.7 6.3H2.5Z"/><circle cx="16.6" cy="6.8" r="2.1"/></>,
-    hanger: <path d="M9.6 6.9a2.6 2.6 0 1 1 4.5 1.8l-2.1 2v1.6l8.7 5.2c.8.5.4 1.7-.5 1.7H3.8c-.9 0-1.2-1.2-.5-1.7l8.7-5.2"/>,
     pause: <><path d="M8.5 6v12M15.5 6v12" strokeWidth="3"/></>,
     menu: <><path d="M5 7h14M5 12h14M5 17h14"/></>,
     pin: <><path d="M18.5 10c0 4.7-6.5 10.3-6.5 10.3S5.5 14.7 5.5 10a6.5 6.5 0 1 1 13 0Z"/><circle cx="12" cy="10" r="2.1"/></>,
-    trail: <><path d="M8.3 4.8C6 6 6.7 10 8.5 11.5c1.2 1 3 .4 3.3-1.1.6-2.8-1-6.7-3.5-5.6Zm7.5 4.2c2.3.9 2.3 4.6.8 6.1-1 1.1-2.8.8-3.4-.6-.9-2.5.2-6.3 2.6-5.5Z"/><path d="M9.4 14.3c.6 1 1 1.2 1.6 1m3.2 2.6c.1 1-.3 1.6-.9 1.9"/></>,
   };
   return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[part]}</svg>;
 }

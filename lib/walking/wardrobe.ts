@@ -20,7 +20,7 @@ export async function saveWithWardrobeLock<T>(scope: 'local' | 'demo', save: () 
 
 export const CATEGORIES = [
   { id: 'hat', name: '모자', basic: '맨머리' },
-  { id: 'outfit', name: '옷', basic: '기본 털옷' },
+  { id: 'outfit', name: '옷', basic: '초록 가디건' },
   { id: 'accessory', name: '소품', basic: '소품 없이' },
   { id: 'background', name: '산책길', basic: '햇살 공원' },
 ] as const;
@@ -43,7 +43,7 @@ export type Look = Record<HeartCategory, LookId | null>;
 export type LookChanges = Partial<Look>;
 export type WardrobeItem = { id: LookId; name: string; category: HeartCategory; price?: number; unlockDays?: number | null };
 
-export const STARTER_LOOK: Look = { hat: 'berry-beret', outfit: 'dungarees', accessory: null, background: 'blossom' };
+export const STARTER_LOOK: Look = { hat: null, outfit: null, accessory: null, background: 'blossom' };
 const allItems: readonly WardrobeItem[] = [...STARTER_ITEMS, ...HEART_ITEMS];
 export const LOCAL_WARDROBE_ITEMS: readonly WardrobeItem[] = [
   ...STARTER_ITEMS,

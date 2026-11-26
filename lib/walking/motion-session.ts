@@ -1,3 +1,4 @@
+import { kstDate } from "@/lib/judge/time";
 import { MotionStepDetector, type MotionSample } from './motion-detector';
 import { listenToMotion, requestMotionAccess } from './motion-input';
 import { openMotionDiary, readMotionWalks, retryMotionWalk, updateRecorder, type MotionWalk } from './motion-diary';
@@ -33,7 +34,7 @@ export class BrowserWalkSession {
   private disposed = false;
   private unsaved?: MotionWalk;
 
-  constructor(private readonly render: (screen: WalkScreen) => void) {
+  constructor(private readonly render: (screen: WalkScreen) => void, private readonly owner?: string) {
     document.addEventListener('visibilitychange', this.visibility);
     window.addEventListener('pagehide', this.hide);
     window.addEventListener('pageshow', this.refresh);
@@ -52,7 +53,7 @@ export class BrowserWalkSession {
   }
 
   refresh = async () => {
-    try { this.show({ walks: await readMotionWalks(await this.database()), history: 'ready' }); }
+    try { this.show({ walks: await readMotionWalks(await this.database(), this.owner), history: 'ready' }); }
     catch { this.show({ history: 'error' }); }
   };
 
@@ -78,7 +79,7 @@ export class BrowserWalkSession {
       }
       if (!claimed) { this.show({ phase: 'occupied' }); return; }
       const now = Date.now();
-      const run: Recording = { db, walk: { id, source: 'device-motion', startedAt: now, lastStepAt: now, steps: 0 },
+      const run: Recording = { db, walk: { id, ...(this.owner && { owner: this.owner }), source: 'device-motion', startedAt: now, lastStepAt: now, steps: 0 },
         detector: new MotionStepDetector(), lastSignal: performance.now(), sampled: false, timer: 0, pending: Promise.resolve() };
       this.run = run;
       this.show({ phase: 'waiting' });
@@ -111,13 +112,16 @@ export class BrowserWalkSession {
     else if (this.screen.phase === 'quiet') this.show({ phase: 'measuring' });
     const steps = run.detector.sample(time, sample);
     if (!steps) return;
-    const walk = { ...run.walk, steps: run.walk.steps + steps, lastStepAt: Date.now() };
+    const lastStepAt = Date.now();
+    const day = kstDate(new Date(lastStepAt));
+    const dailySteps = { ...run.walk.dailySteps, [day]: (run.walk.dailySteps?.[day] ?? 0) + steps };
+    const walk = { ...run.walk, steps: run.walk.steps + steps, lastStepAt, dailySteps };
     run.walk = walk;
     // Queue the IDB transaction immediately. Screen counts follow the commit,
     // and pagehide/reload can only leave the last committed checkpoint.
     run.pending = updateRecorder(run.db, walk.id, 'renew', walk).then(held => {
       if (!held) { if (this.run === run) this.stop('occupied'); return; }
-      if (this.run === run || this.screen.phase === 'finishing') this.show({ steps: walk.steps });
+      if (this.run === run || this.screen.phase === 'finishing') this.show({ steps: walk.steps, walks: [walk, ...this.screen.walks.filter(item => item.id !== walk.id)] });
     }).catch(() => {
       this.unsaved = run.walk;
       this.show({ pendingSave: true, phase: 'storage-error' });
@@ -140,6 +144,7 @@ export class BrowserWalkSession {
       if (this.disposed || revision !== this.revision) return;
       this.show({ phase: this.unsaved ? 'storage-error' : phase });
       await this.refresh();
+      window.dispatchEvent(new Event('bapmunna:walk-saved'));
     });
   }
 
@@ -151,6 +156,7 @@ export class BrowserWalkSession {
       await retryMotionWalk(await this.database(), walk);
       this.unsaved = undefined;
       this.show({ phase: 'finished', steps: walk.steps, pendingSave: false });
+      window.dispatchEvent(new Event('bapmunna:walk-saved'));
       await this.refresh();
     } catch { this.show({ phase: 'storage-error' }); }
   }

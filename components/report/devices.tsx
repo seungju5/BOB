@@ -14,7 +14,7 @@ import type { AppView } from "@/lib/data/view";
 import { Bar, ReportCard } from "./parts";
 
 export type DeviceKind = "rice_cooker" | "microwave" | "fridge" | "kettle";
-export type ReportProps = { view: AppView; now: Date };
+export type ReportProps = { view: AppView; now: Date; endDate?: string; periodLabel?: string };
 export type ReportSection = { id: string; Body: ComponentType<ReportProps> };
 export type DeviceReport = {
   kind: DeviceKind;
@@ -26,9 +26,9 @@ export type DeviceReport = {
 
 /* ───────── 밥솥 ───────── */
 
-function CookerUsageSection({ view, now }: ReportProps) {
-  const u = cookerUsage(view, now);
-  if (u.cook === null) return <ReportCard title="밥솥 사용" aside="최근 7일">
+function CookerUsageSection({ view, now, endDate, periodLabel = "최근 7일" }: ReportProps) {
+  const u = cookerUsage(view, now, endDate);
+  if (u.cook === null) return <ReportCard title="밥솥 사용" aside={periodLabel}>
     <p className="mt-3 text-sm text-muted">이 기간에 기록된 밥솥 사용 횟수가 없어요.</p>
   </ReportCard>;
   const max = Math.max(1, ...u.perDay.map((d) => d.cook ?? 0));
@@ -36,12 +36,12 @@ function CookerUsageSection({ view, now }: ReportProps) {
   const scale = Math.max(u.cook, u.cookWeeklyBefore ?? 0, u.cooksPerWeekTold, 1);
   const vsBefore = !view.cookerMealDays && u.recordedDays === 7 && u.cookWeeklyBefore !== null ? u.cook - u.cookWeeklyBefore : null;
   return (
-    <ReportCard title="밥솥 사용" aside="최근 7일">
+    <ReportCard title="밥솥 사용" aside={periodLabel}>
       <div className="mt-3 grid grid-cols-2 gap-2">
         <Stat label="취사 신호" value={`${u.cook}번`} />
         <Stat label="뚜껑 연 횟수" value={view.mealProfile.usesKeepWarm && u.lid !== null ? `${u.lid}번` : "미측정"} hint={view.mealProfile.usesKeepWarm ? undefined : "보온을 안 쓰셔서 알 수 없어요"} />
       </div>
-      <p className="mt-2 text-xs text-muted">어제까지 7일 중 기록이 있는 {u.recordedDays}일의 합계예요.</p>
+      <p className="mt-2 text-xs text-muted">선택한 7일 중 기록이 있는 {u.recordedDays}일의 합계예요.</p>
       {estimated > 0 && <p className="mt-3 rounded-xl border border-dashed border-cocoa/40 px-3 py-2 text-sm text-cocoa">이 기간 전력 변화로 추정한 취사도 {estimated}회 있었어요. 날짜별 시간대는 식사 기록에서 볼 수 있어요.</p>}
       <div className="mt-4 flex h-20 items-end gap-1.5" aria-label="하루별 밥 지은 횟수">
         {u.perDay.map((d) => (
@@ -51,7 +51,7 @@ function CookerUsageSection({ view, now }: ReportProps) {
           </div>
         ))}
       </div>
-      <Bar label={`최근 기록 ${u.recordedDays}일 합계`} pct={(u.cook / scale) * 100} value={`${u.cook}번`} strong />
+      <Bar label={`기록된 ${u.recordedDays}일 합계`} pct={(u.cook / scale) * 100} value={`${u.cook}번`} strong />
       {view.partialCookerHistory ? <p className="mt-2 text-xs text-muted">일부 시점만 측정한 날이 있어 평소 취사 횟수와 비교하기 어려워요.</p> : u.cookWeeklyBefore === null ? <p className="mt-2 text-xs text-muted">이전 4주 기록이 부족해 주 평균을 계산할 수 없어요.</p> : <Bar label="평소 (이전 4주 주 평균)" pct={u.cookWeeklyBefore / scale * 100} value={`${u.cookWeeklyBefore}번`} />}
       <Bar label="알려 주신 평소 횟수" pct={(u.cooksPerWeekTold / scale) * 100} value={`주 ${u.cooksPerWeekTold}번`} />
       {vsBefore !== null && Math.abs(vsBefore) >= 2 ? (
@@ -63,8 +63,8 @@ function CookerUsageSection({ view, now }: ReportProps) {
   );
 }
 
-function EnergySection({ view, now }: ReportProps) {
-  const e = energyUsage(view, now);
+function EnergySection({ view, now, endDate }: ReportProps) {
+  const e = energyUsage(view, now, endDate);
   if (!e) {
     return (
       <ReportCard title="전기 사용량·요금" aside="준비 중">
@@ -76,7 +76,7 @@ function EnergySection({ view, now }: ReportProps) {
     );
   }
   return (
-    <ReportCard title="전기 사용량·요금" aside={`최근 ${e.days}일`}>
+    <ReportCard title="전기 사용량·요금" aside={`기록 ${e.days}일`}>
       <div className="mt-3 grid grid-cols-2 gap-2">
         <Stat label="사용량" value={`${e.kwh} kWh`} />
         <Stat label="예상 요금" value={`약 ${e.won.toLocaleString("ko-KR")}원`} />

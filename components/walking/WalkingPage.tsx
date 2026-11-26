@@ -14,7 +14,7 @@ export function WalkingPage(){
   const account=useFirebaseAccount(WALKING_SHARING_READY);
   return <main className="bapmunna-walking">
     <header className="walking-header"><Logo/><Link href="/more" className="walking-back">메뉴로</Link></header>
-    <div className="walking-hero"><div><span className="walking-eyebrow">한 걸음씩, 함께</span><h1>내 휴대폰<br/>걸음수 연결</h1><p>가족끼리 나누고,<br/>순위는 따로 선택해요.</p></div><Mascot className="h-28 w-28 shrink-0"/></div>
+    <div className="walking-hero"><div><span className="walking-eyebrow">한 걸음씩, 함께</span><h1>내 휴대폰<br/>걸음수 연결</h1><p>가족끼리 나누고,<br/>순위는 따로 선택해요.</p></div><Mascot variant="bunny" className="h-28 w-28 shrink-0"/></div>
     <Link className="walking-text-link" href="/walking">오늘의 산책으로 돌아가기</Link>
     {!WALKING_SHARING_READY?<section className="walking-card"><h2 className="walking-heading">가족과 걸음수 공유를 준비하고 있어요</h2><p>휴대폰에서 내 산책을 측정하고 이 기기에 기록할 수 있어요.</p><Link className="walking-primary" href="/walking/steps/">내 걸음 측정</Link><DemoLink/><Link className="walking-text-link" href="/walking/ranking-demo">걸음수 순위 예시 보기</Link><Link className="walking-text-link" href="/health">휴대폰 걸음수 안내</Link></section>
     :account.loading?<p role="status" className="walking-card">내 계정을 확인하고 있어요…</p>

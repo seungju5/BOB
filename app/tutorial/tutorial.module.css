@@ -25,8 +25,7 @@
 }
 .controls { display: grid; margin: .8rem var(--gutter) max(1rem, env(safe-area-inset-bottom)); }
 
-.exampleActions { display: grid; }
-.exampleActions li { display: flex; align-items: center; gap: .85rem; padding: .65rem .3rem; font-size: 1.25rem; }
-.exampleActions li + li { border-top: 1px solid var(--color-line); }
-.exampleActions [data-tone="away"] span { background: var(--color-sky); color: var(--color-sky-deep); }
-.exampleActions [data-tone="help"] span { background: var(--color-blush); color: var(--color-blush-deep); }
+.exampleActions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .4rem; }
+.exampleActions li { display: grid; justify-items: center; align-content: center; gap: .35rem; min-height: 5rem; padding: .5rem .15rem; border-radius: 1rem; background: #fff0bc; font-size: 1.06rem; }
+.exampleActions [data-tone="away"] { background: #f4eddc; }
+.exampleActions [data-tone="help"] { background: #f5e4df; }

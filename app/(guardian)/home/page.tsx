@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { ImpactConnectionLinks } from "@/components/ImpactConnectionLinks";
 import { ALERT_PRIORITY, ALERT_TONE, alertCopy, AlertShortcut, fmtDateLong, hasAlertCall, withWa } from "@/components/guardian";
-import { IconArrowRight, IconBell, IconChart, IconClock, IconPhone, IconSuitcase } from "@/components/icons";
+import { IconArrowRight, IconBell, IconClock, IconPhone, IconSuitcase } from "@/components/icons";
 import { Logo } from "@/components/Mascot";
 import { HomeLoadingCompanion } from "@/components/companions/CookerCompanion";
 import { HomeMealWeek } from "@/components/HomeMealWeek";
@@ -11,7 +11,7 @@ import { buttonClass, Skeleton } from "@/components/ui";
 import { countMissedMeals } from "@/lib/judge/evaluateAlerts";
 import { kstDate } from "@/lib/judge/time";
 import { useApp } from "@/lib/data/useApp";
-import { recentSlots, reportSummary, unackedAlerts } from "@/lib/data/view";
+import { recentSlots, unackedAlerts } from "@/lib/data/view";
 
 export default function HomePage() {
   const { view, now, actions } = useApp();
@@ -29,7 +29,6 @@ export default function HomePage() {
 
   const today = kstDate(now);
   const relation = view.senior.relation;
-  const report = reportSummary(view, now);
   const away = view.absences.find((a) => a.startDate <= today && today <= a.endDate);
   const alerts = unackedAlerts(view).sort((a, b) => ALERT_PRIORITY.indexOf(a.type) - ALERT_PRIORITY.indexOf(b.type));
   // Weekly reports stay in the notification inbox; keep urgent notices on home.
@@ -47,7 +46,7 @@ export default function HomePage() {
     : null;
 
   return (
-    <main className="flex flex-col px-5 pt-4 pb-8">
+    <main className="flex flex-col px-5 pt-4 pb-6">
       <header className="flex flex-wrap items-center justify-between gap-2">
         <Logo />
         <Link href="/alerts" aria-label={alerts.length > 0 ? `미확인 알림 ${alerts.length}개 확인하기` : "알림 확인하기"} className="relative flex min-h-12 items-center gap-1.5 rounded-full border border-line px-3 text-[16px] font-bold text-cocoa">
@@ -100,15 +99,6 @@ export default function HomePage() {
         </Link>
       </section>
 
-      <Link href="/report" className={`mt-6 block border-y border-line py-4 hover:bg-cream ${report?.trend === "down" ? "text-blush-deep" : "text-cocoa"}`}>
-        <div className="flex items-center justify-between gap-2">
-          <h2 className="inline-flex items-center gap-2 text-[18px] font-bold"><IconChart aria-hidden className="h-5 w-5" />최근 7일 리포트</h2>
-          <IconArrowRight aria-hidden className="h-5 w-5 shrink-0" />
-        </div>
-        {report ? (
-          <p className="mt-2 text-[17px] text-cocoa">끼니 확인율 <strong>{report.r}%</strong> · {report.message}</p>
-        ) : <p className="mt-1 text-[16px] leading-relaxed text-muted">일주일 넘게 기록이 쌓이면 평소와 비교해 드려요.</p>}
-      </Link>
       <ImpactConnectionLinks compact />
     </main>
   );

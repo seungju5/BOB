@@ -1,11 +1,16 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { Suspense, useEffect, useRef, useState } from 'react';
+import { useMode } from '@/lib/data/mode';
+import { useFirebaseAccount } from '@/lib/data/firebase';
 import { Logo } from '@/components/Mascot';
 import { IconChevronLeft, IconClock, IconSmartphone } from '@/components/icons';
 import { BrowserWalkSession, initialWalkScreen, type WalkPhase } from '@/lib/walking/motion-session';
-import type { MotionWalk } from '@/lib/walking/motion-diary';
+import { useNow } from '@/lib/demo/store';
+import { kstDate } from '@/lib/judge/time';
+import { motionStepsOn, type MotionWalk } from '@/lib/walking/motion-diary';
 import styles from './motion-walk.module.css';
 
 const messages: Record<WalkPhase, string> = {
@@ -33,20 +38,47 @@ function HistoryRow({ walk }: { walk: MotionWalk }) {
 }
 
 export function MotionWalkPage() {
+  return <Suspense fallback={<p role="status">산책 기록을 확인하고 있어요.</p>}><MotionWalkScope /></Suspense>;
+}
+
+function MotionWalkScope() {
+  const params = useSearchParams();
+  const mode = useMode();
+  const deviceOnly = params.get('local') === '1';
+  const account = useFirebaseAccount(!deviceOnly && mode === 'live');
+  if (!deviceOnly && (mode === undefined || (mode === 'live' && account.loading))) {
+    return <p role="status">산책 기록을 확인하고 있어요.</p>;
+  }
+  if (!deviceOnly && mode === 'live' && (!account.user?.verified || !account.profile)) {
+    return <main className="grid gap-4 p-6"><h1 className="text-2xl font-bold">내 걸음 측정</h1>
+      <Link href="/login/" className="min-h-12 underline">내 계정으로 로그인</Link>
+      <Link href="/walking/steps/?local=1" className="min-h-12 underline">이 기기에서만 측정하기</Link></main>;
+  }
+  const owner = !deviceOnly && mode === 'live' ? account.user?.uid : undefined;
+  return <WalkRecorder key={owner ?? 'local'} owner={owner} />;
+}
+
+function WalkRecorder({ owner }: { owner?: string }) {
   const [view, setView] = useState(initialWalkScreen);
+  const now = useNow();
+  const todayCount = now ? motionStepsOn(view.walks, kstDate(now)) : null;
   const [showAll, setShowAll] = useState(false);
   const session = useRef<BrowserWalkSession | null>(null);
   useEffect(() => {
-    const current = new BrowserWalkSession(setView);
+    const current = new BrowserWalkSession(setView, owner);
     session.current = current;
     return () => { current.dispose(); session.current = null; };
-  }, []);
+  }, [owner]);
   const recording = view.phase === 'waiting' || view.phase === 'measuring' || view.phase === 'quiet';
   const busy = view.phase === 'permission' || view.phase === 'finishing';
   const complete = view.phase === 'hidden' || view.phase === 'finished' || view.phase === 'no-signal';
   return <main className={styles.page}>
     <header className={styles.header}><Link href="/" aria-label="밥뭇나 홈"><Logo/></Link><Link href="/walking/"><IconChevronLeft aria-hidden/>워밍이의 산책</Link></header>
-    <h1>내 걸음 측정</h1>
+    <h1>오늘의 걸음</h1>
+    <section aria-label="오늘 저장한 걸음" className={styles.daily}>
+      <p>{view.history === 'loading' ? '기록을 확인하고 있어요.' : view.history === 'error' ? '산책 기록을 열 수 없어요.' : todayCount === null ? '오늘 측정해 저장한 산책이 아직 없어요.' : <><strong>{todayCount.toLocaleString('ko-KR')}걸음</strong> · 오늘 산책 합계</>}</p>
+      <span>이 휴대폰에서 측정한 걸음 · 한국 시간 기준</span>
+    </section>
     <p className={styles.intro}>산책 화면을 열어 둔 동안 휴대폰의 움직임으로 걸음을 세요. 화면을 잠그거나 다른 앱으로 가면 측정이 멈춰요.</p>
     <section className={styles.counter} aria-labelledby="motion-walk-count-title">
       <div className={styles.source}><IconSmartphone aria-hidden/>내 휴대폰 센서</div>
@@ -63,7 +95,7 @@ export function MotionWalkPage() {
     </section>
     <section className={styles.history} aria-labelledby="motion-history-title">
       <h2 id="motion-history-title"><IconClock aria-hidden/>내 산책 기록</h2>
-      <p>날짜와 걸음수는 이 기기의 밥뭇나에 저장해요.</p>
+      <p>{owner ? "이 기기에서 내 계정으로 측정한 산책이에요." : "가족에게 공유하지 않는 이 기기의 산책이에요."}</p>
       {view.history === 'loading' ? <p>기록을 불러오고 있어요.</p> : view.history === 'error' ? <p>기록을 열 수 없어요. <button type="button" className={styles.textButton} onClick={() => void session.current?.refresh()}>다시 확인</button></p>
         : view.walks.length ? <><ul>{(showAll ? view.walks : view.walks.slice(0, 4)).map(walk => <HistoryRow key={walk.id} walk={walk}/>)}</ul>
           {view.walks.length > 4 && <button type="button" className={styles.textButton} onClick={() => setShowAll(!showAll)}>{showAll ? '최근 기록만 보기' : '전체 산책 보기'}</button>}</>

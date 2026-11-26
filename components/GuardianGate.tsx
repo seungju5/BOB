@@ -30,7 +30,7 @@ function GuardianSession({children}: {children: ReactNode}) {
   const needsRealAccount = (fromNotice || (recordDay && query.get("account") === "mine")) && view?.mode === "demo";
   const owner = pushOwner(accountKey);
   // A verified household can open its own dated record without filling in optional family details.
-  const householdPage = (!!recordDay || path.replace(/\/$/, "") === "/alerts") &&
+  const householdPage = (!!recordDay || ["/alerts", "/report"].includes(path.replace(/\/$/, ""))) &&
     view?.mode === "live" && view.dataSource === "firebase" && view.seniorConsent;
   useAlertNotifications(view, accountKey);
   useEffect(() => {

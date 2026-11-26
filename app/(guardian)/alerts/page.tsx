@@ -7,7 +7,7 @@ import { DevicePushSettings } from "@/components/DevicePushSettings";
 import { pushOwner } from "@/lib/push-device";
 import { IconArrowRight, IconBell, IconChart, IconCheck } from "@/components/icons";
 import { PageHeader, Skeleton } from "@/components/ui";
-import { kstDate, kstTime } from "@/lib/judge/time";
+import { addDays, kstDate, kstTime } from "@/lib/judge/time";
 import { useApp } from "@/lib/data/useApp";
 import { PowerNotice } from "@/components/SmartThingsAccountCard";
 import { unackedAlerts } from "@/lib/data/view";
@@ -20,6 +20,13 @@ export default function AlertsPage() {
   const reports = alerts.filter((a) => a.type === "weekly_report");
   const visibleAlerts = filter === "reports" ? reports : filter === "unread" ? unread : alerts;
 
+  const [receiptError, setReceiptError] = useState(false);
+  async function acknowledge(id?: string) {
+    try {
+      if (id) await actions.ackAlert(id); else await actions.ackAll();
+      setReceiptError(false);
+    } catch { setReceiptError(true); }
+  }
   const opened = useRef("");
   useEffect(() => {
     const hash = window.location.hash;
@@ -34,7 +41,7 @@ export default function AlertsPage() {
         title="알림"
         right={
           unread.length > 0 ? (
-            <button className="text-sm font-semibold text-cocoa/70" onClick={() => void actions.ackAll()}>
+            <button className="text-sm font-semibold text-cocoa/70" onClick={() => void acknowledge()}>
               모두 확인
             </button>
           ) : null
@@ -58,6 +65,7 @@ export default function AlertsPage() {
             </button>
           ))}
         </div>
+        {receiptError && <p role="alert" className="text-blush-deep">확인 상태를 저장하지 못했어요. 다시 눌러 주세요.</p>}
         {view?.mode === "live" && view.plug.powerNoticeAt && <PowerNotice at={view.plug.powerNoticeAt}/>}
         {!view ? (
           <Skeleton className="h-24" />
@@ -96,11 +104,11 @@ export default function AlertsPage() {
                       <IconCheck className="h-4 w-4" /> 확인함
                     </span>
                   ) : (
-                    <button className="h-9 rounded-full bg-cocoa px-4 font-bold text-paper" onClick={() => void actions.ackAlert(a.id)}>
+                    <button className="h-9 rounded-full bg-cocoa px-4 font-bold text-paper" onClick={() => void acknowledge(a.id)}>
                       확인했어요
                     </button>
                   )}
-                  <AlertShortcut type={a.type} relation={view.senior.relation} phone={view.senior.phone} />
+                  <AlertShortcut type={a.type} relation={view.senior.relation} phone={view.senior.phone} reportEnd={a.type === "weekly_report" ? a.payload?.endDate ?? addDays(kstDate(t), -1) : undefined} />
                   {a.resolvedAt ? <span className="text-muted">상황 해제됨</span> : null}
                 </div>
               </article>

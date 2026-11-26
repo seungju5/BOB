@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import Link from "next/link";
 import { isPhoneStepsNativeAvailable, PhoneSteps } from "@bapmunna/phone-steps";
 import { Capacitor } from "@capacitor/core";
 import { Button } from "@/components/ui";
@@ -9,6 +8,7 @@ import { SeniorSheet } from "./SeniorSheet";
 import { emptySteps, stepsMessage } from "@/lib/steps/state";
 import { createStepsSession, type StepsView } from "@/lib/steps/session";
 import { seniorPhoneSteps } from "@/lib/steps/consent";
+import { MotionSummaryLink } from "@/components/walking/MotionSummaryLink";
 import { HealthConnectionLink } from "./HealthConnectionLink";
 
 const subscribePlatform = () => () => {};
@@ -70,6 +70,11 @@ function LivePhoneStepsCard({ localOnly }: { localOnly: boolean }) {
   const openSettings = () => { setSettingsError(false); void seniorPhoneSteps.openSettings().catch(() => setSettingsError(true)); };
   const checkedTime = snapshot.updatedAt ? new Intl.DateTimeFormat("ko", { hour: "2-digit", minute: "2-digit", timeZone: snapshot.timeZone }).format(new Date(snapshot.updatedAt)) : null;
 
+  if (!nativeShell && !busy) return <section aria-label="내 걸음" className="rounded-3xl border border-line bg-paper px-4 py-2">
+    <MotionSummaryLink />
+    <details><summary className="min-h-12 cursor-pointer py-3 text-lg font-semibold text-muted">건강 앱 걸음수 연결</summary><HealthConnectionLink /></details>
+  </section>;
+
   return <section className="rounded-3xl border border-line bg-paper p-5" aria-labelledby="phone-steps-title">
     <div className="flex items-center gap-3">
       <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth="2" className="h-8 w-8 shrink-0 text-cocoa" aria-hidden><path d="M11 3c-3 0-5 5-4 8s6 2 7-1S14 3 11 3Zm-1 13c-3 0-4 2-3 4s4 2 5 0 1-4-2-4Zm12-5c3 0 5 5 4 8s-6 2-7-1-1-7 3-7Zm0 13c3 0 4 2 3 4s-4 2-5 0-1-4 2-4Z" /></svg>
@@ -82,7 +87,6 @@ function LivePhoneStepsCard({ localOnly }: { localOnly: boolean }) {
         {snapshot.source ? <p className="mt-2 text-2xl text-muted">{snapshot.source === "ios-healthkit" ? "Apple 건강" : "삼성 헬스"}{checkedTime ? ` · ${checkedTime}에 확인` : ""}</p> : null}
       </>}
     </div>
-    {!nativeShell && !busy ? <><Link href="/walking/steps/" className="mt-4 flex min-h-16 items-center justify-center rounded-3xl bg-sage px-4 text-2xl font-bold text-sage-deep">내 걸음 측정</Link><HealthConnectionLink /></> : null}
     {nativeShell && !native ? <p role="alert" className="mt-3 text-2xl text-muted">앱의 건강 연결 기능을 시작하지 못했어요. 최신 설치 파일인지 확인해 주세요.</p> : null}
     {canConnect ? <Button onClick={() => setConsent(true)} disabled={busy} className="mt-4 min-h-14 text-2xl">걸음수 연결</Button> : null}
     {canOpenSettings ? <Button variant="outline" onClick={openSettings} disabled={busy} className="mt-4 min-h-14 text-2xl">{snapshot.reason === "health-connect-update-required" ? "Health Connect 설치·업데이트" : "휴대폰 설정 열기"}</Button> : null}

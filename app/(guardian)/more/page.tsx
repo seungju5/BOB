@@ -6,23 +6,21 @@ import { ImpactConnectionLinks } from "@/components/ImpactConnectionLinks";
 import { Logo, Mascot } from "@/components/Mascot";
 import { IconArrowRight, IconBell, IconChart, IconSettings } from "@/components/icons";
 import { useApp } from "@/lib/data/useApp";
-import { unackedAlerts } from "@/lib/data/view";
 
 export default function MorePage() {
   const { view, operator } = useApp();
-  const count = view ? unackedAlerts(view).length : 0;
   return <main className="flex flex-1 flex-col px-6 py-6">
     <Logo />
     <h1 className="mt-7 text-[30px] font-extrabold text-cocoa">더보기</h1>
     <div className="mt-6 overflow-hidden rounded-[1.75rem] border border-line">
       {[
-        { href: view?.mode === 'demo' ? '/walking/demo' : '/walking', label: '워밍이의 산책', detail: view?.mode === 'demo' ? '예시 산책 하트와 가족 응원' : '내 걸음을 측정하고 워밍이 옷장을 열어요', Icon: IconChart },
-        { href: "/alerts", label: "받은 알림", detail: count ? `확인할 소식 ${count}개` : null, Icon: IconBell },
-        { href: "/report", label: "패턴 리포트", detail: null, Icon: IconChart },
-        { href: "/settings", label: "생활·알림 설정", detail: "식사 시간, 가족 연결과 계정", Icon: IconSettings },
-      ].map(({ href, label, detail, Icon }) => <Link key={href} href={href} className="flex min-h-24 items-center gap-4 border-b border-line px-5 py-5 last:border-0 hover:bg-butter-soft">
-        <Icon className="h-6 w-6 shrink-0 text-cocoa" />
-        <span className="flex-1"><strong className="block text-[18px] text-cocoa">{label}</strong>{detail && <span className="mt-1 block text-[16px] text-muted">{detail}</span>}</span>
+        { href: view?.mode === 'demo' ? '/walking/demo' : '/walking/#trail', label: '워밍이의 산책', Icon: IconChart },
+        { href: "/alerts", label: "받은 알림", Icon: IconBell },
+        { href: "/report", label: "패턴 리포트", Icon: IconChart },
+        { href: "/settings", label: "생활 알림 설정", Icon: IconSettings },
+      ].map(({ href, label, Icon }) => <Link key={href} href={href} className="flex min-h-16 items-center gap-4 border-b border-line px-5 py-4 last:border-0 hover:bg-butter-soft">
+        <Icon aria-hidden className="h-6 w-6 shrink-0 text-cocoa" />
+        <strong className="flex-1 text-[18px] text-cocoa">{label}</strong>
         <IconArrowRight className="h-5 w-5 shrink-0 text-muted" />
       </Link>)}
     </div>

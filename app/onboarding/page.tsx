@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { AlertThresholdFields, missedMealsHint, Choice, Field, MealWindowsEditor, RelationPicker, Slider, TextInput, useMealWindowDraft, windowsValid } from "@/components/forms";
+import { AlertThresholdFields, missedMealsHint, Choice, Field, MealCountPicker, MealWindowsEditor, RelationPicker, Slider, TextInput, useMealWindowDraft, windowsValid } from "@/components/forms";
 import { IconCheck, IconInfo } from "@/components/icons";
 import { SeniorConsentField } from "@/components/privacy/SeniorConsentField";
 import { Mascot } from "@/components/Mascot";
@@ -12,7 +12,7 @@ import { HouseholdSummary } from "@/components/onboarding/HouseholdSummary";
 import { seniorDetailsProblems } from "@/components/onboarding/settings-validation";
 import { Button, ProgressBar, Skeleton } from "@/components/ui";
 import { useApp } from "@/lib/data/useApp";
-import { HOUSEHOLD_STEP, MAX_MEALS, ONBOARDING_COMPLETE, careDataAvailable, visibleOnboardingStep, type AppActions, type AppView, type OnboardingPatch } from "@/lib/data/view";
+import { HOUSEHOLD_STEP, ONBOARDING_COMPLETE, careDataAvailable, visibleOnboardingStep, type AppActions, type AppView, type OnboardingPatch } from "@/lib/data/view";
 
 const TITLES: Record<number, string> = {
   3: "누구의 안부가\n듣고 싶으세요?",
@@ -115,7 +115,7 @@ function MealStep({ state, next }: StepProps) {
     <>
       <div className="flex flex-col gap-5">
         <Field label="하루 평균 끼니 수" htmlFor="onboarding-meal-count" hint="평소 드시는 횟수만큼 홈에 식사 시간대가 생겨요.">
-          <Slider id="onboarding-meal-count" value={meals} min={1} max={MAX_MEALS} unit="끼" label="하루 평균 끼니 수" onChange={setMeals} />
+          <MealCountPicker id="onboarding-meal-count" value={meals} label="하루 평균 끼니 수" onChange={setMeals} />
         </Field>
         <Field
           label="주로 드시는 시간대"

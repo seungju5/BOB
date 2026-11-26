@@ -1,16 +1,15 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useRef, useState, type ReactNode } from "react";
-import { IconArrowRight, IconCheck, IconHeart, IconHome, IconSuitcase, IconUtensils } from "@/components/icons";
+import { IconCheck, IconHeart, IconHome, IconSuitcase, IconUtensils } from "@/components/icons";
 import { Logo } from "@/components/Mascot";
 import { Button, Skeleton } from "@/components/ui";
 import { SeniorSheet as Sheet } from "@/components/senior/SeniorSheet";
+import { RabbitBurrow } from "@/components/walking/RabbitBurrow";
 import { PhoneStepsCard } from "@/components/senior/PhoneStepsCard";
-import { HealthConnectionLink } from "@/components/senior/HealthConnectionLink";
 import { seniorActionMessage } from "@/components/senior/messages";
-import { appPath } from "@/lib/app-path";
+import { WalkingGreeting } from "@/components/senior/WalkingGreeting";
 import "@/components/senior/senior-home.css";
 import { addDays, kstDate } from "@/lib/judge/time";
 import type { Absence } from "@/lib/judge/types";
@@ -23,8 +22,7 @@ export default function SeniorPage() {
   const senior = useSenior();
   const now = useNow();
   if (senior.token === undefined || !now) return <Loading />;
-  if (!senior.paired) return <Pairing pair={senior.pair} startDemo={senior.startDemo} canPair={senior.canPair} />;
-  if (!senior.status) return senior.error ? (
+  if (senior.paired && !senior.status) return senior.error ? (
     <main className="flex flex-1 flex-col gap-5 p-6">
       <Logo />
       <p role="alert" className="text-2xl font-bold text-cocoa">{senior.error}</p>
@@ -32,7 +30,7 @@ export default function SeniorPage() {
       <Button variant="outline" className="min-h-16 text-2xl" onClick={senior.disconnect}>다시 연결하기</Button>
     </main>
   ) : <Loading />;
-  return <SeniorHome key={senior.token} status={senior.status} now={now} act={senior.act} isDemo={senior.isDemo} endDemo={senior.disconnect} />;
+  return <SeniorHome key={senior.token} status={senior.status} now={now} act={senior.act} isDemo={senior.isDemo} endDemo={senior.disconnect} startDemo={senior.startDemo} pairing={<Pairing pair={senior.pair} startDemo={senior.startDemo} canPair={senior.canPair} />} />;
 }
 
 function Loading() {
@@ -61,11 +59,10 @@ function Pairing({ pair, startDemo, canPair }: { pair: (code: string) => Promise
     }
   };
   return (
-    <main className="flex flex-1 flex-col px-6 pt-8 pb-8">
-      <Logo />
-      <h1 className="mt-7 text-[30px] leading-snug font-extrabold text-cocoa">
-        {canPair ? <>가족에게 받은 숫자<br />6자리를 입력해 주세요</> : <>어르신 화면을<br />체험해 보세요</>}
-      </h1>
+    <div>
+      <h2 className="text-[28px] leading-snug font-bold text-cocoa">
+        {canPair ? <>가족에게 받은 숫자<br />6자리를 입력해 주세요</> : "가족에게 소식 전하기"}
+      </h2>
       {canPair ? <>
         <input
         inputMode="numeric"
@@ -84,31 +81,29 @@ function Pairing({ pair, startDemo, canPair }: { pair: (code: string) => Promise
         <Button onClick={submit} disabled={busy || code.length !== 6} className="mt-6 min-h-16 text-2xl">
           {busy ? "연결하는 중…" : "가족과 연결하기"}
         </Button>
-      </> : <p className="mt-4 text-xl leading-relaxed text-muted">가족 연결은 준비 중이에요.</p>}
+      </> : <p className="mt-4 text-xl leading-relaxed text-muted">이 휴대폰의 가족 연결을 준비하고 있어요. 급한 일은 가족에게 직접 전화해 주세요.</p>}
       <div className="mt-6">
         <Button variant={canPair ? "outline" : "dark"} onClick={startDemo} disabled={busy} className="min-h-16 text-2xl">어르신 홈 체험하기</Button>
         <p className="mt-2 text-xl leading-relaxed text-muted">체험 중에는 가족에게 소식을 보내지 않아요.</p>
       </div>
-      <div className="mt-8 border-t border-line pt-5">
-        <p className="text-xl leading-relaxed text-muted">가족 연결 전에도 산책과 걸음수를 이용할 수 있어요.</p>
-        <HealthConnectionLink />
-        <Link href="/walking" className="mt-3 flex min-h-16 items-center justify-center rounded-2xl border-2 border-line px-4 py-3 text-center text-2xl font-bold text-cocoa">워밍이의 산책과 옷장</Link>
-      </div>
-    </main>
+    </div>
   );
 }
 
-type SheetKind = "eat_out" | "away" | "help" | null;
+type SheetKind = "eat_out" | "away" | "help" | "pair" | "steps" | null;
 type Act = (op: SeniorOp, days?: number, when?: SeniorWhen) => Promise<void>;
 
-function SeniorHome({ status, now, act, isDemo, endDemo }: { status: SeniorStatus; now: Date; act: Act; isDemo: boolean; endDemo: () => void }) {
+function SeniorHome({ status, now, act, isDemo, endDemo, startDemo, pairing }: {
+  status: SeniorStatus | null; now: Date; act: Act; isDemo: boolean;
+  endDemo: () => void; startDemo: () => void; pairing: ReactNode;
+}) {
   const [sheet, setSheet] = useState<SheetKind>(null);
   const [done, setDone] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const request = useRef(0);
   const today = kstDate(now);
-  const away = status.absence;
+  const away = status?.absence;
   const close = () => {
     request.current += 1;
     setSheet(null);
@@ -140,29 +135,35 @@ function SeniorHome({ status, now, act, isDemo, endDemo }: { status: SeniorStatu
         </Link>
       </header>
       <div className="bapmunna-senior-greeting">
-        <h1>{status.seniorName ? `${status.seniorName}님, 반가워요` : "오늘도 반가워요"}</h1>
+        <h1>{status?.seniorName && <>{status.seniorName}님,<br /></>}오늘도 반가워요.</h1>
       </div>
-
-      <section className="mt-6" aria-labelledby="senior-actions-title">
-        <h2 id="senior-actions-title" className="text-2xl font-bold text-cocoa">가족에게 어떤 소식을 전할까요?</h2>
-        {isDemo ? <p className="mt-1 text-lg leading-relaxed text-muted">예시 체험 중 · 가족에게 보내지 않아요.</p> : null}
-        {away ? <p className="mb-4 text-2xl text-sky-deep">{fmtDate(away.endDate)}까지 {isDemo ? "예시 외출 기간이에요." : "잘 다녀오세요."}</p> : null}
+      <section aria-label="가족에게 소식 전하기">
         <div className="bapmunna-senior-actions">
-          <BigButton label="외식했어요" tone="meal" icon={<IconUtensils />} onClick={() => setSheet("eat_out")} />
-          <BigButton label={away ? "외출·귀가 알리기" : "외출해요"} tone="away" icon={<IconSuitcase />} onClick={() => setSheet("away")} />
-          <BigButton label="도와줘요" tone="help" icon={<IconHeart />} onClick={() => setSheet("help")} />
+          <BigButton label="외식했어요" tone="meal" icon={<IconUtensils />} onClick={() => setSheet(status ? "eat_out" : "pair")} />
+          <BigButton label={away ? "귀가 알리기" : "놀러가요"} tone="away" icon={<IconSuitcase />} onClick={() => setSheet(status ? "away" : "pair")} />
+          <BigButton label="도와줘요" tone="help" icon={<IconHeart />} onClick={() => setSheet(status ? "help" : "pair")} />
         </div>
+        {away && <p className="mt-2 text-xl text-sky-deep">{fmtDate(away.endDate)}까지 {isDemo ? "예시 외출 기간이에요." : "외출 중이에요."}</p>}
+        {isDemo && <p className="mt-2 text-base text-muted">예시 체험 중 · 가족에게 보내지 않아요.</p>}
       </section>
-      <Link href={isDemo ? "/walking/demo" : "/walking"} className="mt-7 flex min-h-16 items-center justify-between gap-3 rounded-2xl bg-sage px-5 py-3 text-xl font-bold text-sage-deep">
-        {isDemo ? "워밍이 산책 하트 체험" : "워밍이의 산책과 옷장"}<IconArrowRight aria-hidden className="h-5 w-5 shrink-0" />
-      </Link>
-      <CookerNote received={status.hasCookSignalToday} />
-      <div className="mt-3"><PhoneStepsCard demo={isDemo} /></div>
-      <footer className="mt-6 flex flex-wrap items-center justify-between gap-2 border-t border-line pt-2">
+      <WalkingGreeting today={today} demo={isDemo} />
+      <div className="mt-auto flex justify-end pt-5">
+        <button type="button" className="rabbit-burrow-button" aria-label="오늘의 걸음 확인" aria-haspopup="dialog" onClick={() => setSheet("steps")}>
+          <RabbitBurrow /><span className="rabbit-burrow-label">오늘의 걸음</span>
+        </button>
+      </div>
+      <Sheet open={sheet === "steps"} onClose={close} label="오늘의 걸음">
+        <PhoneStepsCard demo={isDemo} localOnly={!status} />
+        {isDemo && <Link href="/walking/demo/" className="mt-3 flex min-h-14 items-center justify-center font-bold underline">예시 걸음 보기</Link>}
+        <Button variant="outline" onClick={close} className="mt-4 min-h-14">닫기</Button>
+      </Sheet>
+      <footer className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-line pt-2">
         <Link href="/privacy" className="flex min-h-12 items-center text-lg text-muted underline underline-offset-4">개인정보 이용·제공 안내</Link>
-        {isDemo ? <button type="button" className="min-h-12 rounded-lg px-2 text-lg font-semibold text-cocoa underline underline-offset-4" onClick={endDemo}>체험 끝내기</button> : null}
+        {isDemo ? <button type="button" className="min-h-12 text-lg font-semibold text-cocoa underline underline-offset-4" onClick={endDemo}>체험 끝내기</button>
+          : <button type="button" className="min-h-12 text-lg font-semibold text-cocoa underline underline-offset-4" onClick={startDemo}>어르신 홈 체험하기</button>}
       </footer>
 
+      <Sheet open={sheet === "pair"} onClose={close} label="가족 연결 안내">{pairing}<Button variant="ghost" onClick={close} className="mt-3 min-h-14">닫기</Button></Sheet>
       <Sheet open={sheet === "eat_out"} onClose={close} label="외식했어요">
         {done ? (
           <Done text={done} onClose={close} />
@@ -170,16 +171,16 @@ function SeniorHome({ status, now, act, isDemo, endDemo }: { status: SeniorStatu
           <>
             {isDemo ? <DemoNotice /> : null}
             <ErrorLine text={error} />
-            <EatOutChoices now={now} windows={status.mealWindows} yesterdayWindows={status.yesterdayMealWindows} busy={busy} onClose={close} run={run} />
+            <EatOutChoices now={now} windows={status?.mealWindows ?? []} yesterdayWindows={status?.yesterdayMealWindows} busy={busy} onClose={close} run={run} />
           </>
         )}
       </Sheet>
 
-      <Sheet open={sheet === "away"} onClose={close} label={away ? "외출·귀가 알리기" : "외출해요"}>
+      <Sheet open={sheet === "away"} onClose={close} label={away ? "귀가 알리기" : "놀러가요"}>
         {done ? (
           <Done text={done} onClose={close} />
         ) : (
-          <AwaySheet today={today} current={away} busy={busy} error={error} isDemo={isDemo} onClose={close} run={run} />
+          <AwaySheet today={today} current={away ?? null} busy={busy} error={error} isDemo={isDemo} onClose={close} run={run} />
         )}
       </Sheet>
 
@@ -207,21 +208,6 @@ function SeniorHome({ status, now, act, isDemo, endDemo }: { status: SeniorStatu
   );
 }
 
-function CookerNote({ received }: { received: boolean }) {
-  return (
-    <div className="bapmunna-cooker-note" data-received={received} role="status" aria-atomic="true">
-      <Image src={appPath("/brand/rice-mark.png")} width={160} height={160} unoptimized alt="" />
-      <div>
-        <h2>{received ? "오늘 취사 소식이 왔어요" : "취사 소식을 기다려요"}</h2>
-        <p>
-          <IconHeart fill={received ? "currentColor" : "none"} />
-          <span>{received ? "산책길 첫 하트로 이어져요." : "소식이 오면 산책길 첫 하트가 켜져요."}</span>
-        </p>
-      </div>
-    </div>
-  );
-}
-
 function ErrorLine({ text }: { text: string }) {
   return text ? <p role="alert" className="mt-3 text-2xl font-bold text-blush-deep">{text}</p> : null;
 }
@@ -235,7 +221,6 @@ function BigButton({ label, icon, onClick, tone }: { label: string; icon: ReactN
     <button type="button" aria-haspopup="dialog" className="bapmunna-senior-action" data-tone={tone} onClick={onClick}>
       <span className="bapmunna-senior-action-icon" aria-hidden>{icon}</span>
       <strong>{label}</strong>
-      <IconArrowRight aria-hidden className="h-5 w-5 shrink-0 text-muted" />
     </button>
   );
 }

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_WINDOWS, type AppView } from "@/lib/data/view";
 import type { MealSlot } from "@/lib/judge/types";
-import { cookerUsage, daysAgo, energyUsage, slotRates, WON_PER_KWH } from "@/lib/report/metrics";
+import { cookerUsage, dailyMeals, daysAgo, energyUsage, slotRates, WON_PER_KWH } from "@/lib/report/metrics";
 
 // 2026-11-12 정오(KST) 기준. 리포트는 어제까지 7일(11-05~11-11)을 본다.
 const NOW = new Date("2026-11-12T03:00:00Z");
@@ -72,6 +72,19 @@ describe("report metrics", () => {
     expect(u.lid).toBe(14);
     expect(u.cookWeeklyBefore).toBe(14);
     expect(u.perDay).toHaveLength(7);
+  });
+
+  it("loads each of the four earlier weeks from its own dated records", () => {
+    const ends = ["2026-11-04", "2026-10-28", "2026-10-21", "2026-10-14"];
+    const v = view({ stats: Object.fromEntries(ends.map((end, i) => [end, { cook: i, lid: null, energyWh: i * 1000 }])),
+      slots: ends.map(date => ({date, slot: "lunch", status: "confirmed", source: "cooker"})) });
+    for (const [i, end] of ends.entries()) {
+      const days = dailyMeals(v, NOW, end);
+      expect(days.at(-1)?.date).toBe(end);
+      expect(days.flatMap(day => day.slots)).toHaveLength(1);
+      expect(cookerUsage(v, NOW, end)).toMatchObject({cook:i,recordedDays:1});
+      expect(energyUsage(v, NOW, end)?.kwh).toBe(i);
+    }
   });
 
   it("energyUsage: 하루 합계가 없으면 null (요금 '준비 중')", () => {

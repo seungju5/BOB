@@ -1,0 +1,16 @@
+.rabbit-burrow-button {
+  display: inline-flex; flex-direction: column; align-items: center; justify-content: flex-end;
+  min-width: 64px; min-height: 64px; padding: 0 .125rem .15rem; color: var(--color-cocoa);
+  border-radius: 1.25rem; cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.rabbit-burrow-button:focus-visible { outline: 3px solid var(--color-cocoa); outline-offset: 2px; }
+.rabbit-burrow-art { display: block; width: 4.65rem; max-width: 21vw; height: auto; overflow: visible; }
+.rabbit-burrow-label { display: block; margin-top: -.15rem; padding: .12rem .55rem; color: #49372b; background: #fff8e9;
+  border: 1px solid #dfceb5; border-radius: 1rem; font-size: .875rem; font-weight: 700; line-height: 1.35; white-space: nowrap; }
+.rabbit-burrow-shelf { display: flex; justify-content: flex-end; padding: .15rem .65rem .35rem; background: var(--color-paper); }
+@media (max-height: 590px) { .rabbit-burrow-shelf .rabbit-burrow-art { width: 3.2rem; } }
+@media (prefers-reduced-motion: no-preference) {
+  .rabbit-burrow-face { transition: transform .2s ease-out; }
+  .rabbit-burrow-button:focus-visible .rabbit-burrow-face { transform: translateY(-2px); }
+  @media (hover: hover) { .rabbit-burrow-button:hover .rabbit-burrow-face { transform: translateY(-2px); } }
+}

@@ -4,6 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { routePath } from "@/lib/app-path";
 import { useApp } from "@/lib/data/useApp";
+import { MotionSummaryLink } from "./walking/MotionSummaryLink";
+import { pushOwner } from "@/lib/push-device";
 import { unackedAlerts } from "@/lib/data/view";
 import { IconClock, IconHome, IconSettings } from "./icons";
 
@@ -15,10 +17,12 @@ const items = [
 
 export function BottomNav() {
   const path = routePath(usePathname());
-  const { view } = useApp();
+  const { view, accountKey } = useApp();
   const badge = view ? unackedAlerts(view).length : 0;
   return (
-    <nav aria-label="주요 메뉴" className="sticky bottom-0 z-40 mt-auto border-t border-line bg-paper/95 backdrop-blur">
+    <div className="sticky bottom-0 z-40 mt-auto">
+      {path === "/home" && view && <div className="rabbit-burrow-shelf"><MotionSummaryLink key={accountKey ?? view.mode} guardian demo={view.mode === "demo"} owner={pushOwner(accountKey) ?? undefined} /></div>}
+      <nav aria-label="주요 메뉴" className="border-t border-line bg-paper/95 backdrop-blur">
       <ul className="grid grid-cols-3 px-2 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
         {items.map(({ href, label, Icon }) => {
           const active = path === href || (href === "/more" && ["/report", "/alerts", "/settings"].includes(path));
@@ -45,6 +49,7 @@ export function BottomNav() {
           );
         })}
       </ul>
-    </nav>
+      </nav>
+    </div>
   );
 }

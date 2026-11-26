@@ -1,10 +1,26 @@
+import { kstDate } from "@/lib/judge/time";
+
 export type MotionWalk = {
   id: string;
+  owner?: string;
   source: 'device-motion';
   startedAt: number;
   lastStepAt: number;
   steps: number;
+  dailySteps?: Record<string, number>;
 };
+
+export function motionStepsOn(walks: MotionWalk[], day: string): number | null {
+  let total: number | null = null;
+  for (const walk of walks) {
+    // Older diaries have only session totals. A session wholly within a day is unambiguous.
+    const count = walk.dailySteps ? walk.dailySteps[day] :
+      kstDate(new Date(walk.startedAt)) === day && kstDate(new Date(walk.lastStepAt)) === day ? walk.steps : undefined;
+    if (typeof count === 'number' && Number.isSafeInteger(count) && count > 0 && count <= walk.steps)
+      total = (total ?? 0) + count;
+  }
+  return total;
+}
 
 const WALKS = 'walks';
 const RECORDER = 'recorder';
@@ -32,11 +48,11 @@ export function openMotionDiary(): Promise<IDBDatabase> {
   });
 }
 
-export function readMotionWalks(db: IDBDatabase): Promise<MotionWalk[]> {
+export function readMotionWalks(db: IDBDatabase, owner?: string): Promise<MotionWalk[]> {
   return new Promise((resolve, reject) => {
     const request = db.transaction(WALKS).objectStore(WALKS).getAll();
     request.onsuccess = () => resolve((request.result as MotionWalk[]).filter(walk =>
-      walk?.source === 'device-motion' && typeof walk.id === 'string' &&
+      walk?.source === 'device-motion' && walk.owner === owner && typeof walk.id === 'string' &&
       Number.isSafeInteger(walk.steps) && walk.steps > 0 &&
       validTime(walk.startedAt) && validTime(walk.lastStepAt)
     ).sort((a, b) => b.startedAt - a.startedAt));

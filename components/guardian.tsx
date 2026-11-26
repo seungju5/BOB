@@ -41,7 +41,7 @@ export function hasAlertCall(type: AlertType | undefined, phone: string) {
   return Boolean(phone) && (type === "eat_out" || type === "help_request");
 }
 
-export function AlertShortcut({ type, relation, phone }: { type: AlertType; relation: string; phone: string }) {
+export function AlertShortcut({ type, relation, phone, reportEnd }: { type: AlertType; relation: string; phone: string; reportEnd?: string }) {
   const pill = "flex min-h-12 items-center gap-1.5 rounded-full border border-cocoa/20 bg-paper px-4 text-[16px] font-bold text-cocoa";
   if (hasAlertCall(type, phone))
     return (
@@ -52,7 +52,7 @@ export function AlertShortcut({ type, relation, phone }: { type: AlertType; rela
     );
   if (type === "weekly_report")
     return (
-      <Link href="/report" className={pill}>
+      <Link href={reportEnd ? "/report/?end=" + reportEnd : "/report"} className={pill}>
         <IconChart className="h-4 w-4" />
         리포트 보기
       </Link>

@@ -12,15 +12,18 @@ import { demoPowerTranscript } from "@/lib/power/power-transcription-model";
 import { PowerSampleFigure } from "@/components/power/PowerSampleFigure";
 import RecordsPage from "@/app/(guardian)/records/page";
 import ReportPage from "@/app/(guardian)/report/page";
+import { BottomNav } from "@/components/BottomNav";
+vi.mock("next/navigation", async (original) => ({ ...(await original<typeof import("next/navigation")>()), usePathname: () => "/home/" }));
 import HomePage from "@/app/(guardian)/home/page";
 
 const disconnected = (): AppView => firebaseView({settings: null, household: null});
 
 describe("보호자 홈의 다음 행동", () => {
-  it("shows the weekly result on home and the comparison windows in the detailed report", () => {
+  it("keeps reports in the inbox and their comparison periods in the report", () => {
     context.view = toView(createDemoState(context.now), context.now);
     const home = renderToStaticMarkup(createElement(HomePage));
-    expect(home).toContain("끼니 확인율");
+    expect(home).not.toContain("최근 7일 리포트");
+    expect(home).toContain("알림");
     expect(home).toContain("식사 기록 보기");
     expect(home).not.toMatch(/드신 양은 알 수 없어요|그 전 4주 평균과 비교해요/);
     const report = renderToStaticMarkup(createElement(ReportPage));
@@ -50,11 +53,11 @@ describe("보호자 홈의 다음 행동", () => {
     const ordinary = renderToStaticMarkup(createElement(HomePage));
     expect(ordinary.match(/href="tel:\+123"/g)).toHaveLength(1);
     view.alerts = [{ id: "example-help", type: "help_request", triggeredAt: context.now.toISOString(), acknowledgedAt: null, resolvedAt: null }];
-    const alert = renderToStaticMarkup(createElement(HomePage));
+    const alert = renderToStaticMarkup(createElement(HomePage)) + renderToStaticMarkup(createElement(BottomNav));
     expect(alert.match(/href="tel:\+123"/g)).toHaveLength(1);
     expect(alert.indexOf('href="tel:+123"')).toBeLessThan(alert.indexOf("한 주의 밥상"));
     expect(alert).toContain("확인했어요");
-    for (const path of ["records", "report", "alerts", "connect"]) {
+    for (const path of ["records", "walking/steps", "alerts", "connect"]) {
       expect(alert).toMatch(new RegExp(`href="/${path}/?"`));
     }
   });
@@ -115,8 +118,9 @@ describe("기록·리포트 표시 계약 (서버 렌더, 실제 브라우저 �
     expect(html).toMatch(/<button[^>]+aria-label="[^"]+하루 기록 보기"/);
     expect(html).toContain('role="status"');
     expect(html).toContain("체험용 가상 기록");
-    expect(html).toContain("고정 샘플");
-    expect(html).toContain("2026-11-18");
+    expect(html).toContain("전력 해석 예시 열기");
+    expect(html).not.toContain("고정 샘플");
+    expect(html).not.toContain("전력 전사·해석 예시");
   });
 
   it("실제 과거 기록이 있어도 수신 없는 날짜의 사용량은 기록 없음으로 구분한다", () => {

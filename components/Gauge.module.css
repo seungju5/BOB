@@ -1,0 +1,89 @@
+.input {
+  --rail-height: 11px;
+  --thumb-size: 26px;
+  --honey: color-mix(in srgb, var(--color-butter-deep) 88%, var(--color-muted));
+  --energy: linear-gradient(to bottom, var(--color-butter-deep), var(--color-butter) 24%, color-mix(in srgb, var(--color-paper) 58%, var(--color-butter)) 36%, var(--color-butter) 52%, var(--color-butter-deep));
+  --rail: linear-gradient(to bottom, color-mix(in srgb, var(--color-line) 88%, var(--color-muted)), var(--color-line) 40%, var(--color-butter-soft));
+  --thumb: radial-gradient(ellipse at 32% 23%, var(--color-paper) 0%, color-mix(in srgb, var(--color-paper) 65%, var(--color-butter)) 12%, var(--color-butter) 38%, var(--color-butter-deep) 72%, var(--honey) 100%);
+  --ring: var(--color-paper);
+  --edge: color-mix(in srgb, var(--honey) 72%, var(--color-cocoa));
+  --shadow: inset 0 1px 1px var(--color-paper), inset 0 -2px 3px color-mix(in srgb, var(--honey) 55%, transparent), 0 3px 4px color-mix(in srgb, var(--color-cocoa) 25%, transparent);
+  --glow: 0 0 transparent;
+  display: block;
+  width: 100%;
+  height: 48px;
+  margin: 4px 0 0;
+  padding: 0;
+  border: 0;
+  border-radius: 99px;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+  touch-action: pan-y;
+}
+
+.input::-webkit-slider-runnable-track {
+  height: var(--rail-height);
+  border-radius: 99px;
+  background: var(--energy) left center / var(--progress) 100% no-repeat, var(--rail);
+  box-shadow: inset 0 1px 1px color-mix(in srgb, var(--color-cocoa) 12%, transparent), 0 1px var(--color-paper);
+}
+.input::-moz-range-track {
+  height: var(--rail-height);
+  border-radius: 99px;
+  background: var(--energy) left center / var(--progress) 100% no-repeat, var(--rail);
+  box-shadow: inset 0 1px 1px color-mix(in srgb, var(--color-cocoa) 12%, transparent), 0 1px var(--color-paper);
+}
+.input::-webkit-slider-thumb {
+  box-sizing: border-box;
+  width: var(--thumb-size);
+  height: var(--thumb-size);
+  margin-top: calc((var(--rail-height) - var(--thumb-size)) / 2);
+  appearance: none;
+  border: 2px solid var(--ring);
+  border-radius: 50%;
+  background: var(--thumb);
+  box-shadow: 0 0 0 1px var(--edge), var(--shadow), var(--glow);
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+.input::-moz-range-thumb {
+  box-sizing: border-box;
+  width: var(--thumb-size);
+  height: var(--thumb-size);
+  border: 2px solid var(--ring);
+  border-radius: 50%;
+  background: var(--thumb);
+  box-shadow: 0 0 0 1px var(--edge), var(--shadow), var(--glow);
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+.input:active {
+  --glow: 0 0 0 5px color-mix(in srgb, var(--color-butter) 23%, transparent), 0 0 12px color-mix(in srgb, var(--color-butter) 50%, transparent);
+}
+.input:active::-webkit-slider-thumb { transform: scale(1.08); }
+.input:active::-moz-range-thumb { transform: scale(1.08); }
+.input:focus-visible {
+  outline: 2px solid var(--color-cocoa);
+  outline-offset: 1px;
+}
+.input:disabled { cursor: default; opacity: 0.55; }
+
+@media (prefers-reduced-motion: reduce) {
+  .input::-webkit-slider-thumb { transition: none; }
+  .input::-moz-range-thumb { transition: none; }
+  .input:active::-webkit-slider-thumb { transform: none; }
+  .input:active::-moz-range-thumb { transform: none; }
+}
+
+@media (forced-colors: active) {
+  .input {
+    forced-color-adjust: none;
+    --energy: linear-gradient(Highlight, Highlight);
+    --rail: GrayText;
+    --thumb: Highlight;
+    --ring: Canvas;
+    --edge: ButtonText;
+    --shadow: 0 0 transparent;
+    --glow: 0 0 transparent;
+  }
+  .input:focus-visible { outline-color: Highlight; }
+}

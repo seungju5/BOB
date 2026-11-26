@@ -3,6 +3,7 @@
 import { useId, useState, type ComponentProps, type ReactNode } from "react";
 import { DEFAULT_WINDOWS, MAX_MEALS, initialMealWindowOverrides, mealSlotLabel, mealWindowsForCount } from "@/lib/data/view";
 import type { MealWindow } from "@/lib/judge/types";
+import { Gauge, vibrateOnSelection } from "./Gauge";
 import { validMealWindows } from "@/lib/judge/resolveMealSlots";
 
 export function Field({ label, hint, children, htmlFor }: { label: string; hint?: ReactNode; children: ReactNode; htmlFor?: string }) {
@@ -69,6 +70,7 @@ export function Slider({
   marks,
   format,
   step = 1,
+  haptic = true,
   onCommit,
 }: {
   id?: string;
@@ -81,15 +83,19 @@ export function Slider({
   marks?: number[];
   format?: (v: number) => string | null;
   step?: number;
+  haptic?: boolean;
   /** 끌기를 마쳤을 때(손을 뗐을 때·키를 뗐을 때·눈금을 눌렀을 때) 한 번 불린다. 바로 저장하는 화면용. */
   onCommit?: (v: number) => void;
 }) {
   const ticks = marks ?? Array.from({ length: Math.floor((max - min) / step) + 1 }, (_, i) => min + i * step);
-  const pct = ((value - min) / (max - min)) * 100;
   const text = (v: number) => format?.(v) ?? `${v}${unit}`;
+  function selectValue(next: number) {
+    onChange(next);
+    if (haptic && next !== value) vibrateOnSelection();
+  }
   return (
     <div className="rounded-2xl border-2 border-line px-4 pt-3 pb-2">
-      <p className="text-center text-[22px] font-extrabold text-cocoa" aria-hidden>
+      <p className="text-center text-[22px] font-extrabold text-cocoa tabular-nums" aria-hidden>
         {format?.(value) ?? (
           <>
             {value}
@@ -97,20 +103,18 @@ export function Slider({
           </>
         )}
       </p>
-      <input
+      <Gauge
         id={id}
-        type="range"
         min={min}
         max={max}
         step={step}
         value={value}
         aria-label={label}
         aria-valuetext={text(value)}
-        onChange={(e) => onChange(Number(e.target.value))}
-        onPointerUp={(e) => onCommit?.(Number(e.currentTarget.value))}
-        onKeyUp={(e) => onCommit?.(Number(e.currentTarget.value))}
-        className="mt-1 h-12 w-full cursor-pointer appearance-none rounded-full accent-[var(--color-butter-deep)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cocoa"
-        style={{ backgroundImage: `linear-gradient(to right, var(--color-butter-deep) ${pct}%, var(--color-line) ${pct}%)`, backgroundSize: "100% 0.75rem", backgroundPosition: "center", backgroundRepeat: "no-repeat" }}
+        onChange={onChange}
+        haptic={haptic}
+        onPointerUp={(e) => onCommit?.(e.currentTarget.valueAsNumber)}
+        onKeyUp={(e) => onCommit?.(e.currentTarget.valueAsNumber)}
       />
       {/* 눈금 라벨은 실제 위치에 둔다 (양 끝은 넘치지 않게 안쪽 정렬) */}
       <div className="relative mx-1.5 h-12">
@@ -123,11 +127,11 @@ export function Slider({
               type="button"
               tabIndex={-1}
               onClick={() => {
-                onChange(t);
+                selectValue(t);
                 onCommit?.(t);
               }}
               style={{ left: `${at}%` }}
-              className={`absolute top-0 min-h-12 py-1 text-[16px] font-bold whitespace-nowrap ${align} ${t === value ? "text-cocoa" : "text-muted"}`}
+              className={`absolute top-0 min-h-12 py-1 text-[16px] font-bold whitespace-nowrap ${haptic ? "min-w-11" : ""} ${align} ${t === value ? "text-cocoa" : "text-muted"}`}
             >
               {text(t)}
             </button>
@@ -136,6 +140,17 @@ export function Slider({
       </div>
     </div>
   );
+}
+
+export function MealCountPicker({ id, label, value, onChange }: {
+  id: string; label: string; value: number; onChange: (count: number) => void;
+}) {
+  if (value > 3) return <div className="rounded-2xl border border-line p-4">
+    <p className="font-semibold text-cocoa">현재 저장한 시간대는 하루 {value}끼예요.</p>
+    <button id={id} type="button" className="mt-2 min-h-12 rounded-full bg-butter-soft px-4 font-bold"
+      onClick={() => { onChange(3); vibrateOnSelection(); }}>1~3끼로 변경</button>
+  </div>;
+  return <Slider id={id} value={value} min={1} max={3} unit="끼" label={label} onChange={onChange} />;
 }
 
 const RELATIONS = ["어머니", "아버지", "부모님"];

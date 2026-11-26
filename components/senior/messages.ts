@@ -13,3 +13,23 @@ export function seniorActionMessage(op: SeniorOp, isDemo: boolean): string {
     help: "도움 요청을 접수했어요.\n급한 경우 가족에게 직접 전화해 주세요.",
   }[op];
 }
+
+// The Seoul calendar date advances this rotation even while the home stays open.
+const encouragements = [
+  "오늘도 내 속도로, 한 걸음씩 가요.",
+  "잠깐 쉬어 가도 좋아요. 곁에 있을게요.",
+  "오늘은 어떤 꽃이 피었을까요?",
+  "반가운 얼굴이 떠오르면 안부를 건네요.",
+  "오늘도 작은 기쁨 하나 만나세요.",
+  "창밖 하늘을 함께 올려다볼까요?",
+  "느긋한 발걸음도 멋진 산책이에요.",
+  "따뜻한 햇살 한 줌, 마음에 담아 가요.",
+  "좋아하는 노래를 흥얼거려 볼까요?",
+  "오늘도 만나서 참 반가워요.",
+] as const;
+
+export function dailyEncouragement(seoulDate: string): string {
+  const day = Date.parse(seoulDate + "T00:00:00Z") / 86_400_000;
+  const index = ((day % encouragements.length) + encouragements.length) % encouragements.length;
+  return encouragements[index];
+}

@@ -12,10 +12,10 @@ const now = new Date('2026-11-24T05:00:00Z');
 
 describe('워밍이 산책 옷장', () => {
   it('provides an inventory picture and the equipped artwork for every public and heart item', () => {
-    const names = ['body-base', 'trail-park', 'item-park'];
+    expect(existsSync(resolve('public/brand/bunny.png'))).toBe(true);
+    const names = ['trail-park', 'item-park'];
     for (const item of [...STARTER_ITEMS, ...HEART_ITEMS]) {
       names.push('item-' + item.id);
-      if (item.category === 'outfit') names.push('body-' + item.id);
       if (item.category === 'background') names.push('trail-' + item.id);
     }
     for (const name of names) expect(existsSync(resolve('public/walking/wardrobe', name + '.webp')), name).toBe(true);
@@ -27,13 +27,13 @@ describe('워밍이 산책 옷장', () => {
       if (item.category === 'background') continue;
       const html = render(item.category === 'outfit' ? item.id : 'base',
         item.category === 'hat' ? item.id : null, item.category === 'accessory' ? item.id : null);
-      expect(html, item.id).toContain('/' + (item.category === 'outfit' ? 'body-' : 'item-') + item.id + '.webp');
-      expect(html.match(/href="\/body-[^"]+\.webp"/g), item.id).toHaveLength(1);
+      expect(html, item.id).toContain('/item-' + item.id + '.webp');
+      expect(html.match(/href="[^"]*\/brand\/bunny\.png"/g), item.id).toHaveLength(1);
     }
     for (const [accessory, foreground] of [['scarf', 'chin'], ['basket', 'grip'], ['rice-pouch', 'grip']]) {
       const html = render('vest', 'straw-hat', accessory);
       const sprite = html.indexOf('/item-' + accessory);
-      const cover = html.search(new RegExp('<use[^>]+clip-path="url\\(#[^"]+-' + foreground));
+      const cover = sprite + html.slice(sprite).search(new RegExp('<use[^>]+clip-path="url\\(#[^"]+-' + foreground));
       expect(cover, accessory).toBeGreaterThan(sprite);
       expect(html.indexOf('/item-straw-hat')).toBeGreaterThan(cover);
     }
@@ -47,7 +47,7 @@ describe('워밍이 산책 옷장', () => {
           body, hat, accessory: 'scarf', asset: name => '/' + name + '.webp', label: '워밍이',
         }));
         const bodyImage = html.match(/<image[^>]+id="[^"]+-body"[^>]*>/)?.[0];
-        expect(bodyImage, body).toContain('/body-' + body);
+        expect(bodyImage, body).toContain('/brand/bunny.png');
         const closed = hat === 'berry-beret' || hat === 'straw-hat' || hat === 'hiking-cap';
         expect(bodyImage?.includes('-tucked)'), body + '/' + hat).toBe(closed);
         if (closed) expect(html).not.toMatch(/<use[^>]*-ears\)/);
@@ -71,7 +71,7 @@ describe('워밍이 산책 옷장', () => {
 
   it('selects several parts without persisting a stale change over another tab', () => {
     const edited = { hat: 'rose-bow', outfit: null, background: 'moon' } as const;
-    const otherTab = { ...STARTER_LOOK, accessory: 'rice-pouch' as const, background: 'moon' as const };
+    const otherTab = { ...STARTER_LOOK, outfit: 'dungarees' as const, accessory: 'rice-pouch' as const, background: 'moon' as const };
     const changes = changedParts(otherTab, edited);
     expect(changes).toEqual({ hat: 'rose-bow', outfit: null });
     expect({ ...otherTab, ...changes }).toEqual({ ...otherTab, hat: 'rose-bow', outfit: null });

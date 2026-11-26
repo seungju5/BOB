@@ -6,7 +6,8 @@ import { toView } from "@/lib/demo/derive";
 import { useAlertSync, useDemo, useNow } from "@/lib/demo/store";
 import { useMode } from "./mode";
 import { ACCOUNT_CONSENT_VERSION } from "@/lib/firebase/bridge";
-import { firebaseActions, firebaseView, signOutFirebase, useFirebaseAccount } from "./firebase";
+import { useHouseholdReportInbox } from "@/lib/report/household-inbox";
+import { isFirebaseSessionCurrent, firebaseActions, firebaseView, signOutFirebase, useFirebaseAccount } from "./firebase";
 import type { AppActions, AppView } from "./view";
 
 export type App = {
@@ -44,10 +45,22 @@ export function useApp(): App {
   const minute = now ? Math.floor(now.getTime() / 60_000) : 0;
   const demoView = useMemo(() => (demo && now ? toView(demo, now) : null), [demo, minute]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const liveView = mode === "live" && firebase.view && firebase.saved
+    ? firebaseView(firebase.saved, firebase.connection, now?.getTime(), firebase.captures, firebase.captureError) : null;
+  const uid = mode === "live" && firebase.user?.verified && firebase.profile?.consentVersion === ACCOUNT_CONSENT_VERSION
+    ? firebase.user.uid : null;
+  const inbox = useHouseholdReportInbox(uid, liveView, now);
+  const ackReports = async (ids: string[]) => {
+    if (!uid || !isFirebaseSessionCurrent(uid, firebase.revision)) throw new Error("현재 로그인한 계정을 다시 확인해 주세요.");
+    inbox.acknowledge(ids);
+  };
+
   if (mode === "demo") return { provider: "demo", accountKey: "demo", view: demoView, actions: demoActions, now, mode, needsLogin: false, error: null };
   if (mode === "live") return {
-    view: firebase.view && firebase.saved ? firebaseView(firebase.saved, firebase.connection, now?.getTime(), firebase.captures, firebase.captureError) : firebase.view,
-    actions: firebaseActions, now, mode, provider: "firebase",
+    view: liveView ? { ...liveView, alerts: [...liveView.alerts, ...inbox.alerts] } : firebase.view,
+    actions: inbox.alerts.length ? { ...firebaseActions,
+      ackAlert: id => ackReports([id]), ackAll: () => ackReports(inbox.alerts.map(notice => notice.id)),
+    } : firebaseActions, now, mode, provider: "firebase",
     operator: firebase.operator && !!firebase.user?.verified, accountLabel: firebase.user?.email, accountKey: `${firebase.user?.uid ?? "signed-out"}:${firebase.revision}`, signOut: signOutFirebase,
     needsLogin: !firebase.loading && (!!firebase.user ? !firebase.user.verified || !firebase.profile || firebase.profile.consentVersion !== ACCOUNT_CONSENT_VERSION : firebase.user === null),
     error: firebase.error,

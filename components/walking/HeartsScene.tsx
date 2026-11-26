@@ -3,6 +3,8 @@
  * [KR] 벤치·튤립화단·이정표·우체통·다람쥐 배경이 실제로 흘러가는 걷기 토끼 장면 및 5단계 진행 정원 컴포넌트입니다.
  */
 'use client';
+import { TrailSymbol } from './TrailSymbol';
+
 
 import {useEffect,useState} from 'react';
 import Image from 'next/image';
@@ -33,10 +35,10 @@ function BunnyScene({equipped,children}:{equipped:HeartEquipment;children:React.
     <div className="hearts-walker">
       <span className="hearts-foot-puff hearts-foot-puff-a" aria-hidden="true"/>
       <span className="hearts-foot-puff hearts-foot-puff-b" aria-hidden="true"/>
-      <span className="hearts-step-heart" aria-hidden="true">♥</span>
+      <span className="hearts-step-heart" aria-hidden="true"><HeartIcon filled/></span>
       <WarmingRabbit look={equipped}/>
     </div>
-    {autumn && <div className="hearts-autumn-leaves" aria-hidden="true"><span>🍂</span><span>🍁</span><span>🍂</span></div>}
+    {autumn && <div className="hearts-autumn-leaves" aria-hidden="true"><span><TrailSymbol kind="leaf"/></span><span><TrailSymbol kind="leaf"/></span><span><TrailSymbol kind="leaf"/></span></div>}
     {children}
     {autumn && <span className="hearts-season">가을 산책길</span>}
     <button type="button" className="hearts-bunny-hello" aria-label="워밍이와 인사하기" onClick={()=>setHopping(true)}/>
@@ -52,7 +54,7 @@ export function HeartsGarden({summary}:{summary:HeartSummary}){
       <div className="hearts-scene-title">
         <h1>오늘의 산책</h1>
         <p>오늘 걸음 수</p>
-        <strong><span className="hearts-shoe" aria-hidden="true">👟</span> {summary.count===null?'—':summary.count.toLocaleString('ko-KR')}</strong>
+        <strong><span className="hearts-shoe" aria-hidden="true"><TrailSymbol kind="trail"/></span> {summary.count===null?'—':summary.count.toLocaleString('ko-KR')}</strong>
         <span className="hearts-goal">{summary.count===null?'오늘 기록을 기다려요':`내 목표 ${summary.goal.toLocaleString('ko-KR')}걸음 · ${Math.floor(progress)}%`}</span>
       </div>
     </BunnyScene>
@@ -62,7 +64,7 @@ export function HeartsGarden({summary}:{summary:HeartSummary}){
       </div>
       <ol className="hearts-stages">{summary.milestones.map((stage,index)=><li key={stage.id} className={stage.achieved?'is-done':''}>
         <span className="hearts-node" aria-hidden="true">{stage.achieved?'✓':''}</span>
-        <strong>{index===0?<><span aria-hidden="true">🍚</span><span>취사 소식</span></>:`${stage.id}%`}</strong>
+        <strong>{index===0?<><span aria-hidden="true"><TrailSymbol kind="cooker"/></span><span>취사 소식</span></>:`${stage.id}%`}</strong>
         <HeartIcon filled={stage.achieved}/>
         <span className="sr-only">{stage.achieved?'달성':'기다리는 중'}</span>
       </li>)}</ol>

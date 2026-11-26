@@ -24,14 +24,15 @@ export function PowerTranscriptionSection({ transcript }: { transcript: DemoTran
   }
 
   return (
-    <section className="mt-6 rounded-3xl border border-line bg-paper p-5" aria-label="예시 전력 해석">
-      <h2 className="text-lg font-bold text-cocoa">전력 전사·해석 예시</h2>
-      <p className="mt-1 text-sm text-muted">고정 샘플 · {transcript.datasetDate} (한국시간) · {samples.length}개 입력값</p>
-      <p className="mt-2 text-sm text-cocoa">화면을 설명하기 위해 만든 값이에요. 위에서 선택한 날짜나 가족 기기의 기록과는 별개예요.</p>
-      <button aria-expanded={expanded} aria-controls={id} className="mt-3 min-h-11 rounded-full border border-line px-4 font-semibold text-cocoa" onClick={() => setExpanded(!expanded)}>
+    <section className="mt-4" aria-label="예시 전력 해석">
+      <button aria-expanded={expanded} aria-controls={id} className="min-h-12 w-full rounded-2xl border border-line px-4 text-left font-semibold text-cocoa" onClick={() => setExpanded(!expanded)}>
         {expanded ? "예시 닫기" : "전력 해석 예시 열기"}
       </button>
       {expanded && <div id={id} className="mt-4">
+      <h2 className="text-lg font-bold text-cocoa">전력 전사·해석 예시</h2>
+      <p className="mt-1 text-sm text-muted">고정 샘플 · {transcript.datasetDate} (한국시간) · {samples.length}개 입력값</p>
+      <p className="mt-2 text-sm text-cocoa">화면을 설명하기 위해 만든 값이에요. 위에서 선택한 날짜나 가족 기기의 기록과는 별개예요.</p>
+
         <div aria-label="예시 보기 선택" role="group" className="flex flex-wrap gap-2">
           {tabs.map((item) => <button key={item.id} aria-pressed={tab === item.id} onClick={() => setTab(item.id)}
             className={"min-h-11 rounded-full px-4 text-sm font-bold " + (tab === item.id ? "bg-cocoa text-white" : "border border-line text-cocoa")}>{item.label}</button>)}

@@ -26,3 +26,8 @@
 .textButton { min-height: 44px; cursor: pointer; }
 .footer { margin-top: 18px; font-size: 15px; }
 .page :focus-visible { outline: 3px solid #386749; outline-offset: 3px; }
+
+.daily { margin: .8rem 0 1rem; padding: 1rem 1.15rem; border-radius: 1.1rem; background: #fff3ce; }
+.daily p { font-size: 1.12rem; font-weight: 650; color: var(--color-cocoa); }
+.daily strong { font-size: 1.8rem; font-variant-numeric: tabular-nums; }
+.daily span { display: block; margin-top: .2rem; color: var(--color-muted); font-size: .94rem; }

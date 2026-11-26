@@ -1,21 +1,28 @@
 'use client';
 
 import { useEffect, useId, useMemo, useState } from 'react';
+import { WARMING_RABBIT_ART } from '@/components/Mascot';
 import './dressed-rabbit.css';
 
 type Fit = readonly [x: number, y: number, width: number, height: number, angle: number];
 
-// The original rabbit and every dressed body share a 310 × 500 artboard.
+// Fits use the senior home's 480px portrait, including its pencil and clipboard.
 const fits: Record<string, Fit> = {
-  'straw-hat': [30, 40, 246, 133, -6],
-  'hiking-cap': [48, 52, 223, 112, -4],
-  'berry-beret': [45, 40, 205, 124, -11],
-  'rose-bow': [52, 88, 92, 67, -15],
-  crown: [91, 55, 124, 85, -7],
-  scarf: [74, 259, 171, 119, -2],
-  basket: [-11, 337, 130, 116, -7],
-  'rice-pouch': [7, 337, 106, 92, -9],
-  'daisy-pin': [180, 322, 43, 33, 8],
+  'straw-hat': [94, 66, 255, 113, 8],
+  'hiking-cap': [115, 73, 219, 101, 9],
+  'berry-beret': [115, 44, 195, 126, 8],
+  'rose-bow': [158, 89, 75, 52, -11],
+  crown: [206, 59, 90, 68, 9],
+  scarf: [158, 251, 144, 92, 7],
+  basket: [100, 314, 95, 90, 5],
+  'rice-pouch': [130, 316, 78, 74, 8],
+  'daisy-pin': [222, 327, 31, 29, 8],
+  dungarees: [146, 278, 157, 137, 4],
+  'picnic-dress': [132, 270, 181, 144, 4],
+  raincoat: [126, 260, 199, 145, 4],
+  vest: [145, 271, 164, 123, 4],
+  hanbok: [128, 266, 190, 145, 4],
+  'star-cape': [121, 271, 214, 131, 4],
 };
 
 type Props = {
@@ -58,11 +65,12 @@ function WornItem({ id, src, brim }: { id: string | null; src: string; brim: str
 }
 
 export function DressedRabbit({ body, hat, accessory, asset, label }: Props) {
-  const bodySrc = asset('body-' + body);
+  const outfit = body === 'base' ? null : body;
+  const outfitSrc = outfit ? asset('item-' + outfit) : '';
   const hatSrc = hat ? asset('item-' + hat) : '';
   const accessorySrc = accessory ? asset('item-' + accessory) : '';
-  const next = useMemo(() => ({bodySrc, hat, hatSrc, accessory, accessorySrc, label}),
-    [bodySrc, hat, hatSrc, accessory, accessorySrc, label]);
+  const next = useMemo(() => ({ outfit, outfitSrc, hat, hatSrc, accessory, accessorySrc, label }),
+    [outfit, outfitSrc, hat, hatSrc, accessory, accessorySrc, label]);
   const [visible, setVisible] = useState(next);
   const [failed, setFailed] = useState<typeof next | null>(null);
   const id = useId();
@@ -71,7 +79,7 @@ export function DressedRabbit({ body, hat, accessory, asset, label }: Props) {
     if (visible === next) return;
     let current = true;
     // On a slow connection keep the previous complete outfit until all three pieces are ready.
-    Promise.all([next.bodySrc, next.hatSrc, next.accessorySrc].filter(Boolean).map(loadSprite)).then(() => {
+    Promise.all([next.outfitSrc, next.hatSrc, next.accessorySrc].filter(Boolean).map(loadSprite)).then(() => {
       if (current) setVisible(next);
     }, () => { if (current) setFailed(next); });
     return () => { current = false; };
@@ -82,14 +90,14 @@ export function DressedRabbit({ body, hat, accessory, asset, label }: Props) {
   const closedHat = visible.hat === 'berry-beret' || visible.hat === 'straw-hat' || visible.hat === 'hiking-cap';
   const carriesBag = visible.accessory === 'basket' || visible.accessory === 'rice-pouch';
   return <div className="warming-rabbit" role="img" aria-label={visible.label}>
-    <svg className="warming-figure" viewBox="0 0 310 500" aria-hidden="true" focusable="false">
+    <svg className="warming-figure" viewBox="85 -6 320 476" aria-hidden="true" focusable="false">
       <defs>
         {/* The plush ears fold under a closed hat. Trim the body once so the chin
             and gripping paw reused in front of accessories cannot restore an ear. */}
         <clipPath id={id + '-tucked'}>
-          <path d="M0 155H47C69 131 90 116 122 110Q161 99 197 110C224 115 249 137 268 159H310V500H0Z"/>
+          <path d="M0 169H113Q149 108 201 104Q255 95 292 130Q315 145 328 184H480V480H0Z"/>
         </clipPath>
-        <image id={id + '-body'} href={visible.bodySrc} width="310" height="500"
+        <image id={id + '-body'} href={WARMING_RABBIT_ART} width="480" height="480"
           clipPath={closedHat ? clip('tucked') : undefined}/>
         <radialGradient id={id + '-shadow'}>
           <stop stopColor="#5b412d" stopOpacity=".60"/>
@@ -97,25 +105,34 @@ export function DressedRabbit({ body, hat, accessory, asset, label }: Props) {
           <stop offset="1" stopColor="#75563e" stopOpacity="0"/>
         </radialGradient>
         <clipPath id={id + '-chin'}>
-          <path d="M0 0H310V258Q272 277 240 290Q222 297 203 299Q175 304 154 300Q130 298 119 295Q94 292 74 287Q37 274 0 258Z"/>
+          <path d="M0 0H480V256L327 251Q319 277 283 283Q231 298 175 276Q136 272 101 246H0Z"/>
         </clipPath>
         <clipPath id={id + '-grip'}>
-          <path d="M32 324Q63 292 100 303Q117 309 110 333Q99 357 75 364Q49 371 35 352Z"/>
+          <path d="M173 288Q187 274 199 282Q215 278 221 296Q224 315 206 331Q191 345 177 333Q165 320 170 302Z"/>
         </clipPath>
         <clipPath id={id + '-ears'}>
-          <path d="M30 0H130L140 73Q121 86 91 84L35 75ZM129 0H224V65Q201 76 170 73L146 67Z"/>
+          <path d="M115 0H204L213 98Q191 115 161 126L125 88ZM285 73Q361 57 406 166L396 187Q337 194 305 129Z"/>
+        </clipPath>
+        <clipPath id={id + '-notebook'}>
+          <path d="M175 259Q176 252 182 254L228 314L229 326L221 319Z M228 352L249 272Q250 267 256 268L274 271L277 266Q285 260 295 270L297 276L321 280Q326 281 324 288L312 324Q328 321 331 342Q335 364 314 369Q298 373 286 363Z"/>
         </clipPath>
         <clipPath id={id + '-brim'} clipPathUnits="objectBoundingBox">
           <path d="M0 0H1V.80Q.92 .905 .80 .89C.68 .847 .61 .833 .50 .833C.38 .833 .26 .857 .17 .906Q.085 .91 0 .79Z"/>
         </clipPath>
       </defs>
       <g fill={clip('shadow')} className="warming-ground">
-        <ellipse cx="153" cy="490" rx="119" ry="12" opacity=".65"/>
-        <ellipse cx="99" cy="488" rx="39" ry="7"/>
-        <ellipse cx="204" cy="490" rx="46" ry="7"/>
+        <ellipse cx="244" cy="457" rx="84" ry="8" opacity=".65"/>
+        <ellipse cx="199" cy="455" rx="28" ry="4"/>
+        <ellipse cx="290" cy="453" rx="34" ry="5"/>
       </g>
       <g className="warming-dressed-pose">
         <use href={bodyRef}/>
+        <WornItem id={visible.outfit} src={visible.outfitSrc} brim={clip('brim')}/>
+        {visible.outfit && <>
+          <use href={bodyRef} clipPath={clip('chin')}/>
+          <use href={bodyRef} clipPath={clip('grip')}/>
+          <use href={bodyRef} clipPath={clip('notebook')}/>
+        </>}
         <WornItem id={visible.accessory} src={visible.accessorySrc} brim={clip('brim')}/>
         {visible.accessory === 'scarf' && <use href={bodyRef} clipPath={clip('chin')}/>}
         {carriesBag && <use href={bodyRef} clipPath={clip('grip')}/>}

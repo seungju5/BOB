@@ -1,3 +1,4 @@
+import { TrailSymbol } from './TrailSymbol';
 import type {WalkingBoard as Board} from '@/lib/walking/model';
 
 export function WalkingBoard({board,demo=false}:{board:Board;demo?:boolean}){
@@ -7,12 +8,12 @@ export function WalkingBoard({board,demo=false}:{board:Board;demo?:boolean}){
     <h2 className="walking-heading">오늘, 함께 걸은 발걸음</h2>
     {top.length?<ol className="walking-podium" aria-label="오늘의 상위 세 명">
       {top.map((entry,index)=><li key={entry.publicId} className={`walking-podium-card walking-podium-${index}`}>
-        <span className="walking-medal" aria-hidden>{entry.rank===1?'🥇':entry.rank===2?'🥈':entry.rank===3?'🥉':'🌿'}</span>
+        <span className="walking-medal" aria-hidden><TrailSymbol kind={entry.rank <= 3 ? "rosette" : "sprout"} rank={entry.rank}/></span>
         <strong className="walking-rank">{entry.rank}등</strong>
         <span className="walking-name">{entry.nickname}</span>
         <span className="walking-count">{entry.count.toLocaleString('ko-KR')}<small>걸음</small></span>
       </li>)}
-    </ol>:<div className="walking-empty"><span aria-hidden>🌱</span><h3>오늘의 첫걸음을 기다려요</h3><p>휴대폰 걸음수가 연결되면<br/>실제 기록으로 순위를 보여 드려요.</p></div>}
+    </ol>:<div className="walking-empty"><span aria-hidden><TrailSymbol kind="sprout"/></span><h3>오늘의 첫걸음을 기다려요</h3><p>휴대폰 걸음수가 연결되면<br/>실제 기록으로 순위를 보여 드려요.</p></div>}
     <section className="walking-my-record" aria-labelledby="walking-my-title">
       <div><h3 id="walking-my-title">나의 오늘</h3><p>{board.me.nickname}</p></div>
       <div className="walking-my-count"><strong>{board.me.rank===null?'기록 기다리는 중':`${board.me.rank}등`}</strong><span>{board.me.count===null?'아직 전송된 걸음수가 없어요':`${board.me.count.toLocaleString('ko-KR')}걸음`}</span></div>

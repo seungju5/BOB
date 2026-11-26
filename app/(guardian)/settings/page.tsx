@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { AlertThresholdFields, missedMealsHint, Choice, Field, MealWindowsEditor, RelationPicker, Slider, TextInput, Toggle, useMealWindowDraft, windowsValid } from "@/components/forms";
+import { AlertThresholdFields, missedMealsHint, Choice, Field, MealCountPicker, MealWindowsEditor, RelationPicker, Slider, TextInput, Toggle, useMealWindowDraft, windowsValid } from "@/components/forms";
 import { IconArrowRight, IconLock, IconPlug, IconSuitcase } from "@/components/icons";
 import { PlugForm } from "@/components/PlugForm";
 import { SmartThingsAccountCard } from "@/components/SmartThingsAccountCard";
@@ -15,7 +15,7 @@ import { Button, PageHeader, Skeleton } from "@/components/ui";
 import { addDays, kstDate, MINUTE_MS } from "@/lib/judge/time";
 import { setMode } from "@/lib/data/mode";
 import { useApp, type App } from "@/lib/data/useApp";
-import { MAX_MEALS, careDataAvailable, type AppActions, type AppView } from "@/lib/data/view";
+import { careDataAvailable, type AppActions, type AppView } from "@/lib/data/view";
 import { MEAL_PALETTES, setMealPalette, useMealPalette } from "@/lib/data/appearance";
 import { resetDemo, updateDemo } from "@/lib/demo/store";
 
@@ -119,6 +119,7 @@ function AlertSettings({ view, actions }: { view: AppView; actions: AppActions }
   return (
     <form onSubmit={(event) => { event.preventDefault(); if (view.seniorConsent) void feedback.run(() => actions.saveAlertSettings(draft), "알림 기준을 저장했어요."); }}>
       <fieldset disabled={feedback.busy} aria-busy={feedback.busy} className="flex min-w-0 flex-col gap-5">
+        {!careDataAvailable(view) && <p className="rounded-2xl bg-butter-soft p-3 text-[16px] leading-relaxed text-cocoa">지금은 알림 기준을 저장할 수 있어요. 끼니 미확인 알림은 기기 신호와 외출 여부를 함께 확인할 수 있는 가구에서 시작해요.</p>}
         <AlertThresholdFields value={draft} onChange={(value) => { setDraft(value); feedback.clear(); }} hints={{ missed: missedMealsHint(draft.missedMealsThreshold, view.mealProfile.windows.length), fasting: "마지막 밥솥 사용 후 이 시간이 지나면 알려 드려요.", emergency: "안부를 직접 확인할 기준이에요. 지정 연락처나 기관에 자동으로 연락하지는 않아요." }} />
         <SaveFeedback {...feedback} />
         <Button type="submit" disabled={feedback.busy || !view.seniorConsent}>{feedback.busy ? "저장하고 있어요…" : "알림 기준 저장"}</Button>
@@ -166,7 +167,7 @@ function LifestyleSettings({ view, actions }: { view: AppView; actions: AppActio
         </Field>
         <h2 className="border-t border-line pt-5 text-[17px] font-bold text-cocoa">식사 시간과 밥솥 사용</h2>
         <Field label="하루 식사 시간대 수" htmlFor="settings-meal-count" hint="평소 드시는 횟수를 고른 뒤, 아래에서 끼니마다 시간을 정해 주세요.">
-          <Slider id="settings-meal-count" value={meals} min={1} max={MAX_MEALS} unit="끼" label="하루 식사 시간대 수" onChange={(value) => { setMeals(value); feedback.clear(); }} />
+          <MealCountPicker id="settings-meal-count" value={meals} label="하루 식사 시간대 수" onChange={(value) => { setMeals(value); feedback.clear(); }} />
         </Field>
         <MealWindowsEditor windows={windows} onChange={(next) => { setWindows(next); feedback.clear(); }} onReset={() => { resetWindows(); feedback.clear(); }} />
         {!windowsValid(windows) ? <p className="text-[16px] font-semibold text-blush-deep">표시된 시간을 확인해 주세요. 겹침이 없어야 저장할 수 있어요.</p> : null}

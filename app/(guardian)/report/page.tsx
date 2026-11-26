@@ -1,18 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { fmtMonthDay, StatusIcon } from "@/components/guardian";
 import { Mascot } from "@/components/Mascot";
 import { DEVICE_REPORTS, PLANNED_DEVICES, type DeviceKind } from "@/components/report/devices";
 import { Bar, ReportCard } from "@/components/report/parts";
+import { noticeDay } from "@/public/notification-content";
 import { PageHeader, Skeleton } from "@/components/ui";
 import { useApp } from "@/lib/data/useApp";
 import { careDataAvailable, reportSummary, type AppView } from "@/lib/data/view";
 import { MEAL_STATUS_LABEL, mealStatusClass, useMealPalette } from "@/lib/data/appearance";
 import { MealStatusLegend } from "@/components/MealStatus";
-import { dailyMeals, mealPositionRows, slotRates } from "@/lib/report/metrics";
-import { kstDate } from "@/lib/judge/time";
+import { dailyMeals, mealPositionRows, reportWeekEnding, slotRates } from "@/lib/report/metrics";
+import { addDays, kstDate } from "@/lib/judge/time";
 
 /**
  * 패턴 리포트. 위는 가전과 무관한 종합(끼니 확인율), 아래는 가전별 탭(components/report/devices.tsx 등록부).
@@ -20,19 +21,33 @@ import { kstDate } from "@/lib/judge/time";
  */
 export default function ReportPage() {
   const { view, now } = useApp();
+  const search = useSyncExternalStore(listenReportLink, () => location.search, () => "");
+  const linkedEnd = noticeDay(new URLSearchParams(search).get("end"));
   return (
     <main className="flex flex-col pb-8">
       <PageHeader title="패턴 리포트" />
-      <div className="px-6">{!view || !now ? <Skeleton className="h-72" /> : <Report view={view} now={now} />}</div>
+      <div className="px-6">{!view || !now ? <Skeleton className="h-72" /> : <Report key={linkedEnd ?? "latest"} view={view} now={now} linkedEnd={linkedEnd} />}</div>
     </main>
   );
 }
 
-function Report({ view, now }: { view: AppView; now: Date }) {
+function listenReportLink(update: () => void) {
+  window.addEventListener("popstate", update);
+  return () => window.removeEventListener("popstate", update);
+}
+
+function Report({ view, now, linkedEnd }: { view: AppView; now: Date; linkedEnd: string | null }) {
   const devices = DEVICE_REPORTS.filter((d) => d.connected(view));
   const [kind, setKind] = useState<DeviceKind>(devices[0]?.kind ?? "rice_cooker");
   const device = devices.find((d) => d.kind === kind) ?? devices[0];
   const today = kstDate(now);
+  const latest = reportWeekEnding(now);
+  const anchor = linkedEnd && linkedEnd <= latest ? linkedEnd : latest;
+  const [weeksBack, setWeeksBack] = useState(0);
+  const endDate = addDays(anchor, -7 * weeksBack);
+  const from = addDays(endDate, -6);
+  const dateLabel = (end: string) => fmtMonthDay(addDays(end, -6)) + " – " + fmtMonthDay(end);
+  const periodLabel = dateLabel(endDate);
 
   if (!careDataAvailable(view) && !view.slots.length && !Object.keys(view.stats).length) {
     return (
@@ -48,12 +63,28 @@ function Report({ view, now }: { view: AppView; now: Date }) {
   return (
     <div className="mt-2 flex flex-col gap-4">
       {view.mode === "demo" ? <p className="text-[12px] text-muted">체험용 가상 기록을 비교한 리포트예요.</p> : null}
+      <section aria-label="리포트 기간" className="rounded-3xl bg-butter-soft p-4">
+        <div className="grid grid-cols-2 rounded-full border border-line bg-paper p-1">
+          {[{ label: anchor === latest ? "최근 7일" : "알림의 해당 주", back: 0 }, { label: "이전 4주", back: 1 }].map(({label, back}) => {
+            const selected = back === 0 ? weeksBack === 0 : weeksBack > 0;
+            return <button key={back} type="button" aria-pressed={selected} onClick={() => setWeeksBack(back)}
+              className={`min-h-12 rounded-full px-3 text-base font-bold ${selected ? "bg-cocoa text-paper" : "text-cocoa"}`}>{label}</button>;
+          })}
+        </div>
+        {weeksBack > 0 && <label className="mt-3 flex flex-wrap items-center gap-2 text-base font-semibold text-cocoa">살펴볼 주
+          <select value={weeksBack} onChange={event => setWeeksBack(Number(event.target.value))}
+            className="min-h-12 flex-1 rounded-xl border border-line bg-paper px-3">
+            {[1, 2, 3, 4].map(n => <option key={n} value={n}>{dateLabel(addDays(anchor, -7 * n))} · {n}주 전</option>)}
+          </select>
+        </label>}
+        <p className="mt-3 text-center text-sm text-cocoa" aria-live="polite">{from.replaceAll("-", ".")} – {endDate.replaceAll("-", ".")}</p>
+      </section>
       {view.cookerMealDays ? <div className="text-[16px] text-muted"><p>밥솥 사용이 확인된 날짜와 끼니 시간대를 모았어요.</p>
-        {view.stats[today] && <Link href={"/records/?day="+today} className="inline-flex min-h-11 items-center font-bold text-cocoa underline">오늘의 밥솥 기록 보기</Link>}</div> : <>
-        <Overview view={view} now={now} />
-        <SlotRates view={view} now={now} />
+        {endDate === latest && view.stats[today] && <Link href={"/records/?day="+today} className="inline-flex min-h-11 items-center font-bold text-cocoa underline">오늘의 밥솥 기록 보기</Link>}</div> : <>
+        {endDate === latest && <Overview view={view} now={now} />}
+        <SlotRates view={view} now={now} endDate={endDate} periodLabel={periodLabel} />
       </>}
-      <WeekStrip view={view} now={now} />
+      <WeekStrip view={view} now={now} endDate={endDate} periodLabel={periodLabel} />
 
       <div className="mt-4">
         <h2 className="text-[17px] font-extrabold text-cocoa">가전별 리포트</h2>
@@ -79,7 +110,7 @@ function Report({ view, now }: { view: AppView; now: Date }) {
           ))}
         </div>
       </div>
-      {device ? device.sections.map(({ id, Body }) => <Body key={id} view={view} now={now} />) : null}
+      {device ? device.sections.map(({ id, Body }) => <Body key={id} view={view} now={now} endDate={endDate} periodLabel={periodLabel} />) : null}
 
       <p className="mt-1 text-[12px] leading-relaxed text-muted">
         가전 사용 패턴만으로 만든 참고용 리포트예요. 영양 상태나 건강을 판단하지 않아요.
@@ -119,10 +150,12 @@ function Overview({ view, now }: { view: AppView; now: Date }) {
 }
 
 /** 해당 주 각 날짜의 끼니 순서별 확인율 */
-function SlotRates({ view, now }: { view: AppView; now: Date }) {
-  const rows = slotRates(view, now);
+type WeekProps = { view: AppView; now: Date; endDate: string; periodLabel: string };
+
+function SlotRates({ view, now, endDate, periodLabel }: WeekProps) {
+  const rows = slotRates(view, now, endDate);
   return (
-    <ReportCard title="끼니별 확인율" aside="최근 7일">
+    <ReportCard title="끼니별 확인율" aside={periodLabel}>
       {rows.map((s) => (
         <Bar key={s.position} label={s.label} pct={s.rate === null ? 0 : Math.round(s.rate * 100)} value={s.rate === null ? "기록 없음" : `${s.ok}/${s.total}일`} />
       ))}
@@ -131,12 +164,12 @@ function SlotRates({ view, now }: { view: AppView; now: Date }) {
 }
 
 /** 최근 7일 하루별 끼니 상태 */
-function WeekStrip({ view, now }: { view: AppView; now: Date }) {
+function WeekStrip({ view, now, endDate, periodLabel }: WeekProps) {
   const palette = useMealPalette();
-  const days = dailyMeals(view, now);
+  const days = dailyMeals(view, now, endDate);
   const rows = mealPositionRows(days);
   return (
-    <ReportCard title="하루별 끼니" aside="최근 7일">
+    <ReportCard title="하루별 끼니" aside={periodLabel}>
       <div className="mt-3 grid grid-cols-7 gap-1.5">
         {days.map((d) => (
           <div key={d.date} className="flex flex-col items-center gap-1">

@@ -10,6 +10,14 @@ import { mealSlotLabel, mealSlotsForCount, SLOT_LABEL, slotsForDate, type AppVie
 export const RECENT_DAYS = 7;
 export const BEFORE_DAYS = 28;
 
+export function reportWeekEnding(now: Date, weeksBack = 0) {
+  return addDays(kstDate(now), -(1 + RECENT_DAYS * weeksBack));
+}
+
+export function reportWeekDates(endDate: string) {
+  return Array.from({ length: RECENT_DAYS }, (_, i) => addDays(endDate, i + 1 - RECENT_DAYS));
+}
+
 /** 오늘 기준 fromDay~toDay일 전 날짜 (오래된 순) */
 export function daysAgo(now: Date, fromDay: number, toDay: number): string[] {
   const today = kstDate(now);
@@ -42,8 +50,8 @@ export function datedMealSlots(view: AppView, date: string, now: Date) {
   });
 }
 
-export function dailyMeals(view: AppView, now: Date) {
-  return daysAgo(now, 1, RECENT_DAYS).map(date => ({ date, slots: datedMealSlots(view, date, now) }));
+export function dailyMeals(view: AppView, now: Date, endDate = reportWeekEnding(now)) {
+  return reportWeekDates(endDate).map(date => ({ date, slots: datedMealSlots(view, date, now) }));
 }
 
 /** Presentation rows only. Estimated heating never becomes a confirmed meal or drives care alerts. */
@@ -71,8 +79,8 @@ export function mealPositionRows(days: { slots: { position: number }[] }[], minC
 }
 
 /** Slot numbers follow each day's schedule, independently of today's selected count. */
-export function slotRates(view: AppView, now: Date) {
-  const week = dailyMeals(view, now);
+export function slotRates(view: AppView, now: Date, endDate = reportWeekEnding(now)) {
+  const week = dailyMeals(view, now, endDate);
   return mealPositionRows(week, view.mealProfile.windows.length).map(({ position, label }) => {
     const statuses = week.flatMap(day => day.slots.filter(row => row.position === position && counts(row.status)));
     const hit = statuses.filter(row => ok(row.status)).length;
@@ -81,13 +89,13 @@ export function slotRates(view: AppView, now: Date) {
 }
 
 /** 밥솥 사용 횟수: 최근 7일 vs 이전 4주의 주 평균, 그리고 온보딩에서 알려 준 평소 횟수 */
-export function cookerUsage(v: AppView, now: Date) {
+export function cookerUsage(v: AppView, now: Date, endDate = reportWeekEnding(now)) {
   const sum = (dates: string[], key: "cook" | "lid") => {
     if (!dates.length || dates.some(date => v.stats[date]?.[key] == null)) return null;
     return dates.reduce((n, d) => n + (v.stats[d][key] ?? 0), 0);
   };
-  const recent = daysAgo(now, 1, RECENT_DAYS);
-  const before = daysAgo(now, RECENT_DAYS + 1, RECENT_DAYS + BEFORE_DAYS);
+  const recent = reportWeekDates(endDate);
+  const before = Array.from({length: BEFORE_DAYS}, (_, day) => addDays(endDate, -RECENT_DAYS - day));
   const recorded = recent.filter((date) => v.stats[date]);
   const weeklyBefore = (key: "cook" | "lid") => {
     const total = sum(before, key);
@@ -115,8 +123,8 @@ export const WON_PER_KWH = 120;
  * 최근 7일 전기 사용량. 서버가 하루 전력량 합계(stats[date].energyWh)를 저장하기 전에는 null.
  * 원시 전력값이 아니라 하루 합계만 쓴다 (CLAUDE.md 금지 항목).
  */
-export function energyUsage(v: AppView, now: Date) {
-  const recent = daysAgo(now, 1, RECENT_DAYS);
+export function energyUsage(v: AppView, now: Date, endDate = reportWeekEnding(now)) {
+  const recent = reportWeekDates(endDate);
   const days = recent.filter((d) => typeof v.stats[d]?.energyWh === "number");
   if (!days.length) return null;
   const wh = days.reduce((n, d) => n + (v.stats[d]?.energyWh ?? 0), 0);

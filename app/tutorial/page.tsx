@@ -194,7 +194,7 @@ function IntroFlow() {
 function SeniorButtons() {
   const actions = [
     { icon: IconUtensils, label: "외식했어요", tone: "meal" },
-    { icon: IconSuitcase, label: "외출해요", tone: "away" },
+    { icon: IconSuitcase, label: "놀러가요", tone: "away" },
     { icon: IconHeart, label: "도와줘요", tone: "help" },
   ];
   return (

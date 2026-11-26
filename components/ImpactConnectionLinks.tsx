@@ -20,7 +20,7 @@ export function ImpactConnectionLinks({compact=false}:{compact?:boolean}) {
         <summary className="min-h-12 cursor-pointer content-center rounded-lg px-2 py-2 font-semibold">현재 기기 상태와 연결 도움말</summary>
         <SmartThingsAccountCard compact />
         {!dismissed ? <div className="mt-2 rounded-2xl bg-butter-soft p-4 leading-relaxed text-cocoa">
-          <p>더보기의 ‘생활·알림 설정’에서도 기기 연결을 찾을 수 있어요.</p>
+          <p>더보기의 ‘생활 알림 설정’에서도 기기 연결을 찾을 수 있어요.</p>
           <button type="button" className="mt-2 min-h-12 rounded-full bg-paper px-5 font-semibold" onClick={()=>{try{localStorage.setItem(key,'seen');}catch{}window.dispatchEvent(new Event(CHANGE));}}>알겠어요</button>
         </div> : null}
       </details>
@@ -29,7 +29,7 @@ export function ImpactConnectionLinks({compact=false}:{compact?:boolean}) {
   return <section className="mt-5 rounded-[1.75rem] border border-line p-5" aria-label="계정과 기기 연결">
     <h2 className="text-[18px] font-bold text-cocoa">안부를 이어볼까요?</h2>
     <div className="mt-3 flex flex-col gap-2">
-      {[{href:'/account',label:'내 정보 센터',detail:'보호자 이름과 온라인 저장 내역',Icon:IconLock},{href:'/connect',label:'기기 연결',detail:'연결 준비와 마지막 수신 확인',Icon:IconPlug}].map(({href,label,detail,Icon})=><Link key={href} href={href} className="flex min-h-16 items-center gap-3 rounded-2xl bg-butter-soft px-4 py-3 text-cocoa focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-cocoa"><Icon className="h-5 w-5 shrink-0"/><span className="min-w-0 flex-1"><strong className="block text-[17px]">{label}</strong><span className="mt-0.5 block text-[16px] text-cocoa/70">{detail}</span></span><IconArrowRight className="h-5 w-5 shrink-0"/></Link>)}
+      {[{href:'/account',label:'내 정보 센터',Icon:IconLock},{href:'/connect',label:'기기 연결',Icon:IconPlug}].map(({href,label,Icon})=><Link key={href} href={href} className="flex min-h-16 items-center gap-3 rounded-2xl bg-butter-soft px-4 py-3 text-cocoa focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-cocoa"><Icon className="h-5 w-5 shrink-0"/><span className="min-w-0 flex-1"><strong className="block text-[17px]">{label}</strong></span><IconArrowRight className="h-5 w-5 shrink-0"/></Link>)}
     </div>
   </section>;
 }

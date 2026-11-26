@@ -43,6 +43,8 @@ export type AppView = {
   mealScheduleHistory?: MealScheduleChange[];
   /** The schedules observed with each device summary. An empty map is an active, unused grant. */
   cookerMealDays?: Record<string, MealWindow[]>;
+  cookerDaySource?: Record<string, "automatic" | "imported">;
+  lastMeterImport?: {date:string; measuredAt?:number};
   /** Point measurements provide incomplete coverage for weekly comparisons. */
   partialCookerHistory?: boolean;
   captureReadError?: boolean;

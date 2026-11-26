@@ -80,6 +80,7 @@ const noticePreferenceCache = "bapmunna-notice-previews-v1";
 function noticePreferenceKey(scope) { return new URL(".notice-preview", scope).href; }
 function noticeDeliveryKey(scope) { return new URL(".notice-delivery", scope).href; }
 function noticeTestReceiptKey(scope) { return new URL(".notice-test-receipt", scope).href; }
+function noticeCookerReceiptKey(scope) { return new URL(".notice-cooker-receipt", scope).href; }
 
 // Apply the most recent device choice even if an encrypted packet was already
 // waiting at the push provider when the user signed out or changed their hours.
@@ -95,4 +96,4 @@ async function acceptsCookerDelivery(policy, scope, at, now) {
   return !inside(Date.parse(at)) && !inside(now);
 }
 
-if (typeof module !== "undefined") module.exports = {noticeText, noticePath, noticeDay, noticeSlot, recordNoticePath, validCookerTicket, validNoticeScope, scopedNotice, matchesNoticeOwner, noticePreferenceCache, noticePreferenceKey, noticeDeliveryKey, noticeTestReceiptKey, acceptsCookerDelivery};
+if (typeof module !== "undefined") module.exports = {noticeText, noticePath, noticeDay, noticeSlot, recordNoticePath, validCookerTicket, validNoticeScope, scopedNotice, matchesNoticeOwner, noticePreferenceCache, noticePreferenceKey, noticeDeliveryKey, noticeTestReceiptKey, noticeCookerReceiptKey, acceptsCookerDelivery};

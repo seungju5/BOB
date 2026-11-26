@@ -117,6 +117,10 @@ export default function RecordsPage() {
               <button type="button" onClick={goToToday} className="min-h-11 rounded-full bg-butter-soft px-4 text-sm font-bold text-cocoa">오늘로 돌아가기</button>
             </div>
             {view.mode === "demo" ? <p className="mb-3 text-[12px] text-muted">체험용 가상 기록이에요.</p> : null}
+            {view.mode === "live" && view.seniorConsent && <div className="flex flex-wrap items-center justify-between gap-x-3 text-sm">
+              {range === "day" && view.cookerDaySource?.[anchor] && <span>{view.cookerDaySource[anchor] === "automatic" ? "스마트싱스 자동 기록" : "가구에서 가져온 실측 기록"}</span>}
+              <Link href="/connect/#signal-check" className="inline-flex min-h-11 items-center font-bold text-cocoa underline underline-offset-4">내 밥솥 연결 확인</Link>
+            </div>}
             {daySignal && <PowerNotice at={daySignal}/>}
             {view.captureReadError && <p role="status" className="py-2 text-muted">저장한 밥솥 기록을 불러오지 못했어요. 잠시 후 다시 열어 주세요.</p>}
             {noCareData && daySignal ? <p className="py-4 text-[15px] text-muted">이날의 끼니별 기록은 아직 없어요.</p> : noCareData ? (

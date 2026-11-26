@@ -13,9 +13,10 @@ function worker(previews = false, withWindow = true, delivery?:object) {
   const show = vi.fn(), focus = vi.fn(), openWindow = vi.fn();
   const navigate = vi.fn(async () => ({focus}));
   const scope = "https://example.invalid/app/";
-  const postMessage = vi.fn(), put = vi.fn();
+  const stored=new Map<string,Response>();
+  const postMessage = vi.fn(), put = vi.fn(async (key:string,value:Response)=>{stored.set(key,value.clone());});
   const cacheMatch=async (path:string) => path.endsWith("/.notice-delivery")
-    ? delivery && Response.json(delivery) : previews ? new Response("this-device-owner") : undefined;
+    ? delivery && Response.json(delivery) : previews && path.endsWith("/.notice-preview") ? new Response("this-device-owner") : stored.get(path)?.clone();
   const context = createContext({URL, crypto, TextEncoder, Response, self: {
     registration:{scope, showNotification:show},
     caches: {match:cacheMatch, open:async()=>({match:cacheMatch,put})},
@@ -49,6 +50,28 @@ it("records remote test receipt only after a system notification is accepted for
     expect(stale.show).not.toHaveBeenCalled();
     expect(stale.put).not.toHaveBeenCalled();
   }
+});
+
+it("records a separate, owner-bound receipt for an actual recent cooker push",async()=>{
+  const owner="this-device-owner", scope=await scopedNotice(owner,"m".repeat(32));
+  const now=Date.now(), at=new Date(now-60000).toISOString();
+  const data={kind:"cooker_signal",at,tag:"cooker-"+at,scope,ticket,expiresAt:now+120000};
+  const phone=worker(false,true,{owner,enabled:true});
+  const push=(packet:object)=>phone.fire("push",{data:{json:()=>packet}});
+  phone.show.mockRejectedValueOnce(Error("OS declined"));
+  await expect(push(data)).rejects.toThrow();
+  for(const packet of [{...data,ticket:""},{...data,scope:await scopedNotice("another","n".repeat(32))},
+    {...data,expiresAt:now-1},{...data,tag:"preview"},{...data,kind:"device_preview"}]) await push(packet);
+  expect(phone.put).not.toHaveBeenCalled();
+  await push(data);
+  expect(phone.put.mock.calls[0][0]).toBe(phone.scope+".notice-cooker-receipt");
+  expect(await (phone.put.mock.calls[0][1] as Response).json()).toEqual({scope,receivedAt:expect.any(Number),observedAt:now-60000});
+  expect(phone.postMessage).toHaveBeenCalledWith({type:"bapmunna:cooker-received"});
+  const seen=phone.show.mock.calls.at(-1)![1];
+  await phone.fire("notificationclick",{notification:{...seen,close:vi.fn()}});
+  const opened=await phone.put.mock.calls.at(-1)![1].json();
+  expect(opened.scope).toBe(scope);
+  expect(opened.openedAt).toBeGreaterThanOrEqual(opened.receivedAt);
 });
 
 it("keeps family details private unless this device opts in and handles prior notification versions", async () => {

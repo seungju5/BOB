@@ -5,13 +5,13 @@ import { ImpactConnectionLinks } from "@/components/ImpactConnectionLinks";
 import { ALERT_PRIORITY, ALERT_TONE, alertCopy, AlertShortcut, fmtDateLong, hasAlertCall, withWa } from "@/components/guardian";
 import { IconArrowRight, IconBell, IconChart, IconClock, IconPhone, IconSuitcase } from "@/components/icons";
 import { Logo } from "@/components/Mascot";
-import { HomeLoadingCompanion, HomeMealCompanion } from "@/components/companions/CookerCompanion";
-import { TodayMealList } from "@/components/TodayMeals";
+import { HomeLoadingCompanion } from "@/components/companions/CookerCompanion";
+import { HomeMealWeek } from "@/components/HomeMealWeek";
 import { buttonClass, Skeleton } from "@/components/ui";
 import { countMissedMeals } from "@/lib/judge/evaluateAlerts";
 import { kstDate } from "@/lib/judge/time";
 import { useApp } from "@/lib/data/useApp";
-import { recentSlots, reportSummary, slotsForDate, unackedAlerts } from "@/lib/data/view";
+import { recentSlots, reportSummary, unackedAlerts } from "@/lib/data/view";
 
 export default function HomePage() {
   const { view, now, actions } = useApp();
@@ -29,9 +29,6 @@ export default function HomePage() {
 
   const today = kstDate(now);
   const relation = view.senior.relation;
-  const slots = slotsForDate(view, today, now);
-  const observedWindows = view.cookerMealDays?.[today];
-  const todayWindows = observedWindows?.length ? observedWindows : view.mealProfile.windows;
   const report = reportSummary(view, now);
   const away = view.absences.find((a) => a.startDate <= today && today <= a.endDate);
   const alerts = unackedAlerts(view).sort((a, b) => ALERT_PRIORITY.indexOf(a.type) - ALERT_PRIORITY.indexOf(b.type));
@@ -73,15 +70,8 @@ export default function HomePage() {
         </section>
       ) : null}
 
-      <section aria-label="오늘의 끼니" className="mt-4 rounded-[1.5rem] border border-line bg-paper px-4 pt-2 pb-4">
-        <HomeMealCompanion mealCount={todayWindows.length} />
-        <TodayMealList windows={todayWindows} slots={slots} estimatedSlots={view.stats[today]?.estimatedSlots} />
-        {view.stats[today]?.estimated && <p className="mt-2 text-[16px] font-semibold text-cocoa">오늘 전력 변화로 추정한 취사가 {view.stats[today].estimated}회 있어요.</p>}
-        {view.captureReadError && <p role="status" className="mt-2 text-muted">저장한 밥솥 기록을 불러오지 못했어요.</p>}
-        {!slots.length && !view.stats[today]?.estimated && !view.captureReadError && <p className="mt-2 text-[17px] font-semibold text-cocoa">{view.cookerMealDays
-          ? (view.stats[today]?.cook ? "오늘 취사 소식이 있어요. 어느 끼니인지는 확인되지 않았어요." : view.stats[today] ? "오늘 지금까지 측정한 구간에서 취사 신호를 찾지 못했어요." : "오늘은 아직 밥솥 소식이 없어요.")
-          : "아직 연결된 식사 기록이 없어요."}</p>}
-        <p className="mt-2 text-[16px] leading-relaxed text-muted">{slots.length || view.cookerMealDays ? "밥솥 사용 소식이에요. 드신 양은 알 수 없어요." : "기기를 연결하면 이곳에서 밥솥 소식을 볼 수 있어요."}</p>
+      <section aria-label="끼니 소식과 가족 연락" className="mt-4 rounded-[1.5rem] border border-line bg-paper px-3 pt-5 pb-4">
+        <HomeMealWeek view={view} now={now} />
         {!callInAlert && (
           <div className="mt-3">
             {view.senior.phone ? (

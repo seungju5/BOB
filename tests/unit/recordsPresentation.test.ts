@@ -23,7 +23,9 @@ describe("보호자 홈의 다음 행동", () => {
     const html = renderToStaticMarkup(createElement(HomePage));
     expect(html).toContain("기기 연결 준비하기");
     expect(html).toContain("연락처 등록하기");
-    expect(html).toContain("아직 연결된 식사 기록이 없어요");
+    expect(html).toContain("아직 기록이 없어요");
+    expect(html).toContain("한 주의 밥상");
+    expect(html.match(/role="tab"/g)).toHaveLength(7);
     expect(html).not.toMatch(/href="tel:|끼니 확인율/);
     expect(html).toMatch(/href="\/settings\/?#device"/);
     view.seniorConsent = true;
@@ -126,7 +128,7 @@ describe("오늘의 끼니 시간표", () => {
     context.view = view;
     const html = renderToStaticMarkup(createElement(HomePage));
     expect(html.match(/data-meal-slot=/g)).toHaveLength(count);
-    expect(html.match(/기록 대기/g)).toHaveLength(count);
+    expect(html.match(/<dd data-state="no_record"/g)).toHaveLength(count);
     expect(html).toContain(`하루 ${count}끼, 끼니 수와 시간 변경`);
     expect(html).toContain("#settings-meal-count");
     expect(html).not.toMatch(/>확인됨<|>미확인</);
@@ -138,7 +140,7 @@ describe("오늘의 끼니 시간표", () => {
     view.slots = [{date:"2026-11-14", slot:"fifth", status:"eat_out", source:"senior_check"}];
     context.view = view;
     const html = renderToStaticMarkup(createElement(HomePage));
-    expect(html.match(/기록 대기/g)).toHaveLength(4);
+    expect(html.match(/<dd data-state="no_record"/g)).toHaveLength(4);
     expect(html).toContain("다섯 끼");
     expect(html).toContain("외식");
   });

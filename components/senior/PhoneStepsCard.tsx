@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import Link from "next/link";
 import { isPhoneStepsNativeAvailable, PhoneSteps } from "@bapmunna/phone-steps";
 import { Capacitor } from "@capacitor/core";
 import { Button } from "@/components/ui";
@@ -81,7 +82,7 @@ function LivePhoneStepsCard({ localOnly }: { localOnly: boolean }) {
         {snapshot.source ? <p className="mt-2 text-2xl text-muted">{snapshot.source === "ios-healthkit" ? "Apple 건강" : "삼성 헬스"}{checkedTime ? ` · ${checkedTime}에 확인` : ""}</p> : null}
       </>}
     </div>
-    {!nativeShell && !busy ? <HealthConnectionLink /> : null}
+    {!nativeShell && !busy ? <><Link href="/walking/steps/" className="mt-4 flex min-h-16 items-center justify-center rounded-3xl bg-sage px-4 text-2xl font-bold text-sage-deep">내 걸음 측정</Link><HealthConnectionLink /></> : null}
     {nativeShell && !native ? <p role="alert" className="mt-3 text-2xl text-muted">앱의 건강 연결 기능을 시작하지 못했어요. 최신 설치 파일인지 확인해 주세요.</p> : null}
     {canConnect ? <Button onClick={() => setConsent(true)} disabled={busy} className="mt-4 min-h-14 text-2xl">걸음수 연결</Button> : null}
     {canOpenSettings ? <Button variant="outline" onClick={openSettings} disabled={busy} className="mt-4 min-h-14 text-2xl">{snapshot.reason === "health-connect-update-required" ? "Health Connect 설치·업데이트" : "휴대폰 설정 열기"}</Button> : null}
@@ -92,7 +93,7 @@ function LivePhoneStepsCard({ localOnly }: { localOnly: boolean }) {
       <p className="mt-2">동의하시면 Apple 건강 또는 삼성 헬스의 오늘 걸음수를 이 휴대폰에서 읽어요. 읽기 연결만으로는 서버에 보내지 않아요.</p>
       <p className="mt-3">랭킹에서 따로 공유에 동의하고 연결한 경우에만, 한국 시간 기준 오늘 걸음수 합계를 별명과 함께 전체 참여자에게 보여 드려요.</p>
       <p className="mt-3">걷지 않은 날과 기록을 확인할 수 없는 날은 다르게 표시해요.</p>
-      {!nativeShell ? <p className="mt-3">웹브라우저에서는 건강 앱을 직접 읽을 수 없어요. ‘내 휴대폰 걸음수 연결’에서 설치한 앱을 열 수 있어요.</p> : null}
+      {!nativeShell ? <p className="mt-3">웹의 ‘내 걸음 측정’에서 휴대폰으로 걸은 산책을 기록할 수 있어요.</p> : null}
       <p className="mt-3">삼성 헬스의 설정에서 Health Connect에 걸음수 공유를 켜 주세요. 아이폰은 건강 앱 → 공유 → 앱에서 밥뭇나의 걸음수 읽기 권한을 확인해 주세요.</p>
       {native && !canOpenSettings ? <>
         <p className="mt-3">권한 창이 열리지 않으면 휴대폰 설정에서 밥뭇나의 걸음수 읽기를 확인해 주세요.</p>

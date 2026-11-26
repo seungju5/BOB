@@ -3,7 +3,8 @@ import { PRIVACY_SUPPORT_EMAIL } from "@/lib/privacy/notice";
 /** Shared, local policy content; no SDK, analytics or account requests. */
 export function HealthPrivacyContent() {
   return <div className="space-y-5 text-2xl leading-relaxed text-cocoa">
-    <p className="rounded-2xl bg-butter-soft p-4">현재 웹앱은 휴대폰 건강 기록을 읽지 않아요. 아래는 설치 앱에서 걸음수 연결을 선택할 때 적용하는 안내예요.</p>
+    <section className="rounded-2xl bg-butter-soft p-4"><h2 className="font-bold">웹에서 측정한 내 산책</h2><p className="mt-2">‘산책 측정 시작’을 누르면 화면을 열어 둔 동안 휴대폰의 움직임으로 걸음을 세요. 산책 시각과 걸음수만 이 기기의 밥뭇나에 보관해요. 움직임 원본은 저장하지 않고, 산책 기록은 서버나 가족에게 보내지 않아요. 사이트 데이터를 지우면 이 기록도 지워져요.</p></section>
+    <h2 className="font-bold">설치형 앱에서 건강 앱 연결하기</h2>
     <p>밥뭇나는 휴대폰 소유자가 동의한 경우에만 건강 앱의 오늘 걸음수를 읽어 보여 드려요.</p>
     <section><h2 className="font-bold">읽는 정보</h2><p className="mt-2">아이폰은 Apple 건강, 갤럭시는 Health Connect에 공유된 삼성 헬스의 걸음수를 읽어요. 심박수·수면·위치 정보는 요청하지 않아요.</p></section>
     <section><h2 className="font-bold">기본은 내 휴대폰에서만</h2><p className="mt-2">걸음수 읽기에 동의하는 것만으로는 서버에 보내지 않아요. 건강 앱의 원래 기록을 삭제하거나 수정하지 않아요.</p></section>

@@ -55,8 +55,8 @@ export function WarmingStage({ look, walking, toggleWalk }: { look: Look; walkin
       {greeting && <span className="ward-greet-heart" aria-hidden="true"><IconHeart/></span>}
     </div>
     <span className="sr-only" role="status">{greeting ? '워밍이가 하트를 보냈어요.' : ''}</span>
-    <button type="button" className="ward-play" onClick={toggleWalk} aria-pressed={walking} aria-label={walking ? '걸음 멈추기' : '걸어 보기'}>
-      {walking ? <PartIcon part="pause"/> : <IconPlay/>}{walking ? '멈추기' : '걸어 보기'}
+    <button type="button" className="ward-play" onClick={toggleWalk} aria-pressed={walking} aria-label={walking ? '워밍이 동작 멈추기' : '워밍이 걷기'}>
+      {walking ? <PartIcon part="pause"/> : <IconPlay/>}{walking ? '워밍이 멈추기' : '워밍이 걷기'}
     </button>
   </div>;
 }

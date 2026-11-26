@@ -123,6 +123,9 @@ export function WarmingWalk() {
           <a href="#wardrobe" aria-current={view === 'wardrobe' ? 'page' : undefined} onClick={event => followLink(event, 'wardrobe')}><PartIcon part="hanger"/>옷장</a>
         </nav>
       </div>
+      <Link href="/walking/steps/" className="ward-motion-link">
+        <PartIcon part="trail"/><span><strong>내 걸음 측정</strong><small>휴대폰으로 걷고 내 산책 기록 보기</small></span><IconArrowRight aria-hidden/>
+      </Link>
       {view === 'wardrobe' ?
         <WarmingWardrobe equipped={look} items={LOCAL_WARDROBE_ITEMS} trailCollection={{visited:visited.length,canWearCape}} initialCategory={category} onSave={changes => saveWithWardrobeLock('local', () => persist(changes))}
           onCancel={() => { setNotice(''); navigate('trail'); }}/> :

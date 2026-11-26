@@ -11,6 +11,8 @@ import { openSmartThings, SMARTTHINGS_CONSENT_VERSION, SmartThingsError, type Ch
 import { COOKER_RECORD_DAYS, DETECTION } from "@/config/detection";
 import { MeterReadings } from "./MeterReadings";
 import { PersonalMeterCheck } from "./PersonalMeterCheck";
+import { MeterScreenshotCheck } from "./MeterScreenshotCheck";
+import type { MealWindow } from "@/lib/judge/types";
 import { callbackMessage, deviceStageCopy, formatDeviceTime, smartThingsErrorMessage, type DisplayStage } from "@/lib/smartthings/presentation";
 import { returnedToAccount } from "@/lib/smartthings/pending";
 
@@ -32,7 +34,7 @@ export function SmartThingsPanel({ showConsentLink = false }: { showConsentLink?
     return account.connection?.stage === "read_error" ? <ConsentRetry /> : <p role="status" className={textClass}>어르신의 동의 상태를 다시 확인하고 있어요…</p>;
   }
   const onboarding = (account.view?.onboardingStep ?? saved.settings?.onboardingStep ?? 1) < ONBOARDING_COMPLETE;
-  return <AccountPanel key={`${user.uid}:${revision}:${consent}`} uid={user.uid} revision={revision} consent={consent} latest={account.connection} showConsentLink={showConsentLink} onboarding={onboarding} />;
+  return <AccountPanel key={`${user.uid}:${revision}:${consent}`} uid={user.uid} revision={revision} consent={consent} windows={saved.settings?.windows ?? []} latest={account.connection} showConsentLink={showConsentLink} onboarding={onboarding} />;
 }
 
 function ConsentRetry() {
@@ -49,7 +51,7 @@ function ConsentRetry() {
   </section>;
 }
 
-function AccountPanel({ uid, revision, consent, latest, showConsentLink, onboarding }: { uid: string; revision: number; consent: boolean; latest: SmartThingsConnection | null; showConsentLink: boolean; onboarding: boolean }) {
+function AccountPanel({ uid, revision, consent, windows, latest, showConsentLink, onboarding }: { uid: string; revision: number; consent: boolean; windows: MealWindow[]; latest: SmartThingsConnection | null; showConsentLink: boolean; onboarding: boolean }) {
   const [api, setApi] = useState<Client | null>(null);
   const [local, setState] = useState<SmartThingsConnection | null>(null);
   const state = latest ?? local;
@@ -239,6 +241,7 @@ function AccountPanel({ uid, revision, consent, latest, showConsentLink, onboard
     {busy && <p role="status" className={`mt-3 ${textClass}`}>{busy === "start" ? "삼성 연결 화면을 열고 있어요…" : "요청을 확인하고 있어요…"}</p>}
     {error && <p role="alert" className="mt-3 text-[16px] font-semibold text-blush-deep">{error}</p>}
     {notice && <p role="status" className={`mt-3 ${textClass}`}>{notice}</p>}
+    {consent && <MeterScreenshotCheck uid={uid} revision={revision} windows={windows}/>}
     {consent && (stage === "setup_required" || stage === "disconnected") && <PersonalMeterCheck uid={uid} revision={revision}/>}
   </section>;
 }

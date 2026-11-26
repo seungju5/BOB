@@ -33,14 +33,14 @@ function CookerUsageSection({ view, now }: ReportProps) {
   </ReportCard>;
   const max = Math.max(1, ...u.perDay.map((d) => d.cook ?? 0));
   const scale = Math.max(u.cook, u.cookWeeklyBefore ?? 0, u.cooksPerWeekTold, 1);
-  const vsBefore = u.recordedDays === 7 && u.cookWeeklyBefore !== null ? u.cook - u.cookWeeklyBefore : null;
+  const vsBefore = !view.cookerMealDays && u.recordedDays === 7 && u.cookWeeklyBefore !== null ? u.cook - u.cookWeeklyBefore : null;
   return (
     <ReportCard title="밥솥 사용" aside="최근 7일">
       <div className="mt-3 grid grid-cols-2 gap-2">
         <Stat label="취사 신호" value={`${u.cook}번`} />
         <Stat label="뚜껑 연 횟수" value={view.mealProfile.usesKeepWarm && u.lid !== null ? `${u.lid}번` : "미측정"} hint={view.mealProfile.usesKeepWarm ? undefined : "보온을 안 쓰셔서 알 수 없어요"} />
       </div>
-      <p className="mt-2 text-xs text-muted">최근 7일 중 기록이 있는 {u.recordedDays}일의 합계예요.</p>
+      <p className="mt-2 text-xs text-muted">어제까지 7일 중 기록이 있는 {u.recordedDays}일의 합계예요.</p>
       <div className="mt-4 flex h-20 items-end gap-1.5" aria-label="하루별 밥 지은 횟수">
         {u.perDay.map((d) => (
           <div key={d.date} className="flex flex-1 flex-col items-center gap-1">
@@ -50,7 +50,7 @@ function CookerUsageSection({ view, now }: ReportProps) {
         ))}
       </div>
       <Bar label={`최근 기록 ${u.recordedDays}일 합계`} pct={(u.cook / scale) * 100} value={`${u.cook}번`} strong />
-      {u.cookWeeklyBefore === null ? <p className="mt-2 text-xs text-muted">이전 4주 기록이 부족해 주 평균을 계산할 수 없어요.</p> : <Bar label="평소 (이전 4주 주 평균)" pct={u.cookWeeklyBefore / scale * 100} value={`${u.cookWeeklyBefore}번`} />}
+      {view.captureSources ? <p className="mt-2 text-xs text-muted">캡처는 일부 시점만 담고 있어 평소보다 얼마나 자주 취사했는지는 비교하기 어려워요.</p> : u.cookWeeklyBefore === null ? <p className="mt-2 text-xs text-muted">이전 4주 기록이 부족해 주 평균을 계산할 수 없어요.</p> : <Bar label="평소 (이전 4주 주 평균)" pct={u.cookWeeklyBefore / scale * 100} value={`${u.cookWeeklyBefore}번`} />}
       <Bar label="알려 주신 평소 횟수" pct={(u.cooksPerWeekTold / scale) * 100} value={`주 ${u.cooksPerWeekTold}번`} />
       {vsBefore !== null && Math.abs(vsBefore) >= 2 ? (
         <p className="mt-3 text-[14px] text-cocoa/80">
@@ -68,7 +68,7 @@ function EnergySection({ view, now }: ReportProps) {
       <ReportCard title="전기 사용량·요금" aside="준비 중">
         <p className="mt-3 flex gap-2 rounded-2xl bg-sky px-4 py-3 text-[14px] leading-relaxed text-cocoa/80">
           <IconInfo className="mt-0.5 h-4 w-4 shrink-0 text-sky-deep" />
-          밥솥이 쓴 전기량과 예상 요금을 곧 보여 드릴게요. 하루 사용량 합계를 모으도록 준비하고 있어요.
+          하루 전기 사용량(kWh)은 그날 누적 전력량이 얼마나 늘었는지 알아야 계산할 수 있어요. 순간 전력으로 확인한 취사 횟수는 위에 표시해요.
         </p>
       </ReportCard>
     );

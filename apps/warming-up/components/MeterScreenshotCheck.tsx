@@ -1,10 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useId, useRef, useState } from "react";
-import { canReadConnection } from "@/lib/data/firebase";
+import Link from "next/link";
+import { canReadConnection, changeCapturedMeals, refreshCapturedMeals, useFirebaseAccount } from "@/lib/data/firebase";
+import { COOKER_RECORD_DAYS } from "@/config/detection";
 import { mealSlotLabel } from "@/lib/data/view";
 import type { MealWindow } from "@/lib/judge/types";
-import { kstDate } from "@/lib/judge/time";
+import { addDays, kstDate } from "@/lib/judge/time";
 import { readKoreanClock, slotForCapture, type CaptureReading } from "@/lib/smartthings/meter-screenshot";
 import { Button } from "./ui";
 
@@ -23,6 +25,12 @@ export function MeterScreenshotCheck({ uid, revision, windows }: { uid: string; 
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [confirmedAt, setConfirmedAt] = useState<number | null>(null);
+  const [saved, setSaved] = useState<"saved"|"duplicate"|null>(null);
+  const [writing, setWriting] = useState(false);
+  const [erase, setErase] = useState(false);
+  const writeId = useRef(0);
+  const panel = useRef<HTMLDetailsElement>(null);
+  const account = useFirebaseAccount(false);
   const active = useRef<AbortController | null>(null);
   const inputId = useId();
 
@@ -30,14 +38,21 @@ export function MeterScreenshotCheck({ uid, revision, windows }: { uid: string; 
     active.current?.abort();
     active.current = null;
   }, []);
+  const cancelEdits = useCallback(() => { writeId.current++; },[]);
   const clear = useCallback(() => {
     cancel();
+    cancelEdits();
     setBusy(false); setReading(null); setMessage(""); setDate(""); setTime(""); setConfirmedAt(null);
-  }, [cancel]);
+    setSaved(null); setWriting(false); setErase(false);
+  }, [cancel,cancelEdits]);
   useEffect(() => {
     window.addEventListener("pagehide", clear);
-    return () => { cancel(); window.removeEventListener("pagehide", clear); };
-  }, [clear, cancel]);
+    if (window.location.hash === "#meter-screenshot" && panel.current) {
+      panel.current.open = true;
+      panel.current.scrollIntoView();
+    }
+    return () => { cancelEdits(); cancel(); window.removeEventListener("pagehide", clear); };
+  }, [clear, cancel, cancelEdits]);
 
   async function openFile(file: File) {
     clear();
@@ -69,15 +84,34 @@ export function MeterScreenshotCheck({ uid, revision, windows }: { uid: string; 
   }
 
   const selectedTime = readKoreanClock(date, time);
-  const slot = confirmedAt !== null ? slotForCapture(confirmedAt, windows).window : null;
+  const day = confirmedAt === null ? null : kstDate(new Date(confirmedAt));
+  const dayWindows = account.captures?.find(d => d.date === day)?.windows ?? windows;
+  const slot = confirmedAt !== null ? slotForCapture(confirmedAt, dayWindows).window : null;
+  const withinPeriod = !!day && day >= addDays(kstDate(new Date()),1 - COOKER_RECORD_DAYS);
   const fromImage = reading?.measuredAt != null && selectedTime === Math.floor(reading.measuredAt / 1000) * 1000;
   const finding = reading?.cooking ? "취사 기준에 맞는 신호예요" : "이 측정은 취사 기준 미만이에요";
 
-  return <details id="meter-screenshot" className="mt-4 border-t border-line pt-1"
+  async function changeRecord(remove:boolean) {
+    if (writing || !canReadConnection(uid, revision) || (!remove && (!reading || confirmedAt === null || !withinPeriod))) return;
+    const id = ++writeId.current;
+    const current = () => id === writeId.current && canReadConnection(uid,revision);
+    setWriting(true); setMessage("");
+    try {
+      const result = await changeCapturedMeals(uid,revision, remove ? null : {at:confirmedAt!,cooking:reading!.cooking,windows:dayWindows});
+      if (!current()) return;
+      if (remove) { clear(); setMessage("이 계정의 캡처 기록을 지웠어요."); }
+      else setSaved(result === "duplicate" ? "duplicate" : "saved");
+    } catch (e) {
+      if (current()) setMessage(e instanceof Error && /^[가-힣]/.test(e.message) ? e.message :
+        "서버에서 반영을 확인하지 못했어요. 연결을 확인하고 다시 시도해 주세요. 같은 측정은 한 번만 반영돼요.");
+    } finally { if (current()) setWriting(false); }
+  }
+
+  return <details ref={panel} id="meter-screenshot" className="mt-4 border-t border-line pt-1"
     onToggle={event => { if (!event.currentTarget.open) clear(); }}>
     <summary className="min-h-12 cursor-pointer content-center text-[17px] font-bold text-cocoa">스마트싱스 캡처 읽기</summary>
     <p className={hint}>밥솥 전용 플러그의 전력과 측정 시각이 보이는 화면을 고르세요. 사진은 이 기기 안에서만 읽어요.</p>
-    <input type="file" accept="image/png,image/jpeg,image/webp" id={inputId} className="peer sr-only" onChange={event => {
+    <input type="file" disabled={writing} accept="image/png,image/jpeg,image/webp" id={inputId} className="peer sr-only" onChange={event => {
       const file = event.currentTarget.files?.[0];
       event.currentTarget.value = "";
       if (file) void openFile(file);
@@ -105,9 +139,23 @@ export function MeterScreenshotCheck({ uid, revision, windows }: { uid: string; 
       <h3 className="mt-1 text-[19px] font-bold text-cocoa">{finding}</h3>
       <p className="mt-2 text-[16px] text-cocoa">{prettyKst.format(confirmedAt)} (한국 시간)</p>
       <p className="text-[15px] text-muted">{fromImage ? "캡처에서 읽은 측정 시각" : "직접 확인해 입력한 측정 시각"}</p>
-      <p className="mt-2 text-[16px] text-cocoa">{slot ? "현재 우리 집 설정 · " + mealSlotLabel(slot.slot, windows) + " 시간대 (" + slot.start + "–" + slot.end + ")" : windows.length ? "현재 설정한 끼니 시간대 밖이에요." : "우리 집 끼니 시간대를 설정하면 어느 시간대인지 볼 수 있어요."}</p>
-      <p className={hint}>{reading.cooking ? "밥솥을 사용했을 가능성이 있어요. 식사 여부는 가족에게 직접 확인해 주세요." : "이 한 번의 측정만으로는 취사나 식사 여부를 알 수 없어요."} 이 결과는 이 화면에만 표시해요.</p>
-      <button type="button" className="mt-2 min-h-11 font-bold text-cocoa underline" onClick={clear}>판독 결과 지우기</button>
+      <p className="mt-2 text-[16px] text-cocoa">{slot ? "기록에 적용할 시간대 · " + mealSlotLabel(slot.slot, dayWindows) + " 시간대 (" + slot.start + "–" + slot.end + ")" : "설정한 끼니 시간대 밖이에요."}</p>
+      <p className={hint}>{reading.cooking ? "시간대 밖의 신호도 취사 횟수에 담겨요. 실제 식사 여부는 가족에게 확인해 주세요." : "이 측정에서 확인된 취사는 0회예요. 그날 식사를 거르셨다는 뜻은 아니에요."}</p>
+      {saved && day ? <>
+        <p role="status" className="mt-3 font-bold text-cocoa">{saved === "duplicate" ? "이미 반영한 측정이에요." : "우리 집 날짜별 기록에 반영했어요."}</p>
+        <Link className="inline-flex min-h-12 items-center font-bold text-cocoa underline" href={"/records/?day="+day}>이 날짜의 밥솥 기록 보기</Link>
+      </> : withinPeriod ? <>
+        <p className={hint}>반영을 누르면 측정 시각, 취사 기준 충족 여부, 적용할 끼니 시간대를 내 계정에 저장해요. 사진과 전력 원값은 저장하지 않아요.</p>
+        <Button type="button" variant="dark" className="mt-3" disabled={writing || !dayWindows.length} onClick={() => void changeRecord(false)}>{writing ? "저장 확인 중…" : "우리 집 기록에 반영"}</Button>
+      </> : <p className={hint}>날짜별 기록에는 최근 {COOKER_RECORD_DAYS}일의 측정을 담을 수 있어요.</p>}
+      <button type="button" disabled={writing} className="mt-2 min-h-11 font-bold text-cocoa underline" onClick={clear}>판독 결과 지우기</button>
     </section>}
+    {account.captureError && <p role="alert" className={hint}>저장한 캡처 기록을 불러오지 못했어요. <button type="button" className="min-h-11 font-bold underline" onClick={()=>void refreshCapturedMeals(uid,revision)}>다시 불러오기</button></p>}
+    {!!account.captures?.length && <div className="mt-3 border-t border-line pt-2">
+      {erase ? <><p className={hint}>모든 날짜의 캡처 기록을 이 계정에서 삭제할까요?</p>
+        <button type="button" disabled={writing} className="mr-4 min-h-11 font-bold text-cocoa underline" onClick={()=>void changeRecord(true)}>캡처 기록 모두 삭제</button>
+        <button type="button" disabled={writing} className="min-h-11 text-muted" onClick={()=>setErase(false)}>취소</button></> :
+        <button type="button" disabled={writing} className="min-h-11 text-muted underline" onClick={()=>setErase(true)}>저장한 캡처 기록 삭제하기</button>}
+    </div>}
   </details>;
 }

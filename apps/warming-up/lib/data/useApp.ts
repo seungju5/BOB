@@ -46,7 +46,8 @@ export function useApp(): App {
 
   if (mode === "demo") return { provider: "demo", accountKey: "demo", view: demoView, actions: demoActions, now, mode, needsLogin: false, error: null };
   if (mode === "live") return {
-    view: firebase.view && firebase.saved ? firebaseView(firebase.saved, firebase.connection, now?.getTime()) : firebase.view, actions: firebaseActions, now, mode, provider: "firebase",
+    view: firebase.view && firebase.saved ? firebaseView(firebase.saved, firebase.connection, now?.getTime(), firebase.captures, firebase.captureError) : firebase.view,
+    actions: firebaseActions, now, mode, provider: "firebase",
     operator: firebase.operator && !!firebase.user?.verified, accountLabel: firebase.user?.email, accountKey: `${firebase.user?.uid ?? "signed-out"}:${firebase.revision}`, signOut: signOutFirebase,
     needsLogin: !firebase.loading && (!!firebase.user ? !firebase.user.verified || !firebase.profile || firebase.profile.consentVersion !== ACCOUNT_CONSENT_VERSION : firebase.user === null),
     error: firebase.error,

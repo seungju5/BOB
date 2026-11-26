@@ -27,6 +27,9 @@ export type FirebaseProvider = {
   getAppProfile(uid:string):Promise<AccountProfile|null>;
   saveProfile(name:string,uid:string,expectedRevision?:string):Promise<void>;
   getAppPreferences(uid:string):Promise<SavedPreferences>;
+  getCaptureDays(uid:string):Promise<import('../smartthings/capture-days').CaptureBucket[]>;
+  saveCapture(uid:string,measuredAt:number,cooking:boolean,windows:MealWindow[]):Promise<'saved'|'duplicate'>;
+  clearCaptureDays(uid:string):Promise<void>;
   saveAppPreferences(input:Preferences,household:Household|null,uid:string,revision:PreferenceRevision):Promise<SavedPreferences>;
 };
 let providerPromise: Promise<FirebaseProvider>|null = null;

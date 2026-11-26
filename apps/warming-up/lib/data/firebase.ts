@@ -2,15 +2,17 @@
 
 import { useEffect, useSyncExternalStore } from 'react';
 import { resetSeniorStepsConsent } from '@/lib/steps/consent';
-import { ALERT_DEFAULTS } from '@/config/detection';
-import { kstDate } from '@/lib/judge/time';
+import { ALERT_DEFAULTS, COOKER_RECORD_DAYS } from '@/config/detection';
+import { kstDate, addDays } from '@/lib/judge/time';
 import { accountError, ACCOUNT_CONSENT_VERSION, connectFirebase, within, type AccountProfile, type FirebaseUser, type Household, type Preferences, type SavedPreferences } from '@/lib/firebase/bridge';
 import { DEFAULT_WINDOWS, type AppActions, type AppView, type OnboardingPatch } from './view';
 import { assertOnboardingConsent } from './consent';
-import { cancelPendingSmartThings, readCookerMealRecords, readSmartThingsConnection, type SmartThingsConnection } from '@/lib/firebase/smartthings';
+import { cancelPendingSmartThings, readCookerMealRecords, readSmartThingsConnection, type CookerMealDay, type SmartThingsConnection } from '@/lib/firebase/smartthings';
+import { summarizeCaptureDays, type CapturedMealDay } from '@/lib/smartthings/capture-days';
+import type { MealWindow } from '@/lib/judge/types';
 
-type State = { user: FirebaseUser|null|undefined; profile: AccountProfile|null; saved: SavedPreferences|null; connection:SmartThingsConnection|null; view: AppView|null; error:string|null; loading:boolean; operator:boolean; revision:number };
-const EMPTY: State = {user:undefined,profile:null,saved:null,connection:null,view:null,error:null,loading:true,operator:false,revision:0};
+type State = { user: FirebaseUser|null|undefined; profile: AccountProfile|null; saved: SavedPreferences|null; connection:SmartThingsConnection|null; captures:CapturedMealDay[]|null; captureError:boolean; view: AppView|null; error:string|null; loading:boolean; operator:boolean; revision:number };
+const EMPTY: State = {user:undefined,profile:null,saved:null,connection:null,captures:null,captureError:false,view:null,error:null,loading:true,operator:false,revision:0};
 let state=EMPTY, epoch=0;
 let statusRequest: AbortController | null = null;
 let signalObservers = 0, signalTimer: number | null = null, pollableUid: string | null = null;
@@ -62,22 +64,31 @@ function connectionPlug(connection: SmartThingsConnection | null, consent: boole
       {powerNoticeAt: new Date(noticeAt).toISOString()}),
   };
 }
-export function firebaseView(saved:SavedPreferences,connection:SmartThingsConnection|null=null,at=Date.now()):AppView {
+export function firebaseView(saved:SavedPreferences,connection:SmartThingsConnection|null=null,at=Date.now(),captures:CapturedMealDay[]|null=null,captureError=false):AppView {
   const p=saved.settings??defaultPreferences(),h=saved.household;
   const records = p.preparationAcknowledged && connection?.stage === 'connected' && connection.device?.isVirtual === false &&
     typeof connection.device.id === 'string' && connection.device.id.trim() &&
     connection.powerNotice?.enabled ? readCookerMealRecords(connection.mealRecords, at) : null;
   const plug = connectionPlug(connection,p.preparationAcknowledged,at);
   const observedDate = plug.powerNoticeAt && kstDate(new Date(plug.powerNoticeAt));
+  const today = kstDate(new Date(at)), oldest = addDays(today, 1 - COOKER_RECORD_DAYS);
+  const imported = p.preparationAcknowledged ? captures?.filter(d => d.date >= oldest && d.date <= today) ?? [] : [];
+  const days = new Map<string,CookerMealDay>(imported.map(day => [day.date,day]));
+  const automatic = new Set(records?.days.map(d => d.date));
+  // Samsung provides aggregates, so adding two sources for a day would count overlapping cooks twice.
+  for (const day of records?.days ?? []) days.set(day.date, day);
+  const available = [...days.values()];
   return {mode:'live',dataSource:'firebase',careAvailable:false,onboardingStep:h?p.onboardingStep:Math.min(p.onboardingStep,3),
     senior:{name:h?.alias??'',relation:h?.relation==='other'&&p.relationLabel?p.relationLabel:relationLabels[h?.relation??'mother'],phone:p.phone},household:{residentCount:h?.residentCount??1,hasPet:h?.hasPet??false},
     mealProfile:{windows:p.windows,eatOutPerWeek:p.eatOutPerWeek,usesKeepWarm:p.usesKeepWarm,cooksPerWeek:p.cooksPerWeek},
     alertSettings:{missedMealsThreshold:p.missedMealsThreshold,fastingHours:p.fastingHours,emergencyHours:p.emergencyHours},seniorConsent:p.preparationAcknowledged,
-    plug,pairingCode:null,seniorPaired:false,slots:records?.days.flatMap(day => day.confirmed.map(slot => ({
+    plug,pairingCode:null,seniorPaired:false,slots:available.flatMap(day => day.confirmed.map(slot => ({
       date:day.date,slot,status:'confirmed' as const,source:'cooker' as const,
-    }))) ?? [],
-    stats:Object.fromEntries(records?.days.map(day => [day.date,{cook:day.cook,lid:null}]) ?? []),
-    ...(records && {cookerMealDays:Object.fromEntries(records.days.map(day => [day.date,day.windows]))}),
+    }))),
+    stats:Object.fromEntries(available.map(day => [day.date,{cook:day.cook,lid:null}])),
+    ...((records || imported.length) && {cookerMealDays:Object.fromEntries(available.map(day => [day.date,day.windows]))}),
+    ...(imported.length > 0 && {captureSources:Object.fromEntries(imported.map(day => [day.date,{samples:day.samples,automatic:automatic.has(day.date)}]))}),
+    ...(p.preparationAcknowledged && captureError && {captureReadError:true}),
     lastCookerAt:observedDate && records?.days.some(day => day.date === observedDate) ? plug.powerNoticeAt! : null,
     lastActivityAt:null,absences:[],alerts:[]};
 }
@@ -92,6 +103,35 @@ export function isFirebaseSessionCurrent(uid: string, revision: number): boolean
 export function canReadConnection(uid: string, revision: number): boolean {
   return isFirebaseSessionCurrent(uid, revision) && state.saved?.settings?.preparationAcknowledged === true &&
     pendingWithdrawals === 0 && !mustConfirmConsent;
+}
+function privateView(saved:SavedPreferences, connection:SmartThingsConnection|null, captures=state.captures, failed=state.captureError) {
+  return firebaseView(saved,connection,Date.now(),captures,failed);
+}
+let captureRead = 0;
+export async function refreshCapturedMeals(uid:string, revision:number) {
+  if (!canReadConnection(uid,revision)) return;
+  const request = ++captureRead;
+  const current = () => request === captureRead && canReadConnection(uid,revision);
+  try {
+    const provider = await within(connectFirebase());
+    if (!current()) return;
+    const captures = summarizeCaptureDays(await within(provider.getCaptureDays(uid)));
+    if (current() && state.saved) emit({captures,captureError:false,view:privateView(state.saved,state.connection,captures,false)});
+  } catch {
+    if (current() && state.saved) emit({captures:null,captureError:true,view:privateView(state.saved,state.connection,null,true)});
+  }
+}
+export async function changeCapturedMeals(uid:string, revision:number, input:{at:number; cooking:boolean; windows:MealWindow[]}|null) {
+  const check = () => { if (!canReadConnection(uid,revision)) throw Error('로그인과 우리 집 동의를 다시 확인해 주세요.'); };
+  check();
+  const provider = await within(connectFirebase());
+  check();
+  const result = input ? await within(provider.saveCapture(uid,input.at,input.cooking,input.windows))
+    : await within(provider.clearCaptureDays(uid));
+  check();
+  await refreshCapturedMeals(uid,revision);
+  check();
+  return result;
 }
 // A status result can also arrive from the connection panel. Keep just summary
 // fields here; a manual wattage reading stays in the panel that requested it.
@@ -126,7 +166,7 @@ export function updateFirebaseConnection(uid: string, result: SmartThingsConnect
       connection = { stage: 'read_error' };
     }
   }
-  emit({connection, view: firebaseView(state.saved, connection)});
+  emit({connection, view: privateView(state.saved, connection)});
 }
 async function refreshFirebaseConnection(uid: string, revision: number, dueDeviceId?: string) {
   if (!canReadConnection(uid, revision)) return;
@@ -164,7 +204,7 @@ async function observeUser(user:FirebaseUser|null) {
     if(epoch!==at)return;
     const ready=profile?.ownerUid===user.uid&&profile.consentVersion===ACCOUNT_CONSENT_VERSION;
     emit({operator,profile:ready?profile:null,saved,view:ready?firebaseView(saved):null,loading:false,error:null});
-    if(ready)void refreshFirebaseConnection(user.uid,state.revision);
+    if(ready){void refreshFirebaseConnection(user.uid,state.revision);void refreshCapturedMeals(user.uid,state.revision);}
   } catch(error) { if(epoch===at)emit({error:accountError(error),loading:false}); }
 }
 async function ensureFirebaseObserver(){
@@ -301,7 +341,7 @@ async function recheckSavedConsent(fromPeer: boolean): Promise<void> {
   if (fromPeer && !mustConfirmConsent) {
     mustConfirmConsent = true;
     cancelStatusRequest();
-    emit({connection: null, view: firebaseView(state.saved), revision: state.revision + 1});
+    emit({connection:null,captures:null,captureError:false,view:firebaseView(state.saved),revision:state.revision+1});
   }
   const current = () => epoch === at && consentProbe === probe;
   try {
@@ -316,14 +356,14 @@ async function recheckSavedConsent(fromPeer: boolean): Promise<void> {
     if (state.saved !== before) return recheckSavedConsent(fromPeer);
     if (mustConfirmConsent || before?.settings?.preparationAcknowledged !== saved.settings?.preparationAcknowledged) {
       applySavedPreferences(uid, saved, 'confirmation');
-    }
+    } else if (saved.settings?.preparationAcknowledged) void refreshCapturedMeals(uid,state.revision);
     consentProbe = null;
   } catch {
     if (!current() || !state.saved) return;
     mustConfirmConsent = true;
     cancelStatusRequest();
     const connection: SmartThingsConnection = {stage: 'read_error'};
-    emit({connection, view: firebaseView(state.saved,connection), revision: state.revision + 1});
+    emit({connection,captures:null,captureError:false,view:firebaseView(state.saved,connection),revision:state.revision+1});
     consentProbe = null;
   }
 }
@@ -340,9 +380,11 @@ function applySavedPreferences(uid: string, saved: SavedPreferences, source: 'wr
   }
   const connection = hasConsent && !changed && !mustConfirmConsent && !pendingWithdrawals ? state.connection : null;
   const revision = changed || resume ? state.revision + 1 : state.revision;
-  emit({saved, connection, revision, view: firebaseView(saved, connection), error: null});
+  const captures = hasConsent && !changed && !mustConfirmConsent && !pendingWithdrawals ? state.captures : null;
+  const captureError = !!(hasConsent && !changed && !mustConfirmConsent && state.captureError);
+  emit({saved,connection,captures,captureError,revision,view:privateView(saved,connection,captures,captureError),error:null});
   if (changed && source === 'write') notifyConsentChanged();
-  if ((changed || resume) && hasConsent) void refreshFirebaseConnection(uid, revision);
+  if ((changed || resume) && hasConsent) {void refreshFirebaseConnection(uid, revision);void refreshCapturedMeals(uid, revision);}
 }
 function save(step:number,patch:OnboardingPatch={}) {
   const at=epoch,uid=state.user?.uid;let expired=false;
@@ -353,7 +395,7 @@ function save(step:number,patch:OnboardingPatch={}) {
     // preference. A late response from the panel or a previous grant cannot repopulate them.
     ++pendingWithdrawals;
     cancelStatusRequest();
-    emit({connection:null, view:firebaseView(state.saved), revision:state.revision+1});
+    emit({connection:null,captures:null,captureError:false,view:firebaseView(state.saved),revision:state.revision+1});
     void cancelPendingSmartThings(uid!).catch(()=>{});
   }
   const previous=uid?writeQueues.get(uid)??Promise.resolve():Promise.resolve();

@@ -43,6 +43,9 @@ export type AppView = {
   mealScheduleHistory?: MealScheduleChange[];
   /** The schedules observed with each device summary. An empty map is an active, unused grant. */
   cookerMealDays?: Record<string, MealWindow[]>;
+  /** Counts on a date with both sources use the automatic daily record. */
+  captureSources?: Record<string, { samples:number; automatic:boolean }>;
+  captureReadError?: boolean;
   mealProfile: { windows: MealWindow[]; eatOutPerWeek: number; usesKeepWarm: boolean; cooksPerWeek: number };
   alertSettings: { missedMealsThreshold: number; fastingHours: number; emergencyHours: number };
   seniorConsent: boolean;

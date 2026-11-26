@@ -19,6 +19,12 @@ if (basePath.endsWith("/")) throw new Error("App base path must not end in a sla
 
 const nextConfig: NextConfig = {
   basePath,
+  // The two .server.ts Firebase push handlers require a live Node server.
+  // The offline/static edition exports the usual Next pages only.
+  ...(!staticExport && {
+    pageExtensions: ["server.ts", "tsx", "ts", "jsx", "js"],
+    serverExternalPackages: ["google-auth-library", "web-push"],
+  }),
   ...(staticExport ? { output: "export", distDir: "tmp/impact-final/build", trailingSlash: true, images: { unoptimized: true } } : {}),
   cacheComponents: !staticExport,
   partialPrefetching: !staticExport,

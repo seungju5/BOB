@@ -4,31 +4,24 @@ import { TEAM_GOOGLE_SIGN_IN_ENABLED, TEAM_KAKAO_SIGN_IN_ENABLED } from '@/confi
 import { PrivacyNotice } from '@/components/privacy/PrivacyNotice';
 
 import Link from 'next/link';
-import { useEffect, useRef, useState, useSyncExternalStore, type FormEvent } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useEffect, useRef, useState, type FormEvent } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Logo, Mascot } from '@/components/Mascot';
 import { Button } from '@/components/ui';
 import { TextInput } from '@/components/forms';
 import { FlowProgress } from '@/components/onboarding/FlowProgress';
 import { setMode, useMode } from '@/lib/data/mode';
 import { useFirebaseAccount, refreshFirebaseAccount, signOutFirebase } from '@/lib/data/firebase';
-import { afterGuardianLogin } from '@/lib/data/view';
 import { accountError, connectFirebase, within } from '@/lib/firebase/bridge';
-import { noticeDay, recordNoticePath } from '@/public/notification-content';
-
-function onLocationChange(notify:()=>void) {
-  window.addEventListener('popstate',notify);
-  return ()=>window.removeEventListener('popstate',notify);
-}
-function afterLogin(step: number) {
-  return afterGuardianLogin(step, new URLSearchParams(window.location.search).get('next'));
-}
+import { firebaseLoginDestination } from '@/lib/firebase/login-destination';
 
 export default function FirebaseLogin(){
   const account=useFirebaseAccount();
   const [busy,setBusy]=useState(false);
   const [continueUid,setContinueUid]=useState<string|null>(null);
-  return <LoginForm key={account.user?.uid??'anonymous'} account={account} busy={busy} setBusy={setBusy} continueUid={continueUid} setContinueUid={setContinueUid} />;
+  return <Suspense fallback={<main className="p-6" role="status">로그인 상태를 확인하고 있어요…</main>}>
+    <LoginForm key={account.user?.uid??'anonymous'} account={account} busy={busy} setBusy={setBusy} continueUid={continueUid} setContinueUid={setContinueUid} />
+  </Suspense>;
 }
 function LoginForm({account,busy,setBusy,continueUid,setContinueUid}:{account:ReturnType<typeof useFirebaseAccount>;busy:boolean;setBusy:(busy:boolean)=>void;continueUid:string|null;setContinueUid:(value:string|null)=>void}){
   const router=useRouter(),mode=useMode(),leavingForDemo=useRef(false);
@@ -37,15 +30,10 @@ function LoginForm({account,busy,setBusy,continueUid,setContinueUid}:{account:Re
   const [keep,setKeep]=useState(false),[consent,setConsent]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
   const [kakaoReady,setKakaoReady]=useState(false),[verificationEmail,setVerificationEmail]=useState('');
   const locked=useRef(false);
-  const studioLogin=useSyncExternalStore(onLocationChange,()=>new URLSearchParams(window.location.search).get('next')==='studio',()=>false);
-  const query = new URLSearchParams(useSyncExternalStore(onLocationChange,()=>window.location.search,()=>''));
-  const recordDay = query.get('next') === 'record' ? noticeDay(query.get('day')) : null;
-  let recordTarget:string|null = null;
-  if (account.user?.verified && account.view?.seniorConsent) {
-    if (recordDay) recordTarget = recordNoticePath(recordDay,null);
-    if (query.get('next') === 'household-notice') recordTarget = '/alerts/';
-    if (query.get('next') === 'connect') recordTarget = '/connect/';
-  }
+  const query = useSearchParams();
+  const next = query.get('next');
+  const studioLogin = next === 'studio';
+  const destination = firebaseLoginDestination(account, next, query.get('day'), query.get('slot'));
   useEffect(()=>{
     if (!TEAM_KAKAO_SIGN_IN_ENABLED) return;
     let active=true;
@@ -56,10 +44,8 @@ function LoginForm({account,busy,setBusy,continueUid,setContinueUid}:{account:Re
     // Restoring a session must leave the account-switch choice reachable.
     // Only a sign-in/profile action started on this screen advances automatically.
     if (busy || account.loading || !continueUid || account.user?.uid !== continueUid || mode !== 'live' || leavingForDemo.current) return;
-    if (recordTarget) router.replace(recordTarget);
-    else if (account.operator || new URLSearchParams(window.location.search).get('next') === 'studio' && account.user?.verified) router.replace('/admin/');
-    else if (account.view) router.replace(afterLogin(account.view.onboardingStep));
-  },[account.user?.uid,account.user?.verified,account.loading,account.operator,account.view,busy,continueUid,mode,recordTarget,router]);
+    if (destination) router.replace(destination);
+  },[account.user?.uid,account.loading,busy,continueUid,destination,mode,router]);
   async function run(action:()=>Promise<void>){
     if(busy||locked.current)return;locked.current=true;setBusy(true);setContinueUid(null);setError('');setNotice('');
     try{await action();}catch(e){setContinueUid(null);setError(accountError(e));}finally{locked.current=false;setBusy(false);}
@@ -89,8 +75,18 @@ function LoginForm({account,busy,setBusy,continueUid,setContinueUid}:{account:Re
       {error||account.error?<p role="alert" className="mt-5 rounded-2xl bg-blush p-4 text-[16px] text-cocoa">{error||account.error}</p>:null}
       {notice?<p role="status" className="mt-5 rounded-2xl bg-sage p-4 text-[16px] text-cocoa">{notice}</p>:null}
       {account.loading ? <p role="status" className="py-8 text-center text-[16px] text-muted">로그인 상태를 확인하고 있어요…</p>
-      : user && account.operator && !recordTarget ? <section className="mt-6 grid gap-3"><p className="text-center">{user.email}</p><Button onClick={()=>{setMode('live');router.push('/admin/');}}>팀 운영 스튜디오 열기</Button><Button variant="ghost" disabled={busy} onClick={()=>run(signOutFirebase)}>다른 계정으로 로그인</Button></section>
-      : user?.verified && studioLogin ? <section className="mt-6 grid gap-3"><p className="text-center">이 계정에 등록된 운영 권한이 없습니다.</p><Button onClick={()=>run(signOutFirebase)}>다른 이메일로 로그인</Button></section>
+      : user && destination ? <section className="mt-6 flex flex-col gap-3">
+        <p className="break-all text-center text-[16px]">{user.email}</p>
+        <Button onClick={()=>{setMode('live');router.push(destination);}}>
+          {studioLogin ? '팀 운영 스튜디오 열기' : destination.startsWith('/records/') ? '내 날짜별 기록 열기' : next === 'connect' ? '내 밥솥 연결 확인' : '보호자 화면으로 계속하기'}
+        </Button>
+        <Button variant="ghost" disabled={busy} onClick={()=>run(signOutFirebase)}>다른 계정으로 로그인</Button>
+      </section>
+      : user?.verified && studioLogin ? <section className="mt-6 grid gap-3">
+        <p className="text-center">이 계정에 등록된 운영 권한이 없습니다.</p>
+        <Button onClick={()=>{setMode('live');router.replace('/start/');}}>보호자 화면으로 계속하기</Button>
+        <Button variant="ghost" disabled={busy} onClick={()=>run(signOutFirebase)}>다른 이메일로 로그인</Button>
+      </section>
       : user && !user.verified ? <section className="mt-6 flex flex-col gap-3">
         <h2 className="text-[20px] font-bold text-cocoa">{user.email?'이메일을 확인해 주세요':'처음 한 번, 이메일을 확인해요'}</h2>
         {user.email?<p className="break-all text-[16px] text-muted">{user.email}로 보낸 확인 링크를 눌러 주세요.</p>:<>
@@ -121,7 +117,6 @@ function LoginForm({account,busy,setBusy,continueUid,setContinueUid}:{account:Re
         {account.error?<Button variant="outline" type="button" onClick={()=>run(refreshFirebaseAccount)}>다시 확인</Button>:null}
         <Button type="button" variant="ghost" disabled={busy} onClick={()=>run(signOutFirebase)}>다른 계정으로 로그인</Button>
       </form>
-      : user && account.view ? <section className="mt-6 flex flex-col gap-3"><p className="break-all text-center text-[16px]">{user.email}</p><Button onClick={()=>{setMode('live');router.push(recordTarget ?? afterLogin(account.view!.onboardingStep));}}>{recordTarget && recordDay ? "내 날짜별 기록 열기" : "내 계정으로 계속하기"}</Button><Button variant="ghost" disabled={busy} onClick={()=>run(signOutFirebase)}>다른 계정으로 로그인</Button></section>
       : <form className="mt-7 flex flex-col gap-3" onSubmit={submit}>
         {tab==='login' && (TEAM_GOOGLE_SIGN_IN_ENABLED || kakaoReady) ? <>
           {kakaoReady ? <button type="button" disabled={busy} onClick={()=>run(async()=>{const p=await connectFirebase();if(!p.kakao)throw Error('카카오 로그인 연결을 준비하고 있어요.');await p.kakao(keep);})} className="relative flex min-h-14 items-center justify-center rounded-full bg-kakao px-6 text-[17px] font-bold text-kakao-label disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-cocoa">

@@ -262,7 +262,7 @@ export function StudioWorkspace({ api, uid, email }: { api: Studio; uid: string;
         </aside>
         <div className="studio-canvas" id="studio-content" tabIndex={-1}>
           <div className="studio-breadcrumb">
-            <IconHome /> Warming Up <span>/</span>
+            <Link href="/start/" className="studio-textLink"><IconHome /> 보호자 화면으로</Link><span>/</span>
             {section.label}
           </div>
           <div className="studio-heading">

@@ -25,6 +25,8 @@ export function createProvider(config, {googleEnabled = false, kakaoEnabled = fa
     if(!snapshot.exists())return null;
     const {ownerUid,updatedAt,...fields}=snapshot.data();
     if(ownerUid!==uid||!(updatedAt instanceof Timestamp)||snapshot.metadata.hasPendingWrites)throw Error('서버 저장 결과를 다시 확인해 주세요.');
+    // Read legacy 1–2 meal choices at the new minimum; persist on the next save.
+    if(fields.missedMealsThreshold===1||fields.missedMealsThreshold===2)fields.missedMealsThreshold=3;
     return preferenceFields(fields);
   }
   const remember=value=>setPersistence(auth,value?browserLocalPersistence:browserSessionPersistence);

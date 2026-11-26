@@ -1,7 +1,7 @@
 import {initializeApp,getApp,getApps} from 'firebase/app';
 import {getAuth,onAuthStateChanged,beforeAuthStateChanged,signInWithEmailAndPassword,createUserWithEmailAndPassword,sendEmailVerification,sendPasswordResetEmail,updateProfile,signOut,reload,setPersistence,browserLocalPersistence,browserSessionPersistence,GoogleAuthProvider,signInWithPopup,signInWithCustomToken,verifyBeforeUpdateEmail} from 'firebase/auth';
 import {getFirestore,doc,getDocFromServer,runTransaction,serverTimestamp,Timestamp,writeBatch} from 'firebase/firestore';
-import {getCaptureDays,saveCapture,deleteCaptureBuckets} from './capture-days.mjs';
+import {getCaptureDays,deleteCaptureBuckets} from './capture-days.mjs';
 import {createStudio} from './studio.mjs';
 import {preferenceFields} from './app-preferences.mjs';
 import {CONSENT_VERSION,checkDisplayName} from './auth-utils.mjs';
@@ -113,12 +113,6 @@ export function createProvider(config, {googleEnabled = false, kakaoEnabled = fa
       return {...profile, savedAt:savedAt(snapshot), revision:revisionOf(snapshot)};
     });},
     getCaptureDays(uid){return withHouseholdUser(uid,(_user,current)=>getCaptureDays(db,uid,current));},
-    saveCapture(uid,at,cooking,windows){return withHouseholdUser(uid,(_user,current)=>saveCapture(db,uid,at,cooking,windows,current));},
-    clearCaptureDays(uid){return withHouseholdUser(uid,async(_user,current)=>{
-      const batch=writeBatch(db);
-      deleteCaptureBuckets(batch,db,uid);
-      current();await batch.commit();current();
-    });},
     getAppPreferences(expectedUid){return withHouseholdUser(expectedUid,async(user,assertCurrent)=>{
       const [settings,household]=await Promise.all([getDocFromServer(settingsRef(user.uid)),getDocFromServer(householdRef(user.uid))]);assertCurrent();
       return preferencesResult(settings,household,user.uid);

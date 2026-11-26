@@ -1,7 +1,7 @@
 import { isCookingPower } from "../../server/smartthings/cooking-signal.mjs";
-import { kstDate, kstDateTime, kstTime } from "../judge/time";
-import { validMealWindows } from "../judge/resolveMealSlots";
-import type { MealWindow } from "../judge/types";
+import { kstDate, kstDateTime, kstTime } from "../judge/time.ts";
+import { validMealWindows } from "../judge/resolveMealSlots.ts";
+import type { MealWindow } from "../judge/types.ts";
 
 // Keep only the threshold result and measurement time after parsing local OCR text.
 export type CaptureReading = { cooking: boolean; measuredAt: number | null };

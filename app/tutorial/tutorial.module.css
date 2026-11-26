@@ -24,3 +24,9 @@
   background: var(--color-paper);
 }
 .controls { display: grid; margin: .8rem var(--gutter) max(1rem, env(safe-area-inset-bottom)); }
+
+.exampleActions { display: grid; }
+.exampleActions li { display: flex; align-items: center; gap: .85rem; padding: .65rem .3rem; font-size: 1.25rem; }
+.exampleActions li + li { border-top: 1px solid var(--color-line); }
+.exampleActions [data-tone="away"] span { background: var(--color-sky); color: var(--color-sky-deep); }
+.exampleActions [data-tone="help"] span { background: var(--color-blush); color: var(--color-blush-deep); }

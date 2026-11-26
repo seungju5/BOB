@@ -5,7 +5,6 @@ import { useEffect, useRef, useState, type ComponentType, type ReactNode, type S
 import {
   IconArrowRight,
   IconBell,
-  IconCheckSquare,
   IconCooker,
   IconFile,
   IconHeart,
@@ -29,17 +28,16 @@ import { weeklyReportLabel } from "@/lib/alerts/copy";
 
 /** 가입 후의 소개. 명시적으로 선택한 데모도 같은 소개를 별도로 체험한다. */
 
-type Slide = { title: string; body: string; content: ReactNode };
+type Slide = { title: string; body?: string; content: ReactNode };
 
 const SLIDES: Slide[] = [
   {
     title: "밥솥이 안부를 전해요",
-    body: "어르신이 동의한 밥솥에서 사용 소식이 오면 가족이 함께 볼 수 있어요.",
+    body: "어르신이 동의하면 가족도 밥솥 사용 소식을 볼 수 있어요.",
     content: <IntroFlow />,
   },
   {
-    title: "소식이 뜸할 때",
-    body: "정해 둔 시간에 소식이 없으면 알림을 보고 안부를 물어보세요.",
+    title: "가족이 받는 알림",
     content: (
       <div className="flex w-full flex-col gap-3">
         <InfoCard icon={IconBell} text={"점심시간이 지났는데\n아직 식사 소식이 없어요"} />
@@ -49,34 +47,31 @@ const SLIDES: Slide[] = [
   },
   {
     title: "우리 집 한 주를 살펴봐요",
-    body: "홈에서처럼 요일을 눌러 보세요. 그날 어느 시간대에 밥솥을 썼는지 보여요.",
+    body: "요일을 눌러 그날의 소식을 보세요.",
     content: <MealWeekExample />,
   },
   {
-    title: "어르신이 전하는 소식",
-    body: "어르신 홈에 있는 세 가지 버튼이에요. 전하고 싶은 소식이 있을 때만 눌러요.",
+    title: "어르신 홈에서 고르는 소식",
     content: <SeniorButtons />,
   },
   {
-    title: "우리 집 기기 연결",
-    body: "우리 집 설정을 마치면 홈에서 기기 연결을 시작할 수 있어요.",
+    title: "기기 연결 준비물",
+    body: "우리 집 설정을 마친 뒤 홈에서 연결해요.",
     content: <ReadyChecklist />,
   },
 ];
 
-const READY: { icon: Icon; title: string; hint: string }[] = [
-  { icon: IconSmartphone, title: "삼성 SmartThings 계정", hint: "사용할 플러그가 등록된 계정을 준비해요" },
-  { icon: IconPlug, title: "전력 측정 지원 스마트플러그", hint: "밥솥에 연결할 기기가 전력 측정을 지원하는지 확인해요" },
-  { icon: IconLock, title: "어르신 동의와 연결 허용", hint: "어르신의 동의를 확인하고 홈에서 연결 권한을 살펴봐요" },
+const READY: { icon: Icon; title: string }[] = [
+  { icon: IconSmartphone, title: "플러그가 등록된 삼성 SmartThings 계정" },
+  { icon: IconPlug, title: "밥솥에 꽂을 전력 측정용 스마트플러그" },
+  { icon: IconLock, title: "밥솥 사용 소식을 공유해도 된다는 어르신의 동의" },
 ];
 
 /** T-05 준비물: 번호가 이어지는 체크리스트 카드 */
 function ReadyChecklist() {
   return (
     <ol className="relative flex w-full flex-col gap-3">
-      {/* 카드를 잇는 점선 */}
-      <span aria-hidden className="absolute top-8 bottom-8 left-[2.375rem] border-l-2 border-dashed border-butter-deep/50" />
-      {READY.map(({ icon: Icon, title, hint }, i) => (
+      {READY.map(({ icon: Icon, title }, i) => (
         <li
           key={title}
           className="animate-rise motion-reduce:animate-none relative flex items-center gap-4 rounded-[1.25rem] bg-butter-soft py-3.5 pr-4 pl-4"
@@ -88,9 +83,7 @@ function ReadyChecklist() {
           </span>
           <span className="flex min-w-0 flex-1 flex-col">
             <span className="text-[18px] leading-[1.5] font-medium tracking-[-0.02em] text-cocoa">{title}</span>
-            <span className="mt-1 text-[16px] leading-[1.6] text-cocoa/75">{hint}</span>
           </span>
-          <IconCheckSquare className="h-6 w-6 shrink-0 text-butter-deep" />
         </li>
       ))}
     </ol>
@@ -119,7 +112,7 @@ export default function TutorialPage() {
     try {
       const next = await completeTutorial(view.onboardingStep, actions);
       router.push(next);
-    } catch { setSaveError("소개를 마친 상태를 저장하지 못했어요. 지금 화면은 그대로이니 다시 눌러 주세요."); }
+    } catch { setSaveError("소개를 저장하지 못했어요. 다시 시도해 주세요."); }
     finally { saving.current = false; setBusy(false); }
   };
 
@@ -135,15 +128,15 @@ export default function TutorialPage() {
               <span key={i} className={`h-2.5 rounded-full transition-all ${i === index ? "w-7 bg-cocoa" : "w-2.5 bg-cocoa/20"}`} />
             ))}
           </div>
-          <button type="button" disabled={busy} onClick={() => void finishIntro()} className="-mr-2 flex min-h-12 shrink-0 items-center rounded-full px-3 py-2 text-[16px] font-semibold text-cocoa/70 hover:text-cocoa focus-visible:outline-2 focus-visible:outline-cocoa disabled:opacity-50">
-            {last ? returning ? "홈으로" : "우리 집으로" : "건너뛰기"}
-          </button>
+          {!last && <button type="button" disabled={busy} onClick={() => void finishIntro()} className="-mr-2 flex min-h-12 shrink-0 items-center rounded-full px-3 py-2 text-[16px] font-semibold text-cocoa/70 hover:text-cocoa focus-visible:outline-2 focus-visible:outline-cocoa disabled:opacity-50">
+            소개 건너뛰기
+          </button>}
         </div>
         <div className={styles.copyStack}>
           {SLIDES.map((entry, i) => (
             <div key={entry.title} className={styles.copy} aria-hidden={i !== index}>
               <h1 ref={i === index ? heading : undefined} tabIndex={-1}>{entry.title}</h1>
-              <p>{entry.body}</p>
+              {entry.body && <p>{entry.body}</p>}
             </div>
           ))}
         </div>
@@ -155,7 +148,7 @@ export default function TutorialPage() {
       <div className={styles.controls}>
         {saveError ? <p role="alert" className="mb-4 text-[16px] leading-relaxed text-blush-deep">{saveError}</p> : null}
         <Button variant="dark" disabled={busy} className="min-h-14 text-[19px]" onClick={() => (last ? void finishIntro() : setIndex(index + 1))}>
-          {busy ? "이어서 준비하고 있어요…" : last ? returning ? "홈으로 돌아가기" : "우리 집 알려주기" : "다음"}
+          {busy ? "저장 중…" : last ? returning ? "홈으로 돌아가기" : "우리 집 설정하기" : "다음"}
         </Button>
         {last ? <Button variant="ghost" disabled={busy} className="mt-1 text-cocoa/70" onClick={() => setIndex(0)}>소개 처음부터 다시 보기</Button> : null}
         {index === 0 ? (
@@ -201,15 +194,14 @@ function IntroFlow() {
 function SeniorButtons() {
   const actions = [
     { icon: IconUtensils, label: "외식했어요", tone: "meal" },
-    { icon: IconSuitcase, label: "놀러가요", tone: "away" },
+    { icon: IconSuitcase, label: "외출해요", tone: "away" },
     { icon: IconHeart, label: "도와줘요", tone: "help" },
   ];
   return (
     <div>
-      <h2 className="text-[22px] font-bold text-cocoa">가족에게 소식 전하기</h2>
-      <ul className="bapmunna-senior-actions" aria-label="어르신 홈의 버튼 예시">
+      <ul className={styles.exampleActions} aria-label="어르신 홈의 버튼 예시">
         {actions.map(({ icon: Icon, label, tone }) => (
-          <li key={tone} className="bapmunna-senior-action" data-tone={tone}>
+          <li key={tone} data-tone={tone}>
             <span className="bapmunna-senior-action-icon" aria-hidden><Icon /></span>
             <strong>{label}</strong>
           </li>

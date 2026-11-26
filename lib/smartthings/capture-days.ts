@@ -1,28 +1,39 @@
-import { COOKER_RECORD_DAYS } from "@/config/detection";
+import criteria from "../../server/smartthings/power-criteria.json" with {type:"json"};
 import { continuesCookRun } from "../../server/smartthings/cooking-signal.mjs";
 import type { CookerMealDay } from "@/lib/firebase/smartthings";
-import { validMealWindows } from "@/lib/judge/resolveMealSlots";
-import { DAY_MS, kstTime } from "@/lib/judge/time";
-import type { MealWindow } from "@/lib/judge/types";
+import { validMealWindows } from "../judge/resolveMealSlots.ts";
+import { DAY_MS, kstTime } from "../judge/time.ts";
+import type { MealWindow } from "../judge/types.ts";
 
 export type CaptureBucket = { day: number; windows: MealWindow[]; samples: Record<string, boolean> };
+export type PublishedBucket = {day:number; windows:MealWindow[]; cook:number; confirmed:CookerMealDay["confirmed"]; count:number};
 export type CapturedMealDay = CookerMealDay & { samples: number };
 
 /** Deduplicate before assigning a cook to the Seoul day and slot of its first high sample. */
-export function summarizeCaptureDays(buckets: CaptureBucket[], now = Date.now()): CapturedMealDay[] {
+export function summarizeCaptureDays(buckets: (CaptureBucket | PublishedBucket)[], now = Date.now()): CapturedMealDay[] {
   const offset = 9 * 3600000;
   const today = Math.floor((now + offset) / DAY_MS);
   let previousHigh: number | null = null;
-  return [...buckets].sort((a,b) => a.day - b.day).flatMap(({day, windows, samples}) => {
-    if (!Number.isInteger(day) || day > today || day <= today - COOKER_RECORD_DAYS) return [];
-    if (!validMealWindows(windows) || !samples || typeof samples !== "object")
-      throw Error("저장한 캡처 기록을 확인하지 못했어요.");
+  return [...buckets].sort((a,b) => a.day - b.day).flatMap(bucket => {
+    const {day, windows} = bucket;
+    if (!Number.isInteger(day) || day > today || day <= today - criteria.mealRecordDays) return [];
     const date = new Date(day * DAY_MS).toISOString().slice(0,10);
+    if (!validMealWindows(windows)) throw Error("저장한 끼니 시간대를 확인하지 못했어요.");
+    if ("count" in bucket) {
+      const {cook, confirmed, count} = bucket;
+      if (!Number.isSafeInteger(count) || count < 1 || count > 86400 || !Number.isSafeInteger(cook) ||
+          cook < 0 || cook > count || !Array.isArray(confirmed) || confirmed.length > cook ||
+          new Set(confirmed).size !== confirmed.length || !confirmed.every(slot => windows.some(w => w.slot === slot)))
+        throw Error("저장한 밥솥 기록을 확인하지 못했어요.");
+      return [{date, windows, cook, confirmed, samples:count}];
+    }
+    const {samples} = bucket;
+    if (!samples || typeof samples !== "object") throw Error("저장한 밥솥 기록을 확인하지 못했어요.");
     const result: CapturedMealDay = {date, windows, confirmed:[], cook:0, samples:0};
     for (const key of Object.keys(samples).sort((a,b) => Number(a) - Number(b))) {
       const seconds = Number(key);
       if (!Number.isInteger(seconds) || seconds < 0 || seconds >= 86400 || String(seconds) !== key || typeof samples[key] !== "boolean")
-        throw Error("저장한 캡처의 측정 시각을 확인하지 못했어요.");
+        throw Error("저장한 기록의 측정 시각을 확인하지 못했어요.");
       const at = day * DAY_MS - offset + seconds * 1000;
       if (at > now) continue;
       result.samples++;

@@ -3,9 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "predev": "node scripts/meter-ocr-assets.mjs",
     "dev": "next dev",
-    "prebuild": "node scripts/meter-ocr-assets.mjs",
     "build": "next build --webpack",
     "release:hosting": "python3 scripts/release-team-build.py",
     "check:types": "tsc --noEmit",
@@ -15,7 +13,8 @@
     "test:accounts": "node --test firebase/tests/account-rules.test.mjs",
     "test:domain": "node --test packages/power-pattern/*.test.mjs packages/power-pattern/research/*.test.mjs packages/walking-hearts/test/*.test.mjs && npm run test:smartthings",
     "test:smartthings": "npm ci --prefix server/smartthings --no-audit --no-fund && npm --prefix server/smartthings test",
-    "lint": "eslint"
+    "lint": "eslint",
+    "pilot:import": "node server/smartthings/pilot/import.mjs"
   },
   "dependencies": {
     "@bapmunna/phone-steps": "file:packages/phone-steps",
@@ -26,6 +25,7 @@
     "next": "16.4.5",
     "react": "19.3.0",
     "react-dom": "19.3.0",
+    "sharp": "0.35.5",
     "tesseract.js": "7.0.0"
   },
   "devDependencies": {

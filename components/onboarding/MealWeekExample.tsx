@@ -127,7 +127,7 @@ export function MealWeekExample() {
                 </>}
               </div>
               <span className={styles.summaryIcon} aria-hidden>
-                {summary.count > 0 ? <Image src={appPath("/brand/rice-logo.png")} alt="" width={160} height={160} unoptimized />
+                {summary.count > 0 ? <Image src={appPath("/brand/rice-mark.png")} alt="" width={160} height={160} unoptimized />
                   : summary.tone === "pending" ? <IconClock /> : (
                     <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M9 4h11l5 5v18H9z" fill="var(--color-paper)" /><path d="M19 4v6h6M13 15h8M13 20h4" />

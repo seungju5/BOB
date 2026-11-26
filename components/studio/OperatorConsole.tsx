@@ -27,7 +27,7 @@ function Brand() {
   return (
     <span className="studio-brand">
       <span className="studio-mark">
-        <Image src="/brand/rice-logo.png" alt="" width={36} height={36} />
+        <Image src="/brand/rice-mark.png" alt="" width={36} height={36} />
       </span>
       <b>밥뭇나</b>
       <span>Studio</span>

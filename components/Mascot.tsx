@@ -12,7 +12,7 @@ export function Mascot({ className = "", variant = "cooker" }: { mood?: Mood; cl
 export function Logo({ className = "" }: { className?: string }) {
   return (
     <span className={`inline-flex items-center gap-2 ${className}`}>
-      <Image src={appPath("/brand/rice-logo.png")} width={44} height={44} unoptimized alt="" className="h-11 w-11 object-contain" />
+      <Image src={appPath("/brand/rice-mark.png")} width={44} height={44} unoptimized alt="" className="h-11 w-11 object-contain" />
       <span className="font-hand text-[35px] leading-none text-cocoa">밥뭇나</span>
     </span>
   );

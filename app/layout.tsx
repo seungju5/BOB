@@ -14,8 +14,8 @@ export const metadata: Metadata = {
   description: "밥 한 끼로 전하는 안부. 밥솥 사용 패턴으로 부모님의 식사 공백을 알려드려요.",
   appleWebApp: { capable: true, title: "Warming Up", statusBarStyle: "default" },
   icons: {
-    icon: "/brand/rice-logo.png",
-    apple: { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    icon: { url: "/brand/home-icon-white-192.png?v=2", sizes: "192x192", type: "image/png" },
+    apple: { url: "/brand/home-icon-white-180.png", sizes: "180x180", type: "image/png" },
   },
   openGraph: {
     type: "website",

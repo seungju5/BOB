@@ -5,6 +5,7 @@ import { extname, join, posix, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { inflateSync } from 'node:zlib';
 import { TEAM_PROJECT_ID, TEAM_SITE_URL, TEAM_SUPPORT_EMAIL } from '../config/team.ts';
+import { meterOcrAssets } from './meter-ocr-assets.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const sourceOnly = process.argv.length === 3 && process.argv[2] === '--source-only';
@@ -58,8 +59,11 @@ async function inspectFile(path, directory, publicFile) {
   for (const match of text.matchAll(projectHosts)) {
     assert(hostingDomains.has(match[0].toLowerCase()), 'Unexpected cloud project reference in ' + relativePath);
   }
-  for (const match of text.matchAll(gmail)) {
-    assert(match[0].toLowerCase() === TEAM_SUPPORT_EMAIL.toLowerCase(), 'Unapproved public contact in ' + relativePath);
+  // Embedded WASM contains long unbroken base64 strings. Only scan addresses when the suffix exists.
+  if (/@gmail\.com\b/i.test(text)) {
+    for (const match of text.matchAll(gmail)) {
+      assert(match[0].toLowerCase() === TEAM_SUPPORT_EMAIL.toLowerCase(), 'Unapproved public contact in ' + relativePath);
+    }
   }
   assert(!secret.test(text), 'Private credential in ' + relativePath);
   assert(!/(?:file:\/\/\/|\/Users\/)[^\s"'<>]+\/(?:Documents|Downloads|\.config)\//.test(text), 'Personal filesystem path in ' + relativePath);
@@ -71,7 +75,11 @@ for (const name of ['app', 'components', 'config', 'firebase', 'lib', 'packages'
   for await (const file of files(join(root, name))) {
     if (name === 'public') {
       const asset = routeName(join(root, name), file);
-      assert(/^(?:brand\/[^/]+\.(?:png|webp|woff2|ttf|txt)|walking\/[^/]+\.(?:jpg|png)|walking\/wardrobe\/(?:body|item|trail)-[a-z]+(?:-[a-z]+)*\.webp|bapmunna-app-qr\.(?:png|svg)|apple-touch-icon\.png|icon\.svg|sw\.js|notification-content\.js|service-status\/smartthings\.json)$/.test(asset), 'Unexpected public asset: ' + asset);
+      if (meterOcrAssets.has(asset)) {
+        assert((await readFile(file)).equals(await readFile(meterOcrAssets.get(asset))), 'OCR asset differs from installed package: ' + asset);
+      } else {
+        assert(/^(?:brand\/[^/]+\.(?:png|webp|woff2|ttf|txt)|walking\/[^/]+\.(?:jpg|png)|walking\/wardrobe\/(?:body|item|trail)-[a-z]+(?:-[a-z]+)*\.webp|bapmunna-app-qr\.(?:png|svg)|apple-touch-icon\.png|icon\.svg|sw\.js|notification-content\.js|service-status\/smartthings\.json)$/.test(asset), 'Unexpected public asset: ' + asset);
+      }
       publicAssets.add(asset);
     }
     await inspectFile(file, root, name === 'public');
@@ -87,6 +95,9 @@ assert.equal(readiness.mode, 'hosting-only');
 
 if (!sourceOnly) {
   const output = resolve(root, firebase.hosting.public);
+  for (const [file, source] of meterOcrAssets) {
+    assert((await readFile(join(output, file))).equals(await readFile(source)), 'Required OCR asset missing or changed: ' + file);
+  }
   const expectedPages = new Set(['404.html', '404/index.html', '500.html', '500/index.html', '_not-found/index.html', '_global-error/index.html']);
   for await (const file of files(join(root, 'app'))) {
     const nameInApp = routeName(join(root, 'app'), file);

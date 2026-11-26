@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "node scripts/meter-ocr-assets.mjs",
     "dev": "next dev",
+    "prebuild": "node scripts/meter-ocr-assets.mjs",
     "build": "next build --webpack",
     "release:hosting": "python3 scripts/release-team-build.py",
     "check:types": "tsc --noEmit",
@@ -18,10 +20,13 @@
   "dependencies": {
     "@bapmunna/phone-steps": "file:packages/phone-steps",
     "@capacitor/core": "8.6.2",
+    "@tesseract.js-data/eng": "1.0.0",
+    "@tesseract.js-data/kor": "1.0.0",
+    "firebase": "12.18.0",
     "next": "16.4.5",
     "react": "19.3.0",
     "react-dom": "19.3.0",
-    "firebase": "12.18.0"
+    "tesseract.js": "7.0.0"
   },
   "devDependencies": {
     "@tailwindcss/turbopack": "^4",

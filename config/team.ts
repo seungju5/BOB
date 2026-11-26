@@ -8,3 +8,5 @@ export const TEAM_NOTIFICATION_ORIGIN: string = "";
 export const TEAM_SUPPORT_EMAIL = "Warmingu9@gmail.com";
 export const TEAM_GOOGLE_SIGN_IN_ENABLED = false;
 export const TEAM_KAKAO_SIGN_IN_ENABLED = false;
+// Enable only after the team Samsung Account web client and Firebase OIDC provider are verified.
+export const TEAM_SAMSUNG_SIGN_IN_ENABLED = false;

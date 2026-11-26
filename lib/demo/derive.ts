@@ -75,7 +75,9 @@ export function toView(s: DemoState, now: Date): AppView {
 export function syncAlerts(s: DemoState, now: Date): DemoState {
   if (s.onboardingStep <= 7) return s;
   const today = kstDate(now);
-  const recent = [2, 1, 0].flatMap((d) => demoSlots(s, addDays(today, -d), now));
+  // Include enough days even for one meal a day and an unfinished current day.
+  const recent = Array.from({ length: s.alertSettings.missedMealsThreshold + 1 }, (_, i) =>
+    s.alertSettings.missedMealsThreshold - i).flatMap((d) => demoSlots(s, addDays(today, -d), now));
   const open = s.alerts.filter((a) => !a.resolvedAt);
   const { create, resolve } = evaluateAlerts({
     now,

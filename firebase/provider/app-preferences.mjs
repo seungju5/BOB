@@ -7,7 +7,7 @@ export function preferenceFields(input){
   if(typeof input.relationLabel!=='string'||input.relationLabel.length>30||input.relationLabel!==input.relationLabel.trim())invalid();
   if(input.schemaVersion!==1||!integer(input.onboardingStep,1,8)||typeof input.phone!=='string'||input.phone.length>24||!/^\+?[0-9 ()-]{0,24}$/.test(input.phone)
     ||!integer(input.eatOutPerWeek,0,20)||!integer(input.cooksPerWeek,1,21)||typeof input.usesKeepWarm!=='boolean'
-    ||!integer(input.missedMealsThreshold,1,6)||!integer(input.fastingHours,12,108)||input.fastingHours%6!==0
+    ||!integer(input.missedMealsThreshold,3,10)||!integer(input.fastingHours,12,108)||input.fastingHours%6!==0
     ||!integer(input.emergencyHours,24,120)||input.emergencyHours%6!==0||input.emergencyHours-input.fastingHours<12
     ||typeof input.preparationAcknowledged!=='boolean'||!Array.isArray(input.windows)||!integer(input.windows.length,1,5))invalid();
   const slots=new Set();let lastEnd='';

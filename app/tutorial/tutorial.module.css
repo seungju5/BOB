@@ -1,0 +1,26 @@
+.page {
+  --gutter: clamp(.85rem, 4.3vw, 1.2rem);
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  color: var(--color-cocoa);
+  background: var(--color-butter-soft);
+}
+.hero {
+  padding: 1.25rem var(--gutter) 1.8rem;
+  background: var(--color-butter);
+}
+.copyStack { display: grid; margin-top: .45rem; }
+.copy { grid-area: 1 / 1; min-width: 0; word-break: keep-all; overflow-wrap: anywhere; }
+.copy[aria-hidden="true"] { visibility: hidden; }
+.copy h1 { font-size: clamp(1.65rem, 6.2vw, 2rem); font-weight: 750; line-height: 1.3; letter-spacing: -.045em; outline: none; }
+.copy p { margin-top: .45rem; font-size: 1.0625rem; line-height: 1.55; }
+.sample {
+  position: relative;
+  margin: -.85rem var(--gutter) 0;
+  padding: clamp(.875rem, 3.5vw, 1.1rem);
+  border: 1px solid var(--color-line);
+  border-radius: 1.35rem;
+  background: var(--color-paper);
+}
+.controls { display: grid; margin: .8rem var(--gutter) max(1rem, env(safe-area-inset-bottom)); }

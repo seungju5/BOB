@@ -30,8 +30,8 @@ export const DETECTION = {
 } as const;
 
 export const ALERT_DEFAULTS = {
-  /** 연속 결식 N끼 (기능정의서 기본값) */
-  MISSED_MEALS_THRESHOLD: 2,
+  /** 연속 결식 N끼 (사용자 설정 범위 3~10끼) */
+  MISSED_MEALS_THRESHOLD: 3,
   /** 공복시간 주의: 마지막 활동 후 시간 */
   FASTING_HOURS: 48,
   /** 건강 위험 신고: 마지막 활동 후 시간 */

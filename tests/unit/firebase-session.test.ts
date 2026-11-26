@@ -54,7 +54,7 @@ async function fixture() {
     saveAppPreferences:vi.fn<FirebaseProvider['saveAppPreferences']>(async(input,household,uid)=>persist(input,household,uid)),
     refreshUser:vi.fn(async()=>sdkUser),
     getIdToken:vi.fn(async(uid:string)=>{if(sdkUser?.uid!==uid)throw new Error('계정이 변경됐어요.');return 'synthetic-test-token';}),
-    signOut:vi.fn(async()=>{}),
+    signOut:vi.fn(async()=>{}), samsung:vi.fn(async()=>user('A')), linkSamsung:vi.fn(async()=>user('A')),
     signIn:vi.fn(async()=>user('A')),signUp:vi.fn(async()=>user('A')),google:vi.fn(async()=>user('A')),
     resetPassword:vi.fn(async()=>{}),resendVerification:vi.fn(async()=>{}),saveProfile:vi.fn(async()=>{}),
   } satisfies FirebaseProvider;

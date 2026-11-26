@@ -1,0 +1,28 @@
+.page { width: 100%; max-width: 560px; margin: 0 auto; padding: 18px clamp(16px, 5vw, 32px) 40px; color: var(--color-cocoa); }
+.header, .header a, .source, .history h2, .footer { display: flex; gap: 8px; align-items: center; }
+.header, .footer { justify-content: space-between; flex-wrap: wrap; }
+.header a, .footer a { min-height: 44px; align-content: center; }
+.header svg, .source svg, .history svg { width: 20px; height: 20px; flex: none; }
+.page h1 { margin: 27px 0 9px; font-size: clamp(30px, 7vw, 42px); font-weight: 850; line-height: 1.18; }
+.intro, .history p { color: var(--color-muted); font-size: 17px; line-height: 1.6; }
+.counter { margin: 22px 0; padding: 22px; border-radius: 24px; background: #edf3e9; border: 1px solid #c7d6c3; }
+.source { font-weight: 720; color: #345941; font-size: 16px; }
+.counter h2 { margin-top: 19px; font-size: 20px; font-weight: 700; }
+.number { font-size: 25px; line-height: 1.2; }
+.number strong { font-size: clamp(55px, 13vw, 78px); font-weight: 820; font-variant-numeric: tabular-nums; letter-spacing: -.035em; }
+.status { min-height: 1.7em; margin: 13px 0 18px; font-size: 17px; line-height: 1.6; }
+.primary, .stop { display: block; width: 100%; min-height: 56px; border-radius: 18px; font-size: 20px; font-weight: 750; cursor: pointer; }
+.primary { background: #365d43; color: #fff; }
+.stop { background: #fffdf7; color: #354939; border: 2px solid #627b68; }
+.primary:disabled { opacity: .65; cursor: default; }
+.history { border-radius: 22px; border: 1px solid var(--color-line); padding: 20px; background: var(--color-paper); }
+.history h2 { margin-bottom: 5px; font-size: 22px; font-weight: 780; }
+.history ul { list-style: none; padding: 0; margin: 10px 0 0; }
+.history li { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 4px 10px; padding: 12px 0; border-top: 1px solid var(--color-line); }
+.history small { display: block; color: var(--color-muted); font-size: 14px; }
+.history li strong { color: #345941; font-size: 19px; font-variant-numeric: tabular-nums; }
+.history .empty { margin-top: 14px; }
+.textButton, .footer a { text-decoration: underline; text-underline-offset: 4px; }
+.textButton { min-height: 44px; cursor: pointer; }
+.footer { margin-top: 18px; font-size: 15px; }
+.page :focus-visible { outline: 3px solid #386749; outline-offset: 3px; }

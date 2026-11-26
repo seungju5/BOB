@@ -47,7 +47,7 @@ export function stepsMessage(snapshot: PhoneStepsSnapshot): string {
       if (snapshot.reason === "health-connect-unavailable") return "이 휴대폰에서는 Health Connect를 사용할 수 없어요.";
       if (snapshot.reason === "health-data-unavailable") return "이 기기에서는 Apple 건강 기록을 읽을 수 없어요.";
       if (snapshot.reason === "permission-restricted") return "이 기기 설정에서는 건강 기록 접근이 제한되어 있어요.";
-      return "자동 걸음수는 설치형 앱에서 연결할 수 있어요.";
+      return "건강 앱의 하루 걸음수는 설치형 앱에서 연결할 수 있어요.";
     case "not-connected":
     case "permission-required": return "휴대폰으로 오늘의 걸음을 확인해 보세요.";
     case "permission-denied": return "걸음수 읽기 권한이 꺼져 있어요. 건강 앱 설정에서 바꿀 수 있어요.";

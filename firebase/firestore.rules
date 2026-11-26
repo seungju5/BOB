@@ -118,7 +118,7 @@ service cloud.firestore {
             && windows(d.windows) && d.usesKeepWarm is bool && d.preparationAcknowledged is bool
             && d.eatOutPerWeek is int && d.eatOutPerWeek >= 0 && d.eatOutPerWeek <= 20
             && d.cooksPerWeek is int && d.cooksPerWeek >= 1 && d.cooksPerWeek <= 21
-            && d.missedMealsThreshold is int && d.missedMealsThreshold >= 1 && d.missedMealsThreshold <= 6
+            && d.missedMealsThreshold is int && d.missedMealsThreshold >= 3 && d.missedMealsThreshold <= 10
             && d.fastingHours is int && d.fastingHours >= 12 && d.fastingHours <= 108 && d.fastingHours % 6 == 0
             && d.emergencyHours is int && d.emergencyHours >= 24 && d.emergencyHours <= 120 && d.emergencyHours % 6 == 0
             && d.emergencyHours - d.fastingHours >= 12 && d.updatedAt == request.time;

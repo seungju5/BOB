@@ -1,5 +1,5 @@
 import {initializeApp,getApp,getApps} from 'firebase/app';
-import {getAuth,onAuthStateChanged,beforeAuthStateChanged,signInWithEmailAndPassword,createUserWithEmailAndPassword,sendEmailVerification,sendPasswordResetEmail,updateProfile,signOut,reload,setPersistence,browserLocalPersistence,browserSessionPersistence,GoogleAuthProvider,signInWithPopup,signInWithCustomToken,verifyBeforeUpdateEmail} from 'firebase/auth';
+import {getAuth,onAuthStateChanged,beforeAuthStateChanged,signInWithEmailAndPassword,createUserWithEmailAndPassword,sendEmailVerification,sendPasswordResetEmail,updateProfile,signOut,reload,setPersistence,browserLocalPersistence,browserSessionPersistence,GoogleAuthProvider,OAuthProvider,linkWithPopup,signInWithPopup,signInWithCustomToken,verifyBeforeUpdateEmail} from 'firebase/auth';
 import {getFirestore,doc,getDocFromServer,runTransaction,serverTimestamp,Timestamp,writeBatch} from 'firebase/firestore';
 import {getCaptureDays,deleteCaptureBuckets} from './capture-days.mjs';
 import {createStudio} from './studio.mjs';
@@ -7,7 +7,7 @@ import {preferenceFields} from './app-preferences.mjs';
 import {CONSENT_VERSION,checkDisplayName} from './auth-utils.mjs';
 import {createKakaoClient,requestAccountEmail,completeKakaoSession} from './kakao-client.mjs';
 
-export function createProvider(config, {googleEnabled = false, kakaoEnabled = false, configureClients} = {}){
+export function createProvider(config, {googleEnabled = false, kakaoEnabled = false, samsungEnabled = false, configureClients} = {}){
   const appName='warming-up-'+config.projectId;
   const app=getApps().find(app=>app.name===appName)?getApp(appName):initializeApp(config,appName);
   if (app.options.projectId !== config.projectId || app.options.appId !== config.appId) throw Error('워크스페이스의 Firebase 앱을 확인해 주세요.');
@@ -16,7 +16,15 @@ export function createProvider(config, {googleEnabled = false, kakaoEnabled = fa
   auth.languageCode='ko';
   let kakaoClient,kakaoCompletion;
   const kakao=()=>kakaoClient??=createKakaoClient({config:{enabled:kakaoEnabled,apiOrigin:window.location.origin},storage:{getItem:key=>window.sessionStorage.getItem(key),setItem:(key,value)=>window.sessionStorage.setItem(key,value),removeItem:key=>window.sessionStorage.removeItem(key)},location:window.location,history:window.history,crypto:window.crypto,fetch:window.fetch.bind(window)});
-  const mapUser=user=>user?{uid:user.uid,email:user.email||'',displayName:user.displayName||'',verified:user.emailVerified}:null;
+  const samsungId = 'oidc.samsung';
+  function samsungProvider() {
+    if (!samsungEnabled) throw Object.assign(Error(), {code:'auth/operation-not-allowed'});
+    const provider = new OAuthProvider(samsungId);
+    provider.addScope('email');
+    return provider;
+  }
+  const mapUser=user=>user?{uid:user.uid,email:user.email||'',displayName:user.displayName||'',verified:user.emailVerified,
+    samsungLinked:user.providerData?.some(entry=>entry.providerId===samsungId) ?? false}:null;
   const requireUser=()=>{const user=auth.currentUser;if(!user?.emailVerified)throw Error('이메일을 확인한 계정으로 로그인해 주세요.');return user;};
   const profileRef=uid=>doc(db,'bapmunnaAccounts',uid);
   const householdRef=uid=>doc(db,'bapmunnaAccounts',uid,'preferences','household');
@@ -25,6 +33,8 @@ export function createProvider(config, {googleEnabled = false, kakaoEnabled = fa
     if(!snapshot.exists())return null;
     const {ownerUid,updatedAt,...fields}=snapshot.data();
     if(ownerUid!==uid||!(updatedAt instanceof Timestamp)||snapshot.metadata.hasPendingWrites)throw Error('서버 저장 결과를 다시 확인해 주세요.');
+    // Read legacy 1–2 meal choices at the new minimum; persist on the next save.
+    if(fields.missedMealsThreshold===1||fields.missedMealsThreshold===2)fields.missedMealsThreshold=3;
     return preferenceFields(fields);
   }
   const remember=value=>setPersistence(auth,value?browserLocalPersistence:browserSessionPersistence);
@@ -98,6 +108,22 @@ export function createProvider(config, {googleEnabled = false, kakaoEnabled = fa
       // The Auth signup request enforces the project password policy.
       await remember(keep);const result=await createUserWithEmailAndPassword(auth,email.trim(),password);
       await updateProfile(result.user,{displayName});await sendEmailVerification(result.user,actionSettings);return mapUser(result.user);
+    },
+    async samsung(keep) {
+      const provider = samsungProvider();
+      await remember(keep);
+      if (auth.currentUser) throw Object.assign(Error(), {code:'auth/user-changed'});
+      const result = await signInWithPopup(auth, provider);
+      return mapUser(result.user);
+    },
+    async linkSamsung(expectedUid) {
+      const provider = samsungProvider();
+      return withHouseholdUser(expectedUid, async (user, assertCurrent) => {
+        const result = await linkWithPopup(user, provider);
+        assertCurrent();
+        if (result.user.uid !== expectedUid) throw Object.assign(Error(), {code:'auth/user-changed'});
+        return mapUser(result.user);
+      });
     },
     async google(keep){if(!googleEnabled)throw Object.assign(Error(),{code:'auth/operation-not-allowed'});await remember(keep);const provider=new GoogleAuthProvider();provider.setCustomParameters({prompt:'select_account'});const result=await signInWithPopup(auth,provider);return mapUser(result.user);},
     async resetPassword(email){try{await sendPasswordResetEmail(auth,email.trim(),actionSettings);}catch(error){if(!['auth/user-not-found','auth/invalid-email'].includes(error.code))throw error;}},

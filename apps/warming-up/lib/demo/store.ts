@@ -18,7 +18,11 @@ function read(): DemoState | null {
   }
   if (raw !== cache.raw) {
     try {
-      cache = { raw, value: raw ? (JSON.parse(raw) as DemoState) : null };
+      const value = raw ? (JSON.parse(raw) as DemoState) : null;
+      if (value?.alertSettings.missedMealsThreshold === 1 || value?.alertSettings.missedMealsThreshold === 2) {
+        value.alertSettings.missedMealsThreshold = 3;
+      }
+      cache = { raw, value };
     } catch {
       cache = { raw, value: null };
     }

@@ -158,7 +158,7 @@ export function RelationPicker({ value, onChange }: { value: string; onChange: (
 
 /** 알림 기준 슬라이더 범위. 공복 주의는 건강 위험보다 최소 GAP시간 앞서야 한다 (기존 Stepper 규칙과 같다). */
 export const ALERT_RANGE = {
-  missed: { min: 1, max: 6 },
+  missed: { min: 3, max: 10 },
   fasting: { min: 12, max: 108, step: 6 },
   emergency: { min: 24, max: 120, step: 6 },
   gap: 12,

@@ -15,6 +15,8 @@ import {
   IconSuitcase,
   IconUtensils,
 } from "@/components/icons";
+import styles from "./tutorial.module.css";
+import "@/components/senior/senior-home.css";
 import { Mascot } from "@/components/Mascot";
 import { FlowProgress } from "@/components/onboarding/FlowProgress";
 import { MealWeekExample } from "@/components/onboarding/MealWeekExample";
@@ -31,13 +33,13 @@ type Slide = { title: string; body: string; content: ReactNode };
 
 const SLIDES: Slide[] = [
   {
-    title: "밥솥이 안부를\n전해 드려요",
-    body: "동의하고 기기를 연결하면\n밥솥 사용 신호로\n안부를 살펴볼 수 있어요.",
+    title: "밥솥이 안부를 전해요",
+    body: "어르신이 동의한 밥솥에서 사용 소식이 오면 가족이 함께 볼 수 있어요.",
     content: <IntroFlow />,
   },
   {
-    title: "소식이 뜸하면\n안부를 물어봐요",
-    body: "설정한 시간에 소식이 없으면\n안부를 물을 계기가 돼요.\n실제 식사 여부를 단정하지 않아요.",
+    title: "소식이 뜸할 때",
+    body: "정해 둔 시간에 소식이 없으면 알림을 보고 안부를 물어보세요.",
     content: (
       <div className="flex w-full flex-col gap-3">
         <InfoCard icon={IconBell} text={"점심시간이 지났는데\n아직 식사 소식이 없어요"} />
@@ -46,18 +48,18 @@ const SLIDES: Slide[] = [
     ),
   },
   {
-    title: "밥솥 소식을 살펴봐요",
-    body: "요일을 눌러 보세요. 채워진 점은\n밥솥을 쓴 시간대를 뜻해요.",
+    title: "우리 집 한 주를 살펴봐요",
+    body: "홈에서처럼 요일을 눌러 보세요. 그날 어느 시간대에 밥솥을 썼는지 보여요.",
     content: <MealWeekExample />,
   },
   {
-    title: "어르신도\n버튼 하나로\n소식을 보내요",
-    body: "필요할 때만 버튼을 눌러요.\n매일 누르지 않아도 괜찮아요.\n걸음 수는 처음 한 번 연결해 두면\n따로 하실 일이 없어요.",
+    title: "어르신이 전하는 소식",
+    body: "어르신 홈에 있는 세 가지 버튼이에요. 전하고 싶은 소식이 있을 때만 눌러요.",
     content: <SeniorButtons />,
   },
   {
-    title: "기기 연결은\n홈에서 준비해요",
-    body: "우리 집 설정을 마치고\n홈의 ‘기기 연결 준비하기’에서\n원할 때 시작해요.",
+    title: "우리 집 기기 연결",
+    body: "우리 집 설정을 마치면 홈에서 기기 연결을 시작할 수 있어요.",
     content: <ReadyChecklist />,
   },
 ];
@@ -122,8 +124,8 @@ export default function TutorialPage() {
   };
 
   return (
-    <main className="font-sans flex flex-1 flex-col bg-butter">
-      <div className="px-6 pt-5">
+    <main className={styles.page}>
+      <div className={styles.hero}>
         <FlowProgress current="intro" isDemo={view.mode === "demo"} />
         {view.mode === "demo" ? <p className="mt-3 text-[16px] leading-normal font-semibold text-cocoa/80">예시 체험 · 실제 연결 없음</p> : null}
         <div className="mt-2 flex min-h-12 items-center justify-between gap-2">
@@ -137,17 +139,20 @@ export default function TutorialPage() {
             {last ? returning ? "홈으로" : "우리 집으로" : "건너뛰기"}
           </button>
         </div>
-        <div key={index} className="animate-rise motion-reduce:animate-none pb-5">
-          <h1 ref={heading} tabIndex={-1} className="mt-3 text-[clamp(1.75rem,7.7vw,2rem)] leading-[1.3] font-semibold tracking-[-0.035em] whitespace-pre-line text-cocoa outline-none">{slide.title}</h1>
-          <p className="mt-3 text-[18px] leading-[1.6] whitespace-pre-line text-cocoa/80">{slide.body}</p>
+        <div className={styles.copyStack}>
+          {SLIDES.map((entry, i) => (
+            <div key={entry.title} className={styles.copy} aria-hidden={i !== index}>
+              <h1 ref={i === index ? heading : undefined} tabIndex={-1}>{entry.title}</h1>
+              <p>{entry.body}</p>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* 시작 화면처럼 아래쪽은 흰 시트 */}
-      <div className={`flex flex-1 flex-col rounded-t-[2.25rem] bg-paper pt-5 pb-6 ${index === 2 ? "px-4" : "px-6"}`}>
-        <div key={index} className="animate-rise motion-reduce:animate-none flex flex-1 items-center justify-center pb-5">
-          {slide.content}
-        </div>
+      <section className={styles.sample} aria-label="소개 예시">
+        {slide.content}
+      </section>
+      <div className={styles.controls}>
         {saveError ? <p role="alert" className="mb-4 text-[16px] leading-relaxed text-blush-deep">{saveError}</p> : null}
         <Button variant="dark" disabled={busy} className="min-h-14 text-[19px]" onClick={() => (last ? void finishIntro() : setIndex(index + 1))}>
           {busy ? "이어서 준비하고 있어요…" : last ? returning ? "홈으로 돌아가기" : "우리 집 알려주기" : "다음"}
@@ -194,22 +199,22 @@ function IntroFlow() {
 }
 
 function SeniorButtons() {
-  const buttons: { icon: Icon; label: string; className: string }[] = [
-    { icon: IconUtensils, label: "외식했어요", className: "bg-butter-soft text-cocoa" },
-    { icon: IconSuitcase, label: "놀러가요", className: "bg-butter-soft text-cocoa" },
-    { icon: IconHeart, label: "도와줘요", className: "bg-blush text-blush-deep" },
+  const actions = [
+    { icon: IconUtensils, label: "외식했어요", tone: "meal" },
+    { icon: IconSuitcase, label: "놀러가요", tone: "away" },
+    { icon: IconHeart, label: "도와줘요", tone: "help" },
   ];
   return (
-    <div className="w-full rounded-[var(--radius-card)] border-2 border-line bg-paper px-3 py-3.5">
-      <p className="px-1 text-[16px] text-muted">필요한 소식만 가볍게 남겨요.</p>
-      <div className="mt-2.5 grid grid-cols-3 gap-2" aria-hidden>
-        {buttons.map(({ icon: Icon, label, className }) => (
-          <div key={label} className={`flex h-24 flex-col items-center justify-center gap-1.5 rounded-2xl ${className}`}>
-            <Icon className="h-7 w-7" />
-            <span className="text-[16px] font-bold">{label}</span>
-          </div>
+    <div>
+      <h2 className="text-[22px] font-bold text-cocoa">가족에게 소식 전하기</h2>
+      <ul className="bapmunna-senior-actions" aria-label="어르신 홈의 버튼 예시">
+        {actions.map(({ icon: Icon, label, tone }) => (
+          <li key={tone} className="bapmunna-senior-action" data-tone={tone}>
+            <span className="bapmunna-senior-action-icon" aria-hidden><Icon /></span>
+            <strong>{label}</strong>
+          </li>
         ))}
-      </div>
+      </ul>
     </div>
   );
 }

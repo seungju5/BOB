@@ -1,4 +1,4 @@
 import type {Metadata} from 'next';
 import {HeartsEntry} from '@/components/walking/HeartsEntry';
-export const metadata:Metadata={title:'워밍이의 산책 · 밥뭇나',description:'워밍이에게 옷과 소품을 입히고, 좋아하는 산책길을 함께 걸어요.'};
+export const metadata:Metadata={title:'워밍이의 산책 · 밥뭇나',description:'휴대폰으로 내 산책 걸음을 측정하고, 워밍이의 차림과 산책길을 골라요.'};
 export default function Page(){return <HeartsEntry/>;}

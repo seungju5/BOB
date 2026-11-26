@@ -156,7 +156,7 @@ export function HeartsExperience({mode,transport,embedded=false}:Props){
   const heading=tab==='family'?'가족의 응원':tab==='closet'?'워밍이의 하트 옷장':tab==='league'?'밥심 리그':'오늘의 산책';
   const content=<>
     {!embedded?<header className="hearts-header"><Logo/><div><Link href="/more" className="hearts-header-link">메뉴</Link><button onClick={()=>setSettings(true)} aria-label="산책 하트 설정">⚙<span className="sr-only">설정</span></button></div></header>:<div className="hearts-embedded-heading"><h2>산책 하트</h2><button onClick={()=>setSettings(true)}>설정</button></div>}
-    {demo?<aside className="hearts-demo-label"><strong>예시 체험</strong><span>가상 걸음·가상 가족이에요</span></aside>:null}
+    {demo?<aside className="hearts-demo-label"><strong>예시 체험</strong><span>가상 걸음·가상 가족이에요. 예시 걸음은 내 산책 기록에 포함되지 않아요.</span></aside>:null}
     {error?<div className="hearts-status is-error" role="alert"><p>{error}</p>{!demo?<button disabled={busy} onClick={()=>void refresh()}>다시 확인</button>:null}</div>:null}
     {notice?<p className="hearts-status" role="status">{notice}</p>:null}
     {tab==='today'?<HeartsGarden summary={summary}/>:<h1 className="hearts-page-title">{heading}</h1>}

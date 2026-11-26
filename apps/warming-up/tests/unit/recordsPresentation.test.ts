@@ -23,7 +23,9 @@ describe("보호자 홈의 다음 행동", () => {
     const html = renderToStaticMarkup(createElement(HomePage));
     expect(html).toContain("기기 연결 준비하기");
     expect(html).toContain("연락처 등록하기");
-    expect(html).toContain("아직 연결된 식사 기록이 없어요");
+    expect(html).toContain("아직 기록이 없어요");
+    expect(html).toContain("한 주의 밥상");
+    expect(html.match(/role="tab"/g)).toHaveLength(7);
     expect(html).not.toMatch(/href="tel:|끼니 확인율/);
     expect(html).toMatch(/href="\/settings\/?#device"/);
     view.seniorConsent = true;
@@ -39,7 +41,7 @@ describe("보호자 홈의 다음 행동", () => {
     view.alerts = [{ id: "example-help", type: "help_request", triggeredAt: context.now.toISOString(), acknowledgedAt: null, resolvedAt: null }];
     const alert = renderToStaticMarkup(createElement(HomePage));
     expect(alert.match(/href="tel:\+123"/g)).toHaveLength(1);
-    expect(alert.indexOf('href="tel:+123"')).toBeLessThan(alert.indexOf("오늘의 끼니"));
+    expect(alert.indexOf('href="tel:+123"')).toBeLessThan(alert.indexOf("한 주의 밥상"));
     expect(alert).toContain("확인했어요");
     for (const path of ["records", "report", "alerts", "connect"]) {
       expect(alert).toMatch(new RegExp(`href="/${path}/?"`));
@@ -126,7 +128,7 @@ describe("오늘의 끼니 시간표", () => {
     context.view = view;
     const html = renderToStaticMarkup(createElement(HomePage));
     expect(html.match(/data-meal-slot=/g)).toHaveLength(count);
-    expect(html.match(/기록 대기/g)).toHaveLength(count);
+    expect(html.match(/<dd data-state="no_record"/g)).toHaveLength(count);
     expect(html).toContain(`하루 ${count}끼, 끼니 수와 시간 변경`);
     expect(html).toContain("#settings-meal-count");
     expect(html).not.toMatch(/>확인됨<|>미확인</);
@@ -138,9 +140,16 @@ describe("오늘의 끼니 시간표", () => {
     view.slots = [{date:"2026-11-14", slot:"fifth", status:"eat_out", source:"senior_check"}];
     context.view = view;
     const html = renderToStaticMarkup(createElement(HomePage));
-    expect(html.match(/기록 대기/g)).toHaveLength(4);
+    expect(html.match(/<dd data-state="no_record"/g)).toHaveLength(4);
     expect(html).toContain("다섯 끼");
     expect(html).toContain("외식");
+  });
+
+  it("운영 홈에서 오늘의 실제 날짜를 상세 기록으로 연결하고 예시 자료를 섞지 않는다", () => {
+    context.view = disconnected();
+    const html = renderToStaticMarkup(createElement(HomePage));
+    expect(html).toMatch(/href="\/records\/?[?]day=2026-11-14"/);
+    expect(html).not.toContain("예시 기록");
   });
 
   it("오늘 두 끼로 바꿔도 지난 날짜 다섯째 끼가 주간 기록과 리포트에 남는다", () => {

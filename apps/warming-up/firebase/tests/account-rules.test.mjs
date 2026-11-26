@@ -87,7 +87,7 @@ test('the app SDK confirms timestamps, rejects stale names, and isolates househo
   globalThis.window = {location:{origin:auth}};
   const provider = createProvider(config);
   const prefs = {schemaVersion:1,onboardingStep:8,phone:'',relationLabel:'',windows:[{slot:'lunch',start:'11:00',end:'14:00'}],
-    eatOutPerWeek:1,usesKeepWarm:false,cooksPerWeek:1,missedMealsThreshold:2,fastingHours:48,emergencyHours:72,preparationAcknowledged:true};
+    eatOutPerWeek:1,usesKeepWarm:false,cooksPerWeek:1,missedMealsThreshold:3,fastingHours:48,emergencyHours:72,preparationAcknowledged:true};
   const home = {relation:'other',alias:'가상 가구',residentCount:1,hasPet:false};
   try {
     await signInWithEmailAndPassword(authClient,fixture.email,fixture.password);
@@ -120,6 +120,22 @@ test('the app SDK confirms timestamps, rejects stale names, and isolates househo
     const serverRecord = await (await request(store+'/'+pathSettings, undefined, fixture.token)).json();
     const {updatedAt, ...fields} = serverRecord.fields;
     assert.ok(updatedAt.timestampValue);
+    for (const missedMealsThreshold of [3, 7, 10]) {
+      stored = await provider.saveAppPreferences({...prefs, windows:five, missedMealsThreshold},home,uid,stored.revision);
+      assert.equal((await provider.getAppPreferences(uid)).settings.missedMealsThreshold,missedMealsThreshold);
+    }
+    for (const missedMealsThreshold of [0, 1, 2, 11, 3.5]) {
+      await assert.rejects(provider.saveAppPreferences({...prefs, missedMealsThreshold},home,uid,stored.revision),{code:'preferences/invalid-input'});
+      const encoded=Number.isInteger(missedMealsThreshold)?{integerValue:String(missedMealsThreshold)}:{doubleValue:missedMealsThreshold};
+      assert.equal(await write(fixture,pathSettings,{...fields,missedMealsThreshold:encoded},['updatedAt']),403);
+    }
+    for (const legacy of [1, 2]) {
+      assert.equal(await write({token:'owner'},pathSettings,{...fields,missedMealsThreshold:{integerValue:String(legacy)}},['updatedAt']),200);
+      stored = await provider.getAppPreferences(uid);
+      assert.equal(stored.settings.missedMealsThreshold,3);
+      assert.deepEqual(stored.settings.windows,five);
+      stored = await provider.saveAppPreferences(stored.settings,home,uid,stored.revision);
+    }
     const encode = windows => ({arrayValue:{values:windows.map(w => ({mapValue:{fields:{
       slot:string(w.slot),start:string(w.start),end:string(w.end),
     }}}))}});

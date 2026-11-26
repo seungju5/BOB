@@ -1,6 +1,6 @@
 'use client';
 
-import { TEAM_GOOGLE_SIGN_IN_ENABLED, TEAM_KAKAO_SIGN_IN_ENABLED } from '@/config/team';
+import { TEAM_GOOGLE_SIGN_IN_ENABLED, TEAM_KAKAO_SIGN_IN_ENABLED, TEAM_SAMSUNG_SIGN_IN_ENABLED } from '@/config/team';
 import { PrivacyNotice } from '@/components/privacy/PrivacyNotice';
 
 import Link from 'next/link';
@@ -27,12 +27,15 @@ function LoginForm({account,busy,setBusy,continueUid,setContinueUid}:{account:Re
   const router=useRouter(),mode=useMode(),leavingForDemo=useRef(false);
   const [tab,setTab]=useState<'login'|'signup'|'reset'>('login');
   const [email,setEmail]=useState(''),[password,setPassword]=useState(''),[name,setName]=useState(account.user?.displayName??'');
+  const [showEmail,setShowEmail]=useState(false);
   const [keep,setKeep]=useState(false),[consent,setConsent]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
   const [kakaoReady,setKakaoReady]=useState(false),[verificationEmail,setVerificationEmail]=useState('');
   const locked=useRef(false);
   const query = useSearchParams();
   const next = query.get('next');
   const studioLogin = next === 'studio';
+  const familySamsung = !studioLogin && TEAM_SAMSUNG_SIGN_IN_ENABLED;
+  const emailFormVisible = !familySamsung || showEmail || tab !== 'login';
   const destination = firebaseLoginDestination(account, next, query.get('day'), query.get('slot'));
   useEffect(()=>{
     if (!TEAM_KAKAO_SIGN_IN_ENABLED) return;
@@ -89,8 +92,8 @@ function LoginForm({account,busy,setBusy,continueUid,setContinueUid}:{account:Re
       </section>
       : user && !user.verified ? <section className="mt-6 flex flex-col gap-3">
         <h2 className="text-[20px] font-bold text-cocoa">{user.email?'이메일을 확인해 주세요':'처음 한 번, 이메일을 확인해요'}</h2>
-        {user.email?<p className="break-all text-[16px] text-muted">{user.email}로 보낸 확인 링크를 눌러 주세요.</p>:<>
-          <p className="text-[16px] leading-relaxed text-muted">카카오 본인 확인을 마쳤어요. 내 계정과 기록을 안전하게 이용할 이메일을 알려주세요. 별도 비밀번호는 만들지 않아요.</p>
+        {user.email?<p className="break-all text-[16px] text-muted">{user.email}의 받은편지함에서 확인 링크를 눌러 주세요.</p>:<>
+          <p className="text-[16px] leading-relaxed text-muted">로그인한 계정에 사용할 이메일을 알려주세요. 이 주소로 내 기록을 확인할 수 있어요. 별도 비밀번호는 만들지 않아요.</p>
           <form className="flex flex-col gap-3" onSubmit={event=>{event.preventDefault();void run(async()=>{
             const p=await connectFirebase();if(!p.requestEmail)throw Error('새 버전을 불러오도록 새로고침해 주세요.');
             await within(p.requestEmail(email,user.uid));setVerificationEmail(email.trim());setNotice('확인 메일을 보냈어요. 메일의 링크를 누른 뒤 이 화면에서 확인해 주세요.');
@@ -117,8 +120,22 @@ function LoginForm({account,busy,setBusy,continueUid,setContinueUid}:{account:Re
         {account.error?<Button variant="outline" type="button" onClick={()=>run(refreshFirebaseAccount)}>다시 확인</Button>:null}
         <Button type="button" variant="ghost" disabled={busy} onClick={()=>run(signOutFirebase)}>다른 계정으로 로그인</Button>
       </form>
-      : <form className="mt-7 flex flex-col gap-3" onSubmit={submit}>
-        {tab==='login' && (TEAM_GOOGLE_SIGN_IN_ENABLED || kakaoReady) ? <>
+      : <div className="mt-6 flex flex-col gap-3">
+        {!studioLogin && tab === 'login' && <section aria-label="삼성 계정 로그인" className="rounded-[1.35rem] border border-line bg-butter-soft px-4 py-3.5">
+          {familySamsung ? <>
+            <Button type="button" variant="dark" disabled={busy} onClick={()=>run(async()=>{
+              const p=await connectFirebase();setMode('live');
+              const signedIn=await p.samsung(keep);setContinueUid(signedIn.uid);await refreshFirebaseAccount();
+            })}>삼성 계정으로 계속하기</Button>
+            <p className="mt-2 text-[16px] leading-relaxed text-muted">이미 가입하셨다면 이메일로 로그인한 뒤 내 계정에서 삼성 계정을 연결해 주세요.</p>
+          </> : <>
+            <h2 className="text-lg font-bold text-cocoa">삼성 계정 로그인 준비 중</h2>
+            <p className="mt-1 text-[16px] leading-relaxed text-muted">지금은 아래에서 밥뭇나 이메일로 로그인해 주세요.</p>
+          </>}
+        </section>}
+        {familySamsung && !emailFormVisible && <Button type="button" variant="outline" disabled={busy} onClick={()=>setShowEmail(true)}>이메일로 계속하기</Button>}
+        {emailFormVisible && <form className="flex flex-col gap-3" onSubmit={submit}>
+        {!studioLogin && tab==='login' && (TEAM_GOOGLE_SIGN_IN_ENABLED || kakaoReady) ? <>
           {kakaoReady ? <button type="button" disabled={busy} onClick={()=>run(async()=>{const p=await connectFirebase();if(!p.kakao)throw Error('카카오 로그인 연결을 준비하고 있어요.');await p.kakao(keep);})} className="relative flex min-h-14 items-center justify-center rounded-full bg-kakao px-6 text-[17px] font-bold text-kakao-label disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-cocoa">
             <svg aria-hidden="true" className="absolute left-5 h-5 w-5" viewBox="0 0 24 24"><path fill="currentColor" d="M12 3C6.48 3 2 6.53 2 10.88c0 2.82 1.88 5.29 4.7 6.68l-.96 3.53c-.08.31.27.56.54.38l4.18-2.77c.5.06 1.01.1 1.54.1 5.52 0 10-3.53 10-7.92S17.52 3 12 3z"/></svg>카카오로 계속하기
           </button> : null}
@@ -129,14 +146,15 @@ function LoginForm({account,busy,setBusy,continueUid,setContinueUid}:{account:Re
         <label htmlFor="login-email" className="text-[16px]">이메일</label><TextInput id="login-email" type="email" autoComplete="email" inputMode="email" placeholder="name@example.com" required value={email} onChange={e=>setEmail(e.target.value)}/>
         {tab!=='reset'?<><label htmlFor="login-password" className="text-[16px]">비밀번호</label><TextInput id="login-password" type="password" required minLength={tab==='signup'?8:1} autoComplete={tab==='signup'?'new-password':'current-password'} placeholder="비밀번호를 입력해 주세요." value={password} onChange={e=>setPassword(e.target.value)}/><label className="flex min-h-12 items-center gap-3 text-[16px]"><input type="checkbox" className="h-5 w-5" checked={keep} onChange={e=>setKeep(e.target.checked)}/>로그인 상태 유지</label></>:null}
         {tab==='signup'?<><Policy/><label className="flex min-h-12 items-start gap-3 text-[16px]"><input className="mt-1 h-5 w-5" type="checkbox" checked={consent} onChange={e=>setConsent(e.target.checked)} required/>회원 정보 저장 안내를 확인했어요.</label></>:null}
-        <Button type="submit" disabled={busy}>{busy?'확인 중…':tab==='signup'?'회원가입':tab==='reset'?'재설정 메일 받기':'로그인'}</Button>
+        <Button type="submit" disabled={busy}>{busy?'확인 중…':tab==='signup'?'회원가입':tab==='reset'?'재설정 메일 받기':studioLogin?'로그인':'이메일로 로그인'}</Button>
         <div className="flex flex-wrap items-center justify-center gap-x-4">
           {tab!=='signup'?<button type="button" disabled={busy} className="min-h-12 text-[16px] text-muted underline" onClick={()=>{setTab('signup');setError('');setPassword('');}}>회원가입</button>:null}
           {tab!=='reset'?<button type="button" disabled={busy} className="min-h-12 text-[16px] text-muted underline" onClick={()=>{setTab('reset');setError('');setPassword('');}}>비밀번호 찾기</button>:null}
           {tab!=='login'?<button type="button" disabled={busy} className="min-h-12 text-[16px] text-muted underline" onClick={()=>{setTab('login');setError('');}}>로그인으로</button>:null}
         </div>
-        <p className="text-[16px] leading-relaxed text-muted">{studioLogin?'이메일 인증을 마친 운영자 계정만 접근할 수 있습니다.':'밥뭇나는 보호자 이메일로 가입해요. 가입이 끝나면 삼성 기기 연결 화면에서 밥솥 플러그를 연결할 수 있는지 확인해요.'}</p>
-      </form>}
+        <p className="text-[16px] leading-relaxed text-muted">{studioLogin?'이메일 인증을 마친 운영자 계정만 접근할 수 있습니다.':'밥솥 플러그는 로그인 후 홈에서 연결할 수 있어요.'}</p>
+        </form>}
+      </div>}
       {!studioLogin && <><Button variant="ghost" className="mt-6" disabled={busy || mode === undefined} onClick={()=>{leavingForDemo.current=true;setContinueUid(null);setMode('demo');router.push('/start');}}>로그인 없이 데모로 둘러보기</Button>
       <p className="mt-2 text-center text-[16px] text-muted">데모에서는 예시 기록으로 사용해 볼 수 있어요.</p></>}
       <Link className="mt-4 flex min-h-12 items-center justify-center text-[16px] text-muted underline" href="/">첫 화면으로</Link>

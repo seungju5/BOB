@@ -1,6 +1,7 @@
 node_modules/
 .next/
 out/
+public/meter-ocr/
 .firebase/
 .tmp/
 coverage/
